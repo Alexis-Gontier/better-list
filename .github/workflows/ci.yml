@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push sur une branche annule le run précédent de la même branche : inutile de payer une CI
+# pour un commit déjà remplacé.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint · Types · Tests · Knip · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Doit précéder setup-node : c'est lui qui rend `cache: pnpm` possible. La version de pnpm
+      # vient du champ `packageManager` de package.json, pas d'un numéro dupliqué ici.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Biome)
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Knip (code et dépendances morts)
+        run: pnpm knip
+
+      - name: Build
+        run: pnpm build
+        env:
+          # `src/config/env.ts` est importé par next.config.ts : sans ça, le build échoue sur une
+          # variable manquante alors qu'on ne cherche qu'à vérifier la compilation.
+          # À retirer le jour où la CI dispose d'une vraie base (branche Neon éphémère).
+          SKIP_ENV_VALIDATION: "1"

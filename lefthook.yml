@@ -1,0 +1,28 @@
+# Hooks Git — https://lefthook.dev/configuration/
+#
+# Installés automatiquement par le postinstall du paquet npm : un `pnpm install` suffit, il n'y
+# a rien à lancer à la main après un clone.
+#
+# Répartition volontaire : `pre-commit` ne fait que du formatage sur les fichiers indexés (rapide,
+# on le subit à chaque commit) ; les vérifications globales et lentes vont en `pre-push`.
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{js,jsx,mjs,ts,tsx,json,jsonc,css}"
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
+      # Réindexe ce que Biome a corrigé, sinon le commit part avec la version non formatée.
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: typecheck
+      run: pnpm exec tsc --noEmit
+
+    - name: test
+      run: pnpm exec vitest run
+
+    - name: knip
+      run: pnpm exec knip

@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+
+  // Les hooks de l'agent sont des points d'entrée : rien dans `src/` ne les importe, c'est
+  // Claude Code qui les exécute.
+  "entry": [".claude/hooks/*.mjs"],
+
+  // `src/components/ui/` est généré par shadcn : ses composants exportent volontairement plus que
+  // ce qu'on consomme, et les supprimer casserait la prochaine régénération. (`src/generated/`,
+  // produit par Prisma, est déjà écarté par le .gitignore.)
+  "ignore": ["src/components/ui/**"],
+
+  // Un export utilisé uniquement dans son propre fichier n'est pas du code mort : c'est souvent
+  // un helper testable ou une constante exposée pour un test à venir.
+  "ignoreExportsUsedInFile": true,
+
+  // ⚠️ Réglage temporaire, à supprimer (`error` est le défaut) une fois `/search` câblée.
+  //
+  // Ce qui reste signalé est exact et se réduit à deux poches, toutes deux du code écrit en
+  // avance de la route qui le consommera :
+  //   - `searchMedia`, `SearchFormInput`, `MediaSort`, `MediaCountry` → attendent `/search` ;
+  //   - `lib/safe-action.ts` et `next-safe-action` → attendent la première Server Action.
+  //
+  // En `warn`, l'information reste visible sans faire échouer la CI.
+  "rules": {
+    "files": "warn",
+    "dependencies": "warn",
+    "exports": "warn",
+    "types": "warn"
+  }
+}

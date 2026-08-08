@@ -1,0 +1,10 @@
+minimumReleaseAgeExclude:
+  - lucide-react@1.30.0
+
+# Scripts d'installation autorisés. pnpm les bloque par défaut : chaque entrée ici est une
+# décision explicite de laisser un paquet exécuter du code à l'installation.
+allowBuilds:
+  "@prisma/engines": true # télécharge les binaires du moteur Prisma
+  esbuild: true # compile son binaire natif (tsx en dépend)
+  lefthook: true # télécharge le binaire Go de lefthook
+  prisma: true # postinstall du CLI
