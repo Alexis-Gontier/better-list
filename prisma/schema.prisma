@@ -1,0 +1,584 @@
+// Better-List — schéma de données
+//
+// Le modèle de domaine et ses justifications sont dans docs/PRODUCT.md §4. Ce fichier en est la
+// traduction, pas la source : une décision de modélisation se prend là-bas, puis se code ici.
+//
+// Trois séparations gouvernent tout le reste :
+//   - le miroir AniList (Media) et les données utilisateur, parce que le quota AniList interdit
+//     de lire l'API à chaque affichage (§4.1) ;
+//   - l'état (Entry, écrasé) et la mémoire (EntryEvent, append-only) (§4.2, §4.3) ;
+//   - la collection d'une liste (List/ListItem) et son arrangement (ListView) (§4.4).
+
+generator client {
+  provider = "prisma-client"
+  // Sous `src/` pour rester joignable par l'alias unique `@/*` (docs/ARCHITECTURE.md).
+  // Généré, donc gitignoré et exclu de Biome comme de knip.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Pas d'`url` ici : Prisma 7 la lit dans prisma.config.ts, et le runtime passe par le driver
+  // adapter (@prisma/adapter-pg).
+}
+
+// =============================================================================
+// Énumérations — catalogue
+// =============================================================================
+
+enum MediaType {
+  ANIME
+  MANGA
+}
+
+enum MediaFormat {
+  TV
+  TV_SHORT
+  MOVIE
+  SPECIAL
+  OVA
+  ONA
+  MUSIC
+  MANGA
+  NOVEL
+  ONE_SHOT
+}
+
+enum MediaStatus {
+  FINISHED
+  RELEASING
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+enum MediaSeason {
+  WINTER
+  SPRING
+  SUMMER
+  FALL
+}
+
+// =============================================================================
+// Énumérations — utilisateur
+// =============================================================================
+
+/// Liste d'attente (§7.1). Un compte naît PENDING : l'inscription est ouverte, l'accès non.
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Échelle d'affichage des notes. Le stockage reste sur 0–100 quoi qu'il arrive (§4.2).
+enum ScoreFormat {
+  POINT_100
+  POINT_10
+  POINT_5
+}
+
+enum TitleLanguage {
+  ROMAJI
+  ENGLISH
+  NATIVE
+}
+
+// =============================================================================
+// Énumérations — suivi
+// =============================================================================
+
+/// Calqué sur `MediaListStatus` d'AniList, pour qu'un import reste une correspondance triviale.
+enum EntryStatus {
+  CURRENT
+  PLANNING
+  COMPLETED
+  PAUSED
+  DROPPED
+  REPEATING
+}
+
+enum EntryEventType {
+  PROGRESS
+  STATUS_CHANGED
+  SCORED
+  NOTE
+  REPEAT_STARTED
+}
+
+// =============================================================================
+// Énumérations — listes et collection
+// =============================================================================
+
+enum ListVisibility {
+  PRIVATE
+  UNLISTED
+}
+
+enum ListViewType {
+  RANKED
+  TIERS
+  GRID
+}
+
+enum VolumeCondition {
+  NEW
+  GOOD
+  WORN
+  DAMAGED
+}
+
+// =============================================================================
+// Better Auth
+// =============================================================================
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  /// Identifiant public, alimenté depuis le login GitHub à la création du compte.
+  /// Porte l'URL de profil `/u/[username]`.
+  username String @unique
+
+  /// Liste d'attente : la garde du layout `(app)` refuse tout ce qui n'est pas APPROVED.
+  status UserStatus @default(PENDING)
+
+  sessions    Session[]
+  accounts    Account[]
+  preferences UserPreferences?
+
+  entries      Entry[]
+  entryEvents  EntryEvent[]
+  lists        List[]
+  ownedVolumes OwnedVolume[]
+  /// Tomes qu'on m'a prêtés — l'inverse de `OwnedVolume.lentTo`.
+  borrowed     OwnedVolume[] @relation("VolumeBorrower")
+
+  @@index([status])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// Compteurs du limiteur de débit de Better Auth (`rateLimit.storage: "database"`).
+///
+/// **Table imposée, pas choisie** : sa forme est dictée par `getAuthTables()` de Better Auth
+/// (`key` unique, `count`, `lastRequest` en millisecondes epoch — donc `BigInt`, un `Int` déborde
+/// en 2038). Ne rien y ajouter : c'est Better Auth qui écrit ces lignes, et lui seul.
+///
+/// Elle existe parce que le stockage par défaut est `"memory"`, ce qui sur Vercel veut dire un
+/// compteur par instance de fonction, remis à zéro à chaque démarrage à froid — une limite qui
+/// n'existe que sur le papier. Better Auth purge lui-même les lignes périmées.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}
+
+// =============================================================================
+// Limitation de débit applicative
+// =============================================================================
+
+/// Compteurs des routes applicatives — table distincte de `RateLimit`, à dessein.
+///
+/// Partager la table de Better Auth serait plus court d'un modèle et faux à terme : sa purge
+/// supprime *toutes* les lignes plus vieilles que sa propre fenêtre (`rateLimit.window`), donc
+/// baisser cette valeur dans `src/lib/auth/server.ts` raccourcirait en silence des fenêtres qui
+/// n'ont rien à voir avec l'authentification. Deux systèmes, deux tables, aucun couplage invisible.
+///
+/// `key` porte la primaire : contrairement à Better Auth, c'est notre code qui écrit ici, et une
+/// clé de substitution n'apporterait rien qu'une jointure d'unicité de plus.
+///
+/// **Pas de purge, et c'est une conséquence de la forme des clés** : elles valent
+/// `"<quoi>:<userId>"`, donc la table compte au plus une ligne par compte et par route limitée —
+/// une poignée, réécrites sur place. Le jour où une clé serait dérivée d'une IP ou d'un terme de
+/// recherche, cette table deviendrait non bornée et il faudrait balayer les lignes périmées.
+model ApiRateLimit {
+  /// Ce qu'on compte et pour qui — `"command:<userId>"`.
+  key         String   @id
+  count       Int
+  /// Début de la fenêtre courante. Fenêtre fixe : au-delà, la ligne repart de 1.
+  windowStart DateTime
+
+  @@map("api_rate_limit")
+}
+
+model UserPreferences {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  scoreFormat   ScoreFormat   @default(POINT_10)
+  titleLanguage TitleLanguage @default(ROMAJI)
+  /// Filtre 18+. Appliqué côté serveur, jamais par un masque d'affichage.
+  includeAdult  Boolean       @default(false)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+// =============================================================================
+// Miroir AniList (§4.1)
+// =============================================================================
+
+/// Copie locale du catalogue AniList.
+///
+/// N'existe pas pour faire joli : AniList plafonne à 30 requêtes/minute sur une IP serveur
+/// partagée par tous les visiteurs. Sans cette table, afficher une bibliothèque de 600 titres est
+/// impossible, et trier par note ou par année ne l'est pas moins.
+///
+/// On n'y stocke que ce qui sert à afficher une carte et à trier. Le synopsis, les relations, les
+/// personnages et les liens de streaming restent des lectures AniList à la volée, mises en cache
+/// par `"use cache"`.
+model Media {
+  /// L'id AniList **est** la clé primaire : pas de clé de substitution, il n'y a rien à arbitrer.
+  id Int @id
+
+  type            MediaType
+  format          MediaFormat?
+  status          MediaStatus?
+  /// Code ISO 3166-1 alpha-2. Distingue manga (JP), manhwa (KR), manhua (CN).
+  countryOfOrigin String?      @db.Char(2)
+
+  titleRomaji  String?
+  titleEnglish String?
+  titleNative  String?
+
+  coverImage  String?
+  /// Couleur dominante de la jaquette, fournie par AniList — sert aux dégradés de fiche.
+  coverColor  String? @db.VarChar(9)
+  bannerImage String?
+
+  episodes Int?
+  chapters Int?
+  volumes  Int?
+
+  season     MediaSeason?
+  seasonYear Int?
+
+  genres    String[]
+  meanScore Int?
+  isAdult   Boolean  @default(false)
+
+  /// Dernier rafraîchissement depuis AniList. Pilote la péremption : 30 jours pour une œuvre
+  /// terminée, 12 heures pour une œuvre en cours de diffusion (cron).
+  syncedAt DateTime @default(now())
+
+  entries   Entry[]
+  listItems ListItem[]
+  editions  Edition[]
+
+  @@index([type, status])
+  @@index([seasonYear, season])
+  /// Sert au cron de rafraîchissement : trouver les fiches périmées sans balayer la table.
+  @@index([status, syncedAt])
+  @@map("media")
+}
+
+// =============================================================================
+// Suivi (§4.2) et mémoire (§4.3)
+// =============================================================================
+
+/// Où j'en suis. Une ligne par couple (utilisateur, œuvre), écrasée à chaque modification.
+model Entry {
+  id String @id @default(cuid())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId Int
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  status EntryStatus @default(PLANNING)
+
+  /// Curseur, pas un ensemble : « j'en suis à l'épisode 14 ». On lit dans l'ordre, on ne coche
+  /// pas des épisodes isolés — c'est l'inverse de `OwnedVolume`, où l'on peut posséder le 1 et
+  /// le 3 sans le 2.
+  progress        Int  @default(0)
+  progressVolumes Int?
+
+  /// Stockée sur 0–100 quelle que soit l'échelle affichée, pour ne jamais perdre de précision.
+  score Int?
+
+  repeatCount Int       @default(0)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  notes       String?
+  favorite    Boolean   @default(false)
+  private     Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events EntryEvent[]
+
+  @@unique([userId, mediaId])
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+  @@map("entries")
+}
+
+/// Ce qui s'est passé, et quand. **Append-only : on insère, on ne modifie jamais.**
+///
+/// Sans cette table, relancer une série écrase la date de début du premier visionnage, qui n'est
+/// alors reconstructible depuis rien. C'est elle qui porte la timeline, le récap annuel et
+/// l'historique des notes.
+model EntryEvent {
+  id String @id @default(cuid())
+
+  entryId String
+  entry   Entry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  /// Dupliqué depuis `Entry` à dessein : la timeline et le récap annuel se lisent « tous mes
+  /// événements de 2026, par date ». Sans cette colonne, chaque lecture impose une jointure.
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type EntryEventType
+
+  /// Un `PROGRESS` enregistre un **déplacement du curseur**, pas un épisode : passer de 5 à 20
+  /// produit un seul événement, et « 15 épisodes ce jour-là » se déduit de la soustraction.
+  progressFrom Int?
+  progressTo   Int?
+
+  statusFrom EntryStatus?
+  statusTo   EntryStatus?
+
+  score Int?
+  note  String?
+
+  /// Pas d'`updatedAt` : un journal qui se modifie n'est plus un journal.
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entryId, createdAt])
+  @@map("entry_events")
+}
+
+// =============================================================================
+// Listes (§4.4)
+// =============================================================================
+
+/// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
+model List {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  title       String
+  slug        String
+  description String?
+  visibility  ListVisibility @default(PRIVATE)
+  isTemplate  Boolean        @default(false)
+
+  forkedFromId String?
+  forkedFrom   List?   @relation("ListFork", fields: [forkedFromId], references: [id], onDelete: SetNull)
+  forks        List[]  @relation("ListFork")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ListItem[]
+  views ListView[]
+
+  @@unique([ownerId, slug])
+  @@index([visibility])
+  @@map("lists")
+}
+
+model ListItem {
+  id String @id @default(cuid())
+
+  listId  String
+  list    List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  mediaId Int
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  /// Index fractionnaire (`fractional-indexing`), pas un entier : réordonner par glisser-déposer
+  /// ne met à jour qu'une seule ligne au lieu de renuméroter toute la liste.
+  rank String
+  note String?
+
+  addedAt DateTime @default(now())
+
+  viewItems ListViewItem[]
+
+  /// Une œuvre n'apparaît qu'une fois dans une liste.
+  @@unique([listId, mediaId])
+  @@index([listId, rank])
+  @@map("list_items")
+}
+
+/// L'arrangement : une manière de regarder une liste.
+///
+/// Une tier list n'est pas une liste concurrente, c'est une vue posée sur une liste existante.
+/// C'est ce qui permet d'ajouter un format plus tard (bracket, tournoi) sans recopier le contenu
+/// ni migrer quoi que ce soit.
+model ListView {
+  id String @id @default(cuid())
+
+  listId String
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  name String
+  type ListViewType @default(RANKED)
+
+  /// Les paliers d'une tier list : `[{ label: "S", color: "#ff7f7f" }, …]`. En JSON parce que
+  /// c'est une liste ordonnée courte, lue et écrite d'un bloc, jamais requêtée par palier.
+  tiers Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ListViewItem[]
+
+  @@index([listId])
+  @@map("list_views")
+}
+
+model ListViewItem {
+  id String @id @default(cuid())
+
+  viewId String
+  view   ListView @relation(fields: [viewId], references: [id], onDelete: Cascade)
+
+  listItemId String
+  listItem   ListItem @relation(fields: [listItemId], references: [id], onDelete: Cascade)
+
+  /// Index dans `ListView.tiers`. `null` = pas encore classé.
+  tierIndex Int?
+  rank      String
+
+  @@unique([viewId, listItemId])
+  @@index([viewId, tierIndex, rank])
+  @@map("list_view_items")
+}
+
+// =============================================================================
+// Collection physique (§4.5)
+// =============================================================================
+
+/// Une parution physique d'une œuvre : « Glénat, édition simple », « perfect edition », un
+/// coffret, la VO.
+///
+/// **Partagée entre les comptes**, volontairement : si chacun saisissait son propre libellé, deux
+/// membres ne parleraient pas du même objet et le prêt comme la comparaison n'auraient plus de
+/// sens. Créée par le premier qui en a besoin, réutilisée par les autres.
+model Edition {
+  id String @id @default(cuid())
+
+  mediaId Int
+  media   Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  label     String
+  publisher String?
+
+  /// Nombre de tomes de **cette** édition — 72 en édition simple, 27 en Hokage édition. Saisi à
+  /// la main : AniList ne fournit aucune donnée au niveau du tome.
+  volumesTotal Int?
+  isCompleted  Boolean @default(false)
+
+  /// L'édition créée automatiquement à la première saisie sur une œuvre, pour qu'il n'y ait rien
+  /// à remplir dans le cas courant.
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  volumes OwnedVolume[]
+
+  @@unique([mediaId, label])
+  @@index([mediaId])
+  @@map("editions")
+}
+
+/// Un tome précis, sur l'étagère de quelqu'un. **Personnelle**, contrairement à `Edition`.
+///
+/// Une ligne par tome possédé : c'est ce qui permet de représenter un trou — avoir le 1 et le 3
+/// sans le 2 — et donc de répondre à « il me manque lesquels ? ». La saisie, elle, se fait par
+/// plage.
+model OwnedVolume {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  editionId String
+  edition   Edition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+
+  number Int
+
+  acquiredAt DateTime?
+  price      Decimal?         @db.Decimal(8, 2)
+  condition  VolumeCondition?
+  notes      String?
+
+  /// Prêté à un autre membre du cercle. Le tome reste à moi, il n'est juste pas chez moi.
+  lentToId String?
+  lentTo   User?     @relation("VolumeBorrower", fields: [lentToId], references: [id], onDelete: SetNull)
+  lentAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, editionId, number])
+  @@index([userId])
+  @@index([editionId])
+  @@index([lentToId])
+  @@map("owned_volumes")
+}
