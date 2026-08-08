@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm knip*)",
+      "Bash(pnpm install*)",
+      "Bash(pnpm exec tsc*)",
+      "Bash(pnpm exec biome*)",
+      "Bash(pnpm exec knip*)",
+      "Bash(pnpm exec lefthook*)",
+      "Bash(pnpm dlx shadcn*)",
+      "Bash(pnpm prisma*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/conventions-guard.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Conventions"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/biome-format.mjs\"",
+            "timeout": 20,
+            "statusMessage": "Biome"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "prisma@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    }
+  }
+}

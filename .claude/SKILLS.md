@@ -1,0 +1,55 @@
+# Skills du projet — provenance
+
+Il n'existe **aucun fichier de lock pour les skills**. Rien ne s'écrit automatiquement quand on
+ajoute une skill : une skill est un dossier avec un `SKILL.md`, sans version, sans somme de
+contrôle, sans trace de son origine. (Les *plugins*, eux, sont suivis dans
+`~/.claude/plugins/installed_plugins.json` avec version et commit — mais c'est un fichier
+personnel, propre à la machine, qui ne voyage pas avec le dépôt.)
+
+**Copier une skill dans `.claude/skills/` **est** donc le mécanisme de lock** : le contenu est
+figé et versionné avec le projet. C'est le choix retenu ici, pour que le dépôt suffise sur une
+machine neuve. La contrepartie est que ces copies ne recevront jamais les corrections amont.
+
+Ce fichier remplace le lock manquant : il dit d'où vient chaque skill et quand elle a été copiée.
+**À mettre à jour à chaque ajout ou rafraîchissement d'une skill.**
+
+## Propres au projet — aucune source externe
+
+| Skill | Rôle |
+| --- | --- |
+| `new-feature` | Créer une feature selon `docs/ARCHITECTURE.md` |
+| `anilist-read` | Ajouter une lecture AniList : document, schéma, cache, quota |
+
+## Copies figées de skills externes
+
+Copiées depuis les skills personnelles (`~/.claude/skills/`) le **7 août 2026**.
+
+| Skill | Origine |
+| --- | --- |
+| `better-auth-best-practices` | Better Auth |
+| `better-auth-security-best-practices` | Better Auth |
+| `create-auth` | Better Auth |
+| `email-and-password-best-practices` | Better Auth |
+| `prisma-cli` | Prisma |
+| `prisma-client-api` | Prisma |
+| `prisma-database-setup` | Prisma |
+| `upfetch` | up-fetch |
+
+Ces huit-là existent aussi en version personnelle sur la machine actuelle, donc **en double dans
+la liste des skills**. Le doublon est le prix de la portabilité : il est assumé, pas accidentel.
+
+### Rafraîchir une copie
+
+```bash
+cp -r ~/.claude/skills/<nom> .claude/skills/<nom>
+```
+
+Puis mettre à jour la date ci-dessus. À faire quand la bibliothèque sous-jacente change de version
+majeure — Better Auth, Prisma, up-fetch — pas au fil de l'eau.
+
+## Agents
+
+| Agent | Rôle |
+| --- | --- |
+| `convention-reviewer` | Relit un diff contre `ARCHITECTURE.md` et `PRODUCT.md` |
+| `next-docs` | Répond sur Next 16 depuis `node_modules/next/dist/docs/` |
