@@ -1,0 +1,81 @@
+import { routes } from "@/config/routes";
+
+/**
+ * Structure de la navigation principale, construite à partir de `routes`.
+ *
+ * Ce fichier ne contient aucune URL en dur : un chemin qui n'existe pas dans `routes.ts` n'a rien
+ * à faire dans la nav.
+ *
+ * Elle suit la carte de `docs/PRODUCT.md` §5 — deux entrées de découverte (chercher, parcourir)
+ * et trois espaces personnels (bibliothèque, listes, collection). Il n'y a **pas** de section de
+ * découverte sociale : le cercle est privé, il n'y a pas de communauté à explorer.
+ */
+
+export type NavLink = {
+  href: string;
+  label: string;
+  description: string;
+};
+
+export type NavSection = {
+  href: string;
+  label: string;
+  links: NavLink[];
+};
+
+export const mainNav: NavSection[] = [
+  {
+    href: routes.browse,
+    label: "Découvrir",
+    links: [
+      {
+        href: routes.search,
+        label: "Rechercher",
+        description: "Trouver un anime, un manga, un webtoon, un light novel.",
+      },
+      {
+        href: routes.browse,
+        label: "Parcourir",
+        description: "La saison en cours, les tendances, les mieux notés.",
+      },
+      {
+        href: routes.calendar,
+        label: "Planning",
+        description: "Les épisodes à venir de ce que vous suivez.",
+      },
+    ],
+  },
+  {
+    href: routes.library,
+    label: "Ma bibliothèque",
+    links: [
+      {
+        href: routes.library,
+        label: "Suivi",
+        description: "En cours, à reprendre, terminés, prévus.",
+      },
+      {
+        href: routes.lists.root,
+        label: "Mes listes",
+        description: "Classements, tier lists, sélections en tout genre.",
+      },
+      {
+        href: routes.collection.root,
+        label: "Ma collection",
+        description: "Les tomes que je possède, et ceux qui me manquent.",
+      },
+    ],
+  },
+];
+
+/**
+ * Routes accessibles sans compte approuvé.
+ *
+ * Sert de source unique à `src/proxy.ts` **et** à la garde du layout `(app)` : deux listes
+ * distinctes finiraient par diverger, et la divergence ouvrirait un trou d'accès.
+ */
+export const publicRoutes: string[] = [
+  routes.auth.login,
+  routes.auth.signup,
+  routes.auth.waitlist,
+];
