@@ -1,10 +1,13 @@
 import "server-only";
 
+import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import type { EntryEventView } from "@/features/tracking/lib/entry-format";
-import type {
-  LibraryFilterValues,
-  LibrarySort,
+import {
+  LIBRARY_STATUS_ORDER,
+  type LibraryFilterValues,
+  type LibrarySort,
 } from "@/features/tracking/lib/library-params";
+import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import type { Prisma } from "@/generated/prisma/client";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
@@ -22,6 +25,30 @@ import { prisma } from "@/lib/db/prisma";
  */
 
 /**
+ * Les colonnes qui forment **exactement** `EntryState` (`lib/entry-transition.ts`), ni plus ni
+ * moins.
+ *
+ * L'égalité est une contrainte, pas une commodité. La transition construit son résultat par
+ * `{ ...base, ...changements }` et la Server Action réécrit cet objet tel quel : une colonne de plus
+ * ici — `id`, `createdAt`, `updatedAt` — repartirait dans le `update`, où elle écraserait la date de
+ * modification automatique et rendrait la clé primaire modifiable par accident.
+ *
+ * Partagé par les quatre lectures qui ont besoin de l'état complet, dont l'écriture : c'est le seul
+ * moyen que la liste ne dérive pas d'un appelant à l'autre.
+ */
+export const ENTRY_STATE_SELECT = {
+  status: true,
+  progress: true,
+  progressVolumes: true,
+  score: true,
+  favorite: true,
+  notes: true,
+  repeatCount: true,
+  startedAt: true,
+  finishedAt: true,
+} as const;
+
+/**
  * Le suivi de l'utilisateur courant sur une œuvre, ou `null` s'il n'en a aucun.
  *
  * L'identifiant vient de la session, **jamais d'un argument** : une signature
@@ -34,18 +61,7 @@ export async function getEntryForMedia(mediaId: number) {
 
   return prisma.entry.findUnique({
     where: { userId_mediaId: { userId: session.user.id, mediaId } },
-    select: {
-      status: true,
-      progress: true,
-      progressVolumes: true,
-      score: true,
-      favorite: true,
-      notes: true,
-      repeatCount: true,
-      startedAt: true,
-      finishedAt: true,
-      updatedAt: true,
-    },
+    select: { ...ENTRY_STATE_SELECT, updatedAt: true },
   });
 }
 
@@ -105,10 +121,83 @@ export async function getEntryTimeline(
 }
 
 /**
- * Taille d'une page de bibliothèque. Six colonnes au plus large, quatre rangées : une page pleine
- * remplit l'écran sans le dépasser de beaucoup.
+ * Taille d'une page de bibliothèque — la même que celle du catalogue, et pour la même raison
+ * géométrique (`config/catalogue.ts`) : six colonnes au plus large, quatre rangées pleines.
  */
-export const LIBRARY_PAGE_SIZE = 24;
+export const LIBRARY_PAGE_SIZE = CATALOGUE_PAGE_SIZE;
+
+/**
+ * Le `where` d'une bibliothèque, dérivé des filtres d'URL. Partagé par la page de résultats **et**
+ * par les compteurs d'onglets, et c'est le point : un compteur calculé sur un autre périmètre que
+ * la grille annoncerait « 12 » au-dessus d'une liste de trois.
+ *
+ * Le statut en est **volontairement absent** — l'appelant l'ajoute ou non. Les onglets comptent
+ * chaque statut sous les autres filtres ; les résultats comptent le statut choisi en plus.
+ *
+ * La recherche porte sur les trois colonnes de titre du miroir, comme la palette de commandes. Le
+ * titre natif se cherche sans `insensitive` : la casse n'existe pas en japonais, et l'insensibilité
+ * coûterait un balayage sans rien apporter.
+ */
+function libraryWhere(
+  userId: string,
+  { q, type }: Pick<LibraryFilterValues, "q" | "type">,
+): Prisma.EntryWhereInput {
+  const search = q.trim();
+
+  return {
+    userId,
+    ...((type || search) && {
+      media: {
+        ...(type && { type }),
+        ...(search && {
+          OR: [
+            { titleRomaji: { contains: search, mode: "insensitive" } },
+            { titleEnglish: { contains: search, mode: "insensitive" } },
+            { titleNative: { contains: search } },
+          ],
+        }),
+      },
+    }),
+  };
+}
+
+/**
+ * Combien d'œuvres sous chaque statut, **dans le contexte courant**.
+ *
+ * Un `groupBy` et non six `count` : c'est une seule requête, et elle rend exactement les statuts
+ * qui ont au moins une ligne. Les autres valent zéro, ce que l'appelant retrouve sans avoir à les
+ * demander.
+ *
+ * Les compteurs héritent du type et de la recherche mais **jamais du statut** : un onglet doit dire
+ * ce qu'on trouverait en cliquant dessus, pas ce qu'on voit déjà. Sans ça, tous les onglets sauf
+ * l'actif afficheraient zéro.
+ */
+export async function getLibraryStatusCounts(
+  filters: Pick<LibraryFilterValues, "q" | "type">,
+): Promise<{ byStatus: Record<EntryStatus, number>; total: number }> {
+  const empty = Object.fromEntries(
+    LIBRARY_STATUS_ORDER.map((status) => [status, 0]),
+  ) as Record<EntryStatus, number>;
+
+  const session = await getSession();
+  if (!session) return { byStatus: empty, total: 0 };
+
+  const groups = await prisma.entry.groupBy({
+    by: ["status"],
+    where: libraryWhere(session.user.id, filters),
+    _count: { _all: true },
+  });
+
+  const byStatus = { ...empty };
+  let total = 0;
+
+  for (const group of groups) {
+    byStatus[group.status] = group._count._all;
+    total += group._count._all;
+  }
+
+  return { byStatus, total };
+}
 
 /**
  * Traductions des tris en `orderBy` Prisma.
@@ -143,6 +232,7 @@ const LIBRARY_ORDER_BY: Record<
  * Comme les autres lectures du domaine, l'identifiant vient de la session et jamais d'un argument.
  */
 export async function getLibrary({
+  q,
   status,
   type,
   sort,
@@ -154,9 +244,8 @@ export async function getLibrary({
   }
 
   const where: Prisma.EntryWhereInput = {
-    userId: session.user.id,
+    ...libraryWhere(session.user.id, { q, type }),
     ...(status && { status }),
-    ...(type && { media: { type } }),
   };
 
   const total = await prisma.entry.count({ where });
@@ -176,11 +265,14 @@ export async function getLibrary({
     take: LIBRARY_PAGE_SIZE,
     select: {
       id: true,
-      status: true,
-      progress: true,
-      score: true,
-      favorite: true,
       updatedAt: true,
+      /**
+       * **L'état complet, et pas seulement ce que la vignette affiche.** Chaque carte porte la
+       * fenêtre d'édition du suivi, qui édite les mêmes champs que le panneau de la fiche : sans
+       * eux, ouvrir la fenêtre coûterait un aller-retour par carte. Ce sont des colonnes d'une
+       * ligne déjà chargée — le surcoût est celui de leur sérialisation, pas d'une requête.
+       */
+      ...ENTRY_STATE_SELECT,
       media: {
         select: {
           id: true,
@@ -191,10 +283,20 @@ export async function getLibrary({
           titleEnglish: true,
           titleNative: true,
           coverImage: true,
+          // Pour l'en-tête de la fenêtre d'édition, qui ouvre sur une bande d'image.
+          bannerImage: true,
           episodes: true,
           chapters: true,
           meanScore: true,
           isAdult: true,
+          /**
+           * Les genres ne servent qu'à la surcouche de survol de la vignette — mais ils sont déjà
+           * dans le miroir, donc les lire ne coûte qu'une colonne de tableau déjà chargé. C'est
+           * exactement le genre de champ pour lequel la table `Media` existe (docs/PRODUCT.md §4.1)
+           * plutôt qu'un aller-retour AniList par affichage.
+           */
+          genres: true,
+          seasonYear: true,
         },
       },
     },
@@ -293,6 +395,8 @@ const DASHBOARD_MEDIA_SELECT = {
   titleEnglish: true,
   titleNative: true,
   coverImage: true,
+  // Pour l'en-tête de la fenêtre d'édition, qui ouvre sur une bande d'image.
+  bannerImage: true,
   episodes: true,
   chapters: true,
   meanScore: true,
@@ -300,21 +404,24 @@ const DASHBOARD_MEDIA_SELECT = {
 } as const;
 
 /**
- * Le tableau de bord : ce que je regarde, ce que j'ai laissé en plan, ce que j'ai fait récemment.
+ * Le suivi tel que l'accueil le montre : ce que je regarde, ce que j'ai laissé en plan.
  *
- * **Une seule fonction et un seul `Promise.all`**, là où la bibliothèque n'en demandait qu'un. Ces
- * quatre lectures sont indépendantes et toutes locales ; les séquencer ajouterait trois allers-
- * retours pour rien, et les éclater en trois composants suspendus ferait relire la session trois
- * fois.
+ * **Un seul `Promise.all`** : ces trois lectures sont indépendantes et toutes locales, les
+ * séquencer ajouterait deux allers-retours pour rien.
  *
- * Les deux premières sections sont **disjointes par construction** : une série en cours touchée il
- * y a moins de trente jours est « en cours », au-delà elle est « à reprendre ». Sans cette coupure,
- * la même œuvre s'afficherait deux fois sur un écran qui tient en une hauteur de page.
+ * Le journal, lui, a quitté cette fonction quand l'accueil est devenu un melting-pot : il s'affiche
+ * désormais **après** les rangées de découverte, donc dans une autre frontière de suspension.
+ * Le coût de la séparation est nul — `getSession` porte le `cache` de React, et les deux lectures
+ * partent en parallèle puisque les frontières sont sœurs.
+ *
+ * Les deux sections sont **disjointes par construction** : une série en cours touchée il y a moins
+ * de trente jours est « en cours », au-delà elle est « à reprendre ». Sans cette coupure, la même
+ * œuvre s'afficherait deux fois sur un écran qui tient en une hauteur de page.
  */
 export async function getDashboard() {
   const session = await getSession();
   if (!session) {
-    return { current: [], stalled: [], activity: [], total: 0 };
+    return { current: [], stalled: [], total: 0 };
   }
 
   const userId = session.user.id;
@@ -322,15 +429,16 @@ export async function getDashboard() {
     Date.now() - STALLED_AFTER_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  const [current, stalled, activity, total] = await Promise.all([
+  const [current, stalled, total] = await Promise.all([
     prisma.entry.findMany({
       where: { userId, status: "CURRENT", updatedAt: { gte: stalledBefore } },
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       take: DASHBOARD_CURRENT_COUNT,
+      // L'état complet, pour la même raison que la bibliothèque : ces vignettes portent la fenêtre
+      // d'édition du suivi.
       select: {
         id: true,
-        status: true,
-        progress: true,
+        ...ENTRY_STATE_SELECT,
         media: { select: DASHBOARD_MEDIA_SELECT },
       },
     }),
@@ -349,50 +457,122 @@ export async function getDashboard() {
       take: DASHBOARD_STALLED_COUNT,
       select: {
         id: true,
-        status: true,
-        progress: true,
         updatedAt: true,
+        ...ENTRY_STATE_SELECT,
         media: { select: DASHBOARD_MEDIA_SELECT },
-      },
-    }),
-
-    /**
-     * Le journal de **toutes** les œuvres — la lecture que l'index `[userId, createdAt]` de
-     * `EntryEvent` attendait (prisma/schema.prisma). C'est aussi le brouillon de la timeline du
-     * profil : même requête, sans le `take`.
-     */
-    prisma.entryEvent.findMany({
-      where: { userId },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: DASHBOARD_ACTIVITY_COUNT,
-      select: {
-        id: true,
-        type: true,
-        progressFrom: true,
-        progressTo: true,
-        statusFrom: true,
-        statusTo: true,
-        score: true,
-        note: true,
-        createdAt: true,
-        entry: {
-          select: {
-            media: {
-              select: {
-                id: true,
-                type: true,
-                titleRomaji: true,
-                titleEnglish: true,
-                titleNative: true,
-              },
-            },
-          },
-        },
       },
     }),
 
     prisma.entry.count({ where: { userId } }),
   ]);
 
-  return { current, stalled, activity, total };
+  return { current, stalled, total };
+}
+
+/**
+ * Les statuts qui ont une raison de figurer au planning.
+ *
+ * `CURRENT` et `REPEATING` vont de soi. `PLANNING` aussi, et c'est le seul qui se discute : savoir
+ * qu'une série qu'on s'est promise commence lundi est exactement ce qu'un planning doit dire.
+ *
+ * `PAUSED` et `DROPPED` en sont **volontairement absents**. Ce sont des séries qu'on a décidé
+ * d'arrêter : les remettre chaque semaine sous les yeux transformerait le planning en reproche.
+ * L'écran « à reprendre » de l'accueil est fait pour elles, et il compte les mois plutôt que les
+ * épisodes (docs/PRODUCT.md §8.4).
+ */
+const AIRING_STATUSES = ["CURRENT", "PLANNING", "REPEATING"] as const;
+
+/**
+ * Combien d'œuvres suivies le planning interroge au plus.
+ *
+ * Ces ids partent dans `mediaId_in` chez AniList : la borne protège la longueur de la requête et le
+ * nombre de pages qu'elle peut ramener. Deux cents séries en cours de diffusion sur un même compte
+ * n'existent pas — c'est une ceinture, pas une politique.
+ */
+const AIRING_MEDIA_LIMIT = 200;
+
+/**
+ * Mes œuvres susceptibles d'être diffusées cette semaine.
+ *
+ * Tout vient du **miroir local** : c'est lui qui porte les jaquettes, les titres et les plafonds
+ * (docs/PRODUCT.md §4.1), donc la grille horaire d'AniList n'a plus qu'à répondre « quel épisode, à
+ * quelle heure » — et la page ne dépend d'AniList que pour ça.
+ *
+ * Le filtre sur le statut de l'œuvre est ce qui garde la requête sortante petite : une série
+ * terminée n'a pas de diffusion à venir, et l'inclure dépenserait une place d'`id_in` pour rien.
+ * **Un statut inconnu (`null`) reste dans le lot**, pour la même raison qu'il est traité comme
+ * volatile par le cron de fraîcheur (`media-freshness.ts`) : on ne sait pas ce qu'est l'œuvre, donc
+ * l'écarter reviendrait à décider qu'elle ne sort jamais.
+ *
+ * Comme les autres lectures du domaine, l'identifiant vient de la session et jamais d'un argument.
+ */
+export async function getAiringEntries() {
+  const session = await getSession();
+  if (!session) return [];
+
+  return prisma.entry.findMany({
+    where: {
+      userId: session.user.id,
+      status: { in: [...AIRING_STATUSES] },
+      media: {
+        // Un manga n'a pas de grille horaire chez AniList : `airingSchedules` ne concerne que
+        // l'animation.
+        type: "ANIME",
+        OR: [
+          { status: { in: ["RELEASING", "NOT_YET_RELEASED", "HIATUS"] } },
+          { status: null },
+        ],
+      },
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: AIRING_MEDIA_LIMIT,
+    select: {
+      id: true,
+      status: true,
+      progress: true,
+      media: { select: DASHBOARD_MEDIA_SELECT },
+    },
+  });
+}
+
+/**
+ * Le journal de **toutes** les œuvres — la lecture que l'index `[userId, createdAt]` de
+ * `EntryEvent` attendait (prisma/schema.prisma). C'est aussi le brouillon de la timeline du
+ * profil : même requête, sans le `take`.
+ *
+ * Comme les autres lectures du domaine, l'identifiant vient de la session et jamais d'un argument.
+ */
+export async function getRecentActivity(take = DASHBOARD_ACTIVITY_COUNT) {
+  const session = await getSession();
+  if (!session) return [];
+
+  return prisma.entryEvent.findMany({
+    where: { userId: session.user.id },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take,
+    select: {
+      id: true,
+      type: true,
+      progressFrom: true,
+      progressTo: true,
+      statusFrom: true,
+      statusTo: true,
+      score: true,
+      note: true,
+      createdAt: true,
+      entry: {
+        select: {
+          media: {
+            select: {
+              id: true,
+              type: true,
+              titleRomaji: true,
+              titleEnglish: true,
+              titleNative: true,
+            },
+          },
+        },
+      },
+    },
+  });
 }

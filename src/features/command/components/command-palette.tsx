@@ -99,8 +99,8 @@ type PaletteSection = {
  * URL périmée envoie sur une 404 sans que rien ne le signale au build.
  */
 const navigation = [
+  { href: routes.home, label: "Accueil", icon: CompassIcon },
   { href: routes.search, label: "Rechercher", icon: SearchIcon },
-  { href: routes.browse, label: "Parcourir", icon: CompassIcon },
   { href: routes.library, label: "Bibliothèque", icon: LibraryIcon },
   { href: routes.lists.root, label: "Mes listes", icon: ListPlusIcon },
   { href: routes.collection.root, label: "Ma collection", icon: LibraryIcon },

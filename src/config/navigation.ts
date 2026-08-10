@@ -6,9 +6,13 @@ import { routes } from "@/config/routes";
  * Ce fichier ne contient aucune URL en dur : un chemin qui n'existe pas dans `routes.ts` n'a rien
  * à faire dans la nav.
  *
- * Elle suit la carte de `docs/PRODUCT.md` §5 — deux entrées de découverte (chercher, parcourir)
- * et trois espaces personnels (bibliothèque, listes, collection). Il n'y a **pas** de section de
- * découverte sociale : le cercle est privé, il n'y a pas de communauté à explorer.
+ * Elle suit la carte de `docs/PRODUCT.md` §5 — la découverte (chercher, planning) et trois espaces
+ * personnels (bibliothèque, listes, collection). Il n'y a **pas** de section de découverte
+ * sociale : le cercle est privé, il n'y a pas de communauté à explorer.
+ *
+ * « Parcourir » a disparu avec `/browse` : le catalogue éditorialisé vit sur l'accueil, qui est déjà
+ * dans l'en-tête. Une entrée de nav de plus pour la même chose aurait fait hésiter entre deux portes
+ * qui mènent au même endroit.
  */
 
 export type NavLink = {
@@ -25,18 +29,14 @@ export type NavSection = {
 
 export const mainNav: NavSection[] = [
   {
-    href: routes.browse,
+    href: routes.search,
     label: "Découvrir",
     links: [
       {
         href: routes.search,
         label: "Rechercher",
-        description: "Trouver un anime, un manga, un webtoon, un light novel.",
-      },
-      {
-        href: routes.browse,
-        label: "Parcourir",
-        description: "La saison en cours, les tendances, les mieux notés.",
+        description:
+          "Trouver un anime, un manga, un webtoon — ou voir les tendances.",
       },
       {
         href: routes.calendar,

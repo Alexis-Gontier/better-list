@@ -1,7 +1,7 @@
 import { CompassIcon } from "lucide-react";
 import Link from "next/link";
 
-import { DashboardSection } from "@/app/(app)/_components/dashboard-section";
+import { DashboardSection } from "@/app/(app)/(home)/_components/dashboard-section";
 import { MediaGrid } from "@/components/shared/media-grid";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,44 +13,97 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { routes } from "@/config/routes";
+import { ListCard } from "@/features/lists/components/list-card";
+import { getMyLists } from "@/features/lists/server/lists.queries";
 import { MediaCard } from "@/features/media/components/media-card";
 import { compactFromMirror } from "@/features/media/lib/media-format";
 import { mediaTotalUnits } from "@/features/media/server/media.mirror";
-import { EntryActivityList } from "@/features/tracking/components/entry-activity-list";
-import { EntryQuickProgress } from "@/features/tracking/components/entry-quick-progress";
+import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
 import {
   ENTRY_STATUS_LABELS,
   formatEntryProgress,
+  formatScore,
   formatSince,
 } from "@/features/tracking/lib/entry-format";
 import { serializeLibraryFilters } from "@/features/tracking/lib/library-params";
 import { getDashboard } from "@/features/tracking/server/tracking.queries";
 
 /**
- * Le tableau de bord (docs/PRODUCT.md §5, V1).
+ * La part personnelle de l'accueil (docs/PRODUCT.md §5).
  *
- * Il n'invente rien : il compose ce que le suivi, le journal et le miroir ont déjà posé. Trois
- * questions, dans l'ordre où on se les pose en ouvrant l'application — qu'est-ce que je regarde,
- * qu'est-ce que j'ai laissé en plan, qu'est-ce que j'ai fait.
+ * Elle n'invente rien : elle compose ce que le suivi et les listes ont déjà posé. Trois questions,
+ * dans l'ordre où on se les pose en ouvrant l'application — qu'est-ce que je regarde, qu'est-ce que
+ * j'ai laissé en plan, qu'est-ce que j'ai rangé quelque part.
  *
- * Une seule frontière de suspension pour les trois sections : les quatre lectures partent ensemble
- * dans `getDashboard`, les séparer n'avancerait rien et ferait relire la session à chaque section.
+ * **Elle passe avant la découverte, et c'est le choix qui structure la page.** Le geste le plus
+ * fréquent du produit est le « +1 » (§6) : le mettre sous des rangées de catalogue le ferait payer
+ * un défilement à chaque ouverture.
+ *
+ * Deux lectures locales en parallèle, une seule frontière de suspension : elles répondent en même
+ * temps et n'ont aucune raison d'arriver séparément. Les rangées AniList, elles, ont leur propre
+ * frontière — voir `discovery.tsx`.
+ *
+ * Le composant rend une **liste de sections**, pas un conteneur : c'est la page qui tient
+ * l'espacement, pour que le suivi, la découverte et le journal respirent de la même façon.
  */
-export async function Dashboard() {
-  const { current, stalled, activity, total } = await getDashboard();
 
-  // Bibliothèque vide : on ne montre pas trois sections vides, on montre la porte d'entrée.
-  if (total === 0) {
+/** Assez de listes pour donner envie d'aller voir, pas assez pour recopier `/lists` ici. */
+const DASHBOARD_LISTS_COUNT = 3;
+
+export async function Dashboard() {
+  const [{ current, stalled, total }, lists] = await Promise.all([
+    getDashboard(),
+    getMyLists(),
+  ]);
+
+  /**
+   * Ce que chaque vignette de suivi porte, à l'identique dans les deux sections : où j'en suis, ce
+   * que j'en ai pensé, et de quoi avancer ou tout corriger sans quitter l'accueil.
+   *
+   * Convertir une note 0–100 en étoiles appartient au suivi (docs/PRODUCT.md §4.2), pas à la
+   * carte : c'est pour ça que la conversion se fait ici et que `MediaCard` ne reçoit qu'une chaîne.
+   */
+  const trackingProps = (entry: (typeof current)[number]) => {
+    const media = compactFromMirror(entry.media);
+    const totalUnits = mediaTotalUnits(entry.media);
+
+    return {
+      media,
+      progress: {
+        value: entry.progress,
+        total: totalUnits,
+        label: formatEntryProgress(entry.progress, totalUnits),
+      },
+      score: entry.score === null ? null : formatScore(entry.score),
+      action: (
+        <EntryCardActions
+          bannerImage={entry.media.bannerImage}
+          entry={entry}
+          media={media}
+          total={totalUnits}
+        />
+      ),
+    };
+  };
+
+  /**
+   * Bibliothèque vide : une seule porte d'entrée, pas trois sections creuses.
+   *
+   * L'encadré ne prend plus toute la page comme au temps du tableau de bord seul — la découverte
+   * s'affiche dessous, et c'est justement elle qui donne de quoi remplir la bibliothèque. On garde
+   * le bouton : la recherche reste le chemin le plus court quand on sait déjà quoi suivre.
+   */
+  if (total === 0 && lists.length === 0) {
     return (
-      <Empty>
+      <Empty className="border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <CompassIcon />
           </EmptyMedia>
           <EmptyTitle>Rien à suivre pour l'instant</EmptyTitle>
           <EmptyDescription>
-            Cherchez une œuvre et marquez-la comme en cours : elle apparaîtra
-            ici, avec ce que vous en aurez fait.
+            Marquez une œuvre comme en cours : elle apparaîtra ici, avec ce que
+            vous en aurez fait. Il y a de quoi piocher juste en dessous.
           </EmptyDescription>
         </EmptyHeader>
 
@@ -64,7 +117,7 @@ export async function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <>
       {current.length > 0 ? (
         <DashboardSection
           href={serializeLibraryFilters(routes.library, {
@@ -78,27 +131,12 @@ export async function Dashboard() {
           <MediaGrid>
             {current.map((entry) => (
               <li key={entry.id}>
-                <MediaCard
-                  action={
-                    <EntryQuickProgress
-                      mediaId={entry.media.id}
-                      progress={entry.progress}
-                      total={mediaTotalUnits(entry.media)}
-                      unit={
-                        entry.media.type === "ANIME" ? "episode" : "chapitre"
-                      }
-                    />
-                  }
-                  media={compactFromMirror(entry.media)}
-                  /**
-                   * Pas de statut ici : la section le dit déjà. Reste la seule information utile
-                   * pour reprendre — où j'en étais.
-                   */
-                  meta={formatEntryProgress(
-                    entry.progress,
-                    mediaTotalUnits(entry.media),
-                  )}
-                />
+                {/*
+                  Aucune ligne de contexte : la section dit déjà le statut, et « où j'en étais » —
+                  la seule information qui reste utile pour reprendre — s'affiche maintenant en
+                  pastille sur la jaquette.
+                */}
+                <MediaCard {...trackingProps(entry)} />
               </li>
             ))}
           </MediaGrid>
@@ -111,17 +149,7 @@ export async function Dashboard() {
             {stalled.map((entry) => (
               <li key={entry.id}>
                 <MediaCard
-                  action={
-                    <EntryQuickProgress
-                      mediaId={entry.media.id}
-                      progress={entry.progress}
-                      total={mediaTotalUnits(entry.media)}
-                      unit={
-                        entry.media.type === "ANIME" ? "episode" : "chapitre"
-                      }
-                    />
-                  }
-                  media={compactFromMirror(entry.media)}
+                  {...trackingProps(entry)}
                   /**
                    * L'ancienneté est ici l'information : « En pause » n'apprend rien, « en pause
                    * depuis huit mois » décide (docs/PRODUCT.md §8.4). Le statut l'accompagne, parce
@@ -139,11 +167,17 @@ export async function Dashboard() {
         </DashboardSection>
       ) : null}
 
-      {activity.length > 0 ? (
-        <DashboardSection title="Activité récente">
-          <EntryActivityList events={activity} />
+      {lists.length > 0 ? (
+        <DashboardSection href={routes.lists.root} title="Mes listes">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {lists.slice(0, DASHBOARD_LISTS_COUNT).map((list) => (
+              <li key={list.id}>
+                <ListCard list={list} />
+              </li>
+            ))}
+          </ul>
         </DashboardSection>
       ) : null}
-    </div>
+    </>
   );
 }
