@@ -14,7 +14,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type {
   Preferences,
-  ScoreFormat,
   TitleLanguage,
 } from "@/features/preferences/schemas/preferences.schema";
 import { updatePreferences } from "@/features/preferences/server/preferences.actions";
@@ -23,18 +22,12 @@ import { updatePreferences } from "@/features/preferences/server/preferences.act
  * Les réglages du compte, un contrôle par ligne.
  *
  * **Chaque contrôle enregistre seul**, comme le panneau de suivi : pas de bouton « Enregistrer ».
- * Trois réglages ne forment pas un formulaire — ils forment trois décisions indépendantes, et un
+ * Deux réglages ne forment pas un formulaire — ils forment deux décisions indépendantes, et un
  * bouton de validation ajouterait une étape à chacune pour rien.
  *
  * L'affichage est optimiste : le sélecteur montre le nouveau choix immédiatement, et le rendu
  * serveur — que l'action revalide en entier — s'aligne ensuite.
  */
-
-const SCORE_FORMAT_OPTIONS: Array<{ value: ScoreFormat; label: string }> = [
-  { value: "POINT_5", label: "5 étoiles" },
-  { value: "POINT_10", label: "10 points" },
-  { value: "POINT_100", label: "100 points" },
-];
 
 const TITLE_LANGUAGE_OPTIONS: Array<{ value: TitleLanguage; label: string }> = [
   { value: "ROMAJI", label: "Romaji (Sousou no Frieren)" },
@@ -79,31 +72,11 @@ export function PreferencesForm({ preferences }: { preferences: Preferences }) {
 
   return (
     <div className="divide-y rounded-lg border bg-card px-4">
-      <Row
-        description="L'échelle utilisée pour afficher et saisir vos notes. Elles sont stockées sur 100 dans tous les cas, donc changer d'échelle ne perd rien."
-        htmlFor="score-format"
-        title="Échelle de notation"
-      >
-        <Select
-          disabled={isPending}
-          onValueChange={(value) =>
-            execute({ scoreFormat: value as ScoreFormat })
-          }
-          value={optimisticState.scoreFormat}
-        >
-          <SelectTrigger className="w-44" id="score-format">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SCORE_FORMAT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Row>
-
+      {/*
+        Pas de réglage d'échelle : les notes sont sur cinq étoiles, demies comprises, pour tout le
+        monde (docs/PRODUCT.md §4.2). Le stockage reste sur cent, donc les notes importées d'AniList
+        gardent leur précision — mais ça ne se règle pas, ça se subit sans y penser.
+      */}
       <Row
         description="AniList ne fournit pas de titre français : le choix se fait entre le romaji, l'anglais et la langue d'origine."
         htmlFor="title-language"

@@ -31,7 +31,7 @@ export const getPreferences = cache(async (): Promise<Preferences> => {
 
   const preferences = await prisma.userPreferences.findUnique({
     where: { userId: session.user.id },
-    select: { scoreFormat: true, titleLanguage: true, includeAdult: true },
+    select: { titleLanguage: true, includeAdult: true },
   });
 
   return preferences ?? DEFAULT_PREFERENCES;

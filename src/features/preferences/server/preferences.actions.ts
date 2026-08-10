@@ -26,7 +26,7 @@ export const updatePreferences = authActionClient
       where: { userId: ctx.user.id },
       create: { userId: ctx.user.id, ...parsedInput },
       update: parsedInput,
-      select: { scoreFormat: true, titleLanguage: true, includeAdult: true },
+      select: { titleLanguage: true, includeAdult: true },
     });
 
     revalidatePath("/", "layout");
