@@ -59,7 +59,8 @@ créer un fichier. Les règles non négociables :
 - Toute Server Action passe par `actionClient` (`@/lib/safe-action`, next-safe-action v8 —
   `.metadata()` puis `.inputSchema()`, jamais `.schema()` qui est l'API v7).
 - Jamais de `process.env.X` : `import { env } from "@/config/env"` (t3-env, validé au build).
-  Seule exception : `prisma.config.ts`, qui est un fichier de CLI et non du code applicatif.
+  Seules exceptions : `prisma.config.ts` et `prisma/seed.ts` — des fichiers de CLI, qui tournent
+  hors de Next et donc sans le `NODE_ENV` que t3-env exige. La liste est close et le hook la nomme.
 - `src/lib/` est rangé par sujet, pas à plat : `auth/`, `db/`, `http/`, `security/`. Un fichier n'y
   reste à la racine que s'il n'a pas de famille (`utils.ts`, `safe-action.ts`). `utils.ts` ne bouge
   pas : `components.json` y pointe (`aliases.utils`), et tout ce que shadcn génère l'importe.
@@ -104,7 +105,13 @@ pnpm build        # next build
 pnpm db:migrate   # prisma migrate dev — crée et applique une migration
 pnpm db:studio    # prisma studio
 pnpm db:generate  # régénère le client (lancé aussi par le postinstall)
+pnpm db:seed      # jeu d'essai : 26 suivis, 128 événements, 5 listes (--reset pour repartir de zéro)
 ```
+
+- `pnpm db:seed` (`prisma/seed.ts`, sous `tsx`) remplit la base de développement pour le compte
+  approuvé le plus ancien. **Il refuse d'écrire par-dessus des données existantes** et demande
+  `--reset`, qui supprime alors suivis, journal et listes de ce compte — `Media` n'est jamais
+  touché. Graine fixe : deux exécutions donnent le même jeu.
 
 - **Lefthook** installe les hooks Git au `pnpm install` : `pre-commit` formate les fichiers
   indexés avec Biome, `pre-push` lance `typecheck` + `test` + `knip`. Config : `lefthook.yml`.

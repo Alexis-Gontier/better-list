@@ -17,6 +17,499 @@ pas.
 
 ---
 
+## 10 août 2026 — La vignette rend sa jaquette
+
+Retour en arrière assumé sur l'entrée précédente : la carte s'était couverte de pastilles, et c'est
+l'image qu'elles recouvraient. La jaquette est rendue nue, et tout ce qui se lit passe dessous.
+
+- **La moyenne AniList disparaît de la grille.** Elle reste sur la fiche, où elle est comparable au
+  reste. Dans une grille, le verdict d'une foule qu'on ne connaît pas ne fait pas ouvrir une œuvre,
+  et il tenait la place de ce qui la fait ouvrir. Ma note, elle, reste — mais sous la jaquette.
+- **Les genres au survol partent aussi**, et avec eux la propriété `genres` de `MediaCard`. Le
+  raisonnement du 10 août tenait — un contenu jamais nécessaire a le droit de se cacher — mais il
+  justifiait le survol, pas le calque : la surcouche mangeait le tiers bas de chaque jaquette dès
+  qu'on passait dessus. `MediaRow` les garde : en liste, ils ont leur colonne et ne masquent rien.
+- **Note et progression descendent sous l'image**, sur une ligne. Elles n'ont plus besoin du fond
+  opaque qu'exigeait un texte posé sur une jaquette de couleur inconnue.
+- **Le titre tient sur une ligne, coupé aux points de suspension** (`truncate`, plus `line-clamp-2`).
+  Deux lignes faisaient varier la hauteur des cartes d'une colonne à l'autre et décalaient tout ce
+  qui suit — la rangée se lisait comme un escalier. Le titre complet reste dans l'attribut `title`.
+- **La recherche perd « Série TV · 2026 » en grille.** Répétée sous vingt-quatre jaquettes, elle
+  répondait à une question que personne ne posait là. La vue liste la garde, et la fiche aussi.
+
+Restent sur la jaquette : le « 18+ », parce qu'il qualifie l'image et doit se lire avant elle, et la
+barre de progression, parce qu'elle se voit sans se lire — c'est ce qui permet de repérer une série
+presque finie en balayant la grille.
+
+Vérifié à l'écran sur `/`, `/library` et `/search` : les rangées s'alignent, ce qui n'était pas le
+cas avec les titres à deux lignes.
+
+---
+
+## 10 août 2026 — Une liste s'adresse par son id
+
+`/lists/[slug]` devient `/lists/[id]`, et la colonne `slug` disparaît de `List` (migration
+`20260810120000_lists_url_par_id`). Le slug était le seul identifiant du projet à être **dérivé
+d'un champ modifiable**, et il payait ça trois fois : une contrainte `@@unique([ownerId, slug])` à
+tenir, un lien qui se périmait au renommage — d'où l'avertissement affiché dans le dialogue de
+modification, désormais sans objet —, et une relecture en base dans chaque mutation pour retrouver
+le chemin à revalider. Les listes étant privées et derrière la garde d'accès, personne ne lisait ces
+URL : on payait la lisibilité pour rien.
+
+- **Ce que ça simplifie côté serveur.** `updateList`, `removeFromList` et `reorderListItem` ne
+  relisent plus la liste après l'écriture : le `listId` reçu **est** le chemin. `createList` ne lit
+  plus non plus les slugs déjà pris avant d'insérer. Quatre requêtes en moins, et une fonction pure
+  de moins à tester (`list-slug.ts` et son test sont supprimés).
+- **La garde ne change pas de nature, mais change de forme.** `getListBySlug` devient
+  `getListById`, en `findFirst` sur `{ id, ownerId }` là où la clé composite `ownerId_slug`
+  permettait un `findUnique`. C'est la forme des mutations du domaine, pour la même raison : le
+  `where` porte le propriétaire, donc une liste étrangère reste indiscernable d'une inexistante.
+- **L'index composite servait aussi de chemin d'accès** à `where: { ownerId }`. Le remplacer par
+  rien aurait fait un balayage à chaque page de listes ; il devient `@@index([ownerId, updatedAt])`,
+  qui est exactement l'ordre dans lequel `getMyLists` lit.
+- **Le partage par lien non listé (V1.5) n'a plus de question d'adressage** — l'`id` désigne la
+  liste sans ambiguïté, y compris celle d'un autre membre. Il reste à décider ce qui *autorise* à
+  la lire : `UNLISTED` seul, ou un jeton. C'est une question d'accès, plus une question d'URL, et
+  le point 4 du « prochain pas » du 10 août ci-dessous tombe donc de moitié.
+
+Le reste est mécanique : dossier de route renommé, `routes.lists.detail/view` prennent un `id`,
+`ListCardData` porte `id` au lieu de `slug`, le seed n'écrit plus de slug. Les vues de V1.5 viseront
+`/lists/[id]/[viewId]`.
+
+---
+
+## 10 août 2026 — La vignette devient un poste de commande
+
+La carte savait dire ce qu'est une œuvre, pas où j'en suis avec elle. Elle porte maintenant les
+deux, et de quoi agir dessus : progression chiffrée, ma note, le « +1 » déjà là, et une fenêtre qui
+ouvre **tous** les réglages du suivi sans quitter la grille.
+
+### Ce que la jaquette montre en permanence
+
+La fraction (« 13 / 25 ») est passée de la ligne de contexte à une pastille sur la jaquette,
+au-dessus de la barre. Elle n'était pas absente avant — chaque appelant la recopiait dans son
+`meta`, et l'accueil l'oubliait dans « à reprendre ». La faire porter par la carte règle l'oubli et
+libère la ligne de contexte pour ce que rien d'autre ne dit : le statut, l'ancienneté.
+
+- **Ma note prend la place de la moyenne AniList, elle ne s'y ajoute pas.** Sur une œuvre que je
+  suis et que j'ai notée, mon verdict est celui qui décide ; la moyenne reste sur la fiche, où elle
+  est comparable au reste. Deux pastilles d'étoiles superposées auraient surtout appris à ne plus
+  les lire. La teinte les distingue — pleine pour la mienne, posée pour celle de la communauté.
+- Elle arrive en **chaîne déjà formatée**, comme `meta` et la progression : mettre une note à
+  l'échelle du compte est une affaire de `tracking` (§4.2), et `MediaCard` n'a aucune raison de
+  connaître ce domaine. C'est le même refus de couplage que celui des six libellés de statut.
+- `MediaCard` et `MediaRow` ont reçu les deux propriétés **ensemble**. La règle du 8 août tient :
+  une information exclusive à l'une des deux vues ferait de la bascule un piège.
+
+### La fenêtre d'édition, et pourquoi ce sont les mêmes contrôles
+
+`EntryDialog` rend `EntryControls` — le composant de la fiche, pas une version réduite. Une fenêtre
+qui n'aurait su changer que trois champs sur huit aurait obligé à deviner lequel manque, et le
+retour à la fiche aurait coûté les deux navigations qu'on voulait supprimer.
+
+- Deux conséquences à faire vivre ce panneau en vingt-quatre exemplaires : ses `id` de champs sont
+  désormais dérivés d'un `useId` (constants, ils se seraient dupliqués et un `<label for>` aurait
+  désigné le champ d'une autre carte), et « retirer de ma liste » ferme la fenêtre via `onRemoved`
+  — elle éditerait sinon un suivi qui n'existe plus, que le premier clic recréerait.
+- `EntryCardActions` réunit le « +1 » et la fenêtre : le bloc était déjà copié entre l'accueil et la
+  bibliothèque, une troisième copie les aurait fait diverger.
+
+### Le total qu'on ignore s'écrit
+
+`formatEntryProgress` rendait « 145 » tout court quand AniList ne connaît pas le nombre d'épisodes
+— ce qui se lit comme un total, sur une série qui est encore en cours. C'est « 145 / ? »
+désormais, et « sur ? » dans le panneau de la fiche comme dans le formulaire. La constante vit dans
+`entry-format.ts` et le test dit pourquoi.
+
+### La fenêtre est un formulaire, la fiche reste au geste
+
+Sur maquette, la fenêtre est passée en trois colonnes avec une bannière et un bouton
+« Enregistrer ». Ce bouton change le contrat d'enregistrement, et c'est la seule divergence
+assumée entre les deux éditeurs :
+
+- **le panneau de la fiche enregistre au geste** — il est visible en permanence à côté de l'œuvre,
+  chaque contrôle y est une décision isolée ;
+- **la fenêtre enregistre au bouton** — on l'ouvre exprès pour remettre trois choses d'aplomb, et
+  enregistrer chacune en passant ferait trois écritures et trois lignes de journal pour une seule
+  intention.
+
+L'invariant du §4.2 tient dans les deux cas : **seuls les champs modifiés partent**. Le formulaire
+l'obtient par différence (`entry-draft.ts`, pur et testé) au lieu de l'obtenir par construction.
+C'est là que vivent les décisions qui se trompent — une saisie numérique illisible est ignorée
+plutôt que ramenée à zéro (vider « épisode » pour le retaper n'enregistre pas un recul), effacer
+une date se distingue de ne pas y toucher, et sur une œuvre pas encore suivie le statut part
+toujours, sinon « Enregistrer » sur un formulaire intact ne ferait rien.
+
+- Enregistrer sans avoir rien changé **n'écrit pas** : l'action vide coûterait une revalidation de
+  trois pages et remonterait `updatedAt`, donc réordonnerait un accueil trié par date de
+  modification.
+- Le formulaire est monté par la fenêtre, donc remonté à chaque ouverture : le brouillon repart de
+  l'état que le serveur vient de rendre, sans synchronisation à écrire.
+- « Favori » n'était pas sur la maquette. Il est passé avec les commandes du bas plutôt que dans la
+  grille : c'est un marquage, pas une donnée de suivi, et lui donner une cellule l'aurait mis sur le
+  même plan qu'une date.
+
+### Les étoiles passent au demi-cran, et le composant descend dans `ui/`
+
+`npx shadcn add @kibo-ui/rating` réinstalle dans `components/kibo-ui/rating/index.tsx` ; le fichier
+vit désormais dans `components/ui/rating.tsx`, là où `components.json` range les primitives. La
+copie du registre a été supprimée, ainsi que `@radix-ui/react-use-controllable-state` qu'elle
+tirait : le paquet parapluie `radix-ui` expose déjà ce hook, et deux copies à deux versions ne
+valent pas mieux ici qu'ailleurs.
+
+**Le registre n'a pas bougé en amont** : la réinstallation a écrasé les trois correctifs de la
+première fois — boutons sans nom accessible, `aria-label="Rating"` en dur, import Radix. Ils sont
+remis, et deux s'y ajoutent (`role="radio"` + `aria-checked`, et un cran tabulable quand la note
+est vide — sans quoi on ne pouvait pas noter au clavier tant qu'on n'avait pas noté à la souris).
+Tout est listé en tête du fichier, parce qu'une prochaine réinstallation l'écrasera encore.
+
+**Une note sur cinq sans demie est une note sur cinq valeurs**, ce qui est trop peu pour séparer
+« bien » de « très bien ». Chaque étoile porte donc deux zones de clic, et deux calques superposés
+dont le supérieur est rogné à la fraction voulue — plutôt qu'une icône « demi-étoile », qui aurait
+figé le pas et n'aurait marché qu'avec l'étoile.
+
+Côté domaine, le maximum et le pas d'une échelle **ne se déduisent plus l'un de l'autre** : cinq
+étoiles vont jusqu'à 5 par crans de 0,5. Le stockage ne change pas (0–100, §4.2) — une demie vaut
+dix points, donc une note saisie « 7/10 » se relit « 3,5/5 » sans avoir bougé en base.
+
+- `exactScoreIfRounded` teste désormais **l'aller-retour** et non un reste de division : une échelle
+  perd de la précision exactement quand la note n'y survit pas au passage. Vrai du pas entier comme
+  du demi-cran.
+- Les valeurs s'écrivent avec le séparateur de la locale — « 3,5/5 » —, y compris dans les noms
+  accessibles des crans, qu'un lecteur d'écran francophone prononce alors correctement.
+### Puis l'échelle a cessé d'être un réglage
+
+Décision d'Alexis en séance : **cinq étoiles pour tout le monde**, les dix points et les cent
+points disparaissent. Un réglage à une seule valeur n'en étant pas un, ce n'est pas l'énumération
+qui a été réduite mais la préférence entière qui a été retirée — colonne `scoreFormat`, type
+`ScoreFormat`, ligne des paramètres, et le paramètre `format` de toutes les conversions.
+Migration `20260810014700_retire_echelle_notation`.
+
+- **`Entry.score` ne bouge pas** : toujours 0–100. C'est ce qui garde leur précision aux notes
+  importées d'AniList, et ce qui laisserait revenir en arrière sans réécrire une ligne. Ce que la
+  migration supprime, c'est une préférence d'affichage, pas une note.
+- `scoreToScale`/`scaleToScore` sont devenus `scoreToStars`/`starsToScore` : sans échelle à
+  choisir, le nom peut dire ce que la fonction fait.
+- `ScoreInput` — l'aiguillage entre le champ numérique et les étoiles — n'avait plus rien à
+  aiguiller et a été supprimé. `ScoreStars` est le seul éditeur de note.
+- La migration a dû être **écrite à la main** : `prisma migrate dev` refuse de tourner sans
+  terminal interactif dès qu'il détecte une colonne à supprimer contenant des valeurs, et
+  `--create-only` bute sur le même garde-fou. Écrite puis appliquée par `migrate deploy`.
+
+### Trois retouches de finition, dont une qui méritait un diagnostic
+
+- **Les étoiles sont en `foreground`** et non plus en ambre. L'ambre reste à la moyenne AniList sur
+  les vignettes : deux sources de note, deux teintes, et plus d'ambiguïté sur qui a noté quoi. Pas
+  de blanc en dur — sur le thème clair, des étoiles blanches disparaîtraient.
+- **Dans le formulaire, la note est posée dans un `InputGroup`**, la primitive même du compteur
+  d'épisodes voisin. Une rangée d'icônes nues dans une grille de six champs encadrés n'avait pas de
+  ligne de base : elle se lisait comme un reste d'affichage plutôt que comme une chose à remplir.
+  C'est ce qui a fait sortir le « 95/100 » permanent, qui débordait du champ : il ne s'affiche plus
+  que lorsque les étoiles perdent la valeur, ce que la règle disait déjà.
+- **Le liseré clair sous la bannière** n'était ni le dégradé ni l'image : la fenêtre est centrée par
+  translation, donc posée sur des demi-pixels, et le bord bas du calque ne coïncidait pas tout à
+  fait avec celui de la bande — le `bg-muted` du conteneur transparaissait dans l'interstice, sur
+  toute la largeur. Le fond de la bande est désormais celui du panneau : l'arrondi du navigateur
+  n'a plus rien à révéler. Le dégradé, lui, atteint l'opacité pleine à 88 % de la hauteur plutôt
+  qu'au dernier pixel — deux causes possibles, les deux traitées.
+
+### Ce que ça coûte, et ce qui reste ouvert
+
+- **L'état complet du suivi part avec la page**, `notes` comprises, pour des cartes qu'on n'ouvrira
+  pas. C'est le prix d'une fenêtre qui s'ouvre sans requête ; l'alternative était un aller-retour
+  par ouverture. Compromis assumé pour une grille de vingt-quatre — à revoir si les notes
+  s'allongent. `ENTRY_STATE_SELECT` rassemble ces colonnes en un point, partagé avec l'écriture :
+  la liste **doit** rester exactement `EntryState`, sinon la transition réécrit ce qu'elle ne
+  devrait pas.
+- Le catalogue et la recherche n'ont toujours que la fiche pour commencer à suivre une œuvre : le
+  formulaire sait pourtant créer une entrée (`entry === null`), c'est le bouton qui manque sur ces
+  grilles-là. Suivre depuis une grille de résultats est le pas suivant, et il est court.
+- **Deux éditeurs pour une même entité**, le panneau et le formulaire, avec deux dispositions et
+  deux moments d'enregistrement. C'est justifié plus haut, mais c'est une dette : le jour où un
+  champ s'ajoute au suivi, il faudra penser aux deux. Les unifier supposerait de trancher si la
+  fiche gagne elle aussi un bouton « Enregistrer ».
+- La ligne du planning garde le seul « +1 » : elle répond à « qu'est-ce qui sort », pas à « où j'en
+  suis », et son bouton n'apparaît déjà que dans un cas précis (§ du 8 août).
+
+---
+
+## 8 août 2026 — Catalogue et bibliothèque : la vignette, la grille, et le trou en bas de page
+
+Reprise des deux écrans qui listent des œuvres. Le point de départ était un défaut visuel — « trois
+rangées pleines et une quatrième à deux » —, et il s'est avéré n'être ni du CSS ni un manque de
+résultats.
+
+### Le trou était de l'arithmétique
+
+La recherche servait **20** résultats dans une grille qui passait à **6 colonnes**, la bibliothèque
+**24** dans un palier à **5**. Dans les deux cas la dernière rangée était incomplète, et un bas de
+grille amputé se lit comme un chargement raté, pas comme une fin de page.
+
+`CATALOGUE_PAGE_SIZE = 24` vit désormais dans `config/catalogue.ts`, et les paliers de colonnes
+(2, 3, 4, 6) ont été choisis pour être **ses diviseurs**. C'est la contrainte qui a fixé les
+paliers, pas l'inverse — le palier à 5 colonnes a disparu pour ça. Un test la verrouille : il
+échoue si quelqu'un remonte la taille de page à un nombre qui rouvre le trou.
+
+- Le `perPage` par défaut du schéma de recherche dérive de la même constante. Il entre dans la clé
+  de cache des lectures AniList : le changement invalide les entrées existantes, ce qui est correct
+  mais n'est pas gratuit.
+- **La même arithmétique s'applique à tous les appelants de `MediaGrid`**, et l'accueil n'y est pas
+  encore conforme : la rangée « à reprendre » compte 6 vignettes, donc 4 + 2 au palier `md`. Seuls
+  les multiples de 12 sont propres aux quatre paliers. Laissé en l'état — c'est un compte de
+  produit documenté (`DASHBOARD_STALLED_COUNT`), pas une valeur technique à changer en passant.
+
+### La vignette montre maintenant ce qu'elle taisait
+
+`MediaCard` porte la note AniList, le marqueur 18+, une barre de progression, et révèle les genres
+en surcouche au survol. La règle qui a tranché chaque arbitrage : **rien de ce qui décide n'est
+derrière un survol**. Note, progression et titre sont permanents ; les genres, eux, servent à
+confirmer une intuition avant de cliquer, jamais à choisir — ils peuvent donc dépendre d'un geste
+qui n'existe ni au doigt ni au clavier.
+
+- La surcouche est `aria-hidden` **et** `pointer-events-none`, et les deux vont ensemble : son
+  contenu est déjà sur la fiche, et un calque qui intercepterait le clic empêcherait d'y aller.
+- Le titre est passé **avant** la ligne de méta. À hauteur variable, un titre placé sous une méta
+  démarre à une hauteur constante ; l'inverse fait commencer chaque méta à un endroit différent.
+- Pas d'anneau de focus ajouté sur la jaquette : le contour natif cerne déjà tout le lien, titre
+  compris, et le doubler donnait deux cadres concentriques.
+
+### Une deuxième disposition, et ce qu'elle a coûté
+
+`MediaRow` + `MediaList` : une ligne par œuvre, bascule dans l'URL (`?view=list`) sur les deux
+pages. Les deux vues montrent **les mêmes données** rangées autrement — une information exclusive à
+l'une ferait de la bascule un piège.
+
+- **La liste n'a pas de squelette, et c'est assumé.** Les deux pages transmettent `searchParams`
+  sans l'attendre : elles ne connaissent pas la disposition au moment de rendre le repli d'un
+  `<Suspense>`. Le décalage ne se voit qu'au premier chargement d'une adresse `?view=list`
+  partagée — changer de vue depuis la page est une navigation, où React garde l'ancien rendu.
+  L'alternative coûtait la coquille statique instantanée de la page. Dette connue, écrite dans le
+  fichier.
+- La bascule est le seul contrôle des deux barres qui **ne remet pas `page` à 1** : elle ne change
+  ni le nombre de résultats ni leur ordre.
+
+### La bibliothèque cherche enfin chez elle
+
+Champ de recherche sur `/library`, sur les trois colonnes de titre du miroir. Il ne part jamais
+chez AniList, donc une frappe ne coûte rien au quota — c'est ce qui rend l'anti-rebond à 300 ms
+acceptable ici alors que le catalogue est à 400. Les onglets de statut portent leur effectif
+(un `groupBy`), **hérité des autres filtres mais jamais du statut courant**, sinon tous les onglets
+sauf l'actif afficheraient zéro.
+
+Deux corrections attrapées en chemin :
+
+- Le champ de recherche du catalogue est non contrôlé (l'écriture d'URL est anti-rebondie) : la
+  réinitialisation des filtres vidait donc `q` dans l'URL et les résultats, **mais laissait le
+  terme affiché**. Réparé par une `ref`, avec un bouton d'effacement dans le champ.
+- Les puces de filtres actifs de la recherche n'exposent pas le terme de recherche, et « Tout
+  effacer » n'y touche pas : il est déjà visible dans le champ voisin, et son retrait supposerait
+  de vider un `<input>` non contrôlé qui vit dans un autre composant.
+
+**Reste ouvert** : les genres affichés viennent d'AniList, donc en anglais dans une interface
+française (déjà vrai dans les popovers de filtres) ; la rangée « à reprendre » de l'accueil et son
+palier `md` ; aucun de ces écrans n'a de test de rendu — les composants React ne sont toujours pas
+couverts.
+
+---
+
+## 8 août 2026 — `/calendar` : le planning, et pourquoi il ne sera jamais global
+
+La dernière route de la nav qui répondait 404. `/calendar` affiche la semaine des séries qu'on
+suit, jour par jour, avec **le retard épisode par épisode** — et c'est ça la fonctionnalité, pas la
+grille horaire.
+
+### Le chiffre qui a décidé de la page
+
+Une semaine de diffusion complète chez AniList, c'est **cinq mille entrées**. Mesuré avant d'écrire
+la moindre ligne, et le compteur de l'API y est plafonné, donc c'est un plancher. À cinquante par
+page, une semaine « tout AniList » coûte cent requêtes sur les trente de la minute que le serveur
+partage entre tous les visiteurs.
+
+Le planning est donc filtré **à la source** par `mediaId_in`, sur les œuvres du compte : une
+requête pour la semaine, souvent zéro grâce au cache. Ce n'est pas une version réduite en attendant
+mieux — un planning global n'est pas finançable, c'est écrit en PRODUCT.md §9 pour que personne ne
+le repromette. Et c'est de toute façon ce que la nav annonçait depuis le début.
+
+- **Le document GraphQL ne demande aucun champ `media`**, et c'est le point qui rend l'appel
+  minuscule : jaquettes, titres et plafonds sont déjà dans le miroir local (§4.1). Redemander ces
+  colonnes les paierait deux fois **et** afficherait un titre qui ignore la préférence de langue du
+  compte, puisqu'AniList ne la connaît pas. Ne reviennent que `mediaId`, `episode`, `airingAt`.
+- **Les ids sont triés avant d'entrer dans le cache.** La clé est la sérialisation des arguments :
+  sans le tri, l'ordre où Postgres rend les lignes ferait deux entrées pour une même réponse. Avec,
+  deux membres qui suivent les mêmes séries partagent la leur. C'est la seule lecture du fichier
+  dont la clé dépend du compte, et le commentaire dit pourquoi c'est acceptable ici.
+- Une bibliothèque sans série en cours de diffusion **ne part pas du tout** chez AniList. L'écran
+  qui sert alors n'est pas un planning vide, c'est une porte vers le catalogue.
+- `cacheLife("minutes")` — la seule lecture du projet à descendre là. Un report d'épisode s'annonce
+  le jour même.
+
+### Le fuseau, encore, et cette fois il fallait des tests
+
+`airing-week.ts`, pur, **16 tests**. Un épisode diffusé le mardi à 1 h 30 à Paris tombe le lundi en
+UTC : un planning calculé dans le fuseau du serveur rangerait la moitié des animes de la nuit dans
+la mauvaise colonne. Les bornes envoyées à AniList sont donc des **minuits parisiens**.
+
+- **`parisMidnight` fait deux passes, et la seconde n'est pas superflue.** Le décalage est lu à un
+  instant supposé ; le dernier dimanche de mars, cet instant tombe de l'autre côté du changement
+  d'heure et le décalage vaut une heure de trop. Deux tests prennent les deux transitions de face —
+  la semaine du 23 mars dure 167 heures, celle du 19 octobre 169. Un `from + 7 jours` se trompe sur
+  les deux.
+- L'arithmétique de calendrier passe par `Date.UTC` sur la **date civile** parisienne, jamais sur
+  l'instant : en UTC un jour fait toujours vingt-quatre heures. Chaque date obtenue est ensuite
+  reconvertie en instant, qui, lui, rattrape le décalage.
+- La semaine commence **lundi**, pas le dimanche que renvoie `getDay()` — un test prend le cas du
+  dimanche, où un calcul naïf fait disparaître le planning du jour de sa propre page.
+- `formatRange` d'`Intl` compose « 3–9 août 2026 » et « 30 novembre – 6 décembre 2026 » sans qu'on
+  ait à traiter le chevauchement de mois. Ses espaces fines insécables changent d'une version d'ICU
+  à l'autre : les tests comparent le texte, pas la typographie.
+
+### Le retard, qui est la vraie valeur
+
+AniList et MyAnimeList disent ce qui sort ; ils ne disent pas ce qu'il vous manque pour le
+regarder. `describeAiringCatchUp` rapporte l'épisode diffusé à la progression : « Vu », « à jour »,
+« 2 épisodes de retard ».
+
+- **Le décompte porte sur ce qui sépare du début de cet épisode-là**, pas de sa fin : à l'épisode 9
+  avec une progression de 6, il manque le 7 et le 8 — deux, pas trois. C'est l'endroit exact où se
+  tromper d'une unité, donc l'endroit qui a un test.
+- La fonction renvoie **un état à côté du libellé**, et pas seulement une chaîne. La première
+  version faisait choisir la couleur de l'étiquette en comparant le texte à `"Vu"` : ça marche, et
+  ça casse à la première reformulation.
+- **Le « +1 » n'apparaît que sur un épisode déjà diffusé *et* exactement suivant.** Les deux
+  conditions comptent : avancer sur un épisode non sorti serait une écriture fausse, et deux
+  épisodes de retard, le geste n'en rattraperait qu'un. C'est le seul cas où « +1 » veut dire « je
+  viens de voir celui-là ». `EntryQuickProgress` est réutilisé tel quel — la ligne porte le `group`
+  qu'il attendait.
+- Les sept jours sont rendus, **y compris les vides**. C'est ce qui distingue un planning d'une
+  liste : savoir qu'il n'y a rien le jeudi est une information, et le masquer ferait glisser le
+  vendredi à sa place. Quand la semaine entière est vide, une seule phrase remplace les sept.
+
+### Deux choix de rangement
+
+- **Pas de septième feature.** La lecture AniList est du catalogue (`media`), la lecture des
+  entrées est du suivi (`tracking`), et c'est la **page** qui les compose — comme l'accueil compose
+  `getDashboard` et `getBrowseCatalogue`. Créer `features/calendar/` pour y loger le calcul de
+  semaine et deux composants aurait été un dossier par anticipation ; `airing-week.ts` vit donc à
+  côté de `media-season.ts`, qui est le même genre d'objet : du découpage de temps pour le
+  catalogue.
+- **Le type de la ligne est déclaré dans le composant qui la dessine**, pas dans la page qui la
+  fournit. C'est lui qui sait de quoi il a besoin ; l'inverse obligerait à le modifier à deux
+  endroits dès qu'une colonne s'ajoute.
+
+**Vérifié dans l'application**, session rejouée, sur les quatre états à la fois : quatre séries de
+la saison ajoutées pour l'occasion avec des progressions choisies, puis retirées (le `onDelete:
+Cascade` d'`EntryEvent` a emporté leur journal — restent quatre lignes de `Media`, qui sont du
+catalogue partagé). « 2 épisodes de retard » mercredi, « à jour » + « +1 » jeudi sur un épisode
+diffusé, « Vu » samedi, et dimanche deux épisodes triés par heure dont un **à venir** qui affiche
+« à jour » **sans** bouton — la règle des deux conditions, à l'écran. Le « +1 » cliqué depuis le
+planning a fait passer la ligne à « Vu », confirmé **après rechargement serveur** et pas en
+relisant le contrôle. `?week=1` et `?week=-1` décalent bien d'une semaine pleine, `?week=99` est
+ramené à 12 avec la flèche suivante désactivée, et la semaine du 19 octobre — celle du changement
+d'heure — rend ses sept jours.
+
+**Reste ouvert :** le planning ne connaît que l'animation, puisque `airingSchedules` n'existe que
+pour elle — un manga hebdomadaire n'a aucune source de dates. Les notifications de V2 (§6) ne sont
+pas faites, et c'est maintenant le seul morceau qui manque à ce palier côté temps. Enfin, l'heure
+affichée est celle qu'AniList publie : elle vaut ce que valent ses contributeurs, et un report
+annoncé tard se voit avec une minute de retard au mieux — le cache descend à la minute, pas en
+dessous.
+
+---
+
+## 8 août 2026 — `/browse` disparaît, l'accueil devient le melting-pot, et la base est semée
+
+Trois chantiers du même mouvement : il y avait **deux portes de découverte** pour un cercle de
+quatre comptes, et **une base trop vide** pour voir la moitié des écrans fonctionner.
+
+### `/browse` est supprimée, pas redirigée
+
+La route, ses composants, son entrée de nav et sa ligne de palette. `routes.browse` n'existe plus —
+c'est ce qui garantit qu'aucun lien mort ne subsiste : une référence oubliée casse le typecheck au
+lieu de partir en 404. Le raisonnement est écrit dans PRODUCT.md §5, à côté de la table des routes.
+
+- **Le catalogue est descendu sur l'accueil sans rien coûter.** Les cinq rangées venaient déjà
+  d'**une** requête AniList mémorisée une heure (§4.1) ; les déplacer ne change pas le budget.
+- Ce qui a été perdu au passage : rien. Les cinq rangées sont toutes là, y compris « La saison
+  prochaine » et « Les mieux notés », qui n'avaient pas d'équivalent dans la recherche.
+- L'entrée de nav « Découvrir » pointe maintenant sur `/search`, et n'a plus que deux liens.
+
+### L'accueil : suivi → listes → découverte → journal
+
+- **Trois frontières de suspension, une par source**, et c'est le point d'architecture de la séance.
+  Le suivi et le journal se lisent dans le miroir local et répondent en millisecondes ; les rangées
+  attendent AniList. Une frontière unique aurait fait attendre le « +1 » — le geste le plus fréquent
+  du produit — derrière un appel réseau dont il n'a aucun besoin. Le coût est nul :
+  `getSession` porte le `cache` de React.
+- **L'ordre du DOM ne dépend pas de l'ordre d'arrivée**, et ça a été vérifié plutôt que supposé :
+  les rangées AniList sortent du cache avant les lectures Postgres, donc elles arrivent **les
+  premières dans le flux HTML** — l'ordre final est pourtant celui du JSX, confirmé en lisant
+  `container.children` dans le navigateur.
+- `getDashboard` a perdu son journal au profit de `getRecentActivity` : le journal ferme la page,
+  donc il vit dans une autre frontière. Les deux lectures partent en parallèle, les frontières étant
+  sœurs.
+- **`DashboardSection` porte désormais une description**, et les rangées de découverte l'utilisent
+  au lieu de leur propre en-tête. Deux jeux de titres presque identiques sur le même écran se
+  seraient lus comme deux pages cousues.
+- `Dashboard` et `Discovery` rendent des **sections sœurs**, pas des conteneurs : l'espacement
+  appartient à la page. Sans ça, trois `space-y` imbriqués auraient donné trois rythmes différents.
+- La carte de liste est montée dans `features/lists/components/` — deuxième appelant, donc
+  promotion, même règle que `EntryActivityList` en son temps.
+- L'état vide ne prend plus la page entière : la découverte s'affiche dessous, et c'est justement
+  elle qui donne de quoi remplir une bibliothèque neuve.
+
+### `/search` ouvre sur les tendances
+
+`SEARCH_MATCH` classe par proximité avec la requête : **sans requête, il n'a rien à comparer** et
+AniList retombe sur son ordre interne. La page d'arrivée ouvrait donc sur des œuvres au hasard.
+
+- `resolveSort` est pure, testée, et **partagée client/serveur** : la barre de filtres affiche ce
+  que la grille sert. Sans ce partage, le sélecteur aurait annoncé « Pertinence » au-dessus de
+  résultats classés par tendance — le seul contrôle censé expliquer l'ordre de la page aurait menti.
+- **La substitution ne touche que le tri par défaut.** Demander « Titre » sans terme de recherche
+  donne bien un ordre alphabétique : ce n'est pas à nous de décider qu'on s'est trompé. Deux tests
+  tiennent cette limite.
+- L'option « Pertinence » **disparaît** de la liste tant qu'il n'y a pas de terme, au lieu d'être
+  grisée : ce n'est pas une option indisponible, c'est une question sans objet.
+- Le décompte est remplacé par un titre dans ce cas. « 24 918 résultats » sous les tendances est un
+  nombre exact et sans usage ; ce qui manque, c'est ce qu'on regarde et comment en sortir.
+
+### Le jeu d'essai
+
+`prisma/seed.ts` sous `tsx` (nouvelle dépendance de développement), `pnpm db:seed`. 26 suivis sur
+les six statuts, 128 événements de journal, 5 listes, 29 œuvres rangées — pour **une** requête
+AniList, deux alias `Page` dans le même document.
+
+- **Le sujet du fichier, c'est `updatedAt`.** « À reprendre » n'existe qu'avec des séries laissées
+  de côté depuis plus de trente jours, et la section n'avait jamais pu être vue autrement qu'en
+  abaissant le seuil à la main (voir l'entrée du tableau de bord). Le seed écrit donc `updatedAt`
+  explicitement à la création — Prisma l'accepte malgré `@updatedAt`, vérifié en base — et cinq
+  entrées peuplent enfin la section.
+- **Il refuse d'écrire par-dessus.** `EntryEvent` est append-only par conception : un seed qui
+  écrase sans le dire trahirait exactement la promesse de §4.3. `--reset` supprime, et dit quoi.
+- **Graine fixe** (mulberry32) : deux exécutions donnent le même jeu, donc deux captures d'écran se
+  comparent.
+- Un bug écrit puis corrigé, et il valait le détour : `sort(() => random() - 0.5)` **ne mélange
+  pas** — le comparateur n'est pas transitif et V8 en tire un ordre très corrélé à l'entrée. Trois
+  listes sur cinq s'ouvraient sur la même jaquette, ce qui vidait de son sens l'aperçu à quatre
+  cases. Fisher-Yates.
+- `rank` est rempli par `generateKeyBetween` comme le fait l'application, et non en `"a0"`, `"a1"`
+  écrits à la main : ça marcherait le premier jour et casserait au premier glisser-déposer.
+- **Le seed lit `process.env`**, et l'exception est désormais écrite : c'est un fichier de CLI, il
+  tourne hors de Next, donc sans le `NODE_ENV` que t3-env exige. Le hook `conventions-guard.mjs` le
+  nomme, à côté de `prisma.config.ts` — la liste est close, pas ouverte.
+
+**Vérifié dans l'application**, session rejouée : ordre du DOM lu dans le navigateur (suivi, listes,
+cinq rangées, journal), `/browse` en 404, `/search` avec le sélecteur sur « Tendances » et le titre
+« Tendances du moment », `/search?q=frieren` qui repasse sur « Pertinence » avec « 9 résultats » et
+*Sousou no Frieren* en tête. « À reprendre » affiche cinq séries, dont une en pause depuis octobre.
+
+**Reste ouvert :** l'accueil fait 5 600 px de haut, ce qui est le prix assumé du melting-pot — un
+jour il faudra soit plier les rangées de découverte, soit les alterner. Et la nav n'a plus qu'un
+seul lien réel sous « Découvrir » (`/calendar` est du V2) : le menu déroulant est devenu un peu
+grand pour ce qu'il contient.
+
+---
+
 ## Où on en est — 8 août 2026
 
 | Chantier | État |
@@ -30,20 +523,23 @@ pas.
 | Suivi `Entry` (§4.2) | fait — panneau de suivi, transition d'état pure et testée |
 | Journal `EntryEvent` (§4.3) | écrit **et lu** trois fois — journal d'une œuvre, survol du tableau de bord, timeline complète du profil |
 | Bibliothèque `/library` | fait — filtres statut et type, quatre tris, pagination |
-| Tableau de bord `/` | fait — en cours, à reprendre, activité récente |
+| Accueil `/` | fait — suivi, listes, catalogue du moment, journal ; trois frontières de suspension |
 | « +1 » depuis la grille | fait — sur les vignettes du tableau de bord et de la bibliothèque |
 | Profil `/u/[username]` | fait — identité, chiffres, journal complet paginé |
 | Réglages `/settings` | fait — et les trois préférences sont **branchées**, plus seulement stockées |
 | Préférences `UserPreferences` (§4.6) | fait — échelle de notes, langue des titres, filtre 18+, tous lus par les écrans |
 | Listes `/lists` · `/lists/[slug]` | fait — créer, renommer, décrire, remplir depuis une fiche, retirer, supprimer |
 | Réordonner une liste (V1.5) | fait — glisser-déposer et clavier, une seule ligne réécrite |
-| `/browse` | fait — cinq rangées éditorialisées, une seule requête AniList |
+| `/browse` | **supprimée** — les cinq rangées vivent sur l'accueil (PRODUCT.md §5) |
+| Jeu d'essai `pnpm db:seed` | fait — 26 suivis, 128 événements, 5 listes, une requête AniList |
 | Cron de fraîcheur (§4.1) | fait — `/api/cron/refresh-media`, jeton porteur, lots de 50 |
 | Palette de commandes `⌘K` | fait — recherche bibliothèque + catalogue, et « +1 » sans quitter la page |
 | Limitation de débit | fait — Better Auth en `storage: "database"`, et un plafond par compte sur `/api/command` |
-| `/calendar`, `/collection` | n'existent pas — la nav pointe déjà dessus (V2 et V1.5) |
+| Planning `/calendar` (V2) | fait — semaine des séries suivies, retard épisode par épisode, « +1 » depuis la ligne ; **jamais global**, voir PRODUCT.md §9 |
+| `/collection` | n'existe pas — la nav pointe déjà dessus (V1.5) |
 
-**V0 et V1 sont bouclées**, et **V1.5 est entamée** par le réordonnancement des listes. Le récap
+**V0 et V1 sont bouclées**, **V1.5 est entamée** par le réordonnancement des listes, et **V2 l'est
+par le planning** — qui n'attendait rien d'autre que le cron de fraîcheur, déjà posé. Le récap
 annuel (§8.3) est écarté pour l'instant : c'est un choix, pas un oubli — il reste disponible, il ne
 bloque rien.
 
@@ -703,6 +1199,8 @@ Petites, mais elles se paient plus cher chaque semaine :
   qui n'est pas valide. Visible depuis le profil, mais le défaut est dans le fichier partagé.
 - **knip est en `warn`** sur `files`, `dependencies` et `exports`, le temps que les routes V0
   soient câblées. À repasser en `error` — le commentaire est dans `knip.jsonc`.
+- **L'accueil fait près de 5 600 px de haut.** Prix assumé du melting-pot, mais il faudra un jour
+  plier les rangées de découverte ou les alterner avec le suivi.
 - **Aucun test de composant React.** Vitest tourne en environnement `node` ; la logique testée est
   celle des `lib/`. Playwright est prévu pour les parcours critiques, pas encore installé. Ce trou
   a un coût mesuré : le formulaire qui s'effaçait sur erreur de validation (voir l'entrée du jour) a

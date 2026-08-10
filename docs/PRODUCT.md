@@ -143,9 +143,17 @@ C'est exactement l'inverse de la collection physique (§4.5), où l'on **peut** 
 1 et 3 sans le 2. Les deux ne se modélisent donc pas pareil : un entier ici, une ligne par tome
 là-bas. Confondre les deux est l'erreur à ne pas commettre.
 
-**La note est stockée sur 0–100**, et affichée selon la préférence du compte (10 points, 5
-étoiles, 100). C'est le choix d'AniList, et il évite de perdre de la précision si on change
-d'échelle plus tard.
+**La note est stockée sur 0–100 et affichée sur cinq étoiles, par demies.** Le stockage est celui
+d'AniList : il accueille sans perte les notes importées de là-bas, et il laisserait changer
+d'échelle plus tard sans réécrire une ligne.
+
+L'affichage, lui, **n'est plus un réglage** — il l'a été (10 points / 5 étoiles / 100), et le
+choix a été retiré. Trois échelles pour quatre comptes, c'était trois façons de lire la même note
+et une conversion à traîner dans chaque composant, pour un réglage que personne n'ouvre deux fois.
+Les demi-étoiles sont ce qui rend l'abandon des dix points acceptable : cinq crans ne séparent pas
+« bien » de « très bien », dix le font. Une demie vaut exactement dix points, donc elle survit à
+l'aller-retour ; une note qui tombe entre deux crans — 85, importée — s'affiche arrondie **et**
+suivie de sa valeur exacte.
 
 ### 4.3 `EntryEvent` — la mémoire
 
@@ -234,8 +242,9 @@ Ce modèle n'est pas limité au papier : un coffret Blu-ray d'un anime est une `
 ### 4.6 `User`
 
 Géré par Better Auth (voir §7), avec un champ `status` (`PENDING` / `APPROVED` / `REJECTED`) qui
-porte la liste d'attente (§7.1), plus une table de préférences : échelle de notation, affichage
-des titres (romaji / anglais), contenu adulte, langue.
+porte la liste d'attente (§7.1), plus une table de préférences : affichage des titres (romaji /
+anglais / original), contenu adulte, langue. **L'échelle de notation n'y est plus** : les notes
+sont sur cinq étoiles pour tout le monde (§4.2).
 
 ## 5. Architecture des routes
 
@@ -244,13 +253,12 @@ recherche ni fiche média — c'est-à-dire ni l'entrée ni le cœur de l'app.
 
 | Route | Rôle | Palier |
 | --- | --- | --- |
-| `/` | Tableau de bord : en cours, à reprendre, activité récente | V1 |
-| `/search` | Recherche du catalogue (filtres en URL via nuqs) | V0 |
-| `/browse` | Catalogue éditorialisé : saison en cours, tendances, top | V1 |
+| `/` | Accueil : en cours, à reprendre, mes listes, catalogue du moment, activité récente | V1 |
+| `/search` | Recherche du catalogue (filtres en URL via nuqs) ; sans terme, les tendances | V0 |
 | `/media/[id]` | Fiche d'une œuvre + actions de suivi | V0 |
 | `/library` | Ma bibliothèque, filtrée par statut / type / genre | V1 |
-| `/lists` · `/lists/[slug]` | Mes listes, et une liste | V1 |
-| `/lists/[slug]/[viewId]` | Une vue (classement, tier list) | V1.5 |
+| `/lists` · `/lists/[id]` | Mes listes, et une liste | V1 |
+| `/lists/[id]/[viewId]` | Une vue (classement, tier list) | V1.5 |
 | `/collection` | Mon étagère : séries possédées, tomes manquants | V1.5 |
 | `/collection/[mediaId]` | Une série : tomes possédés, plages, prêts | V1.5 |
 | `/u/[username]` | Profil : statistiques, listes partagées | V1 |
@@ -262,6 +270,28 @@ recherche ni fiche média — c'est-à-dire ni l'entrée ni le cœur de l'app.
 Une seule route `/media/[id]` pour tous les types : les ids AniList sont uniques entre `ANIME` et
 `MANGA`, un préfixe par type n'apporterait qu'une URL plus jolie contre une duplication de
 segment.
+
+Une liste s'adresse elle aussi par son `id`, et non par un slug tiré de son titre. Le slug était plus
+joli et coûtait trois choses : une contrainte d'unicité par propriétaire, un lien mort à chaque
+renommage, et une lecture supplémentaire dans chaque mutation pour retrouver le chemin à revalider.
+Les listes ne sont pas indexées (§4.4 — privées par défaut, derrière la garde d'accès) : personne
+n'avait rien à gagner à ce que l'URL soit lisible.
+
+**Il n'y a pas de `/browse`, et c'est une décision.** Le catalogue éditorialisé a existé comme page
+à part, puis a été replié sur l'accueil. Trois raisons, dans l'ordre où elles pèsent :
+
+- **Deux portes de découverte pour quatre comptes.** `/search` répond à une question qu'on a déjà,
+  `/browse` en suggérait une — mais il fallait choisir laquelle ouvrir *avant* de savoir laquelle on
+  posait. L'accueil n'a pas ce défaut : on y arrive sans rien choisir.
+- **L'accueil était le seul écran qui pouvait être vide.** Une bibliothèque neuve n'affichait qu'un
+  encadré et un bouton. Il montre maintenant de quoi la remplir, à l'endroit exact où ce manque se
+  constate.
+- **Le coût est nul.** Les cinq rangées viennent d'une requête AniList mémorisée une heure ; les
+  descendre d'une page à l'autre ne change pas le budget de §4.1.
+
+En contrepartie, l'accueil est **long**, et l'ordre y fait tout le travail : le suivi occupe la
+première hauteur d'écran, parce que le « +1 » est le geste le plus fréquent du produit (§6) et
+qu'il ne doit pas se payer d'un défilement.
 
 ## 6. Roadmap
 
@@ -407,6 +437,14 @@ Autour de la collection physique (§4.5) :
 
 - **Quota AniList partagé** (§4.1). Toute fonctionnalité qui interroge AniList par utilisateur et
   par affichage est à considérer comme un incident en puissance.
+
+- **Le planning ne peut pas être global.** Une semaine de diffusion, toutes œuvres confondues,
+  compte **cinq mille entrées** chez AniList — mesuré, pas estimé, et le compteur y est plafonné
+  donc c'est un plancher. À cinquante par page, afficher une semaine complète coûterait cent
+  requêtes sur les trente de la minute que le serveur partage entre tous les visiteurs. `/calendar`
+  filtre donc à la source, par `mediaId_in`, sur ce que le compte suit. Ce n'est pas une V1 de
+  quelque chose : un planning « tout AniList » n'est pas finançable, et le proposer un jour
+  supposerait une seconde source ou un miroir des grilles horaires, pas un réglage.
 - **CGU AniList** : usage non commercial, attribution attendue.
 - **Import MAL / AniList** : personne n'a de compte à migrer aujourd'hui, donc hors périmètre. Le
   choix d'aligner les statuts sur `MediaListStatus` (§4.2) suffit à garder la porte ouverte.

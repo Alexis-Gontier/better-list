@@ -232,6 +232,11 @@ t3-env sépare `server` et `client` et refuse au build qu'une variable serveur s
 Client Component.
 
 - **Jamais de `process.env.X` dans le code applicatif.** Toujours `import { env } from "@/config/env"`.
+- **Les fichiers de CLI en sont dispensés**, et la liste est close : `prisma.config.ts` et
+  `prisma/seed.ts`. Ils tournent hors de Next, donc sans le `NODE_ENV` que t3-env exige — importer
+  `@/config/env` y ferait échouer le script avant sa première ligne utile. Le hook
+  `conventions-guard.mjs` les nomme un par un, ce qui interdit d'étendre l'exception par
+  inadvertance.
 - `next.config.ts` importe ce fichier : une variable manquante casse le build, pas une requête
   utilisateur en production.
 - Une variable client doit être déclarée **deux fois** — dans `client`, et dans
