@@ -8,17 +8,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Command,
+  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   type CommandResults,
   commandResultsSchema,
@@ -32,8 +28,18 @@ import { upfetch } from "@/lib/http/fetch";
  *
  * Le geste existait déjà, mais seulement sur la fiche d'une œuvre (`AddToListDialog`) : remplir une
  * liste de dix titres demandait dix allers-retours vers dix fiches. Ici l'intention « je remplis
- * **cette** liste » est déjà posée par la page, il ne reste qu'à nommer les œuvres — et le panneau
- * reste ouvert d'un ajout à l'autre, ce qui est tout l'intérêt.
+ * **cette** liste » est déjà posée par la page, il ne reste qu'à nommer les œuvres — et la fenêtre
+ * reste ouverte d'un ajout à l'autre, ce qui est tout l'intérêt.
+ *
+ * **Une fenêtre modale, et le même `CommandDialog` que la palette ⌘K.** C'est le geste le plus
+ * proche de ce que fait déjà la palette — on tape un titre, on choisit une ligne —, et lui donner la
+ * même forme évite d'apprendre deux fois la même chose. Une fenêtre offre aussi la hauteur qu'un
+ * panneau ancré n'a pas : sous une barre de commandes, les six résultats du catalogue tombaient à
+ * quelques pixels du bas de l'écran sur un portable.
+ *
+ * Le prix est assumé : la grille disparaît derrière le voile, donc les vignettes ajoutées ne se
+ * voient qu'à la fermeture. C'est la ligne cochée qui rend compte de chaque ajout, et elle suffit —
+ * elle nomme l'œuvre, là où une vignette de plus au fond d'une grille de vingt ne se remarque pas.
  *
  * **La recherche part vers `/api/command`, la route de la palette ⌘K, sans rien y changer.** Elle
  * cherche déjà les deux sources dont on a besoin — la bibliothèque dans le miroir local, le catalogue
@@ -198,20 +204,23 @@ export function AddToListSearch({
   ].filter((group) => group.items.length > 0);
 
   return (
-    <Popover onOpenChange={changeOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button size="sm" variant="outline">
-          <PlusIcon />
-          Ajouter une œuvre
-        </Button>
-      </PopoverTrigger>
+    <>
+      <Button onClick={() => changeOpen(true)} size="sm" variant="outline">
+        <PlusIcon />
+        Ajouter une œuvre
+      </Button>
 
       {/*
-        Sans rembourrage propre : `Command` porte le sien, et le champ de recherche doit toucher les
-        bords du panneau comme il le fait dans la palette. La largeur est fixe et ne suit pas celle du
-        déclencheur — un bouton de deux mots ne dicte pas la place qu'il faut pour lire des titres.
+        Le titre et la description ne sont pas dessinés — la fenêtre s'explique par son champ, comme
+        la palette —, mais ils sont annoncés : un dialogue sans nom laisse un lecteur d'écran ouvrir
+        une boîte dont il ne sait rien.
       */}
-      <PopoverContent align="end" className="w-80 p-0 sm:w-96">
+      <CommandDialog
+        description="Chercher une œuvre dans votre bibliothèque ou dans le catalogue, et l'ajouter à cette liste."
+        onOpenChange={changeOpen}
+        open={open}
+        title="Ajouter une œuvre à la liste"
+      >
         <Command
           /**
            * On filtre nous-mêmes, comme la palette : les résultats arrivent **déjà filtrés par le
@@ -267,7 +276,7 @@ export function AddToListSearch({
             ))}
           </CommandList>
         </Command>
-      </PopoverContent>
-    </Popover>
+      </CommandDialog>
+    </>
   );
 }

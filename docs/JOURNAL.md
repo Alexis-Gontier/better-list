@@ -169,6 +169,17 @@ chaque, et l'état « Déjà dans la liste » toujours juste **après rechargeme
 serveur et plus seulement de l'état local. Les trois ajouts ont été retirés ensuite : la liste est
 revenue à ses quatre œuvres d'origine.
 
+**Puis le panneau est devenu une fenêtre** (décision d'Alexis, même jour) : `CommandDialog`, celui de
+la palette ⌘K, plutôt qu'un `Popover` ancré au bouton. C'est le geste le plus proche de ce que fait
+déjà la palette — on tape un titre, on choisit une ligne —, et lui donner la même forme évite
+d'apprendre deux fois la même chose ; la fenêtre offre en prime la hauteur qu'un panneau ancré sous
+une barre de commandes n'a pas, où les six résultats du catalogue tombaient à quelques pixels du bas
+de l'écran sur un portable. Le prix est assumé : la grille passe derrière le voile, donc les
+vignettes ajoutées ne se voient qu'à la fermeture — c'est la ligne cochée qui rend compte de chaque
+ajout, et elle nomme l'œuvre, là où une vignette de plus au fond d'une grille de vingt ne se
+remarque pas. Tout le reste est inchangé, et revérifié à l'écran : ligne cochée, focus conservé,
+fenêtre qui reste ouverte.
+
 L'état vide de la liste renvoyait vers la fiche pour ajouter quelque chose ; il nomme maintenant le
 champ, et garde sa porte vers la recherche — les deux ne répondent pas à la même question, « laquelle
 ajouter ? » contre « ajoute celle-ci ». Cet état-là n'a pas été vu à l'écran, faute de liste vide sous
