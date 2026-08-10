@@ -44,7 +44,13 @@ export const routes = {
   },
 
   collection: {
-    /** Mon étagère : séries possédées, tomes manquants. */
+    /**
+     * Mon étagère : séries possédées, tomes manquants (V1.5).
+     *
+     * **Le segment est déclaré, l'écran n'existe pas encore** — et rien ne pointe dessus : la nav et
+     * la palette ont perdu leur entrée « Ma collection » le temps que la page arrive. Le chemin
+     * reste ici parce que PRODUCT.md §5 le fixe, pas parce qu'il est atteignable.
+     */
     root: "/collection",
     /** Une série : tomes possédés, plages, prêts. */
     detail: (mediaId: number) => `/collection/${mediaId}` as const,

@@ -97,13 +97,16 @@ type PaletteSection = {
 /**
  * Aucun chemin en dur : tout vient de `routes` (docs/ARCHITECTURE.md). Une palette qui pointe une
  * URL périmée envoie sur une 404 sans que rien ne le signale au build.
+ *
+ * « Ma collection » en est retirée tant que `/collection` n'existe pas, pour la même raison que dans
+ * la nav (`config/navigation.ts`) : la palette est la voie la plus rapide vers une page, donc la
+ * plus rapide vers une 404.
  */
 const navigation = [
   { href: routes.home, label: "Accueil", icon: CompassIcon },
   { href: routes.search, label: "Rechercher", icon: SearchIcon },
   { href: routes.library, label: "Bibliothèque", icon: LibraryIcon },
   { href: routes.lists.root, label: "Mes listes", icon: ListPlusIcon },
-  { href: routes.collection.root, label: "Ma collection", icon: LibraryIcon },
   { href: routes.settings, label: "Paramètres", icon: SettingsIcon },
 ];
 
