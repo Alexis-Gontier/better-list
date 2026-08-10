@@ -3,6 +3,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import {
+  AIRING_SCHEDULE_QUERY,
   BROWSE_CATALOGUE_QUERY,
   FILTER_VOCABULARY_QUERY,
   MEDIA_BY_ID_QUERY,
@@ -10,6 +11,8 @@ import {
 } from "@/features/media/lib/media-documents";
 import { nextSeason, type SeasonSlot } from "@/features/media/lib/media-season";
 import {
+  type AiringSchedule,
+  airingScheduleDataSchema,
   browseCatalogueDataSchema,
   filterVocabularyDataSchema,
   type Media,
@@ -177,6 +180,97 @@ async function getBrowseCatalogueCached({
     topRated: data.topRated.media,
     topManga: data.topManga.media,
   };
+}
+
+/** Le maximum qu'AniList sert en une fois sur `Page`. */
+const AIRING_PER_PAGE = 50;
+
+/**
+ * Combien de pages on accepte de payer pour une semaine.
+ *
+ * Cent cinquante diffusions en sept jours, c'est déjà une bibliothèque qui suit une vingtaine de
+ * séries quotidiennes. Au-delà, mieux vaut une semaine tronquée qu'une boucle qui vide le quota :
+ * la borne est là pour qu'une bibliothèque hors norme ne puisse pas mettre la page de tout le monde
+ * en panne.
+ */
+const AIRING_MAX_PAGES = 3;
+
+/**
+ * Le planning de diffusion d'un ensemble d'œuvres, sur une fenêtre de temps.
+ *
+ * **Les ids sont un argument, pas un filtre appliqué après coup**, et c'est ce qui distingue cette
+ * lecture des autres du fichier. Une semaine de diffusion complète, c'est cinq mille entrées chez
+ * AniList (mesuré) : la ramener pour n'en garder que trente serait cent requêtes sur un quota de
+ * trente par minute. Le filtre appartient donc à la requête.
+ *
+ * La contrepartie est une entrée de cache par ensemble d'œuvres suivies, là où le reste du fichier
+ * n'en a qu'une pour tout le monde. Elle est assumée — le cercle compte quatre comptes
+ * (docs/PRODUCT.md §2) — et **les ids sont triés** pour que deux membres qui suivent les mêmes
+ * séries partagent l'entrée : la clé de cache est la sérialisation des arguments, donc l'ordre
+ * d'arrivée des lignes de la base en ferait sinon deux entrées pour une seule réponse.
+ *
+ * Une bibliothèque sans œuvre en cours de diffusion **ne part pas du tout** chez AniList : c'est le
+ * cas d'un compte neuf, et lui faire payer une requête pour recevoir une liste vide serait absurde.
+ */
+export async function getAiringSchedule({
+  mediaIds,
+  from,
+  to,
+}: {
+  mediaIds: number[];
+  /** Début de la fenêtre, en secondes Unix. Inclus. */
+  from: number;
+  /** Fin de la fenêtre, en secondes Unix. Exclue. */
+  to: number;
+}): Promise<AiringSchedule[]> {
+  if (mediaIds.length === 0) return [];
+
+  return getAiringScheduleCached({
+    mediaIds: [...mediaIds].sort((a, b) => a - b),
+    from,
+    to,
+  });
+}
+
+async function getAiringScheduleCached({
+  mediaIds,
+  from,
+  to,
+}: {
+  mediaIds: number[];
+  from: number;
+  to: number;
+}): Promise<AiringSchedule[]> {
+  "use cache";
+  // La grille horaire est la donnée la plus volatile qu'on lise : un report d'épisode est annoncé
+  // le jour même, parfois dans l'heure. C'est la seule lecture du fichier qui descende à la minute.
+  cacheLife("minutes");
+  cacheTag(MEDIA_CACHE_TAG);
+
+  const schedules: AiringSchedule[] = [];
+
+  for (let page = 1; page <= AIRING_MAX_PAGES; page++) {
+    const data = await anilistQuery({
+      query: AIRING_SCHEDULE_QUERY,
+      variables: {
+        mediaIds,
+        // Les deux filtres d'AniList sont **exclusifs**. La fenêtre, elle, est donnée bornes
+        // ouvertes à droite (`[from, to[`) comme partout ailleurs dans le projet : on décale donc
+        // `from` d'une seconde pour ne pas perdre une diffusion pile à minuit — il en existe.
+        from: from - 1,
+        to,
+        page,
+        perPage: AIRING_PER_PAGE,
+      },
+      schema: airingScheduleDataSchema,
+    });
+
+    schedules.push(...data.Page.airingSchedules);
+
+    if (!data.Page.pageInfo.hasNextPage) break;
+  }
+
+  return schedules;
 }
 
 export type FilterVocabulary = {

@@ -233,6 +233,53 @@ export const BROWSE_CATALOGUE_QUERY = /* GraphQL */ `
   ${MEDIA_BROWSE_FIELDS}
 `;
 
+/**
+ * La grille horaire d'un ensemble d'œuvres, sur une fenêtre de temps.
+ *
+ * **Aucun champ `media` dans la sélection, et c'est tout l'intérêt.** L'appelant part de sa propre
+ * bibliothèque : il a déjà les jaquettes, les titres et les plafonds dans le miroir local
+ * (docs/PRODUCT.md §4.1). Redemander ces colonnes à AniList les paierait une seconde fois et — pire
+ * — afficherait un titre qui ignore la préférence de langue du compte (§4.6). Ne reviennent donc
+ * que les trois informations qu'on n'a pas : quel média, quel épisode, à quelle heure.
+ *
+ * `mediaId_in` est ce qui rend la page tenable. Sans lui, une semaine de diffusion, c'est **cinq
+ * mille** entrées chez AniList — mesuré, pas estimé — soit cent requêtes sur un quota de trente par
+ * minute partagé par tous les visiteurs. Le planning est donc filtré à la source par ce qu'on suit,
+ * ce qui est de toute façon ce qu'il promet (docs/PRODUCT.md §5).
+ *
+ * `sort: [TIME]` trie côté API : la journée arrive déjà dans l'ordre où elle se vit.
+ */
+export const AIRING_SCHEDULE_QUERY = /* GraphQL */ `
+  query AiringSchedule(
+    $mediaIds: [Int]
+    $from: Int
+    $to: Int
+    $page: Int = 1
+    $perPage: Int = 50
+  ) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo {
+        total
+        currentPage
+        lastPage
+        hasNextPage
+        perPage
+      }
+      airingSchedules(
+        mediaId_in: $mediaIds
+        airingAt_greater: $from
+        airingAt_lesser: $to
+        sort: [TIME]
+      ) {
+        id
+        mediaId
+        episode
+        airingAt
+      }
+    }
+  }
+`;
+
 export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
   query SearchMedia(
     $search: String
