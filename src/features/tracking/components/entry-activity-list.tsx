@@ -42,7 +42,7 @@ export async function EntryActivityList({
 }: {
   events: ActivityEvent[];
 }) {
-  const { titleLanguage, scoreFormat } = await getPreferences();
+  const { titleLanguage } = await getPreferences();
   const days = groupEventsByDay(events, new Date());
 
   return (
@@ -59,7 +59,6 @@ export async function EntryActivityList({
               const { label, detail } = describeEntryEvent(
                 event,
                 media.type === "ANIME" ? "episode" : "chapitre",
-                scoreFormat,
               );
 
               return (

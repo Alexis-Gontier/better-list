@@ -2,7 +2,7 @@
 
 import { HeartIcon, MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useAction, useOptimisticAction } from "next-safe-action/hooks";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import type { ScoreFormat } from "@/features/preferences/schemas/preferences.schema";
-import { ScoreInput } from "@/features/tracking/components/score-input";
+import { ScoreStars } from "@/features/tracking/components/score-stars";
+import { toDateInputValue } from "@/features/tracking/lib/entry-draft";
 import {
   ENTRY_STATUS_LABELS,
   ENTRY_UNIT_LABELS,
+  UNKNOWN_TOTAL,
 } from "@/features/tracking/lib/entry-format";
 import {
   type EntryState,
@@ -52,24 +53,12 @@ import { cn } from "@/lib/utils";
 /** Champs que la projection optimiste ne recopie pas — voir `updateFn`. */
 const IGNORED_IN_OPTIMISTIC = new Set(["mediaId", "startedAt", "finishedAt"]);
 
-/**
- * `Date` → valeur d'un `<input type="date">`.
- *
- * En UTC, et pas avec les accesseurs locaux : ce composant est rendu une première fois sur le
- * serveur, dont le fuseau n'est pas celui du visiteur. `getFullYear()` produirait deux valeurs
- * différentes de part et d'autre et casserait l'hydratation. Les dates saisies sont d'ailleurs
- * stockées à midi UTC exprès, pour qu'aucun fuseau ne fasse basculer le jour.
- */
-function toInputDate(date: Date | null): string {
-  return date ? date.toISOString().slice(0, 10) : "";
-}
-
 export function EntryControls({
   mediaId,
   entry,
   total,
   unit,
-  scoreFormat,
+  onRemoved,
 }: {
   mediaId: number;
   /** `null` tant que l'œuvre n'est pas suivie. */
@@ -77,9 +66,21 @@ export function EntryControls({
   /** Épisodes ou chapitres connus. `null` sur une œuvre en cours de diffusion. */
   total: number | null;
   unit: "episode" | "chapitre";
-  /** L'échelle d'affichage du compte. Le stockage, lui, reste sur 0–100 (docs/PRODUCT.md §4.2). */
-  scoreFormat: ScoreFormat;
+  /**
+   * Appelé quand l'œuvre vient de quitter la bibliothèque.
+   *
+   * La fiche n'en fait rien — elle reste sur l'œuvre, dont le panneau repasse simplement en « pas
+   * suivi ». La fenêtre d'une vignette, elle, doit se fermer : elle édite un suivi qui n'existe plus.
+   */
+  onRemoved?: () => void;
 }) {
+  /**
+   * Les identifiants sont dérivés d'un `useId` et non écrits en dur : ces contrôles se rendent
+   * désormais dans la fenêtre d'une vignette, et une grille en compte vingt-quatre. Des `id`
+   * constants s'y dupliqueraient, et un `<label for>` désignerait alors le champ d'une autre carte.
+   */
+  const fieldId = useId();
+
   const { execute, optimisticState, isPending } = useOptimisticAction(
     saveEntry,
     {
@@ -108,6 +109,7 @@ export function EntryControls({
   );
 
   const remove = useAction(removeEntry, {
+    onSuccess: () => onRemoved?.(),
     onError: () => toast.error("Le suivi n'a pas pu être supprimé."),
   });
 
@@ -142,13 +144,13 @@ export function EntryControls({
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <Label htmlFor="entry-status">Statut</Label>
+        <Label htmlFor={`${fieldId}-statut`}>Statut</Label>
         <Select
           disabled={isPending}
           onValueChange={(status) => update({ status: status as EntryStatus })}
           value={state.status}
         >
-          <SelectTrigger className="w-full" id="entry-status">
+          <SelectTrigger className="w-full" id={`${fieldId}-statut`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -162,14 +164,16 @@ export function EntryControls({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="entry-progress">
+        <Label htmlFor={`${fieldId}-progression`}>
           {unit === "episode" ? "Épisode" : "Chapitre"}
-          {total !== null ? (
-            <span className="font-normal text-muted-foreground">
-              {" "}
-              sur {total}
-            </span>
-          ) : null}
+          {/*
+            Le dénominateur s'affiche même inconnu : « sur ? » dit qu'il en reste, là où l'absence
+            de mention laissait croire à une série sans fin annoncée.
+          */}
+          <span className="font-normal text-muted-foreground">
+            {" "}
+            sur {total ?? UNKNOWN_TOTAL}
+          </span>
         </Label>
 
         <div className="flex items-center gap-1.5">
@@ -188,7 +192,7 @@ export function EntryControls({
             aria-label={ENTRY_UNIT_LABELS[unit].consumed}
             className="text-center tabular-nums"
             disabled={isPending}
-            id="entry-progress"
+            id={`${fieldId}-progression`}
             inputMode="numeric"
             max={total ?? undefined}
             min={0}
@@ -222,9 +226,8 @@ export function EntryControls({
 
       <div className="space-y-1.5">
         <Label>Ma note</Label>
-        <ScoreInput
+        <ScoreStars
           disabled={isPending}
-          format={scoreFormat}
           onChange={(score) => update({ score })}
           value={state.score}
         />
@@ -252,12 +255,12 @@ export function EntryControls({
       */}
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="entry-started">Date de début</Label>
+          <Label htmlFor={`${fieldId}-debut`}>Date de début</Label>
           <Input
-            defaultValue={toInputDate(state.startedAt)}
+            defaultValue={toDateInputValue(state.startedAt)}
             disabled={isPending}
-            id="entry-started"
-            key={`debut-${toInputDate(state.startedAt)}`}
+            id={`${fieldId}-debut`}
+            key={`debut-${toDateInputValue(state.startedAt)}`}
             onChange={(event) =>
               update({ startedAt: event.target.value || null })
             }
@@ -266,12 +269,12 @@ export function EntryControls({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="entry-finished">Date de fin</Label>
+          <Label htmlFor={`${fieldId}-fin`}>Date de fin</Label>
           <Input
-            defaultValue={toInputDate(state.finishedAt)}
+            defaultValue={toDateInputValue(state.finishedAt)}
             disabled={isPending}
-            id="entry-finished"
-            key={`fin-${toInputDate(state.finishedAt)}`}
+            id={`${fieldId}-fin`}
+            key={`fin-${toDateInputValue(state.finishedAt)}`}
             onChange={(event) =>
               update({ finishedAt: event.target.value || null })
             }
@@ -280,12 +283,12 @@ export function EntryControls({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="entry-repeat">Revisionnages</Label>
+          <Label htmlFor={`${fieldId}-relectures`}>Revisionnages</Label>
           <Input
             className="tabular-nums"
             defaultValue={state.repeatCount}
             disabled={isPending}
-            id="entry-repeat"
+            id={`${fieldId}-relectures`}
             inputMode="numeric"
             key={`relectures-${state.repeatCount}`}
             min={0}
@@ -338,16 +341,17 @@ function EntryNotes({
   onSave: (notes: string | null) => void;
   disabled?: boolean;
 }) {
+  const fieldId = useId();
   const [draft, setDraft] = useState(notes ?? "");
   const dirty = draft !== (notes ?? "");
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="entry-notes">Mes notes</Label>
+      <Label htmlFor={fieldId}>Mes notes</Label>
       <Textarea
         className="min-h-20 resize-y"
         disabled={disabled}
-        id="entry-notes"
+        id={fieldId}
         onChange={(event) => setDraft(event.target.value)}
         placeholder="Ce que j'en ai pensé…"
         value={draft}

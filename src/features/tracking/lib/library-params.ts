@@ -2,9 +2,11 @@ import {
   createLoader,
   createSerializer,
   parseAsInteger,
+  parseAsString,
   parseAsStringLiteral,
 } from "nuqs/server";
 
+import { DEFAULT_VIEW_MODE, VIEW_MODES } from "@/config/catalogue";
 import { ENTRY_STATUS_LABELS } from "@/features/tracking/lib/entry-format";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 
@@ -62,9 +64,23 @@ const TYPE_VALUES = LIBRARY_TYPE_OPTIONS.map((option) => option.value);
 const SORT_VALUES = LIBRARY_SORT_OPTIONS.map((option) => option.value);
 
 export const libraryFilterParsers = {
+  /**
+   * Le terme de recherche, qui ne part **jamais chez AniList**.
+   *
+   * C'est toute la différence avec `/search` : la bibliothèque ne cherche que dans les colonnes de
+   * titre du miroir local (docs/PRODUCT.md §4.1), donc une frappe ne coûte rien au quota de 30
+   * requêtes par minute. C'est ce qui rend la recherche à la volée acceptable ici alors qu'elle est
+   * anti-rebondie sur le catalogue.
+   *
+   * Sans lui, la seule façon de retrouver une œuvre parmi plusieurs centaines de suivis était de
+   * paginer jusqu'à elle — ou de passer par la palette ⌘K, qui ne montre que huit lignes.
+   */
+  q: parseAsString.withDefault(""),
   status: parseAsStringLiteral(STATUS_VALUES),
   type: parseAsStringLiteral(TYPE_VALUES),
   sort: parseAsStringLiteral(SORT_VALUES).withDefault("recent"),
+  /** Grille ou liste dense — la disposition est dans l'URL, donc partageable et rejouée au retour. */
+  view: parseAsStringLiteral(VIEW_MODES).withDefault(DEFAULT_VIEW_MODE),
   page: parseAsInteger.withDefault(1),
 };
 

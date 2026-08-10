@@ -1,5 +1,4 @@
 import { LOCALE, TIMEZONE } from "@/config/locale";
-import type { ScoreFormat } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryEventDraft } from "@/features/tracking/lib/entry-transition";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 
@@ -48,13 +47,15 @@ export const ENTRY_STATUS_LABELS: Record<EntryStatus, string> = {
 };
 
 /**
- * Cinq étoiles pleines, une étoile vaut vingt points (docs/PRODUCT.md §4.2 : le stockage reste sur
- * 0–100). Les deux constantes vivent ici et pas dans `score-stars.tsx` : ce fichier-là est un îlot
- * client, et la timeline — un Server Component — a besoin de la même conversion pour afficher
- * « Noté 4/5 ».
+ * Cinq étoiles, **par demies** — une étoile vaut vingt points, une demie en vaut dix
+ * (docs/PRODUCT.md §4.2 : le stockage reste sur 0–100 quelle que soit l'échelle affichée).
+ *
+ * Les constantes vivent ici et pas dans `score-stars.tsx` : ce fichier-là est un îlot client, et la
+ * timeline — un Server Component — a besoin de la même conversion pour afficher « Noté 3,5/5 ».
  */
 export const SCORE_STARS = 5;
-export const SCORE_POINTS_PER_STAR = 20;
+/** Le plus petit geste possible sur les étoiles. Une demie, donc dix notes et non cinq. */
+export const SCORE_STAR_STEP = 0.5;
 
 /**
  * Un événement du journal, tel qu'il est lu.
@@ -157,7 +158,17 @@ export function formatDayLabel(date: Date, now: Date): string {
 }
 
 /**
- * Où j'en suis, en une chaîne : « 12 / 24 », ou « 12 » quand le total est inconnu.
+ * Le dénominateur quand personne ne le connaît.
+ *
+ * Une série en cours de diffusion n'a pas de nombre d'épisodes chez AniList, et l'omettre laissait
+ * lire « 145 » comme un total. Le point d'interrogation dit la seule chose vraie : il en reste, on
+ * ne sait pas combien. C'est une constante et non un littéral recopié — la fraction s'écrit dans
+ * la vignette, dans le panneau de la fiche et dans le formulaire.
+ */
+export const UNKNOWN_TOTAL = "?";
+
+/**
+ * Où j'en suis, en une chaîne : « 12 / 24 », ou « 145 / ? » quand le total est inconnu.
  *
  * `null` à zéro : sur une œuvre seulement prévue, « 0 / 24 » n'apprend rien et alourdit chaque
  * vignette d'une bibliothèque. L'absence de compteur dit déjà « pas commencé ».
@@ -167,7 +178,51 @@ export function formatEntryProgress(
   total: number | null,
 ): string | null {
   if (progress <= 0) return null;
-  return total && total > 0 ? `${progress} / ${total}` : String(progress);
+  return `${progress} / ${total && total > 0 ? total : UNKNOWN_TOTAL}`;
+}
+
+/**
+ * Où j'en suis vis-à-vis d'un épisode du planning.
+ *
+ * L'état est renvoyé **à côté** du libellé, et pas déduit de lui : un appelant qui déciderait de
+ * son affichage en comparant la chaîne à `"Vu"` se casserait à la première reformulation. Le
+ * libellé est fait pour être lu, l'état pour être testé.
+ *
+ * `next` est le seul état sur lequel un « +1 » a un sens univoque : cet épisode-là est exactement
+ * le suivant, donc avancer d'un cran veut dire « je viens de le voir » et rien d'autre. Deux
+ * épisodes de retard, et le geste n'en rattraperait qu'un.
+ */
+export type AiringCatchUp = {
+  state: "seen" | "next" | "behind";
+  label: string;
+};
+
+/**
+ * Le retard, mesuré contre un épisode du planning.
+ *
+ * C'est l'information que ni AniList ni MyAnimeList ne donnent sur leur grille horaire : ils disent
+ * ce qui sort, pas ce qu'il vous manque pour le regarder. Sur un tracker, c'est l'inverse qui
+ * décide — savoir qu'il sort un épisode 9 ce soir n'a d'usage que rapporté au fait qu'on en est au
+ * 6.
+ *
+ * Le décompte porte sur ce qui sépare du **début** de cet épisode-là : à l'épisode 9 avec une
+ * progression de 6, il en manque deux (le 7 et le 8) avant d'y arriver, pas trois.
+ */
+export function describeAiringCatchUp(
+  episode: number,
+  progress: number,
+  unit: EntryUnit,
+): AiringCatchUp {
+  if (progress >= episode) return { state: "seen", label: "Vu" };
+  if (progress === episode - 1) return { state: "next", label: "À jour" };
+
+  const missing = episode - 1 - progress;
+  const { singular } = ENTRY_UNIT_LABELS[unit];
+
+  return {
+    state: "behind",
+    label: `${missing} ${singular}${missing > 1 ? "s" : ""} de retard`,
+  };
 }
 
 const RELATIVE_FORMAT = new Intl.RelativeTimeFormat(LOCALE, {
@@ -201,58 +256,66 @@ export function formatSince(date: Date, now: Date): string {
   return RELATIVE_FORMAT.format(-Math.floor(days / DAYS_PER_YEAR), "year");
 }
 
-/** Note stockée sur 0–100 → nombre d'étoiles affichées. */
-export function scoreToStars(score: number): number {
-  return Math.round(score / SCORE_POINTS_PER_STAR);
-}
-
 /**
- * Combien vaut un cran de l'échelle, en points de stockage.
+ * Combien vaut une étoile en points de stockage. Vingt, et une demie en vaut dix.
  *
- * Le stockage reste sur 0–100 quelle que soit l'échelle affichée (docs/PRODUCT.md §4.2) : c'est ce
- * facteur qui fait l'aller-retour, et le fait qu'il soit défini une fois est ce qui garantit qu'une
- * note saisie à « 8/10 » se relise « 4/5 » après un changement de réglage, sans avoir bougé en base.
+ * Le stockage reste sur 0–100 (docs/PRODUCT.md §4.2) alors que l'affichage est sur cinq : c'est ce
+ * facteur qui fait l'aller-retour. Il garde tout leur sens aux notes importées d'AniList, qui
+ * arrivent sur cent et qu'aucune conversion n'écrase.
  */
-export const SCORE_STEP: Record<ScoreFormat, number> = {
-  POINT_100: 1,
-  POINT_10: 10,
-  POINT_5: SCORE_POINTS_PER_STAR,
-};
+const POINTS_PER_STAR = 100 / SCORE_STARS;
 
-/** Le maximum de l'échelle affichée : 100, 10 ou 5. */
-export function scoreScaleMax(format: ScoreFormat): number {
-  return Math.round(100 / SCORE_STEP[format]);
-}
-
-/** Note stockée → valeur dans l'échelle affichée. */
-export function scoreToScale(score: number, format: ScoreFormat): number {
-  return Math.round(score / SCORE_STEP[format]);
-}
-
-/** Valeur saisie dans l'échelle affichée → note stockée sur 0–100. */
-export function scaleToScore(value: number, format: ScoreFormat): number {
+/** Note stockée sur 0–100 → étoiles affichées, arrondies à la demie la plus proche. */
+export function scoreToStars(score: number): number {
   return (
-    Math.min(Math.max(value, 0), scoreScaleMax(format)) * SCORE_STEP[format]
+    Math.round(score / POINTS_PER_STAR / SCORE_STAR_STEP) * SCORE_STAR_STEP
   );
 }
 
-/** « 8/10 », « 4/5 », « 85/100 » — la note dans l'échelle du lecteur. */
-export function formatScore(score: number, format: ScoreFormat): string {
-  return `${scoreToScale(score, format)}/${scoreScaleMax(format)}`;
+/**
+ * Étoiles saisies → note stockée sur 0–100, **entière**.
+ *
+ * L'arrondi n'est pas une précaution de style : la colonne est un entier. Une demi-étoile tombe
+ * pile sur dix points, mais rien n'oblige un futur pas à tomber juste.
+ */
+export function starsToScore(stars: number): number {
+  return Math.round(
+    Math.min(Math.max(stars, 0), SCORE_STARS) * POINTS_PER_STAR,
+  );
 }
 
 /**
- * La valeur exacte, **et seulement quand l'échelle la perd**.
+ * Une note d'étoiles telle qu'elle se lit en français : « 3,5 » et non « 3.5 ».
  *
- * Une note de 85 s'affiche « 4/5 » sur cinq étoiles : arrondie. On ne fait pas disparaître une
- * précision qu'on ne sait pas dessiner — mais on ne répète pas non plus « 85/100 » à côté de
- * « 85/100 ».
+ * Le séparateur vient de la locale du produit et n'est pas écrit à la main — c'est aussi ce que
+ * lisent les noms accessibles des crans, qu'un lecteur d'écran francophone prononce alors
+ * correctement.
  */
-export function exactScoreIfRounded(
-  score: number,
-  format: ScoreFormat,
-): string | null {
-  return score % SCORE_STEP[format] === 0 ? null : `${score}/100`;
+const STARS_FORMAT = new Intl.NumberFormat(LOCALE, {
+  maximumFractionDigits: 1,
+});
+
+export function formatStars(stars: number): string {
+  return STARS_FORMAT.format(stars);
+}
+
+/** « 3,5/5 », « 4/5 » — la note telle qu'on la lit. */
+export function formatScore(score: number): string {
+  return `${formatStars(scoreToStars(score))}/${SCORE_STARS}`;
+}
+
+/**
+ * La valeur exacte, **et seulement quand les étoiles la perdent**.
+ *
+ * Une note de 85 s'affiche « 4,5/5 » : arrondie. On ne fait pas disparaître une précision qu'on ne
+ * sait pas dessiner — mais on ne répète pas non plus « 85/100 » à côté d'une note qui vaut
+ * exactement ça. Le cas n'est pas théorique : les notes venues d'AniList sont sur cent.
+ *
+ * La question se pose par **l'aller-retour et non par un reste de division** : l'échelle perd de la
+ * précision exactement quand la note n'y survit pas au passage.
+ */
+export function exactScoreIfRounded(score: number): string | null {
+  return starsToScore(scoreToStars(score)) === score ? null : `${score}/100`;
 }
 
 /**
@@ -265,7 +328,6 @@ export function exactScoreIfRounded(
 export function describeEntryEvent(
   event: EntryEventView,
   unit: EntryUnit,
-  scoreFormat: ScoreFormat,
 ): EntryEventLine {
   switch (event.type) {
     case "PROGRESS": {
@@ -313,8 +375,8 @@ export function describeEntryEvent(
       if (event.score === null) return { label: "Note modifiée", detail: null };
 
       return {
-        label: `Noté ${formatScore(event.score, scoreFormat)}`,
-        detail: exactScoreIfRounded(event.score, scoreFormat),
+        label: `Noté ${formatScore(event.score)}`,
+        detail: exactScoreIfRounded(event.score),
       };
     }
 

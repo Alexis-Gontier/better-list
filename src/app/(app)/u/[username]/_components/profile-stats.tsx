@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { LOCALE } from "@/config/locale";
 import { routes } from "@/config/routes";
-import type { ScoreFormat } from "@/features/preferences/schemas/preferences.schema";
 import type { getProfileStats } from "@/features/profile/server/profile.queries";
 import {
   ENTRY_STATUS_LABELS,
@@ -39,7 +38,6 @@ function Tile({ label, value }: { label: string; value: string }) {
 export function ProfileStats({
   stats,
   isSelf,
-  scoreFormat,
 }: {
   stats: Stats;
   isSelf: boolean;
@@ -47,7 +45,6 @@ export function ProfileStats({
    * L'échelle est celle **du visiteur**, pas celle du membre consulté : c'est une préférence de
    * lecture, et un chiffre doit se lire dans l'unité de qui le regarde.
    */
-  scoreFormat: ScoreFormat;
 }) {
   const count = (value: number) => value.toLocaleString(LOCALE);
 
@@ -64,9 +61,7 @@ export function ProfileStats({
         <Tile
           label="note moyenne"
           value={
-            stats.averageScore === null
-              ? "—"
-              : formatScore(stats.averageScore, scoreFormat)
+            stats.averageScore === null ? "—" : formatScore(stats.averageScore)
           }
         />
       </div>

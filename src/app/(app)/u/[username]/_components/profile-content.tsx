@@ -12,7 +12,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { routes } from "@/config/routes";
-import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import {
   loadProfileFilters,
   serializeProfileFilters,
@@ -54,8 +53,7 @@ export async function ProfileContent({
 
   const { page } = await loadProfileFilters(searchParams);
 
-  const [{ scoreFormat }, stats, timeline] = await Promise.all([
-    getPreferences(),
+  const [stats, timeline] = await Promise.all([
     getProfileStats({ userId: profile.id, isSelf }),
     getProfileTimeline({ userId: profile.id, isSelf, page }),
   ]);
@@ -70,7 +68,7 @@ export async function ProfileContent({
         username={profile.username}
       />
 
-      <ProfileStats isSelf={isSelf} scoreFormat={scoreFormat} stats={stats} />
+      <ProfileStats isSelf={isSelf} stats={stats} />
 
       <section aria-labelledby="journal" className="space-y-3">
         <div className="flex items-baseline justify-between gap-4">

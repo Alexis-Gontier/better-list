@@ -8,8 +8,6 @@ import {
 } from "lucide-react";
 
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
-import type { ScoreFormat } from "@/features/preferences/schemas/preferences.schema";
-import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import {
   describeEntryEvent,
   type EntryEventView,
@@ -43,7 +41,6 @@ const EVENT_ICONS: Record<EntryEventDraft["type"], LucideIcon> = {
 
 export async function EntryTimeline({ media }: { media: MediaDetail }) {
   const events = await getEntryTimeline(media.id);
-  const { scoreFormat } = await getPreferences();
 
   // Une œuvre qu'on ne suit pas n'a pas de journal : un encadré vide sous le panneau annoncerait
   // une fonctionnalité en panne là où il n'y a simplement rien à raconter.
@@ -69,12 +66,7 @@ export async function EntryTimeline({ media }: { media: MediaDetail }) {
 
           <ul className="space-y-1.5">
             {day.events.map((event) => (
-              <EntryTimelineRow
-                event={event}
-                key={event.id}
-                scoreFormat={scoreFormat}
-                unit={unit}
-              />
+              <EntryTimelineRow event={event} key={event.id} unit={unit} />
             ))}
           </ul>
         </div>
@@ -86,13 +78,11 @@ export async function EntryTimeline({ media }: { media: MediaDetail }) {
 function EntryTimelineRow({
   event,
   unit,
-  scoreFormat,
 }: {
   event: EntryEventView;
   unit: "episode" | "chapitre";
-  scoreFormat: ScoreFormat;
 }) {
-  const { label, detail } = describeEntryEvent(event, unit, scoreFormat);
+  const { label, detail } = describeEntryEvent(event, unit);
   const Icon = EVENT_ICONS[event.type];
 
   return (

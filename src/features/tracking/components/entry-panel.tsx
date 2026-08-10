@@ -1,6 +1,5 @@
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import { mediaTotalUnits } from "@/features/media/server/media.mirror";
-import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { EntryControls } from "@/features/tracking/components/entry-controls";
 import { getEntryForMedia } from "@/features/tracking/server/tracking.queries";
 
@@ -17,7 +16,6 @@ import { getEntryForMedia } from "@/features/tracking/server/tracking.queries";
  */
 export async function EntryPanel({ media }: { media: MediaDetail }) {
   const entry = await getEntryForMedia(media.id);
-  const { scoreFormat } = await getPreferences();
 
   return (
     <section
@@ -30,7 +28,6 @@ export async function EntryPanel({ media }: { media: MediaDetail }) {
 
       <EntryControls
         entry={entry}
-        scoreFormat={scoreFormat}
         mediaId={media.id}
         total={mediaTotalUnits(media)}
         unit={media.type === "ANIME" ? "episode" : "chapitre"}

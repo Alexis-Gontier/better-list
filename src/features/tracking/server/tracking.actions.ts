@@ -12,6 +12,7 @@ import {
   removeEntrySchema,
   saveEntrySchema,
 } from "@/features/tracking/schemas/tracking.schema";
+import { ENTRY_STATE_SELECT } from "@/features/tracking/server/tracking.queries";
 import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
@@ -61,26 +62,13 @@ export const saveEntry = authActionClient
     });
 
     /**
-     * Le `select` est **exactement** `EntryState`, ni plus ni moins.
-     *
-     * La transition construit son résultat par `{ ...base, ...changements }` : tout champ lu ici
-     * ressort dans l'objet écrit. Une lecture large ferait donc repartir `id`, `createdAt` et
-     * `updatedAt` dans le `update` — la date de modification automatique serait écrasée par
-     * l'ancienne, et la clé primaire deviendrait modifiable par accident.
+     * `ENTRY_STATE_SELECT` est **exactement** `EntryState` — le pourquoi est écrit là où il est
+     * défini, et c'est la lecture la plus exposée à l'oubli : la transition construit son résultat
+     * par `{ ...base, ...changements }`, donc tout champ lu ici ressort dans l'objet écrit.
      */
     const current = await prisma.entry.findUnique({
       where: { userId_mediaId: { userId: ctx.user.id, mediaId } },
-      select: {
-        status: true,
-        progress: true,
-        progressVolumes: true,
-        score: true,
-        favorite: true,
-        notes: true,
-        repeatCount: true,
-        startedAt: true,
-        finishedAt: true,
-      },
+      select: ENTRY_STATE_SELECT,
     });
 
     const { startedAt, finishedAt, ...rest } = changes;
