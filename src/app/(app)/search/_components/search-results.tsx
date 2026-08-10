@@ -23,8 +23,11 @@ import {
   serializeSearchFilters,
 } from "@/features/media/lib/search-params";
 import { searchFormSchema } from "@/features/media/schemas/search-media.schema";
+import { mediaTotalUnits } from "@/features/media/server/media.mirror";
 import { searchMedia } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
+import { getEntryStatesFor } from "@/features/tracking/server/tracking.queries";
 
 /**
  * Résultats de recherche, rendus côté serveur.
@@ -96,10 +99,32 @@ export async function SearchResults({
     );
   }
 
+  /**
+   * Ce que ce compte suit déjà, parmi les résultats affichés.
+   *
+   * Une requête locale pour toute la page, après AniList et non avant : elle ne porte que sur les
+   * ids réellement rendus. Sans elle, la vignette ne pourrait proposer que « suivre », y compris sur
+   * une série déjà en cours — où le geste écraserait un statut et une progression.
+   */
+  const entries = await getEntryStatesFor(media.map((item) => item.id));
+
   const items = media.map((item) => ({
     key: item.id,
     media: item,
     genres: item.genres,
+    /**
+     * La même commande dans les deux vues : « suivre » sur une œuvre inconnue, « +1 » et la fenêtre
+     * sur une œuvre suivie. C'est `EntryCardActions` qui tranche selon `entry`, et c'est ce qui
+     * empêche la bascule grille/liste de perdre un bouton en chemin.
+     */
+    action: (
+      <EntryCardActions
+        bannerImage={item.bannerImage}
+        entry={entries.get(item.id) ?? null}
+        media={item}
+        total={mediaTotalUnits(item)}
+      />
+    ),
     /**
      * La liste a de la place en largeur là où la grille en manque : elle gagne le statut de
      * publication, qui distingue une série en cours d'une série terminée sans ouvrir la fiche.
@@ -142,6 +167,7 @@ export async function SearchResults({
         <MediaList>
           {items.map((item) => (
             <MediaRow
+              action={item.action}
               genres={item.genres}
               key={item.key}
               media={item.media}
@@ -158,7 +184,7 @@ export async function SearchResults({
                 jaquettes pour dire ce qu'on ne cherchait pas. Le format et l'année restent en vue
                 liste, où la largeur les rend comparables d'une ligne à l'autre, et sur la fiche.
               */}
-              <MediaCard media={item.media} />
+              <MediaCard action={item.action} media={item.media} />
             </li>
           ))}
         </MediaGrid>

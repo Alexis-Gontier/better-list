@@ -2,6 +2,7 @@ import "server-only";
 
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import type { EntryEventView } from "@/features/tracking/lib/entry-format";
+import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
@@ -63,6 +64,41 @@ export async function getEntryForMedia(mediaId: number) {
     where: { userId_mediaId: { userId: session.user.id, mediaId } },
     select: { ...ENTRY_STATE_SELECT, updatedAt: true },
   });
+}
+
+/**
+ * Les suivis de l'utilisateur courant sur un lot d'œuvres, indexés par `mediaId`.
+ *
+ * Les grilles du catalogue et de la recherche viennent d'AniList, qui ne sait évidemment pas ce que
+ * ce compte suit. Sans cette lecture, une vignette de résultat ne peut proposer que « suivre » — y
+ * compris sur une série déjà en cours, où le geste écraserait un statut et une progression. C'est
+ * elle qui permet à la même carte de porter « suivre » ou « modifier » selon le cas.
+ *
+ * **Une requête pour toute la page**, et elle ne part jamais chez AniList : le suivi est chez nous.
+ * Le quota de PRODUCT.md §4.1 n'est donc pas concerné, et vingt-quatre vignettes coûtent une lecture
+ * indexée sur `(userId, mediaId)` — la clé unique de la table.
+ *
+ * L'identifiant vient de la session, jamais d'un argument, pour la même raison que
+ * `getEntryForMedia` : une signature qui l'accepterait finirait par recevoir un id venu de l'URL.
+ */
+export async function getEntryStatesFor(mediaIds: number[]) {
+  const states = new Map<number, EntryState>();
+
+  // Une grille vide ne pose pas de question à la base. Un `in: []` serait correct mais paierait un
+  // aller-retour pour un résultat connu d'avance.
+  if (mediaIds.length === 0) return states;
+
+  const session = await getSession();
+  if (!session) return states;
+
+  const entries = await prisma.entry.findMany({
+    where: { userId: session.user.id, mediaId: { in: mediaIds } },
+    select: { mediaId: true, ...ENTRY_STATE_SELECT },
+  });
+
+  for (const { mediaId, ...state } of entries) states.set(mediaId, state);
+
+  return states;
 }
 
 /**

@@ -5,6 +5,7 @@ import { currentSeason, nextSeason } from "@/features/media/lib/media-season";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
 import { getBrowseCatalogue } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { getEntryStatesFor } from "@/features/tracking/server/tracking.queries";
 
 /**
  * La part de découverte de l'accueil (docs/PRODUCT.md §5).
@@ -30,6 +31,28 @@ export async function Discovery() {
 
   const catalogue = await getBrowseCatalogue({ ...season, includeAdult });
 
+  /**
+   * Ce que ce compte suit déjà, sur les cinq rangées d'un coup.
+   *
+   * Lu **ici** et non dans chaque rangée : cinq sections feraient cinq requêtes pour une question
+   * qui tient en une, et une œuvre peut d'ailleurs apparaître dans deux rangées à la fois — la
+   * dédupliquer avant d'interroger la base est gratuit, la croiser cinq fois ne l'est pas.
+   *
+   * Cette lecture dépend du compte, là où `getBrowseCatalogue` est mémorisé une heure pour tout le
+   * monde : les garder distinctes est ce qui permet au catalogue de rester partagé.
+   */
+  const entries = await getEntryStatesFor([
+    ...new Set(
+      [
+        catalogue.trending,
+        catalogue.season,
+        catalogue.upcoming,
+        catalogue.topRated,
+        catalogue.topManga,
+      ].flatMap((row) => row.map((item) => item.id)),
+    ),
+  ]);
+
   /** Vers la recherche, avec les filtres qu'elle sait exprimer. Voir `DiscoverySection.href`. */
   const searchHref = (filters: Parameters<typeof serializeSearchFilters>[1]) =>
     serializeSearchFilters(routes.search, filters);
@@ -39,18 +62,21 @@ export async function Discovery() {
       <DiscoverySection
         description="Ce que le reste du monde regarde en ce moment."
         href={searchHref({ type: "ANIME", sort: "TRENDING", dir: "DESC" })}
+        entries={entries}
         media={catalogue.trending}
         title="Tendances"
       />
 
       <DiscoverySection
         description={`Les animes de la saison en cours — ${formatSeason(season.season, season.seasonYear)?.toLowerCase()}.`}
+        entries={entries}
         media={catalogue.season}
         title="Cette saison"
       />
 
       <DiscoverySection
         description={`Ce qui arrive en ${formatSeason(upcoming.season, upcoming.seasonYear)?.toLowerCase()}.`}
+        entries={entries}
         media={catalogue.upcoming}
         title="La saison prochaine"
       />
@@ -58,6 +84,7 @@ export async function Discovery() {
       <DiscoverySection
         description="Les meilleures notes de la communauté AniList, œuvres non diffusées exclues."
         href={searchHref({ type: "ANIME", sort: "SCORE", dir: "DESC" })}
+        entries={entries}
         media={catalogue.topRated}
         title="Les mieux notés"
       />
@@ -65,6 +92,7 @@ export async function Discovery() {
       <DiscoverySection
         description="Mangas, webtoons et light novels dont on parle."
         href={searchHref({ type: "MANGA", sort: "TRENDING", dir: "DESC" })}
+        entries={entries}
         media={catalogue.topManga}
         title="Côté papier"
       />

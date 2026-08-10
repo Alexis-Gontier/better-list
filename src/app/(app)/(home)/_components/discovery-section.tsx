@@ -4,6 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/features/media/components/media-card";
 import { formatMediaFormat } from "@/features/media/lib/media-format";
 import type { MediaBrowse } from "@/features/media/schemas/media.schema";
+import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
+import type { EntryState } from "@/features/tracking/lib/entry-transition";
 
 /**
  * Une rangée de découverte : le catalogue AniList, éditorialisé.
@@ -26,11 +28,19 @@ export function DiscoverySection({
   title,
   description,
   media,
+  entries,
   href,
 }: {
   title: string;
   description: string;
   media: MediaBrowse[];
+  /**
+   * Les suivis du compte, indexés par id, lus une seule fois pour les cinq rangées (`Discovery`).
+   *
+   * C'est ce qui permet à une vignette de découverte de proposer « suivre » ou « modifier » selon le
+   * cas. Une rangée qui interrogerait la base elle-même ferait cinq requêtes là où il en faut une.
+   */
+  entries: Map<number, EntryState>;
   /**
    * Vers la recherche préfiltrée, quand elle sait exprimer le même ensemble.
    *
@@ -48,6 +58,20 @@ export function DiscoverySection({
         {media.map((item) => (
           <li key={item.id}>
             <MediaCard
+              action={
+                <EntryCardActions
+                  entry={entries.get(item.id) ?? null}
+                  media={item}
+                  /**
+                   * Le document du catalogue ne demande ni `episodes` ni `chapters` : ces rangées
+                   * servent à faire découvrir une œuvre, pas à mesurer une progression. La fenêtre
+                   * affiche donc « sur ? » le temps de la première saisie — et dès que le suivi
+                   * existe, `ensureMediaMirror` a copié le total dans le miroir, que tous les autres
+                   * écrans lisent. Le plafond, lui, n'a jamais dépendu du client (PRODUCT.md §4.2).
+                   */
+                  total={null}
+                />
+              }
               media={item}
               meta={[formatMediaFormat(item.format), item.seasonYear]
                 .filter(Boolean)

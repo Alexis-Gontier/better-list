@@ -1,6 +1,6 @@
 "use client";
 
-import { PencilIcon, XIcon } from "lucide-react";
+import { BookmarkPlusIcon, PencilIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -58,7 +58,19 @@ export function EntryDialog({
 }) {
   const [open, setOpen] = useState(false);
 
-  const label = `Modifier le suivi de ${title}`;
+  /**
+   * Le déclencheur dit ce que le clic va faire, et les deux cas ne font pas la même chose : l'un
+   * corrige un suivi existant, l'autre en crée un. Un « modifier » posé sur une œuvre qu'on ne suit
+   * pas annoncerait une correction là où c'est un engagement, et un crayon sur une grille de
+   * recherche ne se lit pas comme une invitation à commencer.
+   *
+   * **Un marque-page, et surtout pas un `+`.** Sur une vignette, le `+` est déjà pris : c'est le
+   * « +1 » de `EntryQuickProgress`, qui avance d'un épisode. Les deux boutons ne sont jamais
+   * visibles en même temps sur une même carte — l'un remplace l'autre selon que l'œuvre est suivie —
+   * mais ils cohabitent dans la même grille, à quelques centimètres, et deux gestes très différents
+   * sous la même icône finissent par s'apprendre l'un pour l'autre.
+   */
+  const label = entry ? `Modifier le suivi de ${title}` : `Suivre ${title}`;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -69,14 +81,23 @@ export function EntryDialog({
            * Mêmes classes de révélation que le « +1 » : les deux boutons se découvrent ensemble au
            * survol et restent visibles au doigt, où aucun survol n'existe. Le `secondary` les
            * départage — avancer d'un épisode reste le geste principal, modifier est le recours.
+           *
+           * **Sur une œuvre non suivie, le bouton est plein et permanent.** Il est seul sur la
+           * jaquette, donc il n'a personne à qui céder le premier rôle ; et une grille de résultats
+           * est précisément l'endroit où l'on ne sait pas encore qu'on peut suivre quelque chose —
+           * une commande qui n'apparaît qu'au survol y resterait invisible pour qui ne survole pas.
            */
-          className="size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+          className={
+            entry
+              ? "size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+              : "size-7 rounded-full shadow-sm"
+          }
           size="icon"
           title={label}
           type="button"
-          variant="secondary"
+          variant={entry ? "secondary" : "default"}
         >
-          <PencilIcon />
+          {entry ? <PencilIcon /> : <BookmarkPlusIcon />}
         </Button>
       </DialogTrigger>
 
