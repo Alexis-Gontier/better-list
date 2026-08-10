@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { ListDetail } from "@/app/(app)/lists/[slug]/_components/list-detail";
+import { ListDetail } from "@/app/(app)/lists/[id]/_components/list-detail";
 import { MediaGridSkeleton } from "@/components/shared/media-grid";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getListBySlug } from "@/features/lists/server/lists.queries";
+import { getListById } from "@/features/lists/server/lists.queries";
 
 export async function generateMetadata({
   params,
-}: PageProps<"/lists/[slug]">): Promise<Metadata> {
-  const { slug } = await params;
-  const list = await getListBySlug(slug);
+}: PageProps<"/lists/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const list = await getListById(id);
 
   if (!list) return {};
 
@@ -23,7 +23,7 @@ export async function generateMetadata({
   };
 }
 
-export default function ListPage({ params }: PageProps<"/lists/[slug]">) {
+export default function ListPage({ params }: PageProps<"/lists/[id]">) {
   return (
     <Suspense
       fallback={

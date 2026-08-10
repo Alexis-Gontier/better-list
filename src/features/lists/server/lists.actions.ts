@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 
 import { routes } from "@/config/routes";
 import { rankAfterMove } from "@/features/lists/lib/list-reorder";
-import { uniqueSlug } from "@/features/lists/lib/list-slug";
 import {
   addToListSchema,
   createListSchema,
@@ -48,31 +47,17 @@ export const createList = authActionClient
   .metadata({ actionName: "createList" })
   .inputSchema(createListSchema)
   .action(async ({ parsedInput: { title, description, visibility }, ctx }) => {
-    /**
-     * Les slugs déjà pris sont lus **avant** de composer le nouveau. La contrainte
-     * `@@unique([ownerId, slug])` reste le garde-fou réel — deux créations simultanées passeraient
-     * ici avec le même résultat —, mais à quatre comptes le cas ne se présente pas, et un slug
-     * lisible vaut mieux qu'un identifiant aléatoire.
-     */
-    const existing = await prisma.list.findMany({
-      where: { ownerId: ctx.user.id },
-      select: { slug: true },
-    });
-
     const list = await prisma.list.create({
       data: {
         ownerId: ctx.user.id,
         title,
-        slug: uniqueSlug(
-          title,
-          existing.map((item) => item.slug),
-        ),
         description: description ?? null,
         visibility,
       },
-      // L'`id` repart au client : le dialogue « Ajouter à une liste » crée puis ajoute d'un geste,
-      // et sans lui il faudrait relire la liste qu'on vient de créer pour connaître son identifiant.
-      select: { id: true, slug: true, title: true },
+      // L'`id` repart au client : c'est à la fois l'adresse de la liste, vers laquelle le dialogue
+      // de création navigue, et ce que « Ajouter à une liste » passe à la mutation suivante quand on
+      // crée puis remplit d'un geste.
+      select: { id: true, title: true },
     });
 
     revalidatePath(routes.lists.root);
@@ -83,9 +68,9 @@ export const createList = authActionClient
 /**
  * Renommer et redécrire une liste.
  *
- * **Le `slug` n'est pas touché**, et c'est la seule chose à retenir de cette action : le recalculer
- * depuis le nouveau titre casserait toute adresse déjà ouverte ou mise en favori. Le slug identifie
- * la liste, il ne la décrit pas (voir `lists.schema.ts`).
+ * **L'adresse ne bouge pas**, quel que soit le nouveau titre : elle est faite de l'`id`, pas d'un
+ * slug dérivé du titre. C'est précisément pour ça qu'elle l'est — un lien déjà ouvert ou mis en
+ * favori survit au renommage sans qu'aucune action n'ait à y penser.
  *
  * `updateMany` plutôt que `update`, comme les autres mutations du domaine : c'est la seule forme qui
  * accepte un `where` non unique, donc la seule qui accepte `ownerId`. Une liste qui n'est pas à moi ne
@@ -105,15 +90,10 @@ export const updateList = authActionClient
 
     if (count === 0) throw new Error("Liste introuvable.");
 
-    // Le slug est relu plutôt que reçu : il ne vient pas du client, et c'est lui qui donne le chemin
-    // à revalider. Même forme que `removeFromList`.
-    const list = await prisma.list.findFirst({
-      where: { id: listId, ownerId: ctx.user.id },
-      select: { slug: true },
-    });
-
+    // Le chemin à revalider se déduit du `listId` reçu — plus de relecture pour retrouver l'adresse,
+    // c'est l'autre gain de l'URL par `id`. Le `count` a déjà prouvé que la liste était bien à moi.
     revalidatePath(routes.lists.root);
-    if (list) revalidatePath(routes.lists.detail(list.slug));
+    revalidatePath(routes.lists.detail(listId));
 
     return { updated: true };
   });
@@ -142,7 +122,7 @@ export const addToList = authActionClient
     // indiscernable d'une liste inexistante.
     const list = await prisma.list.findFirst({
       where: { id: listId, ownerId: ctx.user.id },
-      select: { id: true, slug: true },
+      select: { id: true },
     });
 
     if (!list) throw new Error("Liste introuvable.");
@@ -169,7 +149,7 @@ export const addToList = authActionClient
     });
 
     revalidatePath(routes.lists.root);
-    revalidatePath(routes.lists.detail(list.slug));
+    revalidatePath(routes.lists.detail(list.id));
     revalidatePath(routes.media(mediaId));
 
     return { added: true };
@@ -212,14 +192,13 @@ export const reorderListItem = authActionClient
     // clé primaire est donc sûr ici, là où les autres mutations passent par `updateMany`.
     await prisma.listItem.update({ where: { id: moved.id }, data: { rank } });
 
-    const list = await prisma.list.update({
+    await prisma.list.update({
       where: { id: listId },
       data: { updatedAt: new Date() },
-      select: { slug: true },
     });
 
     revalidatePath(routes.lists.root);
-    revalidatePath(routes.lists.detail(list.slug));
+    revalidatePath(routes.lists.detail(listId));
 
     return { reordered: true };
   });
@@ -238,13 +217,8 @@ export const removeFromList = authActionClient
 
     if (count === 0) throw new Error("Œuvre introuvable dans cette liste.");
 
-    const list = await prisma.list.findFirst({
-      where: { id: listId, ownerId: ctx.user.id },
-      select: { slug: true },
-    });
-
     revalidatePath(routes.lists.root);
-    if (list) revalidatePath(routes.lists.detail(list.slug));
+    revalidatePath(routes.lists.detail(listId));
     revalidatePath(routes.media(mediaId));
 
     return { removed: true };

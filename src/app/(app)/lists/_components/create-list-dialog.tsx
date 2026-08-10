@@ -39,7 +39,7 @@ export function CreateListDialog() {
   const { execute, isPending, result } = useAction(createList, {
     onSuccess: ({ data }) => {
       setOpen(false);
-      if (data) router.push(routes.lists.detail(data.slug));
+      if (data) router.push(routes.lists.detail(data.id));
     },
     onError: () => toast.error("La liste n'a pas pu être créée."),
   });

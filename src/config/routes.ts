@@ -8,14 +8,20 @@
  * Les routes dynamiques sont des **fonctions** : on ne concatène jamais un id à une chaîne.
  */
 export const routes = {
-  /** Tableau de bord : en cours, à reprendre, activité récente. */
+  /**
+   * Accueil : suivi, listes, catalogue du moment, journal.
+   *
+   * Il n'y a **pas** de `/browse` en face, et ce n'est pas un oubli : le catalogue éditorialisé
+   * était une deuxième porte de découverte pour un cercle de quatre comptes, et il a été replié ici
+   * (docs/PRODUCT.md §5).
+   */
   home: "/",
 
-  /** Recherche du catalogue. Les filtres vivent dans les `searchParams`, pas dans le chemin. */
+  /**
+   * Recherche du catalogue. Les filtres vivent dans les `searchParams`, pas dans le chemin.
+   * Sans terme de recherche, elle ouvre sur les tendances — voir `resolveSort`.
+   */
   search: "/search",
-
-  /** Catalogue éditorialisé : saison en cours, tendances, top. */
-  browse: "/browse",
 
   /**
    * Fiche d'une œuvre. Un seul segment pour les animes comme pour les mangas : les ids AniList
@@ -28,9 +34,13 @@ export const routes = {
 
   lists: {
     root: "/lists",
-    detail: (slug: string) => `/lists/${slug}` as const,
+    /**
+     * Une liste s'adresse par son `id`, pas par un slug tiré du titre : renommer ne doit rien
+     * casser, et l'identifiant est déjà ce que portent les mutations.
+     */
+    detail: (id: string) => `/lists/${id}` as const,
     /** Une vue posée sur une liste : classement, tier list, grille (PRODUCT.md §4.4). */
-    view: (slug: string, viewId: string) => `/lists/${slug}/${viewId}` as const,
+    view: (id: string, viewId: string) => `/lists/${id}/${viewId}` as const,
   },
 
   collection: {

@@ -41,14 +41,12 @@ export const createListSchema = z.object({
 /**
  * Renommer et redécrire une liste.
  *
- * **Pas de `slug` ici, et c'est le point à ne pas rater.** Le recalculer depuis le nouveau titre
- * paraîtrait cohérent et casserait toute adresse déjà ouverte, mise en favori ou — dès V1.5 —
- * partagée. Le slug est dérivé du titre **à la création seulement** : il identifie la liste, il ne la
- * décrit pas. C'est aussi pourquoi l'écran affiche l'adresse et prévient qu'elle ne bouge pas.
+ * **Pas de `visibility` ici.** Le passage en `UNLISTED` n'a de sens qu'avec un lien de partage, qui
+ * est du V1.5 (voir `lists.queries.ts`). Offrir l'interrupteur maintenant promettrait un partage qui
+ * n'existe pas.
  *
- * **Pas de `visibility` non plus.** Le passage en `UNLISTED` n'a de sens qu'avec un lien de partage,
- * qui est du V1.5 et qui bute encore sur l'adressage (`@@unique([ownerId, slug])`, voir
- * `lists.queries.ts`). Offrir l'interrupteur maintenant promettrait un partage qui n'existe pas.
+ * Le titre n'est plus qu'un libellé : l'adresse de la liste est son `id`, donc renommer ne peut plus
+ * casser un lien — c'est la raison d'être du choix, et il n'y a rien de plus à faire ici.
  */
 export const updateListSchema = z.object({
   listId: listIdSchema,

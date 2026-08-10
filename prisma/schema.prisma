@@ -71,12 +71,6 @@ enum UserStatus {
 }
 
 /// Échelle d'affichage des notes. Le stockage reste sur 0–100 quoi qu'il arrive (§4.2).
-enum ScoreFormat {
-  POINT_100
-  POINT_10
-  POINT_5
-}
-
 enum TitleLanguage {
   ROMAJI
   ENGLISH
@@ -262,7 +256,9 @@ model UserPreferences {
   userId String @id
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  scoreFormat   ScoreFormat   @default(POINT_10)
+  /// Pas d'échelle de notation : les notes sont sur cinq étoiles, demies comprises, pour tout le
+  /// monde (docs/PRODUCT.md §4.2). Le stockage d'`Entry.score` reste sur 0–100 — c'est ce qui garde
+  /// leur précision aux notes importées d'AniList, pas un réglage d'affichage.
   titleLanguage TitleLanguage @default(ROMAJI)
   /// Filtre 18+. Appliqué côté serveur, jamais par un masque d'affichage.
   includeAdult  Boolean       @default(false)
@@ -414,6 +410,10 @@ model EntryEvent {
 // =============================================================================
 
 /// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
+///
+/// Pas de `slug` : une liste s'adresse par son `id` (`/lists/[id]`). Un slug tiré du titre devait
+/// être rendu unique par propriétaire, se périmait au premier renommage, et n'aurait de toute façon
+/// pas suffi à désigner la liste d'un autre membre le jour du partage par lien (§4.4).
 model List {
   id String @id @default(cuid())
 
@@ -421,7 +421,6 @@ model List {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   title       String
-  slug        String
   description String?
   visibility  ListVisibility @default(PRIVATE)
   isTemplate  Boolean        @default(false)
@@ -436,7 +435,7 @@ model List {
   items ListItem[]
   views ListView[]
 
-  @@unique([ownerId, slug])
+  @@index([ownerId, updatedAt])
   @@index([visibility])
   @@map("lists")
 }

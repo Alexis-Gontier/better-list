@@ -9,10 +9,9 @@ import { prisma } from "@/lib/db/prisma";
  * Toutes closes sur l'utilisateur de la session, comme le reste du domaine utilisateur : aucune
  * signature ne prend d'`ownerId`, pour qu'aucun appelant ne puisse en passer un venu de l'URL.
  *
- * **V1 ne montre que mes listes.** Le partage par lien non listé est du V1.5, et il posera une vraie
- * question d'adressage : `slug` est unique **par propriétaire** (`@@unique([ownerId, slug])`), donc
- * `/lists/[slug]` ne peut pas désigner la liste de quelqu'un d'autre. Il faudra soit un segment de
- * propriétaire, soit un jeton — décision à prendre à ce moment-là, pas maintenant.
+ * **V1 ne montre que mes listes.** Le partage par lien non listé est du V1.5 : l'`id` de l'URL
+ * désigne déjà la liste sans ambiguïté, il restera à décider ce qui autorise à la lire — la
+ * visibilité `UNLISTED` seule, ou un jeton. Décision à prendre à ce moment-là, pas maintenant.
  */
 
 /** Les colonnes du miroir dont les vignettes ont besoin. */
@@ -46,7 +45,6 @@ export async function getMyLists() {
     select: {
       id: true,
       title: true,
-      slug: true,
       description: true,
       visibility: true,
       updatedAt: true,
@@ -66,18 +64,18 @@ export async function getMyLists() {
  * Le tri est `rank` croissant — l'index fractionnaire de §4.4. Il est en `String` justement pour
  * que réordonner (V1.5) ne touche qu'une ligne ; en attendant, l'ordre est celui de l'ajout.
  */
-export async function getListBySlug(slug: string) {
+export async function getListById(id: string) {
   const session = await getSession();
   if (!session) return null;
 
-  return prisma.list.findUnique({
-    // La clé composite **est** la garde : une liste d'un autre membre ne se trouve pas, même en
-    // devinant son slug.
-    where: { ownerId_slug: { ownerId: session.user.id, slug } },
+  return prisma.list.findFirst({
+    // `findFirst` et non `findUnique` : c'est la seule forme qui accepte un `where` non unique, donc
+    // la seule qui accepte `ownerId`. Et c'est `ownerId` qui est la garde — l'`id` vient de l'URL,
+    // donc une liste d'un autre membre est indiscernable d'une liste inexistante.
+    where: { id, ownerId: session.user.id },
     select: {
       id: true,
       title: true,
-      slug: true,
       description: true,
       visibility: true,
       createdAt: true,

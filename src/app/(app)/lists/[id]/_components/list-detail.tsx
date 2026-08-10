@@ -2,10 +2,10 @@ import { LayersIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { DeleteListButton } from "@/app/(app)/lists/[slug]/_components/delete-list-button";
-import { EditListDialog } from "@/app/(app)/lists/[slug]/_components/edit-list-dialog";
-import { RemoveFromListButton } from "@/app/(app)/lists/[slug]/_components/remove-from-list-button";
-import { SortableListGrid } from "@/app/(app)/lists/[slug]/_components/sortable-list-grid";
+import { DeleteListButton } from "@/app/(app)/lists/[id]/_components/delete-list-button";
+import { EditListDialog } from "@/app/(app)/lists/[id]/_components/edit-list-dialog";
+import { RemoveFromListButton } from "@/app/(app)/lists/[id]/_components/remove-from-list-button";
+import { SortableListGrid } from "@/app/(app)/lists/[id]/_components/sortable-list-grid";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/empty";
 import { LOCALE } from "@/config/locale";
 import { routes } from "@/config/routes";
-import { getListBySlug } from "@/features/lists/server/lists.queries";
+import { getListById } from "@/features/lists/server/lists.queries";
 import { MediaCard } from "@/features/media/components/media-card";
 import {
   compactFromMirror,
@@ -35,10 +35,10 @@ import { getPreferences } from "@/features/preferences/server/preferences.querie
 export async function ListDetail({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { slug } = await params;
-  const list = await getListBySlug(slug);
+  const { id } = await params;
+  const list = await getListById(id);
 
   // La query est close sur le propriétaire : une liste d'un autre membre est indiscernable d'une
   // liste inexistante, et les deux donnent la même page introuvable.
@@ -71,7 +71,6 @@ export async function ListDetail({
           <EditListDialog
             description={list.description}
             listId={list.id}
-            slug={list.slug}
             title={list.title}
           />
 
