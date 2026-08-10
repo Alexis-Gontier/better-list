@@ -16,6 +16,14 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    /**
+     * Jeu d'essai de développement (`prisma/seed.ts`, ou `pnpm db:seed` directement).
+     *
+     * Il passe par `tsx` et non par Node seul : le script importe `@/config/env` et le client
+     * généré, donc il lui faut l'alias `@/*` du tsconfig — que le résolveur ESM de Node ne connaît
+     * pas.
+     */
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: env("DATABASE_URL"),

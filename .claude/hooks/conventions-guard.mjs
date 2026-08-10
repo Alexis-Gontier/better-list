@@ -15,11 +15,18 @@ import { fileURLToPath } from "node:url";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-/** Les seuls fichiers autorisés à lire `process.env` directement. */
+/**
+ * Les seuls fichiers autorisés à lire `process.env` directement.
+ *
+ * Deux familles, et la frontière est celle du runtime : la configuration que Next lui-même charge
+ * avant `@/config/env`, et les **fichiers de CLI** — `prisma/seed.ts` tourne sous `tsx`, hors de
+ * Next, donc sans le `NODE_ENV` que t3-env exige. Du code applicatif n'a jamais sa place ici.
+ */
 const ENV_ALLOWLIST = [
   "src/config/env.ts",
   "next.config.ts",
   "postcss.config.mjs",
+  "prisma/seed.ts",
 ];
 
 /**
