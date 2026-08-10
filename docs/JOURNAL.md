@@ -17,6 +17,92 @@ pas.
 
 ---
 
+## 11 août 2026 — Une liste se remplit depuis elle-même, et les vues attendront
+
+Deux décisions d'Alexis ouvrent la séance : **les tier lists passent à bien plus tard**, et ce qu'il
+faut aux listes, c'est **un moyen de partager** et **d'ajouter ou retirer des œuvres plus
+facilement**. La première décide de ce qu'on ne construit pas.
+
+### `ListView` n'avait plus de raison d'être maintenant
+
+Des trois types du §4.4 — `RANKED`, `TIERS`, `GRID` —, une liste **est déjà** les deux extrêmes :
+`rank` est un index fractionnaire rempli à chaque ajout, le glisser-déposer et le clavier marchent
+depuis le 8 août, et `MediaGrid` la rend en grille. Sans les tier lists, `/lists/[id]/[viewId]`
+n'aurait donc redessiné l'existant que dans une URL de plus — payer l'aiguillage sans la
+destination. Les tables restent au schéma, elles n'ont jamais rien coûté à attendre. Le
+raisonnement est écrit en PRODUCT.md §6, à côté de la roadmap qu'il modifie.
+
+Ce qui a libéré la séance pour le premier des deux besoins réels.
+
+### Remplir une liste sans la quitter
+
+Le geste existait, mais seulement sur la fiche d'une œuvre : remplir une liste de dix titres
+demandait dix allers-retours vers dix fiches. `AddToListSearch` le ramène là où l'intention est
+déjà posée — sur la liste.
+
+**Rien à écrire côté serveur, et c'est le point intéressant.** `addToList` faisait déjà tout :
+`ensureMediaMirror` copie l'œuvre absente du miroir, et l'`upsert` sur `(listId, mediaId)` fait d'un
+double ajout un non-événement plutôt qu'une erreur. Le chantier était entièrement un chantier
+d'écran.
+
+- **La recherche part vers `/api/command`, la route de la palette ⌘K, inchangée.** Elle cherche déjà
+  les deux sources voulues — la bibliothèque dans le miroir local, le catalogue chez AniList — et
+  elle porte le plafond de débit par compte qui protège le quota partagé (§4.1). Une seconde route
+  de recherche aurait voulu dire un second plafond, et un jour un seul des deux mis à jour.
+- On en accepte la contrepartie sans regret : les libellés arrivent **déjà mis en forme par le
+  serveur**, titres selon la préférence de langue comprise. Un composant client ne peut pas lire ce
+  réglage.
+- **Les œuvres déjà présentes sont marquées, pas masquées.** Les cacher ferait croire que la
+  recherche ne les trouve pas ; or la question qu'on se pose devant un résultat est « est-ce que je
+  l'ai déjà mise ? ». Un « Déjà dans la liste » y répond, une absence non. La ligne est désactivée
+  plutôt que cliquable pour rien — l'`upsert` encaisserait le clic sans broncher, ce qui est pire
+  qu'un refus : rien ne se passerait, et on ne saurait pas pourquoi.
+- **Deux sources de vérité pour « déjà présente », et il en faut deux.** `presentMediaIds` vient du
+  rendu serveur et ne bougera qu'à la revalidation ; sans un ensemble local des ajouts de la session,
+  une œuvre qu'on vient de cliquer resterait proposée pendant tout l'aller-retour. L'ensemble local
+  est repris en cas d'échec, sinon la liste afficherait une œuvre qu'elle ne contient pas.
+- **Le focus retourne au champ après chaque ajout**, et c'est la ligne qui rend le geste répétable :
+  un clic sur une ligne emporte le focus hors de la saisie, donc la frappe suivante ne va nulle part
+  et il faut recliquer entre chaque ajout — la friction qu'on venait supprimer. Au clavier le défaut
+  n'existe pas, cmdk gardant la saisie active : il ne se voit qu'à la souris, c'est-à-dire la plupart
+  du temps. Trouvé à l'écran, comme d'habitude pour ce genre-là.
+
+**Ce qui n'est pas optimiste, et pourquoi.** La vignette ajoutée n'apparaît dans la grille qu'au
+retour du serveur. `MediaCard` est asynchrone — elle lit elle-même la préférence de langue —, donc
+un composant client ne peut pas en fabriquer une ; l'afficher d'avance supposerait d'en écrire une
+seconde version côté client, et deux vignettes pour une même chose finiraient par diverger. Le retour
+immédiat est donc porté par la ligne du panneau, qui se coche à l'instant du clic.
+
+**Vérifié dans l'application**, session rejouée : trois œuvres ajoutées d'affilée sans fermer le
+panneau (4 → 7), les lignes correspondantes cochées à mesure, le focus resté dans le champ entre
+chaque, et l'état « Déjà dans la liste » toujours juste **après rechargement serveur** — donc lu du
+serveur et plus seulement de l'état local. Les trois ajouts ont été retirés ensuite : la liste est
+revenue à ses quatre œuvres d'origine.
+
+L'état vide de la liste renvoyait vers la fiche pour ajouter quelque chose ; il nomme maintenant le
+champ, et garde sa porte vers la recherche — les deux ne répondent pas à la même question, « laquelle
+ajouter ? » contre « ajoute celle-ci ». Cet état-là n'a pas été vu à l'écran, faute de liste vide sous
+la main.
+
+### Le prochain pas, et la décision qui l'attend
+
+Le partage par lien public, décidé en séance : **le lien doit s'ouvrir sans compte**. Deux
+conséquences déjà identifiées, à traiter en tête de chantier plutôt qu'en chemin :
+
+1. **La route sort de `(app)`.** `requireApprovedUser()` est dans `app/(app)/layout.tsx` et couvre
+   tout ce qui est dessous ; une page qui s'ouvre sans session ne peut pas y vivre. Elle ira à côté
+   des pages d'authentification, avec son propre chrome et sa propre garde.
+2. **Une seule source de vérité pour « partagée ».** Je proposerai de **remplacer l'énumération
+   `visibility` par une colonne `shareToken`** : une liste est partagée si et seulement si elle a un
+   jeton, révoquer c'est le supprimer, re-partager c'est en générer un autre. Garder les deux, ce
+   serait deux colonnes qui disent la même chose et qui finiront par se contredire. **Non tranché** —
+   c'est la seule pièce du plan que je ne prendrai pas sans accord.
+
+S'y ajouteront le `noindex` (« non listé » veut dire non indexé), une image `next/og`, et une page
+publique **en lecture seule** : ni glisser-déposer, ni retrait, ni « +1 ».
+
+---
+
 ## 10 août 2026 — L'arbre de travail devient une histoire, et la grille sait suivre
 
 Séance de dette : le point 1 du « prochain pas » traînait depuis quatre séances — **93 fichiers non

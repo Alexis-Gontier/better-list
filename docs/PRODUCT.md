@@ -307,6 +307,18 @@ tier lists en drag & drop, grilles. Partage par lien non listé avec image OG. M
 Ordre de visionnage d'une franchise (voir §8). Collection physique : saisie par plage, écran des
 tomes manquants, prêts entre membres.
 
+**Les vues (§4.4) sont reportées, et les tier lists avec elles** — décision d'Alexis, 11 août 2026.
+Le raisonnement tient en une ligne : une liste **est déjà** un classement (`rank` en index
+fractionnaire, glisser-déposer et clavier) et **est déjà** une grille. Des trois types prévus,
+`RANKED` et `GRID` ne feraient donc que redessiner l'existant dans une URL de plus ; `TIERS` est le
+seul qui apporte quelque chose, et c'est celui qu'on remet à plus tard. Construire
+`/lists/[id]/[viewId]` maintenant reviendrait à payer l'aiguillage sans la destination.
+
+Les tables `ListView` et `ListViewItem` **restent au schéma** : elles y sont depuis la migration
+initiale, elles ne coûtent rien à laisser, et le modèle du §4.4 n'est pas remis en cause — il est
+seulement encore inemployé. Ce que V1.5 garde, ce sont les deux besoins réels : **partager une
+liste** et **la remplir sans peine**.
+
 Les tables `Edition` et `OwnedVolume` sont posées **dès le schéma initial**, en V0 : les écrans
 attendent V1.5, pas la migration. Ajouter deux tables plus tard ne coûte rien, mais découvrir
 tardivement que la collection ne rentre pas dans le modèle du suivi en coûterait beaucoup.
