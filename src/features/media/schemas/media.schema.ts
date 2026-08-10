@@ -334,6 +334,26 @@ export const mediaBrowseSchema = mediaCompactSchema.extend({
 });
 export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
 
+/**
+ * Une diffusion : un épisode d'une œuvre, à une heure.
+ *
+ * `airingAt` est un horodatage Unix **en secondes** — c'est la convention d'AniList, et c'est aussi
+ * l'unité qu'attendent les filtres `airingAt_greater` / `airingAt_lesser`. On ne le convertit qu'à
+ * l'affichage (`airing-week.ts`), pour que les bornes envoyées et les valeurs reçues restent
+ * comparables sans réfléchir.
+ *
+ * Aucun champ n'est `nullable()`, contrairement au reste du fichier : une entrée de grille horaire
+ * n'existe chez AniList que si ces quatre valeurs existent. Une diffusion sans date n'est pas une
+ * diffusion.
+ */
+export const airingScheduleSchema = z.object({
+  id: z.number().int(),
+  mediaId: z.number().int(),
+  episode: z.number().int(),
+  airingAt: z.number().int(),
+});
+export type AiringSchedule = z.infer<typeof airingScheduleSchema>;
+
 export const pageInfoSchema = z.object({
   total: z.number().int().nullable(),
   currentPage: z.number().int().nullable(),
@@ -379,6 +399,13 @@ export const browseCatalogueDataSchema = z.object({
   upcoming: z.object({ media: z.array(mediaBrowseSchema) }),
   topRated: z.object({ media: z.array(mediaBrowseSchema) }),
   topManga: z.object({ media: z.array(mediaBrowseSchema) }),
+});
+
+export const airingScheduleDataSchema = z.object({
+  Page: z.object({
+    pageInfo: pageInfoSchema,
+    airingSchedules: z.array(airingScheduleSchema),
+  }),
 });
 
 /**

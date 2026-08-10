@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import {
   MAX_PER_PAGE,
   MIN_MEDIA_YEAR,
@@ -19,8 +20,19 @@ describe("searchMediaInputSchema", () => {
     const params = searchMediaInputSchema.parse({});
 
     expect(params.page).toBe(1);
-    expect(params.perPage).toBe(20);
+    expect(params.perPage).toBe(CATALOGUE_PAGE_SIZE);
     expect(params.includeAdult).toBe(false);
+  });
+
+  /**
+   * La contrainte qui a fait exister la constante : une page qui n'est pas un multiple du nombre de
+   * colonnes se termine par une rangée incomplète. Les paliers de `media-grid.tsx` sont 2, 3, 4 et
+   * 6 — ce test casse si quelqu'un remonte la taille de page à un nombre qui rouvre le trou.
+   */
+  it("sert une page qui remplit des rangées entières à chaque palier de la grille", () => {
+    for (const columns of [2, 3, 4, 6]) {
+      expect(CATALOGUE_PAGE_SIZE % columns).toBe(0);
+    }
   });
 
   it("convertit les nombres qui arrivent de l'URL en chaînes", () => {

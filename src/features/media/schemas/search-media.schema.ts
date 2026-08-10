@@ -1,5 +1,6 @@
 import * as z from "zod";
 
+import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import {
   mediaCountrySchema,
   mediaFormatSchema,
@@ -98,7 +99,18 @@ export const searchMediaInputSchema = z.object({
     .max(MAX_MEDIA_YEAR)
     .optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
-  perPage: z.coerce.number().int().min(1).max(MAX_PER_PAGE).default(20),
+  /**
+   * Le défaut vient de la grille, pas d'AniList : `CATALOGUE_PAGE_SIZE` est le nombre qui remplit
+   * des rangées entières à chacun de ses paliers de colonnes (`config/catalogue.ts`). Ce défaut
+   * entre aussi dans la clé de cache des lectures — le changer invalide les entrées existantes,
+   * ce qui est correct mais n'est pas gratuit.
+   */
+  perPage: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_PER_PAGE)
+    .default(CATALOGUE_PAGE_SIZE),
   sortField: sortFieldSchema.default("SEARCH_MATCH"),
   sortDirection: sortDirectionSchema.default("DESC"),
   /** Filtre 18+. Désactivé par défaut, et appliqué côté serveur — jamais un masque CSS. */
