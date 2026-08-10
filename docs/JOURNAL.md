@@ -17,6 +17,96 @@ pas.
 
 ---
 
+## 11 août 2026 — Une liste sort du cercle
+
+L'étape 2 du chantier des listes : le lien non listé, décidé « ouvrable sans compte ». C'est la
+première fois que ce projet répond à quelqu'un qui n'est pas connecté, et tout le travail découle de
+là.
+
+### `visibility` disparaît, le jeton reste
+
+L'énumération `PRIVATE` / `UNLISTED` et un jeton de partage auraient dit le même fait deux fois. Une
+liste `UNLISTED` sans jeton n'est partagée avec personne ; une liste `PRIVATE` avec un jeton est
+lisible par qui a le lien. **Une liste est donc partagée si et seulement si `shareToken IS NOT
+NULL`** (migration `20260811093000_partage_par_jeton`, écrite à la main pour la même raison que
+celle de la notation : `migrate dev` refuse le non-interactif dès qu'une colonne pleine disparaît).
+
+- **Un jeton, pas l'`id`.** L'`id` figure déjà dans les URL du propriétaire : le partager aurait
+  divulgué l'adresse privée, et révoquer serait devenu impossible sans changer l'identité de la
+  liste. Le jeton fait 144 bits, tirés du générateur cryptographique de Node — c'est le seul secret
+  qui protège la page, puisqu'elle répond sans session.
+- **Aucune donnée reprise à la migration.** Les listes `UNLISTED` existantes étaient des intentions
+  sans effet : le partage n'avait jamais été servi, donc aucun lien n'était en circulation. Leur
+  fabriquer un jeton aurait publié des listes que personne n'avait encore partagées.
+- Révoquer, c'est mettre le jeton à `null` ; re-partager en génère un autre, et l'ancien lien meurt.
+  Rien n'est conservé de l'ancien — un jeton révoqué qu'on garderait quelque part serait un jeton
+  qu'on peut ressusciter par erreur. `shareList` est en revanche **idempotente** : une liste déjà
+  partagée rend le jeton qu'elle a, sinon un second clic sur « Partager » invaliderait en silence un
+  lien déjà envoyé.
+
+### La route sort de `(app)`, et c'est une contrainte, pas un rangement
+
+La garde `requireApprovedUser()` est dans `app/(app)/layout.tsx` et couvre tout ce qui vit dessous.
+Une page qui doit s'ouvrir sans session ne peut donc pas y être — pas « ne devrait pas », **ne peut
+pas**. D'où un groupe `(share)`, frère de `(auth)`, avec son propre chrome.
+
+- **Le proxy laisse passer par préfixe**, ce qu'il ne savait pas faire : `publicRoutes` compare des
+  chemins entiers, or le dernier segment est un jeton. `publicRoutePrefixes` est une liste séparée
+  exprès — un préfixe ouvre *tout ce qui commence par*, ce qui est une promesse bien plus large qu'un
+  chemin exact. Deux tests neufs la tiennent, dont un qui vérifie que `/library`, `/lists` et `/l`
+  restent fermés : une comparaison bâclée aurait ouvert toute la bibliothèque.
+- **Aucun lien vers l'application depuis cette page.** Tout y est derrière la garde, donc chaque lien
+  mènerait un visiteur sans compte à une connexion qu'il ne peut pas franchir — l'inscription passe
+  par une liste d'attente. Le nom du site est écrit, pas cliquable ; le nom du propriétaire ne
+  renvoie pas à son profil.
+- Les jaquettes ne sont donc **pas** des `MediaCard` : cette carte-là mène à `/media/[id]`, et une
+  grille entière de liens vers un mur n'est pas une grille. `SharedListGrid` rend l'image et le
+  titre, rien d'autre — tout le reste (progression, note, « +1 ») suppose un compte. `MediaGrid` est
+  en revanche réutilisé tel quel : les paliers de colonnes sont un calcul, pas un style.
+
+### Le soft 404, mesuré puis vérifié dans la documentation
+
+Un jeton inconnu rend la bonne page — titre « Liste introuvable », aucune fuite — mais **un statut
+200**. La documentation embarquée (`not-found.md`) le dit noir sur blanc : avec Cache Components,
+toute route dynamique diffuse une coquille statique avant d'exécuter quoi que ce soit, donc la
+réponse a commencé quand `notFound()` survient, et un statut ne se change plus une fois le flux
+ouvert. `export const instant = false` n'y change rien — essayé, mesuré, retiré.
+
+Le seul vrai 404 passerait par un contrôle **dans le proxy**, ce que la documentation recommande et
+que ce projet s'interdit : `src/proxy.ts` ne lit jamais la base, sous peine d'un aller-retour par
+requête pour tout le monde. Le `noindex` est la parade que la documentation indique elle-même, et il
+était déjà là. L'échange n'en valait pas la peine pour une page qu'aucun moteur n'indexe.
+
+En revanche, la validation de Cache Components signalait une vraie erreur : la page lisait la base
+sans frontière de suspension. Le contenu est passé dans un `<Suspense>` avec son squelette, comme
+toutes les autres pages du projet.
+
+### Deux corrections attrapées en chemin
+
+- **`metadataBase` manquait au layout racine.** Sans elle, Next assemble les URL d'`openGraph` sur
+  `localhost:3000` : invisible en développement, et fatal en production — une carte de partage dont
+  l'image pointe une machine locale ne s'affiche chez personne.
+- **`lang="en"` sur une interface française.** Un `lang` qui ment fait prononcer la page avec les
+  phonèmes de l'autre langue par un lecteur d'écran, et c'est précisément sur une page publique,
+  ouverte par des gens qu'on ne connaît pas, que ça se paie.
+
+**Vérifié dans l'application**, et la vérification a demandé un contrôle : les requêtes de test
+partent en `credentials: "omit"`, donc **sans cookie**, plutôt qu'en cassant la session du
+navigateur. Le contrôle est que `/library` et `/lists/<id>` répondent bien une redirection dans les
+mêmes conditions — sans lui, un 200 sur le lien partagé n'aurait rien prouvé. Résultats : lien
+partagé en 200 avec la liste rendue, `noindex` présent, `og:image` absolue, aucun `href="/media/…"`
+dans la page ; image de partage produite en PNG 1200×630 avec les quatre jaquettes ; jeton faux et
+jeton révoqué donnant la même page introuvable sans fuite de contenu ; création et révocation
+répercutées sur l'en-tête de la liste sans rechargement. La liste d'essai est revenue à son état
+d'origine, non partagée.
+
+**Reste ouvert :** la page publique est une surface nouvelle et n'a aucun plafond de débit — le jeton
+est imprévisible et la lecture est locale, donc rien d'urgent, mais c'est la première route du projet
+qui répond sans session et elle mérite d'être surveillée. Les modèles et le fork (`isTemplate`,
+`forkedFromId`) restent inutilisés dans le schéma.
+
+---
+
 ## 11 août 2026 — Une liste se remplit depuis elle-même, et les vues attendront
 
 Deux décisions d'Alexis ouvrent la séance : **les tier lists passent à bien plus tard**, et ce qu'il

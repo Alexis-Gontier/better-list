@@ -179,8 +179,19 @@ n'est pas journalisé dès le premier jour est perdu.
 
 ### 4.4 `List`, `ListItem`, `ListView`
 
-`List` : propriétaire, titre, `slug`, description, visibilité (`PRIVATE` / `UNLISTED`), cover,
-`isTemplate`, `forkedFromId`.
+`List` : propriétaire, titre, description, `shareToken`, cover, `isTemplate`, `forkedFromId`.
+
+**Le partage tient dans une seule colonne, et c'est une décision.** Une liste est partagée si et
+seulement si elle porte un `shareToken` ; révoquer, c'est le mettre à `null`, et re-partager en
+génère un autre — l'ancien lien meurt. L'énumération `visibility` (`PRIVATE` / `UNLISTED`) qui vivait
+là a été retirée (migration `20260811093000_partage_par_jeton`) : elle disait le même fait une
+seconde fois, et deux colonnes pour un fait finissent par se contredire — une liste `UNLISTED` sans
+jeton n'est partagée avec personne, une liste `PRIVATE` avec un jeton est lisible par qui a le lien.
+
+Un jeton et non l'`id` : celui-ci apparaît déjà dans les URL du propriétaire, donc le partage aurait
+divulgué l'adresse privée, et révoquer serait devenu impossible sans changer l'identité de la liste.
+Il est tiré du générateur cryptographique de Node (144 bits) : c'est le seul secret qui protège la
+page, puisqu'elle répond sans session.
 
 `ListItem` : `listId`, `mediaId`, `rank` (index fractionnaire — réordonner ne met à jour qu'une
 ligne), note personnelle, `addedAt`. **Unicité sur `(listId, mediaId)`** : une œuvre n'apparaît
@@ -261,6 +272,7 @@ recherche ni fiche média — c'est-à-dire ni l'entrée ni le cœur de l'app.
 | `/lists/[id]/[viewId]` | Une vue (classement, tier list) | V1.5 |
 | `/collection` | Mon étagère : séries possédées, tomes manquants | V1.5 |
 | `/collection/[mediaId]` | Une série : tomes possédés, plages, prêts | V1.5 |
+| `/l/[token]` | Une liste partagée, **hors de l'application authentifiée** | V1.5 |
 | `/u/[username]` | Profil : statistiques, listes partagées | V1 |
 | `/calendar` | Planning de diffusion | V2 |
 | `/settings` | Préférences du compte | V1 |
