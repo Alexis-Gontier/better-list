@@ -5,10 +5,13 @@ import {
   ArrowUpIcon,
   RotateCcwIcon,
   SearchIcon,
+  XIcon,
 } from "lucide-react";
 import { debounce } from "nuqs";
+import { useRef } from "react";
 
 import { FilterPopover } from "@/app/(app)/search/_components/filter-popover";
+import { ViewToggle } from "@/components/shared/view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
@@ -29,6 +32,7 @@ import {
 import { useSearchFilters } from "@/features/media/hooks/use-search-filters";
 import {
   EMPTY_FILTERS,
+  resolveSort,
   SORT_OPTIONS,
   STATUS_OPTIONS,
   TYPE_OPTIONS,
@@ -54,7 +58,35 @@ export function SearchFilters({
 }) {
   const [filters, setFilters] = useSearchFilters();
 
-  const directionEnabled = sortFieldHasDirection(filters.sort);
+  /**
+   * Le champ est **non contrôlé** — `defaultValue` et non `value` — parce que l'écriture dans l'URL
+   * est anti-rebondie : un champ piloté par `filters.q` reviendrait à la valeur d'il y a 400 ms à
+   * chaque frappe, et le curseur sauterait en fin de champ.
+   *
+   * La contrepartie est que React ne peut pas le vider : sans cette `ref`, réinitialiser les
+   * filtres remettait bien `q` à vide dans l'URL et dans les résultats, mais laissait le terme
+   * affiché dans le champ — une barre qui décrit une recherche qui n'a plus lieu.
+   */
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function clearQuery() {
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  /**
+   * Le tri **effectif**, pas celui de l'URL : sans terme de recherche, la grille sert les tendances
+   * (voir `resolveSort`). Afficher `filters.sort` mettrait « Pertinence » au-dessus de résultats qui
+   * n'en sont pas, et le seul contrôle censé expliquer l'ordre de la page mentirait.
+   *
+   * L'option elle-même disparaît alors de la liste, plutôt que d'être désactivée : « Pertinence »
+   * n'est pas une option indisponible, c'est une question qui n'a pas encore d'objet.
+   */
+  const sort = resolveSort(filters);
+  const sortOptions = filters.q.trim()
+    ? SORT_OPTIONS
+    : SORT_OPTIONS.filter((option) => option.value !== "SEARCH_MATCH");
+
+  const directionEnabled = sortFieldHasDirection(sort);
   const isPristine =
     !filters.q &&
     !filters.type &&
@@ -91,8 +123,27 @@ export function SearchFilters({
               )
             }
             placeholder="Rechercher…"
+            ref={inputRef}
             type="search"
           />
+
+          {filters.q ? (
+            <InputGroupAddon align="inline-end">
+              <Button
+                aria-label="Effacer la recherche"
+                className="size-6"
+                onClick={() => {
+                  clearQuery();
+                  setFilters({ q: "", page: 1 });
+                }}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <XIcon />
+              </Button>
+            </InputGroupAddon>
+          ) : null}
         </InputGroup>
       </div>
 
@@ -139,14 +190,14 @@ export function SearchFilters({
           onValueChange={(value) =>
             setFilters({ sort: value as SortField, page: 1 })
           }
-          value={filters.sort}
+          value={sort}
         >
           <SelectTrigger className="w-40" id="tri" size="sm">
             <SelectValue />
           </SelectTrigger>
 
           <SelectContent>
-            {SORT_OPTIONS.map((option) => (
+            {sortOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -186,7 +237,10 @@ export function SearchFilters({
           <Button
             aria-label="Réinitialiser les filtres"
             disabled={isPristine}
-            onClick={() => setFilters(EMPTY_FILTERS)}
+            onClick={() => {
+              clearQuery();
+              setFilters(EMPTY_FILTERS);
+            }}
             size="icon-sm"
             type="button"
             variant="ghost"
@@ -196,6 +250,17 @@ export function SearchFilters({
         </TooltipTrigger>
         <TooltipContent>Réinitialiser les filtres</TooltipContent>
       </Tooltip>
+
+      {/*
+        La disposition ne remet **pas** `page` à 1 : elle ne change ni le nombre de résultats ni
+        leur ordre, et renvoyer à la page 1 ferait perdre sa place à quelqu'un qui veut seulement
+        voir la même page autrement. C'est aussi pour ça qu'elle est hors du groupe de tri et après
+        la réinitialisation — elle ne filtre rien.
+      */}
+      <ViewToggle
+        onChange={(view) => setFilters({ view })}
+        value={filters.view}
+      />
     </div>
   );
 }

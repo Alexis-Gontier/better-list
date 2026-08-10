@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { ActiveFilters } from "@/app/(app)/search/_components/active-filters";
 import { SearchFiltersLoader } from "@/app/(app)/search/_components/search-filters-loader";
 import { SearchResults } from "@/app/(app)/search/_components/search-results";
 import { SearchResultsSkeleton } from "@/app/(app)/search/_components/search-results-skeleton";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function SearchPage({ searchParams }: PageProps<"/search">) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="space-y-1">
         <h1 className="font-semibold text-xl">Rechercher</h1>
         <p className="text-muted-foreground text-sm">
@@ -34,6 +35,14 @@ export default function SearchPage({ searchParams }: PageProps<"/search">) {
       <Suspense fallback={<Skeleton className="h-9 w-full" />}>
         <SearchFiltersLoader />
       </Suspense>
+
+      {/*
+        Les puces de filtres actifs sont **hors de cette frontière**, et c'est ce qui les rend
+        utiles : elles ne lisent que l'URL, donc elles s'affichent avant que le vocabulaire de la
+        barre soit arrivé. Quelqu'un qui ouvre un lien partagé avec trois genres cochés sait
+        immédiatement pourquoi il voit ces résultats-là, sans attendre AniList.
+      */}
+      <ActiveFilters />
 
       <Suspense fallback={<SearchResultsSkeleton />}>
         <SearchResults searchParams={searchParams} />

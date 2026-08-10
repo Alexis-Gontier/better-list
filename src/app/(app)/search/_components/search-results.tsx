@@ -1,6 +1,6 @@
 import { SearchXIcon } from "lucide-react";
 
-import { MediaGrid } from "@/components/shared/media-grid";
+import { MediaGrid, MediaList } from "@/components/shared/media-grid";
 import { Pagination } from "@/components/shared/pagination";
 import {
   Empty,
@@ -11,12 +11,15 @@ import {
 } from "@/components/ui/empty";
 import { routes } from "@/config/routes";
 import { MediaCard } from "@/features/media/components/media-card";
+import { MediaRow } from "@/features/media/components/media-row";
 import {
   formatMediaFormat,
+  formatMediaStatus,
   formatSeason,
 } from "@/features/media/lib/media-format";
 import {
   loadSearchFilters,
+  resolveSort,
   serializeSearchFilters,
 } from "@/features/media/lib/search-params";
 import { searchFormSchema } from "@/features/media/schemas/search-media.schema";
@@ -35,6 +38,10 @@ import { getPreferences } from "@/features/preferences/server/preferences.querie
  *    décodage maison qui finirait par diverger de ce que le client écrit.
  * 2. `searchFormSchema` valide le résultat pour AniList. Il **exclut `includeAdult`**, donc un
  *    paramètre forgé à la main ne peut pas désactiver le filtre 18+.
+ *
+ * Entre les deux, `resolveSort` : une page d'arrivée sans terme de recherche ouvre sur les
+ * tendances plutôt que sur l'ordre interne d'AniList. La règle est pure et partagée avec la barre
+ * de filtres, pour que le sélecteur affiche le tri qui est réellement servi.
  */
 export async function SearchResults({
   searchParams,
@@ -50,13 +57,15 @@ export async function SearchResults({
    */
   const { includeAdult } = await getPreferences();
 
+  const sortField = resolveSort(filters);
+
   const parsed = searchFormSchema.safeParse({
     search: filters.q || undefined,
     type: filters.type ?? undefined,
     status: filters.status ?? undefined,
     genres: filters.genre.length > 0 ? filters.genre : undefined,
     tags: filters.tag.length > 0 ? filters.tag : undefined,
-    sortField: filters.sort,
+    sortField,
     sortDirection: filters.dir,
     page: filters.page,
     includeAdult,
@@ -87,30 +96,73 @@ export async function SearchResults({
     );
   }
 
+  const items = media.map((item) => ({
+    key: item.id,
+    media: item,
+    genres: item.genres,
+    /**
+     * La liste a de la place en largeur là où la grille en manque : elle gagne le statut de
+     * publication, qui distingue une série en cours d'une série terminée sans ouvrir la fiche.
+     */
+    listMeta: [
+      formatMediaFormat(item.format),
+      formatSeason(null, item.seasonYear),
+      formatMediaStatus(item.status),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  }));
+
   return (
     <div className="space-y-6">
-      {pageInfo.total ? (
-        <p className="text-muted-foreground text-sm">
-          {pageInfo.total.toLocaleString("fr-FR")}{" "}
-          {pageInfo.total > 1 ? "résultats" : "résultat"}
-        </p>
-      ) : null}
+      {/*
+        Deux en-têtes, parce qu'il y a deux situations. Un décompte répond à une recherche — « 41
+        résultats » dit si le filtre a mordu. Il ne dit rien d'une page d'arrivée : « 24 918
+        résultats » sous les tendances est un nombre exact et sans usage. On y met donc ce qui
+        manque vraiment, c'est-à-dire ce qu'on regarde et comment en sortir.
+      */}
+      {sortField === filters.sort ? (
+        pageInfo.total ? (
+          <p className="text-muted-foreground text-sm">
+            {pageInfo.total.toLocaleString("fr-FR")}{" "}
+            {pageInfo.total > 1 ? "résultats" : "résultat"}
+          </p>
+        ) : null
+      ) : (
+        <div className="space-y-0.5">
+          <h2 className="font-semibold text-base">Tendances du moment</h2>
+          <p className="text-muted-foreground text-sm">
+            Ce que le reste du monde regarde. Tapez un titre pour chercher, ou
+            changez le tri.
+          </p>
+        </div>
+      )}
 
-      <MediaGrid>
-        {media.map((item) => (
-          <li key={item.id}>
-            <MediaCard
-              media={item}
-              meta={[
-                formatMediaFormat(item.format),
-                formatSeason(null, item.seasonYear),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+      {filters.view === "list" ? (
+        <MediaList>
+          {items.map((item) => (
+            <MediaRow
+              genres={item.genres}
+              key={item.key}
+              media={item.media}
+              meta={item.listMeta}
             />
-          </li>
-        ))}
-      </MediaGrid>
+          ))}
+        </MediaList>
+      ) : (
+        <MediaGrid>
+          {items.map((item) => (
+            <li key={item.key}>
+              {/*
+                Pas de ligne de contexte en grille : « Série TV · 2026 » se répétait sous vingt-quatre
+                jaquettes pour dire ce qu'on ne cherchait pas. Le format et l'année restent en vue
+                liste, où la largeur les rend comparables d'une ligne à l'autre, et sur la fiche.
+              */}
+              <MediaCard media={item.media} />
+            </li>
+          ))}
+        </MediaGrid>
+      )}
 
       {/*
         L'adresse est construite par `serializeSearchFilters`, donc avec les parseurs qui ont servi

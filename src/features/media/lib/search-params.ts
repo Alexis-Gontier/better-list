@@ -7,6 +7,7 @@ import {
   parseAsStringLiteral,
 } from "nuqs/server";
 
+import { DEFAULT_VIEW_MODE, VIEW_MODES } from "@/config/catalogue";
 import type {
   SortDirection,
   SortField,
@@ -63,6 +64,36 @@ const DIRECTION_VALUES = ["ASC", "DESC"] as const satisfies readonly [
 const TYPE_VALUES = TYPE_OPTIONS.map((option) => option.value);
 const STATUS_VALUES = STATUS_OPTIONS.map((option) => option.value);
 
+/**
+ * Le tri servi quand aucun terme n'est saisi.
+ *
+ * `SEARCH_MATCH` classe par **proximité avec la requête** : sans requête, il n'a rien à comparer et
+ * AniList retombe sur son ordre interne — une page d'arrivée qui ouvre sur des œuvres au hasard.
+ * « Tendances » répond à la seule question qu'on puisse poser sans avoir rien tapé : qu'est-ce qui
+ * se regarde en ce moment.
+ */
+export const EMPTY_QUERY_SORT = "TRENDING" satisfies SortField;
+
+/**
+ * Le tri **effectif**, qui n'est pas toujours celui de l'URL.
+ *
+ * La substitution est volontairement étroite : elle ne s'applique qu'au tri par défaut, jamais à un
+ * tri choisi. Quelqu'un qui demande « Titre » sans terme de recherche obtient bien un ordre
+ * alphabétique — ce n'est pas à nous de décider qu'il s'est trompé.
+ *
+ * Pure et partagée client/serveur : la barre de filtres affiche ce que la grille sert, sans quoi le
+ * sélecteur annoncerait « Pertinence » au-dessus de résultats classés par tendance.
+ */
+export function resolveSort({
+  q,
+  sort,
+}: {
+  q: string;
+  sort: SortField;
+}): SortField {
+  return sort === "SEARCH_MATCH" && !q.trim() ? EMPTY_QUERY_SORT : sort;
+}
+
 export const searchFilterParsers = {
   q: parseAsString.withDefault(""),
   type: parseAsStringLiteral(TYPE_VALUES),
@@ -72,6 +103,12 @@ export const searchFilterParsers = {
   tag: parseAsArrayOf(parseAsString).withDefault([]),
   sort: parseAsStringLiteral(SORT_VALUES).withDefault("SEARCH_MATCH"),
   dir: parseAsStringLiteral(DIRECTION_VALUES).withDefault("DESC"),
+  /**
+   * Grille ou liste dense. **Ne fait pas partie de ce qui part chez AniList** : `searchFormSchema`
+   * ne le connaît pas, donc changer de disposition ne change pas la clé de cache de la requête et
+   * ne dépense rien du quota.
+   */
+  view: parseAsStringLiteral(VIEW_MODES).withDefault(DEFAULT_VIEW_MODE),
   page: parseAsInteger.withDefault(1),
 };
 
