@@ -2,6 +2,7 @@ import { LayersIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AddToListSearch } from "@/app/(app)/lists/[id]/_components/add-to-list-search";
 import { DeleteListButton } from "@/app/(app)/lists/[id]/_components/delete-list-button";
 import { EditListDialog } from "@/app/(app)/lists/[id]/_components/edit-list-dialog";
 import { RemoveFromListButton } from "@/app/(app)/lists/[id]/_components/remove-from-list-button";
@@ -64,10 +65,16 @@ export async function ListDetail({
         </div>
 
         {/*
-          Les deux commandes de la liste, la moins conséquente d'abord. « Modifier » se défait ;
-          « Supprimer » emporte tout, et c'est le seul des deux à demander confirmation.
+          Les commandes de la liste, la moins conséquente d'abord — ce qui est aussi l'ordre de
+          fréquence. « Ajouter » est le geste qu'on refait dix fois de suite ; « Modifier » se
+          défait ; « Supprimer » emporte tout, et c'est le seul des trois à demander confirmation.
         */}
         <div className="flex shrink-0 items-center gap-1">
+          <AddToListSearch
+            listId={list.id}
+            presentMediaIds={list.items.map((item) => item.media.id)}
+          />
+
           <EditListDialog
             description={list.description}
             listId={list.id}
@@ -90,13 +97,21 @@ export async function ListDetail({
             </EmptyMedia>
             <EmptyTitle>Liste vide</EmptyTitle>
             <EmptyDescription>
-              On ajoute une œuvre depuis sa fiche, par « Ajouter à une liste ».
+              « Ajouter une œuvre », en haut de la page, cherche dans votre
+              bibliothèque et dans le catalogue. Une fiche sait aussi le faire,
+              par « Ajouter à une liste ».
             </EmptyDescription>
           </EmptyHeader>
 
+          {/*
+            L'état vide garde sa porte vers la recherche : elle mène à un écran qui montre des
+            jaquettes et des filtres, là où le champ d'ajout demande de savoir déjà quoi taper. Les
+            deux ne répondent pas à la même question — « laquelle ajouter ? » contre « ajoute
+            celle-ci ».
+          */}
           <EmptyContent>
             <Button asChild size="sm" variant="outline">
-              <Link href={routes.search}>Chercher une œuvre</Link>
+              <Link href={routes.search}>Parcourir le catalogue</Link>
             </Button>
           </EmptyContent>
         </Empty>
