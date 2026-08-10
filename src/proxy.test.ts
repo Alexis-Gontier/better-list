@@ -44,6 +44,32 @@ describe("proxy", () => {
   });
 
   /**
+   * Le lien non listé s'adresse à quelqu'un **qui n'a pas de compte** (docs/PRODUCT.md §2). S'il
+   * était renvoyé vers `/login`, le partage ne partagerait rien.
+   */
+  it("laisse passer une liste partagée sans session", () => {
+    expect(proxy(request("/l/jeton-quelconque")).status).toBe(200);
+  });
+
+  /**
+   * Le pendant du test précédent, et le plus important des deux : le préfixe public ne doit ouvrir
+   * **que** ce qu'il annonce. Une comparaison bâclée — `pathname.includes("/l/")`, ou un préfixe
+   * réduit à « /l » — ouvrirait `/library` et `/lists` à n'importe qui, c'est-à-dire toute la
+   * bibliothèque et toutes les listes.
+   */
+  it("n'ouvre rien d'autre que le préfixe de partage", () => {
+    for (const pathname of [
+      "/library",
+      "/lists",
+      "/lists/abc",
+      "/l",
+      "/login/l/x",
+    ]) {
+      expect(proxy(request(pathname)).status).toBe(307);
+    }
+  });
+
+  /**
    * L'invariant à ne jamais casser. Renvoyer un porteur de cookie hors de `/login` crée une boucle
    * infinie dès que la session est expirée : la garde du layout redirige vers `/login`, le proxy
    * renvoie vers `/`, et un cookie ne peut pas être effacé pendant un rendu.

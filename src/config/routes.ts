@@ -43,6 +43,23 @@ export const routes = {
     view: (id: string, viewId: string) => `/lists/${id}/${viewId}` as const,
   },
 
+  /**
+   * Une liste partagée, **hors de l'application authentifiée**.
+   *
+   * Court exprès : c'est la seule adresse du projet destinée à être recopiée dans un message. Et
+   * elle est volontairement **hors de `/lists/`** — le préfixe qui ouvre sans compte doit se voir
+   * d'un coup d'œil dans le proxy comme dans l'arborescence, pas se cacher dans un segment de plus
+   * sous un chemin par ailleurs protégé.
+   *
+   * Le segment est un jeton (`features/lists/lib/share-token.ts`), pas l'`id` de la liste : celui-ci
+   * apparaît déjà dans les URL du propriétaire, et le partager rendrait la révocation impossible.
+   */
+  share: {
+    /** Le préfixe, dont `src/proxy.ts` a besoin : le segment variable interdit l'égalité. */
+    prefix: "/l/",
+    detail: (token: string) => `/l/${token}` as const,
+  },
+
   collection: {
     /**
      * Mon étagère : séries possédées, tomes manquants (V1.5).

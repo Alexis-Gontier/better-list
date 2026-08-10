@@ -79,3 +79,16 @@ export const publicRoutes: string[] = [
   routes.auth.signup,
   routes.auth.waitlist,
 ];
+
+/**
+ * Routes publiques dont le chemin **ne peut pas être connu d'avance**.
+ *
+ * Une liste partagée s'adresse par un jeton (`/l/<jeton>`) : l'égalité de `publicRoutes` ne peut
+ * rien en dire, il faut comparer un préfixe. Elles sont dans une liste séparée précisément pour que
+ * la différence se voie — un préfixe ouvre **tout ce qui commence par**, ce qui est une promesse
+ * bien plus large qu'un chemin exact, et qui mérite d'être relue quand on en ajoute un.
+ *
+ * Ce n'est pas une autorisation : le proxy laisse passer, et c'est la page qui décide. Un jeton faux
+ * y donne la même page introuvable qu'un jeton révoqué (`getSharedList`).
+ */
+export const publicRoutePrefixes: string[] = [routes.share.prefix];

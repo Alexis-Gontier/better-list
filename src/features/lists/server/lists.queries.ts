@@ -9,9 +9,9 @@ import { prisma } from "@/lib/db/prisma";
  * Toutes closes sur l'utilisateur de la session, comme le reste du domaine utilisateur : aucune
  * signature ne prend d'`ownerId`, pour qu'aucun appelant ne puisse en passer un venu de l'URL.
  *
- * **V1 ne montre que mes listes.** Le partage par lien non listé est du V1.5 : l'`id` de l'URL
- * désigne déjà la liste sans ambiguïté, il restera à décider ce qui autorise à la lire — la
- * visibilité `UNLISTED` seule, ou un jeton. Décision à prendre à ce moment-là, pas maintenant.
+ * **Sauf une : `getSharedList`.** C'est la seule lecture du projet qui réponde sans session, et
+ * c'est ce qui fait exister le lien non listé. Sa garde n'est pas l'identité du lecteur — il n'en a
+ * pas — mais la possession du jeton, et elle est écrite à côté d'elle.
  */
 
 /** Les colonnes du miroir dont les vignettes ont besoin. */
@@ -46,7 +46,7 @@ export async function getMyLists() {
       id: true,
       title: true,
       description: true,
-      visibility: true,
+      shareToken: true,
       updatedAt: true,
       _count: { select: { items: true } },
       items: {
@@ -77,7 +77,7 @@ export async function getListById(id: string) {
       id: true,
       title: true,
       description: true,
-      visibility: true,
+      shareToken: true,
       createdAt: true,
       items: {
         orderBy: { rank: "asc" },
@@ -87,6 +87,40 @@ export async function getListById(id: string) {
           addedAt: true,
           media: { select: LIST_MEDIA_SELECT },
         },
+      },
+    },
+  });
+}
+
+/**
+ * Une liste partagée, lue **par son jeton et sans session**.
+ *
+ * C'est la seule lecture du projet qui ne demande à personne qui il est : le lien non listé
+ * s'adresse à quelqu'un qui n'a pas de compte (docs/PRODUCT.md §2), donc exiger une session
+ * reviendrait à ne pas partager du tout.
+ *
+ * **Le jeton est la garde, et il est aussi l'identifiant.** Un jeton inconnu et une liste qui n'est
+ * plus partagée donnent le même `null`, donc la même page introuvable : c'est la règle qui vaut déjà
+ * pour les listes d'un autre membre, appliquée ici. Rien dans la réponse ne dit si la liste a existé,
+ * ce qui retire tout intérêt à essayer des jetons au hasard.
+ *
+ * Ce qui sort d'ici sort du cercle : on ne rend donc que ce qu'une page publique affiche —
+ * titre, description, œuvres, et le nom du propriétaire. Pas d'`id` de liste (il ouvrirait l'adresse
+ * privée), pas de date de modification, pas de note personnelle sur les lignes.
+ */
+export async function getSharedList(token: string) {
+  return prisma.list.findUnique({
+    // `findUnique` sur `shareToken`, qui est unique : un jeton désigne au plus une liste. Le `null`
+    // couvre les deux cas — jeton faux, ou partage révoqué —, et c'est voulu qu'ils soient
+    // indistinguables.
+    where: { shareToken: token },
+    select: {
+      title: true,
+      description: true,
+      owner: { select: { username: true, name: true } },
+      items: {
+        orderBy: { rank: "asc" },
+        select: { id: true, media: { select: LIST_MEDIA_SELECT } },
       },
     },
   });

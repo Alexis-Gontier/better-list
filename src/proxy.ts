@@ -2,7 +2,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { publicRoutes } from "@/config/navigation";
+import { publicRoutePrefixes, publicRoutes } from "@/config/navigation";
 import { routes } from "@/config/routes";
 import { safeRedirectPath } from "@/lib/security/safe-redirect";
 
@@ -39,7 +39,15 @@ export function proxy(request: NextRequest) {
   // redirigerait vers `/login`, le proxy renverrait vers `/`, et ainsi de suite — une boucle
   // infinie, puisqu'un cookie ne peut pas être effacé pendant un rendu. C'est `/login` qui écarte
   // un utilisateur déjà connecté, sur une session réellement validée.
-  if (isAuthenticated || publicRoutes.includes(pathname)) {
+  // Les listes partagées passent par le préfixe et non par l'égalité : leur dernier segment est un
+  // jeton, donc leur chemin ne peut pas figurer dans une liste écrite à l'avance. C'est la seule
+  // route publique de ce genre, et `publicRoutePrefixes` la garde visible plutôt que de la diluer
+  // dans une expression régulière du matcher.
+  const isPublic =
+    publicRoutes.includes(pathname) ||
+    publicRoutePrefixes.some((prefix) => pathname.startsWith(prefix));
+
+  if (isAuthenticated || isPublic) {
     return NextResponse.next();
   }
 

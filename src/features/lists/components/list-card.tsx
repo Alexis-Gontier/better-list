@@ -19,7 +19,8 @@ import { routes } from "@/config/routes";
 export type ListCardData = {
   id: string;
   title: string;
-  visibility: "PRIVATE" | "UNLISTED";
+  /** Le jeton du lien non listé, ou `null`. La carte n'affiche pas sa valeur — c'est un secret. */
+  shareToken: string | null;
   _count: { items: number };
   items: { id: string; media: { coverImage: string | null } }[];
 };
@@ -68,7 +69,7 @@ export function ListCard({ list }: { list: ListCardData }) {
         <p className="text-muted-foreground text-xs">
           {list._count.items.toLocaleString(LOCALE)}{" "}
           {list._count.items > 1 ? "œuvres" : "œuvre"}
-          {list.visibility === "UNLISTED" ? " · lien non listé" : null}
+          {list.shareToken ? " · partagée par lien" : null}
         </p>
       </div>
     </Link>

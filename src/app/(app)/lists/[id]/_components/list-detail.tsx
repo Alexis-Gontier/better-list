@@ -6,6 +6,7 @@ import { AddToListSearch } from "@/app/(app)/lists/[id]/_components/add-to-list-
 import { DeleteListButton } from "@/app/(app)/lists/[id]/_components/delete-list-button";
 import { EditListDialog } from "@/app/(app)/lists/[id]/_components/edit-list-dialog";
 import { RemoveFromListButton } from "@/app/(app)/lists/[id]/_components/remove-from-list-button";
+import { ShareListDialog } from "@/app/(app)/lists/[id]/_components/share-list-dialog";
 import { SortableListGrid } from "@/app/(app)/lists/[id]/_components/sortable-list-grid";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +61,7 @@ export async function ListDetail({
           <p className="text-muted-foreground text-xs">
             {list.items.length.toLocaleString(LOCALE)}{" "}
             {list.items.length > 1 ? "œuvres" : "œuvre"}
-            {list.visibility === "UNLISTED" ? " · lien non listé" : null}
+            {list.shareToken ? " · partagée par lien" : null}
           </p>
         </div>
 
@@ -74,6 +75,8 @@ export async function ListDetail({
             listId={list.id}
             presentMediaIds={list.items.map((item) => item.media.id)}
           />
+
+          <ShareListDialog listId={list.id} shareToken={list.shareToken} />
 
           <EditListDialog
             description={list.description}

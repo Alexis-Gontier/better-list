@@ -103,11 +103,6 @@ enum EntryEventType {
 // Énumérations — listes et collection
 // =============================================================================
 
-enum ListVisibility {
-  PRIVATE
-  UNLISTED
-}
-
 enum ListViewType {
   RANKED
   TIERS
@@ -422,8 +417,20 @@ model List {
 
   title       String
   description String?
-  visibility  ListVisibility @default(PRIVATE)
-  isTemplate  Boolean        @default(false)
+  isTemplate  Boolean @default(false)
+
+  /// Le lien non listé, et **la seule source de vérité du partage** (§4.4).
+  ///
+  /// Une liste est partagée si et seulement si elle porte un jeton : révoquer, c'est le mettre à
+  /// `null` ; re-partager, c'est en générer un autre, et l'ancien lien est mort. L'énumération
+  /// `visibility` (`PRIVATE` / `UNLISTED`) qui vivait ici disait la même chose une seconde fois, et
+  /// deux colonnes pour un seul fait finissent toujours par se contredire.
+  ///
+  /// Un jeton plutôt que l'`id` : celui-ci apparaît déjà dans les URL du propriétaire, donc le
+  /// partage aurait divulgué l'adresse privée, et révoquer serait devenu impossible sans changer
+  /// l'identité de la liste. `@unique` sur une colonne nullable n'empêche pas les `NULL` multiples
+  /// chez PostgreSQL : toutes les listes non partagées cohabitent.
+  shareToken String? @unique
 
   forkedFromId String?
   forkedFrom   List?   @relation("ListFork", fields: [forkedFromId], references: [id], onDelete: SetNull)
@@ -436,7 +443,6 @@ model List {
   views ListView[]
 
   @@index([ownerId, updatedAt])
-  @@index([visibility])
   @@map("lists")
 }
 

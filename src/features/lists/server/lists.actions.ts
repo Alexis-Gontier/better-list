@@ -5,12 +5,14 @@ import { revalidatePath } from "next/cache";
 
 import { routes } from "@/config/routes";
 import { rankAfterMove } from "@/features/lists/lib/list-reorder";
+import { generateShareToken } from "@/features/lists/lib/share-token";
 import {
   addToListSchema,
   createListSchema,
   deleteListSchema,
   removeFromListSchema,
   reorderListItemSchema,
+  shareListSchema,
   updateListSchema,
 } from "@/features/lists/schemas/lists.schema";
 import { ensureMediaMirror } from "@/features/media/server/media.mirror";
@@ -46,14 +48,10 @@ async function nextRank(listId: string): Promise<string> {
 export const createList = authActionClient
   .metadata({ actionName: "createList" })
   .inputSchema(createListSchema)
-  .action(async ({ parsedInput: { title, description, visibility }, ctx }) => {
+  .action(async ({ parsedInput: { title, description }, ctx }) => {
     const list = await prisma.list.create({
-      data: {
-        ownerId: ctx.user.id,
-        title,
-        description: description ?? null,
-        visibility,
-      },
+      // Pas de `shareToken` : une liste naît privée, et le partage est un geste séparé et explicite.
+      data: { ownerId: ctx.user.id, title, description: description ?? null },
       // L'`id` repart au client : c'est à la fois l'adresse de la liste, vers laquelle le dialogue
       // de création navigue, et ce que « Ajouter à une liste » passe à la mutation suivante quand on
       // crée puis remplit d'un geste.
@@ -112,6 +110,68 @@ export const deleteList = authActionClient
 
     revalidatePath(routes.lists.root);
     return { deleted: true };
+  });
+
+/**
+ * Publier une liste derrière un lien non listé.
+ *
+ * **Idempotente : une liste déjà partagée rend le jeton qu'elle a**, elle n'en reçoit pas un
+ * nouveau. Un bouton « Partager » qui ferait tourner le jeton à chaque clic invaliderait en silence
+ * un lien déjà envoyé à quelqu'un — la révocation doit être un geste qu'on choisit, jamais un effet
+ * de bord d'un geste qu'on répète.
+ *
+ * `updateMany` sur `{ id, ownerId }`, comme le reste du domaine : on ne partage que ses propres
+ * listes, et une liste étrangère reste indiscernable d'une liste inexistante.
+ */
+export const shareList = authActionClient
+  .metadata({ actionName: "shareList" })
+  .inputSchema(shareListSchema)
+  .action(async ({ parsedInput: { listId }, ctx }) => {
+    const existing = await prisma.list.findFirst({
+      where: { id: listId, ownerId: ctx.user.id },
+      select: { shareToken: true },
+    });
+
+    if (!existing) throw new Error("Liste introuvable.");
+    if (existing.shareToken) return { shareToken: existing.shareToken };
+
+    const shareToken = generateShareToken();
+
+    await prisma.list.updateMany({
+      where: { id: listId, ownerId: ctx.user.id },
+      data: { shareToken },
+    });
+
+    // La page publique n'est pas revalidée : elle n'existait pas encore sous ce jeton, donc il n'y a
+    // rien de périmé à jeter.
+    revalidatePath(routes.lists.root);
+    revalidatePath(routes.lists.detail(listId));
+
+    return { shareToken };
+  });
+
+/**
+ * Révoquer le lien : le jeton disparaît, et l'adresse qu'il formait ne mène plus nulle part.
+ *
+ * Re-partager plus tard produira un **autre** jeton, donc une autre adresse : c'est ce qui rend la
+ * révocation réelle. Aucune trace n'est gardée de l'ancien — un jeton révoqué qu'on conserverait
+ * quelque part serait un jeton qu'on peut ressusciter par erreur.
+ */
+export const unshareList = authActionClient
+  .metadata({ actionName: "unshareList" })
+  .inputSchema(shareListSchema)
+  .action(async ({ parsedInput: { listId }, ctx }) => {
+    const { count } = await prisma.list.updateMany({
+      where: { id: listId, ownerId: ctx.user.id },
+      data: { shareToken: null },
+    });
+
+    if (count === 0) throw new Error("Liste introuvable.");
+
+    revalidatePath(routes.lists.root);
+    revalidatePath(routes.lists.detail(listId));
+
+    return { unshared: true };
   });
 
 export const addToList = authActionClient

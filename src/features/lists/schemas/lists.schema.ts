@@ -7,19 +7,18 @@ import * as z from "zod";
  * forme ici et vérifiés en propriété dans l'action**. Un schéma ne peut pas savoir à qui appartient
  * une liste ; c'est le rôle du `where` de la mutation, jamais celui de Zod.
  *
- * L'énumération de visibilité est recopiée du schéma Prisma plutôt qu'importée du client généré :
- * elle valide une entrée navigateur.
+ * **Il n'y a pas de schéma de visibilité.** Une liste est partagée si et seulement si elle porte un
+ * jeton (§4.4), et ce jeton n'entre jamais par ici : il est fabriqué par le serveur, jamais reçu du
+ * navigateur. Un champ que le client pourrait proposer serait un champ qu'il pourrait choisir.
  */
-
-export const listVisibilitySchema = z.enum(["PRIVATE", "UNLISTED"]);
 
 const listIdSchema = z.string().min(1).max(64);
 const mediaIdSchema = z.number().int().positive();
 
 /**
  * Le titre est **obligatoire et le seul champ requis** : une liste sans nom ne se retrouve pas, et
- * tout le reste (description, visibilité) a un défaut raisonnable. `trim()` avant la borne, sinon
- * un titre fait de trois espaces passerait la validation.
+ * la description a un défaut raisonnable. `trim()` avant la borne, sinon un titre fait de trois
+ * espaces passerait la validation.
  *
  * Définis une seule fois : créer et modifier posent exactement les mêmes règles, et deux copies
  * finiraient par diverger — un titre accepté à la création et refusé à la modification serait
@@ -35,18 +34,18 @@ const listDescriptionSchema = z.string().trim().max(1000).nullable().optional();
 export const createListSchema = z.object({
   title: listTitleSchema,
   description: listDescriptionSchema,
-  visibility: listVisibilitySchema.default("PRIVATE"),
 });
 
 /**
  * Renommer et redécrire une liste.
  *
- * **Pas de `visibility` ici.** Le passage en `UNLISTED` n'a de sens qu'avec un lien de partage, qui
- * est du V1.5 (voir `lists.queries.ts`). Offrir l'interrupteur maintenant promettrait un partage qui
- * n'existe pas.
+ * **Le partage n'est pas ici, et ce n'est pas un oubli** : il a ses propres actions (`shareList`,
+ * `unshareList`). Publier une liste et la renommer n'ont ni la même portée ni le même défaire —
+ * l'une expose un contenu à l'extérieur du cercle, l'autre corrige un libellé. Les mêler dans un
+ * formulaire ferait d'« Enregistrer » un bouton dont on ne mesure plus les conséquences.
  *
- * Le titre n'est plus qu'un libellé : l'adresse de la liste est son `id`, donc renommer ne peut plus
- * casser un lien — c'est la raison d'être du choix, et il n'y a rien de plus à faire ici.
+ * Le titre n'est qu'un libellé : l'adresse de la liste est son `id`, donc renommer ne peut pas
+ * casser un lien — le lien de partage pas davantage, puisqu'il porte un jeton.
  */
 export const updateListSchema = z.object({
   listId: listIdSchema,
@@ -55,6 +54,15 @@ export const updateListSchema = z.object({
 });
 
 export const deleteListSchema = z.object({ listId: listIdSchema });
+
+/**
+ * Partager une liste, ou cesser de la partager.
+ *
+ * Les deux ne prennent que l'identifiant : **le jeton n'entre jamais par le navigateur.** Le
+ * fabriquer côté serveur est ce qui garantit qu'il est imprévisible, et ne pas l'accepter en entrée
+ * est ce qui empêche quiconque de se choisir une adresse — ou d'écrire celle d'une liste voisine.
+ */
+export const shareListSchema = z.object({ listId: listIdSchema });
 
 export const addToListSchema = z.object({
   listId: listIdSchema,
