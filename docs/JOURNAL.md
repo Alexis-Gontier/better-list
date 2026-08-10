@@ -17,6 +17,95 @@ pas.
 
 ---
 
+## 10 août 2026 — L'arbre de travail devient une histoire, et la grille sait suivre
+
+Séance de dette : le point 1 du « prochain pas » traînait depuis quatre séances — **93 fichiers non
+commités**, deux migrations Prisma dedans, posés sur un dépôt qui s'arrêtait à la palette ⌘K. C'est
+réparé, et deux autres trous avec.
+
+### Onze commits, et ce que le découpage a coûté
+
+L'arbre est parti en neuf commits thématiques — listes par `id`, `/browse` et l'accueil, notation en
+étoiles, poste de commande, catalogue à deux dispositions, recherche sur les tendances, planning,
+seed, docs — puis deux de plus pour le travail de la séance. **Sur `main` directement** : le dépôt
+n'a aucun remote et une seule branche, donc une branche n'aurait protégé de rien et aurait demandé
+une fusion à personne.
+
+Deux compromis, tous deux du même genre — le découpage est **par sujet, à fichier entier** :
+
+- **Les fichiers-carrefours partent avec le premier sujet qui les touche.** `prisma/schema.prisma`
+  est parti avec les listes en portant déjà le retrait de `scoreFormat`, dont la migration arrive
+  deux commits plus loin ; `tracking.queries.ts` est parti avec l'accueil en portant les lectures de
+  la bibliothèque. Les séparer proprement aurait demandé de découper des fichiers hunk par hunk, pour
+  une histoire que personne ne rejouera commit par commit.
+- **Les renommages déjà indexés voyagent avec le premier commit**, quel que soit son sujet : les
+  quatre fichiers du groupe `(home)` étaient dans l'index avant la séance et sont donc partis avec
+  les listes, leurs modifications de contenu suivant au commit d'après.
+
+**Seul l'état final est vérifié** — lint, typecheck, 158 tests, knip —, pas chaque commit
+intermédiaire. C'est la contrepartie assumée du découpage à fichier entier : un `git bisect` sur ces
+neuf-là ne compilerait pas forcément. Le prix à payer pour un historique lisible valait mieux qu'un
+bloc de 93 fichiers, qui ne se relit ni ne se bissecte non plus.
+
+### `/collection` ne se fait plus cliquer
+
+La nav **et** la palette pointaient sur `routes.collection.root`, qui n'a pas de route : le seul lien
+mort de l'app, et le seul défaut qu'un membre du cercle rencontrait en cliquant normalement. Les deux
+entrées sont retirées.
+
+`routes.collection` **reste déclaré**, et c'est la différence avec `/browse` dont l'entrée avait été
+supprimée de `routes` en même temps que la page : `/browse` était une décision de produit
+définitive, `/collection` est un chantier de V1.5 dont PRODUCT.md §5 fixe déjà le chemin. Une entrée
+de nav qui répond 404 se lit comme une panne, pas comme un chantier ; un segment déclaré sans écran
+ne se lit pas du tout, ce qui est exactement ce qu'on veut en attendant.
+
+### Suivre depuis une grille de résultats
+
+Le pas « court » annoncé la séance précédente. Le formulaire savait déjà créer une entrée
+(`entry === null`) ; il ne manquait que le bouton, et de quoi savoir quelles vignettes en avaient
+besoin.
+
+- **`getEntryStatesFor` croise les résultats AniList avec les suivis du compte**, en une requête
+  locale par page. C'est ce qui permet à la même carte de porter « suivre » ou « modifier » : sans
+  elle, la vignette n'aurait pu proposer que « suivre », y compris sur une série déjà en cours — où
+  le geste aurait écrasé un statut et une progression. Le quota de §4.1 n'est pas concerné, le suivi
+  est chez nous.
+- Sur l'accueil, la lecture est faite **une fois pour les cinq rangées**, ids dédupliqués : une œuvre
+  apparaît volontiers dans deux rangées, et cinq sections auraient fait cinq requêtes pour une
+  question qui en demande une. Elle vit dans `Discovery` et non dans `DiscoverySection` pour ça, et
+  parce qu'elle dépend du compte là où `getBrowseCatalogue` est mémorisé une heure pour tout le monde.
+- **Pas de « +1 » sur une œuvre non suivie.** Il créerait un suivi à l'épisode 1 avec un statut choisi
+  par personne. Commencer à suivre est une décision — quel statut, où j'en suis déjà —, pas un
+  incrément, et c'est précisément ce que la fenêtre sait demander.
+- **Le bouton est plein et permanent** là où celui d'une œuvre suivie n'apparaît qu'au survol : il est
+  seul sur la jaquette, donc il n'a personne à qui céder le premier rôle, et une grille de résultats
+  est justement l'endroit où l'on ne sait pas encore qu'on peut suivre quelque chose.
+- **Un marque-page, et surtout pas un `+`.** Le `+` est déjà pris sur une vignette : c'est le « +1 »
+  qui avance d'un épisode. Les deux ne sont jamais visibles sur la même carte, mais ils cohabitent
+  dans la même grille à quelques centimètres — deux gestes très différents sous la même icône
+  finissent par s'apprendre l'un pour l'autre. Défaut repéré à l'écran, pas au typecheck, comme
+  toujours pour ce genre-là.
+
+Les rangées de découverte passent `total={null}` : leur document AniList ne demande ni `episodes` ni
+`chapters`, et les ajouter invaliderait une heure de cache pour une information utile seulement après
+la première saisie — dès que le suivi existe, `ensureMediaMirror` a copié le total dans le miroir que
+tous les autres écrans lisent. La recherche, elle, a déjà ces colonnes et affiche le vrai total.
+
+**Vérifié dans l'application**, session rejouée : les neuf résultats de `?q=frieren` sur « Suivre »,
+création par « Enregistrer » qui bascule la carte en « +1 » + « Modifier » sans recharger,
+persistance confirmée **après rechargement serveur**, puis retrait qui ferme la fenêtre et rend les
+deux cartes à leur état initial. Le manga homonyme est resté sur « Suivre » pendant que l'anime
+basculait — le croisement se fait bien par œuvre, pas par titre. Le suivi d'essai a été supprimé ; il
+reste sa ligne de `Media`, qui est du catalogue partagé.
+
+**Reste ouvert :** la recherche et la découverte n'ont toujours pas de retour visible après un
+« suivre » réussi — la carte change de bouton, ce qui est discret pour une écriture en base ; un
+`toast` serait cohérent avec le reste des actions. Et le tableau « Où on en est » plus bas dans ce
+fichier a été remis à jour, mais il reste enterré sous les entrées de séance : le jour où il sert
+vraiment, il faudra le remonter en tête.
+
+---
+
 ## 10 août 2026 — La vignette rend sa jaquette
 
 Retour en arrière assumé sur l'entrée précédente : la carte s'était couverte de pastilles, et c'est
@@ -510,7 +599,7 @@ grand pour ce qu'il contient.
 
 ---
 
-## Où on en est — 8 août 2026
+## Où on en est — 10 août 2026
 
 | Chantier | État |
 | --- | --- |
@@ -524,11 +613,15 @@ grand pour ce qu'il contient.
 | Journal `EntryEvent` (§4.3) | écrit **et lu** trois fois — journal d'une œuvre, survol du tableau de bord, timeline complète du profil |
 | Bibliothèque `/library` | fait — filtres statut et type, quatre tris, pagination |
 | Accueil `/` | fait — suivi, listes, catalogue du moment, journal ; trois frontières de suspension |
-| « +1 » depuis la grille | fait — sur les vignettes du tableau de bord et de la bibliothèque |
+| Grille et liste | fait — les deux dispositions sur `/search` et `/library`, bascule dans l'URL, taille de page qui remplit ses rangées |
+| « +1 » depuis la grille | fait — tableau de bord, bibliothèque, et la ligne du planning |
+| Éditer un suivi sans quitter la grille | fait — `EntryDialog` rend les contrôles de la fiche, enregistrement au bouton |
+| **Suivre** depuis une grille | fait — recherche et rangées de découverte, croisées avec les suivis du compte en une requête |
 | Profil `/u/[username]` | fait — identité, chiffres, journal complet paginé |
-| Réglages `/settings` | fait — et les trois préférences sont **branchées**, plus seulement stockées |
-| Préférences `UserPreferences` (§4.6) | fait — échelle de notes, langue des titres, filtre 18+, tous lus par les écrans |
-| Listes `/lists` · `/lists/[slug]` | fait — créer, renommer, décrire, remplir depuis une fiche, retirer, supprimer |
+| Réglages `/settings` | fait — et les préférences sont **branchées**, plus seulement stockées |
+| Préférences `UserPreferences` (§4.6) | fait — langue des titres et filtre 18+, lus par les écrans ; l'échelle de notes a été **retirée** (cinq étoiles pour tout le monde) |
+| Note sur cinq étoiles (§4.2) | fait — demi-crans, stockage inchangé sur 0–100 |
+| Listes `/lists` · `/lists/[id]` | fait — créer, renommer, décrire, remplir depuis une fiche, retirer, supprimer ; adressage par `id`, plus de `slug` |
 | Réordonner une liste (V1.5) | fait — glisser-déposer et clavier, une seule ligne réécrite |
 | `/browse` | **supprimée** — les cinq rangées vivent sur l'accueil (PRODUCT.md §5) |
 | Jeu d'essai `pnpm db:seed` | fait — 26 suivis, 128 événements, 5 listes, une requête AniList |
@@ -536,7 +629,9 @@ grand pour ce qu'il contient.
 | Palette de commandes `⌘K` | fait — recherche bibliothèque + catalogue, et « +1 » sans quitter la page |
 | Limitation de débit | fait — Better Auth en `storage: "database"`, et un plafond par compte sur `/api/command` |
 | Planning `/calendar` (V2) | fait — semaine des séries suivies, retard épisode par épisode, « +1 » depuis la ligne ; **jamais global**, voir PRODUCT.md §9 |
-| `/collection` | n'existe pas — la nav pointe déjà dessus (V1.5) |
+| Historique Git | fait — onze commits thématiques, plus rien en attente dans l'arbre de travail |
+| `/collection` | n'existe pas — et **plus rien ne pointe dessus** : la nav et la palette ont perdu leur entrée le temps que l'écran arrive (V1.5) |
+| Vues d'une liste `/lists/[id]/[viewId]` (§4.4) | pas commencé — c'est le prochain chantier |
 
 **V0 et V1 sont bouclées**, **V1.5 est entamée** par le réordonnancement des listes, et **V2 l'est
 par le planning** — qui n'attendait rien d'autre que le cron de fraîcheur, déjà posé. Le récap
@@ -547,18 +642,15 @@ bloque rien.
 
 Dans l'ordre où je le prendrais :
 
-1. **Commiter.** Tout le projet est un unique arbre de travail non commité posé sur `Initial commit
-   from Create Next App`. C'est le point le plus risqué de l'état actuel, et le moins intéressant à
-   réparer tard. À découper en commits thématiques plutôt qu'en un bloc de cinquante fichiers.
-2. **Les vues** (`ListView`, §4.4) : `/lists/[slug]/[viewId]`, classement, tier list, grille. Tout est
+1. **Les vues** (`ListView`, §4.4) : `/lists/[id]/[viewId]`, classement, tier list, grille. Tout est
    posé pour — dnd-kit est installé, le calcul de voisinage est écrit et testé, et `ListViewItem` a
    déjà son `tierIndex` et son propre `rank`. C'est la suite directe de ce qui vient d'être fait.
-3. **La collection physique** (§4.5) : `/collection`, saisie par plage, écran des tomes manquants,
+2. **La collection physique** (§4.5) : `/collection`, saisie par plage, écran des tomes manquants,
    prêts. Le plus gros morceau de V1.5, sans aucune dépendance, et celui que §8 désigne comme le plus
-   utilisé au quotidien.
-4. **Le partage par lien non listé**, qui demande d'abord une décision : `slug` étant unique par
-   propriétaire, il faut trancher entre un segment de propriétaire et un jeton. À poser avant de
-   coder, pas pendant.
+   utilisé au quotidien. C'est aussi ce qui rendra ses entrées à la nav et à la palette.
+3. **Le partage par lien non listé.** L'adressage n'est plus une question depuis le passage à l'`id` ;
+   ce qui reste à trancher est ce qui **autorise** la lecture — `UNLISTED` seul, ou un jeton. À poser
+   avant de coder, pas pendant.
 
 Candidat hors programme, indépendant et peu cher : **l'ordre de visionnage d'une franchise** (§8.2).
 Les `relations` sont déjà chargées par la requête de fiche, et PRODUCT.md le désigne lui-même comme le
