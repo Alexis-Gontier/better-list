@@ -1,13 +1,12 @@
-import { LayersIcon } from "lucide-react";
+import { LayersIcon, Share2Icon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddToListSearch } from "@/app/(app)/lists/[id]/_components/add-to-list-search";
-import { DeleteListButton } from "@/app/(app)/lists/[id]/_components/delete-list-button";
-import { EditListDialog } from "@/app/(app)/lists/[id]/_components/edit-list-dialog";
+import { ListActions } from "@/app/(app)/lists/[id]/_components/list-actions";
 import { RemoveFromListButton } from "@/app/(app)/lists/[id]/_components/remove-from-list-button";
-import { ShareListDialog } from "@/app/(app)/lists/[id]/_components/share-list-dialog";
 import { SortableListGrid } from "@/app/(app)/lists/[id]/_components/sortable-list-grid";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -58,17 +57,32 @@ export async function ListDetail({
             <p className="text-muted-foreground text-sm">{list.description}</p>
           ) : null}
 
-          <p className="text-muted-foreground text-xs">
-            {list.items.length.toLocaleString(LOCALE)}{" "}
-            {list.items.length > 1 ? "œuvres" : "œuvre"}
-            {list.shareToken ? " · partagée par lien" : null}
-          </p>
+          {/*
+            Le partage est **un état, pas une donnée de plus** : noyé en suffixe d'un « 4 œuvres ·
+            partagée par lien », il se lisait comme un attribut du compte. Une pastille se repère
+            sans se lire, et c'est ce qu'on veut d'une information qui dit « cette liste sort du
+            cercle ».
+          */}
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground text-xs">
+              {list.items.length.toLocaleString(LOCALE)}{" "}
+              {list.items.length > 1 ? "œuvres" : "œuvre"}
+            </p>
+
+            {list.shareToken ? (
+              <Badge variant="secondary">
+                <Share2Icon aria-hidden="true" />
+                Partagée par lien
+              </Badge>
+            ) : null}
+          </div>
         </div>
 
         {/*
-          Les commandes de la liste, la moins conséquente d'abord — ce qui est aussi l'ordre de
-          fréquence. « Ajouter » est le geste qu'on refait dix fois de suite ; « Modifier » se
-          défait ; « Supprimer » emporte tout, et c'est le seul des trois à demander confirmation.
+          **Un geste fréquent, et un menu pour le reste.** « Ajouter une œuvre » se refait dix fois
+          par séance et reste un bouton plein ; partager, modifier et supprimer sont rares, et l'un
+          d'eux est irréversible — les aligner tous les quatre les mettait à égalité, et posait la
+          destruction à deux centimètres de l'ajout.
         */}
         <div className="flex shrink-0 items-center gap-1">
           <AddToListSearch
@@ -76,17 +90,11 @@ export async function ListDetail({
             presentMediaIds={list.items.map((item) => item.media.id)}
           />
 
-          <ShareListDialog listId={list.id} shareToken={list.shareToken} />
-
-          <EditListDialog
+          <ListActions
             description={list.description}
-            listId={list.id}
-            title={list.title}
-          />
-
-          <DeleteListButton
             itemCount={list.items.length}
             listId={list.id}
+            shareToken={list.shareToken}
             title={list.title}
           />
         </div>

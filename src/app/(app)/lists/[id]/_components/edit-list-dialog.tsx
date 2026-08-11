@@ -1,8 +1,6 @@
 "use client";
 
-import { PencilIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,16 +38,25 @@ export function EditListDialog({
   listId,
   title,
   description,
+  open,
+  onOpenChange,
 }: {
   listId: string;
   title: string;
   description: string | null;
+  /**
+   * **Contrôlé depuis `ListActions`, et sans déclencheur propre.**
+   *
+   * Le dialogue est ouvert par une entrée de menu, or un menu Radix démonte son contenu à la
+   * fermeture : un `DialogTrigger` posé dans un `DropdownMenuItem` emporterait le dialogue avec lui
+   * au moment même où il devrait s'ouvrir. L'état vit donc au-dessus des deux.
+   */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
-
   const { execute, isPending, result } = useAction(updateList, {
     onSuccess: () => {
-      setOpen(false);
+      onOpenChange(false);
       toast.success("Liste modifiée.");
     },
     onError: () => toast.error("La liste n'a pas pu être modifiée."),
@@ -59,14 +65,7 @@ export function EditListDialog({
   const titleError = result.validationErrors?.fieldErrors?.title?.[0];
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost">
-          <PencilIcon aria-hidden="true" />
-          Modifier
-        </Button>
-      </DialogTrigger>
-
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Modifier la liste</DialogTitle>
@@ -146,7 +145,7 @@ export function EditListDialog({
           <DialogFooter>
             <Button
               disabled={isPending}
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
               type="button"
               variant="outline"
             >

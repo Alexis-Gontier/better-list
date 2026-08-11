@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, CopyIcon, Share2Icon } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -34,12 +33,16 @@ import { shareList, unshareList } from "@/features/lists/server/lists.actions";
 export function ShareListDialog({
   listId,
   shareToken,
+  open,
+  onOpenChange,
 }: {
   listId: string;
   /** Le jeton actuel, ou `null` si la liste n'est pas partagée. C'est la seule marque du partage. */
   shareToken: string | null;
+  /** Contrôlé depuis `ListActions` — voir `EditListDialog` pour la raison. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const share = useAction(shareList, {
@@ -86,14 +89,7 @@ export function ShareListDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="ghost">
-          <Share2Icon aria-hidden="true" />
-          Partager
-        </Button>
-      </DialogTrigger>
-
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Partager cette liste</DialogTitle>
