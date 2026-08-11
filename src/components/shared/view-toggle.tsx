@@ -2,12 +2,7 @@
 
 import { LayoutGridIcon, ListIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { ViewMode } from "@/config/catalogue";
 
 /**
@@ -18,9 +13,15 @@ import type { ViewMode } from "@/config/catalogue";
  * mêmes paramètres d'adresse — chacune l'appelle depuis son propre îlot de filtres, avec ses propres
  * parseurs nuqs, et remet `page` à 1 de son côté si elle en a besoin.
  *
- * Deux boutons plutôt qu'un interrupteur à bascule : un seul bouton devrait choisir entre montrer
+ * Deux options exclusives plutôt qu'un interrupteur : un seul bouton devrait choisir entre montrer
  * l'état actuel et montrer la destination, et les deux lectures sont défendables — donc aucune n'est
- * évidente. Deux boutons dont un `aria-pressed` ne pose pas la question.
+ * évidente.
+ *
+ * **`ToggleGroup` et non deux `Button` avec un `aria-pressed` posé à la main.** C'est le composant
+ * fait pour un jeu d'options exclusives, et il apporte ce que la version manuelle n'avait pas : le
+ * rôle `radiogroup`, la navigation aux flèches entre les deux options, et un seul arrêt de
+ * tabulation au lieu de deux. `type="single"` avec une valeur toujours définie — une bascule de vue
+ * n'a pas d'état « aucune des deux », d'où le garde-fou sur la valeur vide.
  */
 
 const OPTIONS = [
@@ -40,25 +41,36 @@ export function ViewToggle({
   onChange: (view: ViewMode) => void;
 }) {
   return (
-    <div className="flex items-center rounded-md border p-0.5">
+    <ToggleGroup
+      onValueChange={(next) => {
+        // Radix rend `""` quand on reclique l'option active. Une grille doit rester une grille : on
+        // ignore, plutôt que de laisser la page sans disposition.
+        if (next) onChange(next as ViewMode);
+      }}
+      size="sm"
+      spacing={0}
+      type="single"
+      value={value}
+      variant="outline"
+    >
       {OPTIONS.map(({ value: mode, label, Icon }) => (
-        <Tooltip key={mode}>
-          <TooltipTrigger asChild>
-            <Button
-              aria-label={label}
-              aria-pressed={value === mode}
-              className="size-7"
-              onClick={() => onChange(mode)}
-              size="icon-sm"
-              type="button"
-              variant={value === mode ? "secondary" : "ghost"}
-            >
-              <Icon />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+        /*
+          **Pas de `Tooltip` autour de l'option, et c'est une correction, pas un renoncement.**
+          `TooltipTrigger asChild` fusionne ses propriétés dans l'enfant et écrase le `data-state`
+          du `ToggleGroupItem` par le sien : mesuré à l'écran, les deux options se retrouvaient en
+          `data-state="closed"` et en `tabindex="-1"`, c'est-à-dire ni sélectionnables au clavier ni
+          marquées comme actives. Le `title` porte la même information au survol, et l'`aria-label`
+          la porte pour tout le reste.
+        */
+        <ToggleGroupItem
+          aria-label={label}
+          key={mode}
+          title={label}
+          value={mode}
+        >
+          <Icon />
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
