@@ -17,6 +17,76 @@ pas.
 
 ---
 
+## 11 août 2026 — Les listes passent au crible des composants
+
+Séance d'UX sur les deux écrans de listes, demandée avec les skills `ui-ux-pro-max` et `shadcn`. La
+première a surtout servi à écarter : son mode `--design-system` propose un hero vidéo, la police
+Righteous et une palette neuve — c'est calibré pour une page d'atterrissage vierge, pas pour une app
+dont le système visuel est posé. Ses règles UX, elles, s'appliquent.
+
+**Le vrai apport est venu de croiser l'inventaire shadcn avec ce que le code fait à la main.** Trois
+écarts, tous vérifiés dans les fichiers avant d'être corrigés : `ListCard` était un `<Link>` habillé
+de `rounded-lg border bg-card` alors que `Card` existe et n'était pas installé ; la suppression d'une
+liste utilisait `Dialog` là où `AlertDialog` est le composant des confirmations destructives ; et
+`ViewToggle` était deux `Button` avec un `aria-pressed` posé à la main, là où `ToggleGroup` couvre le
+cas d'un jeu d'options exclusives.
+
+### Le détail : un geste fréquent, un menu pour le reste
+
+Quatre commandes s'y présentaient à égalité — « Ajouter une œuvre » qu'on refait dix fois par
+séance, « Partager » qui expose la liste hors du cercle, « Modifier », et « Supprimer » qui emporte
+tout, à deux centimètres de la première. « Ajouter » reste un bouton plein ; les trois autres passent
+sous un `⋯`, avec un séparateur entre ce qui se défait et ce qui ne se défait pas.
+
+- **L'état des trois dialogues vit dans `ListActions`, pas dans chacun d'eux**, et c'est la
+  contrainte qui a dicté le refactor : un menu Radix démonte son contenu à la fermeture, donc un
+  `DialogTrigger` posé dans un `DropdownMenuItem` emporterait le dialogue au moment même où il
+  s'ouvre. Les trois composants ont perdu leur déclencheur et reçoivent `open` / `onOpenChange`.
+- **`AlertDialog` pour la suppression**, et la différence n'est pas cosmétique : il ne se ferme ni au
+  clic à côté ni par une croix, et le focus s'ouvre sur « Annuler » — vérifié à l'écran,
+  `document.activeElement` est bien le bouton d'annulation.
+- Le libellé du partage dit l'état plutôt que le geste : « Gérer le partage » sur une liste déjà
+  partagée, qui n'a pas besoin d'un lien de plus mais de retrouver le sien.
+
+### L'index : la carte dit enfin ce que la liste est
+
+- **La description était lue en base et jetée.** `getMyLists` la ramenait déjà ; c'est pourtant la
+  seule phrase qui sépare « Top 2026 » de « À faire découvrir » quand les deux montrent quatre
+  jaquettes de shonen.
+- **La date de modification s'affiche, parce que c'est l'ordre de la page.** Le tri est `updatedAt`
+  décroissant : sans elle, l'ordre des cartes n'avait aucune explication visible, et une liste qui
+  remonte après un ajout paraissait bouger toute seule. `formatSince` est réutilisée telle quelle.
+- **Le partage devient une pastille.** En suffixe de « 6 œuvres · partagée par lien », il se lisait
+  comme un attribut du compte ; un `Badge` se repère sans se lire, ce qu'on veut d'une information
+  qui dit « cette liste sort du cercle ». Même traitement sur l'en-tête du détail.
+- **Défaut introduit puis corrigé à l'écran** : une liste sans description faisait une carte plus
+  courte que sa voisine, et la rangée se lisait comme un escalier — exactement ce que le titre sur
+  une ligne évite ailleurs. `h-full` sur la carte et `mt-auto` sur le pied ; les cinq cartes font
+  maintenant 222 px, mesurés.
+
+### `ToggleGroup`, et un piège de composition
+
+Le passage à `ToggleGroup` apporte le rôle `radiogroup`, la navigation aux flèches et l'activation à
+`Entrée` — vérifiés : flèche droite puis `Entrée` écrit bien `?view=list` dans l'URL.
+
+**Mais `TooltipTrigger asChild` autour d'un `ToggleGroupItem` casse le composant.** `asChild` fusionne
+ses propriétés dans l'enfant et son `data-state="closed"` écrase celui du toggle : mesuré à l'écran,
+les deux options se retrouvaient à `data-state="closed"` sans `aria-checked`, donc **l'option active
+n'était plus marquée**. Le tooltip est retiré, le `title` porte la même information au survol.
+
+Au passage, une leçon de méthode : j'ai d'abord conclu à tort que le contrôle n'était plus atteignable
+au clavier, sur la foi d'un test qui listait les éléments tabulables par ordre DOM. Un groupe à focus
+tournant met légitimement tous ses items à `tabindex="-1"` et gère l'entrée lui-même — le vrai test
+était d'appuyer sur `Tab`, et il passe.
+
+**Reste ouvert :** la note d'une ligne (`ListItem.note`) s'affiche toujours sous la jaquette sans
+qu'aucun écran ne permette de l'écrire. C'est un champ mort, et la décision — l'éditer ou le retirer
+du modèle — n'est pas prise. La bascule grille/liste n'a pas été portée sur une liste : la grille y
+est triable, et une vue liste devrait soit perdre le réordonnancement, soit le réimplémenter sur des
+lignes — c'est un chantier, pas une option de barre.
+
+---
+
 ## 11 août 2026 — Une liste sort du cercle
 
 L'étape 2 du chantier des listes : le lien non listé, décidé « ouvrable sans compte ». C'est la
