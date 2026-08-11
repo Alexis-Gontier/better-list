@@ -172,7 +172,7 @@ export async function Dashboard() {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lists.slice(0, DASHBOARD_LISTS_COUNT).map((list) => (
               <li key={list.id}>
-                <ListCard list={list} />
+                <ListCard list={list} now={new Date()} />
               </li>
             ))}
           </ul>

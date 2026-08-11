@@ -38,11 +38,15 @@ export async function ListsOverview() {
     );
   }
 
+  // Un seul instant de référence pour toute la page : calculer `new Date()` par carte donnerait des
+  // ancienneté mesurées à des millisecondes différentes, ce qui ne se voit pas mais ne veut rien dire.
+  const now = new Date();
+
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {lists.map((list) => (
         <li key={list.id}>
-          <ListCard list={list} />
+          <ListCard list={list} now={now} />
         </li>
       ))}
     </ul>
