@@ -188,6 +188,10 @@ import { getItems } from "@/features/<domaine>/server/<domaine>.queries";
   `actionClient` qui vérifie la session en middleware (`src/lib/safe-action.ts`). Écrire la garde
   dans le corps de l'action la rendrait facultative par oubli.
 
+- **`export const instant = false`** se pose sur un segment qui dépend de l'identité du visiteur —
+  le layout `(app)`, les pages d'auth. Ailleurs on garde la validation : elle signale ce qui bloque
+  une navigation instantanée, et c'est une information qu'on veut voir plutôt que taire.
+
 ## La garde d'accès et le proxy
 
 Trois règles, verrouillées par `src/proxy.test.ts` :
@@ -325,3 +329,19 @@ que de mémoire, ce qui compte vu que Next 16 diverge des données d'entraîneme
 
 La provenance de chaque skill et de chaque agent est dans [.claude/SKILLS.md](../.claude/SKILLS.md),
 à compléter à chaque ajout.
+
+## Vérification
+
+- **Vitest** (`vitest.config.mts`) : environnement `node`, fichiers `src/**/*.test.ts` colocalisés
+  avec leur sujet. Les composants React ne sont pas encore couverts.
+- **Knip** : `src/components/ui/**` est ignoré (généré par shadcn) et `prisma/_legacy-import.ts`
+  aussi (script de CLI lancé à la main). Les règles sont au défaut, c'est-à-dire `error` — elles ont
+  passé un temps en `warn` et un garde-fou qu'on laisse en `warn` finit par ne plus rien garder.
+- **Lefthook**, installé au `pnpm install` : `pre-commit` formate les fichiers indexés avec Biome,
+  `pre-push` lance `typecheck` + `test` + `knip`.
+- **CI GitHub** (`.github/workflows/ci.yml`) : lint → typecheck → tests → knip → build, sur PR et
+  sur `main`. Le build y passe `SKIP_ENV_VALIDATION=1`, faute de secrets.
+- **`pnpm db:seed`** (`prisma/seed.ts`, sous `tsx`) remplit la base de développement pour le compte
+  approuvé le plus ancien. Il **refuse d'écrire par-dessus des données existantes** et demande
+  `--reset`, qui supprime alors suivis, journal et listes de ce compte — `Media` n'est jamais
+  touché. Graine fixe : deux exécutions donnent le même jeu.
