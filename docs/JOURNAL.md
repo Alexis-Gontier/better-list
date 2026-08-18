@@ -17,6 +17,384 @@ pas.
 
 ---
 
+## 15 août 2026 — AniList coupe, l'accueil tient
+
+AniList a désactivé son API en cours de journée (403 sur toute requête, message « The AniList API
+has been temporarily disabled due to severe stability issues. »). L'accueil tombait entier sur
+`app/error.tsx` : plus de bandeau, plus de suivi, plus de « +1 », pour une panne qui ne concerne que
+le catalogue. Il reste maintenant navigable — le bandeau, le tableau de bord et les listes se lisent
+dans le miroir local — et la découverte affiche un encadré à la place des cinq rangées
+(`_components/catalogue-unavailable.tsx`). Le bandeau des comptes neufs et la grille du bas
+s'effacent sans rien dire : un seul message par page.
+
+Deux choses tranchées en chemin :
+
+- **La panne est rattrapée hors du `"use cache"`, jamais dedans.** Un `null` mémorisé à l'intérieur
+  laisserait l'accueil vide une heure après le retour d'AniList. La fonction cachée continue donc de
+  lever, l'entrée n'est pas écrite, et la visite suivante retente.
+- **Une erreur ne traverse pas `"use cache"` intacte** — trouvé à l'écran après avoir cru le repli
+  fini : côté appelant ce n'est plus une `AniListError` mais un `Error` nu, `instanceof` répond
+  `false` et `status` vaut `undefined`. Seuls `name` et `message` survivent (Next 16.3). D'où le
+  `name` qui porte désormais la catégorie (`AniListOutageError`) et `isAniListOutage`, qui ne
+  regarde que lui. Verrouillé par un test qui reconstitue la forme transportée à la main : un test
+  qui lèverait la vraie classe passerait au vert pendant que la page casserait.
+
+Reste ouvert : `/search`, `/calendar` et les fiches `/media/[id]` tombent toujours en entier pendant
+une coupure. Le même `tryAniList` s'y applique, avec un état vide par écran à écrire.
+
+---
+
+## 13 août 2026 — Le bandeau laisse dépasser ses voisines
+
+Le carrousel d'accueil ne montre plus une bannière pleine boîte mais **80 % de la diapositive
+active, centrée, avec un dixième de la précédente et de la suivante de chaque côté** — la
+disposition demandée, prise sur une référence externe. Ce que ça change : le bandeau dit désormais
+lui-même qu'il y a une suite, et de quel côté elle est, ce que les points ne disaient qu'une fois
+regardés. La géométrie est dans `_lib/hero-geometry.ts` (`HERO_PEEK`), l'arrondi a migré de la boîte
+vers chaque diapositive.
+
+Trois choses tranchées en chemin, toutes trouvées à l'écran :
+
+- **Le débordement ne montre que l'illustration.** Le calque de texte de la voisine s'efface : un
+  dixième de diapositive laissait dépasser un tiers de titre, une puce de genre coupée en deux et le
+  flanc d'une jaquette, ce qui se lit comme un défaut d'affichage et non comme une promesse.
+- **Les voisines sont `inert`.** Un bout de bouton « +1 » visible est un bouton cliquable : il
+  aurait agi sur une œuvre qu'on ne voit pas, et la tabulation aurait traversé cinq fiches pour en
+  atteindre une. Embla écoute le geste sur le viewport, au-dessus, donc le balayage part encore
+  d'une bande inerte.
+- **Les flèches occupent exactement la bande qui dépasse** au lieu de leurs 48 px : la commande et
+  ce qu'elle amène sont au même endroit.
+
+Reste ouvert : sur un portable étroit, les deux boutons de suivi passent maintenant sur deux lignes,
+la diapositive ayant perdu 20 % de sa largeur. Supportable, pas vérifié comme voulu.
+
+**La rangée « En cours » passe aux cartes larges.** Une jaquette répond à « laquelle ? », question
+déjà tranchée pour une série qu'on suit : ce qu'on vient y chercher, c'est où l'on en était. La
+carte (`_components/resume-card.tsx`) met donc la jaquette à soixante-quatre pixels et donne la
+place à l'unité en cours, à la fraîcheur du geste et à la part parcourue. Elle garde le « +1 » —
+c'est le geste le plus fréquent du produit (PRODUCT.md §6), et une section de reprise qui l'aurait
+perdu aurait manqué son objet. `getDashboard` rapporte `updatedAt` sur `current`, et le tableau de
+bord lit `new Date()` **une seule fois** pour ses trois sections.
+
+**Puis la carte a inversé sa hiérarchie**, sur une référence externe fournie en cours de séance. Le
+numéro passe en gras et en grand, le titre devient un sous-titre gris, le format s'écrit en exergue
+au-dessus. C'est le même raisonnement poussé d'un cran : sur une série qu'on suit déjà, « laquelle ? »
+est tranché — le titre n'a plus qu'à confirmer qu'on est au bon endroit, et ce qu'on vient lire est
+le numéro. Ça règle au passage la troncature du palier large, qui portait sur la ligne qu'on venait
+chercher.
+
+L'exergue dit le **format** et non le statut de suivi, contrairement à la référence : la section ne
+contient que des séries en cours, donc y écrire « En cours » aurait répété son propre titre sur
+chaque carte. Le « Progression · 98 % » a disparu au profit de la fraction en gras — la barre juste
+dessous montrait déjà le pourcentage, et sur une œuvre sans total connu il laissait un trou.
+
+Deux effets de bord assumés :
+
+- **`formatSince` compte désormais les heures**, et « aujourd'hui » a disparu au profit de « il y a
+  5 heures » / « à l'instant ». Sur une section qui ne montre que trente jours, le même mot couvrait
+  deux heures et vingt. Sous l'heure on ne compte pas : le libellé changerait entre le rendu serveur
+  et la seconde d'après. `list-card` et « À reprendre » en héritent, sans dommage. Test mis à jour.
+- **Une troisième apparence `compact`** sur `EntryQuickProgress` et `EntryDialog` : permanente et
+  sans intitulé. La carte réserve une place aux commandes — elles ne mangent donc le coin de rien et
+  n'ont aucune raison de se découvrir au survol —, mais l'intitulé complet d'`inline` prendrait le
+  tiers de la largeur. Les deux boutons sont composés dans `dashboard.tsx` plutôt que pris à
+  `EntryCardActions`, qui ne sait pas transmettre l'apparence — c'est déjà ce que fait le bandeau.
+
+**Un encart de survol sur `MediaCard`.** `hover-card` (Radix, comme tout le reste du projet — la
+variante Base UI aurait tiré un second moteur de primitives pour un seul composant). Il montre ce
+que la vignette ne peut pas dire et ne redouble rien de ce qui est déjà à l'écran : titre complet,
+titre alternatif, format et statut, moyenne AniList, genres, synopsis. Deux décisions à retenir :
+
+- **Le déclencheur est le lien, pas le conteneur.** Sur le conteneur, il aurait surgi quand la
+  souris s'approche du « +1 » ; sur le lien, il s'ouvre aussi au focus, donc à la tabulation.
+- **`description` et `genres` sont facultatifs et jamais réclamés.** `MediaCompact` ne les porte
+  pas ; les écrans qui les ont sous la main les passent (recherche, catalogue, rangées de
+  découverte), les autres montrent moins. Aller les chercher aurait été une requête AniList par
+  survol, sur un quota de trente par minute.
+
+L'attribut `title` a quitté le titre de la vignette : il faisait surgir l'infobulle du système
+par-dessus l'encart.
+
+---
+
+## 12 août 2026 — La vignette se tait
+
+Trois retraits sur `MediaCard`, tous dans le même sens : la jaquette porte l'image, et rien qui la
+concurrence. Il n'y a **qu'un** composant de vignette dans le projet, donc les trois valent pour les
+sept écrans qui le rendent.
+
+- **« Série TV · 2026 » disparaît des rangées de découverte.** La grille de recherche s'en était
+  déjà débarrassée (10 août) ; les cinq rangées de l'accueil la répétaient encore sous chaque
+  jaquette pour dire ce qu'on ne cherche pas quand on parcourt. Elle reste en vue liste, où la
+  largeur la rend comparable d'une ligne à l'autre, sur la fiche, et sur le bandeau — qui a la place
+  et n'a qu'une seule ligne de contexte à donner.
+- **La barre de progression quitte le bas de la jaquette.** Elle avait été gardée au motif qu'elle
+  se voit sans se lire ; mais elle exige un dénominateur, donc ne se dessinait que sur les œuvres
+  dont le total est connu — une vignette sur trois portant un trait coloré en bas, une grille se lit
+  comme mal alignée. Le chiffre juste dessous dit la même chose, sur toutes les cartes.
+  `MediaRow` garde la sienne : en pleine largeur avec sa fraction au-dessus, elle n'a pas ce défaut.
+  La propriété `progress` conserve donc `value` et `total` dont la carte ne fait plus rien — les
+  deux vues reçoivent le **même objet** de leur appelant, et la bascule ne doit rien perdre.
+- **Le bouton « Suivre » ne se montre plus qu'au survol.** Il était plein et permanent sur une œuvre
+  non suivie, seul cas d'exception : le « +1 » et le crayon se révélaient déjà. L'argument d'alors
+  — il faut bien apprendre qu'on peut suivre quelque chose — ne tenait pas la grille de
+  vingt-quatre, où une pastille posée en dur sur chaque jaquette se lit comme une décoration. Mêmes
+  classes que ses voisins, `max-sm:opacity-100` compris : sans lui le bouton devient injoignable au
+  doigt, où aucun survol n'existe.
+
+**Reste ouvert** : `formatMediaFormat` n'a plus que trois appelants, tous sur la fiche et le
+bandeau — à surveiller si la fiche change d'avis à son tour.
+
+---
+
+## 12 août 2026 — L'accueil s'ouvre sur ce qu'on regarde
+
+Refonte de l'accueil autour d'un bandeau d'ouverture, et la recherche gagne au passage le filtre qui
+lui manquait.
+
+### Un bandeau, et il est personnel
+
+L'accueil s'ouvrait sur un titre « Accueil » suivi d'une phrase — la seule bande d'écran qui vaille
+quelque chose, dépensée à dire au visiteur ce qu'il savait déjà. À la place, un carrousel de
+bannières pleine largeur qui montre **mes séries en cours**, avec leur « +1 » posé dessus.
+
+- **Le personnel, pas l'éditorial**, et c'était la question à trancher. Un bandeau de tendances
+  aurait donné la plus grande surface de la page à des œuvres qu'on ne suit pas — l'inverse exact de
+  la décision qui met déjà le tableau de bord au-dessus de la découverte. Le repli sur les tendances
+  ne sert qu'à une bibliothèque vide, c'est-à-dire à un compte neuf.
+- **Aucun défilement automatique.** Une diapositive qui bouge seule déplace la cible sous le doigt de
+  qui allait cliquer — sur une page qu'on ouvre pour faire « +1 » sur la série d'hier, ce serait
+  retirer l'action principale des mains de l'utilisateur.
+- `getHeroEntries` est une lecture **distincte** de `getDashboard`, pas un `slice` de son résultat :
+  le bandeau porte le LCP et doit partir dans sa propre frontière, sans attendre les listes ni le
+  décompte de la bibliothèque.
+- Le titre de la page reste en `sr-only`. Ce qui a disparu est le bandeau de titre, pas le titre : un
+  document sans `<h1>` laisse les sections en `<h2>` sans parent.
+
+### Deux pièges payés à l'écran, invisibles au typecheck
+
+- **Un `overflow` ne se contourne pas depuis l'intérieur.** L'échappement pleine largeur (`w-screen`
+  recentré) était posé sur la diapositive, donc à l'intérieur du viewport `overflow-hidden` d'Embla :
+  la bannière restait rognée à la colonne **et** son contenu partait hors du cadre visible — plus de
+  titre, plus de boutons. Il doit être sur la racine du carrousel, viewport compris.
+- **La règle « jamais d'export server et client depuis le même fichier » vaut aussi pour les
+  constantes.** `HERO_HEIGHT` était une chaîne de classes exportée depuis un module `"use client"` et
+  importée par un Server Component : Next l'a remplacée par une référence client, dont l'interpolation
+  a produit `class="relative function() { throw new Error(...) }"`. Aucune erreur nulle part, un
+  bandeau de 252 px au lieu de 480. Les deux constantes de géométrie vivent maintenant dans
+  `(home)/_lib/hero-geometry.ts`.
+
+### La recherche sait enfin parler de saisons
+
+`searchFilterParsers` ne connaissait que l'année — d'où les deux rangées saisonnières de l'accueil
+sans « Voir tout », faute de pouvoir exprimer ce sur quoi on cliquait. `season` traverse désormais le
+schéma Zod, le document GraphQL, les parseurs d'URL, la barre de filtres et les puces.
+
+- **Saison et année restent deux paramètres d'URL**, mais un seul contrôle : « été » sans année
+  ramène tous les étés depuis 1940, et personne ne cherche ça. Le popover propose des trimestres déjà
+  formés (`seasonSlotOptions`), calculés côté serveur pour qu'aucune horloge ne diverge à
+  l'hydratation.
+- L'année est **bornée dans le parseur** et non seulement dans le schéma : sans ça, un `?year=0`
+  faisait échouer `searchFormSchema`, dont le repli efface **tous** les filtres — une année absurde
+  aurait emporté le genre et le type saisis à côté.
+- Vérifié à l'écran de bout en bout : « Hiver 2025 » sert bien Solo Leveling S2 et Sakamoto Days.
+  Le « 5 000 résultats » affiché est un plafond d'AniList, renvoyé même sans aucun filtre — pas une
+  régression, mais il ment sur toutes les pages filtrées.
+
+### Le reste
+
+- « En cours » passe en carrousel. **Seule** section de suivi concernée : ce qui y reste est la queue
+  de ce que le bandeau montre déjà en grand. « À reprendre » garde sa grille — six séries oubliées se
+  choisissent en les voyant toutes.
+- « Activité récente » disparaît de l'accueil, avec `getRecentActivity` devenue morte. Elle répondait
+  à « qu'est-ce que j'ai fait », question qu'on ne se pose pas en ouvrant l'application. La timeline
+  du profil ne dépendait pas de cette lecture.
+- `EntryQuickProgress` et `EntryDialog` gagnent une variante `inline` (bouton libellé) à côté de la
+  pastille `overlay`. Le défaut ne change pas : aucun appelant existant n'est touché.
+- `bannerImage` entre dans `MediaBrowseFields` plutôt qu'un sixième alias `Page` — le repli du
+  bandeau se sert dans `trending`, qui est déjà chargée.
+
+**Reste ouvert** : le décompte « 5 000 résultats » sous une recherche filtrée ; les rangées de
+découverte n'ont toujours qu'un tri figé côté document.
+
+### Deuxième passe, sur références
+
+Deux sites servis en modèle. Le premier (une plateforme de scans) s'est révélé bâti sur **la même
+pile** — Tailwind, jetons shadcn, Inter, jusqu'au même conteneur `max-w-6xl` — donc directement
+comparable ; le second (`epsilonscan.to`) utilise **littéralement le carrousel shadcn/Embla**, au
+point que ses classes de diapositive sont celles de `CarouselItem`. Ce qui a été repris, et pourquoi :
+
+- **Le bandeau rentre dans la colonne**, `h-75 md:h-105`, arrondi. Il était bord à bord depuis le
+  matin ; le reste de l'accueil s'aligne sur une seule gouttière, et le seul bloc qui la franchissait
+  décalait l'œil à chaque défilement. L'échappement `w-screen` et sa constante disparaissent.
+- **`rounded-lg` à tous les paliers, contre `md:rounded-lg` chez la référence.** Sa règle est juste
+  chez elle : sa boîte touche les bords de l'écran sur mobile, où un arrondi flotterait. La nôtre
+  garde la gouttière du `main` (mesuré : 343 px de large, 16 px de marge à 390 px de viewport), donc
+  la règle recopiée sans son motif aurait produit l'inverse de ce qu'elle vise.
+- **Voile horizontal noir** (`from-black/75 via-black/35 to-black/75`) et texte blanc fixe, au lieu
+  d'un dégradé vers la couleur de page. Le contraste cesse de dépendre du thème : un seul dégradé,
+  un seul ratio à vérifier, un rendu identique en clair et en sombre.
+- **Anatomie de la diapositive** : titre, puces de genre, ligne de contexte, commandes — les genres
+  étant des **liens vers la recherche**, parce qu'une puce inerte sur un écran dont tout le reste est
+  cliquable se lit comme une commande en panne. Pas de synopsis : le miroir local n'a pas de colonne
+  `description` (PRODUCT.md §4.1), et en ajouter une pour le seul bandeau demanderait une migration.
+- **Flèches en bandes pleine hauteur** plutôt qu'en pastilles : la boîte est assez grande pour offrir
+  une cible qui n'a rien à recouvrir, donc plus besoin du fond opaque qu'exige `MediaCarousel`.
+- **Défilement automatique** (6 s), suspendu au survol et au focus, **arrêté définitivement** au
+  premier clic sur une flèche ou un point — reprendre la main sur quelqu'un qui vient de la prendre
+  serait pire que ne rien faire. `prefers-reduced-motion` l'arrête tout court : le réglage dit « ne
+  bouge pas tout seul », et une durée d'animation nulle changerait quand même la diapositive, d'un
+  coup.
+- **Grille paginée en fin d'accueil**, dernier motif retenu. En dernier parce que c'est le seul bloc
+  de la page qui n'a pas de fin. Paginée et non infinie : chaque page tournée coûte une requête
+  AniList, mais une seule par heure pour tout le monde grâce au `"use cache"` de `searchMedia`, là où
+  un défilement infini en dépenserait une par fin d'écran.
+
+**Trois pièges, tous payés à l'écran :**
+
+- **Le calque de contenu doit être `pointer-events-none`**, ses commandes le récupérant nommément
+  (`[&_a]:pointer-events-auto`). Il couvre toute la boîte pour disposer texte et jaquette ; sans ça
+  il avale le balayage d'Embla, c'est-à-dire le seul mode de navigation du carrousel sur mobile,
+  où les flèches sont masquées. C'est la référence qui a donné l'astuce.
+- **La hauteur va sur la boîte *et* sur chaque diapositive.** Le viewport qu'Embla insère entre les
+  deux n'a pas de hauteur propre, et tout le contenu d'une diapositive est en position absolue : un
+  `h-full` s'y résout contre une hauteur automatique, donc nulle. La référence fait pareil, et on
+  comprend maintenant pourquoi.
+- **Une ancre ne suffit pas sur un bloc suspendu.** Le fragment `#catalogue` est résolu par le
+  navigateur dès la première réponse, avant qu'AniList ait répondu : sans cible à cet instant le saut
+  est abandonné (mesuré : `scrollY` restait à 0) et « Suivant » ramenait en haut de l'accueil —
+  exactement ce que l'ancre devait empêcher. C'est le **squelette** qui la porte, et sa grille compte
+  désormais `CATALOGUE_PAGE_SIZE` vignettes pour que l'échange ne décale pas la page juste après que
+  le défilement s'est calé dessus.
+
+---
+
+## 12 août 2026 — Une porte qui ne s'ouvrait pas, une trappe sans garde-corps
+
+Audit UX de l'application entière, puis correction des deux trouvailles les plus graves. Les autres
+sont listées plus bas, non traitées.
+
+### « Se déconnecter » ne faisait rien
+
+L'entrée du menu du compte était un `DropdownMenuItem` sans `onSelect` : elle se surlignait, se
+fermait, et n'appelait personne. `SignOutButton` — qui, lui, marche — n'était monté que sur la page
+de liste d'attente. **Seul un compte non approuvé pouvait donc se déconnecter** ; un compte
+approuvé n'avait aucune sortie.
+
+- **La logique monte dans `hooks/use-sign-out.ts`, elle n'est pas recopiée.** Les deux appelants
+  veulent des formes irréconciliables — un `Button` sur la liste d'attente, un `DropdownMenuItem`
+  dans l'en-tête — et glisser le premier dans le second par `asChild` fusionne les classes des deux
+  sans donner la géométrie d'aucun. C'est le même piège que `TooltipTrigger` sur `ToggleGroupItem`
+  (11 août) : `asChild` n'est pas un adaptateur universel.
+- `preventDefault` sur `onSelect`, sinon Radix referme le menu au choix et démonte le composant
+  avant la fin de l'appel — l'attente ne se verrait nulle part, et un échec afficherait son toast
+  au-dessus d'un menu déjà fermé.
+
+### Supprimer un suivi emportait le journal, sans rien demander
+
+`EntryEvent` est en `onDelete: Cascade` derrière `Entry` : effacer un suivi détruit toute la mémoire
+datée de l'œuvre — celle que PRODUCT.md §4.3 sépare justement de l'état pour qu'elle survive aux
+écrasements. Le geste partait d'**un clic**, à deux endroits, sous deux libellés différents, quand
+supprimer une liste — qui ne détruit aucun événement — passait déjà par un `AlertDialog` depuis la
+veille. La protection était exactement inversée par rapport à ce qu'on perd.
+
+- **`RemoveEntryDialog` porte l'action *et* son déclencheur**, là où `DeleteListDialog` reçoit
+  `open` en propriété. La différence tient à l'appelant : celui-là s'ouvre depuis un menu Radix, qui
+  démonte son contenu à la fermeture ; ici les deux déclencheurs sont des boutons posés dans un
+  formulaire, que rien ne démonte. Tenir l'action au même endroit est aussi ce qui garantit qu'un
+  seul texte décrive ce qu'on perd — c'est la divergence des deux anciens libellés qui a motivé le
+  regroupement.
+- **« Retirer de ma liste » disparaît.** Le libellé était devenu faux le jour où `/lists` a existé :
+  il se lisait comme le retrait d'une œuvre d'une `List`, geste qui se refait d'un clic. Les deux
+  endroits disent maintenant « Supprimer le suivi ».
+- **Les appelants ne désactivent plus leurs champs pendant la suppression.** Le dialogue est modal :
+  ce qu'il recouvre est déjà hors d'atteinte, et `pending` n'a plus à surveiller qu'une action.
+- Le texte nomme le journal, et dit aussi ce qui **n'est pas** touché — sans quoi « supprimer » se
+  lit comme un retrait du catalogue, et l'hésitation porte sur la mauvaise question.
+
+**Vérifié à l'écran**, session rejouée : le dialogue rend bien `role="alertdialog"`, ouvre le focus
+sur « Annuler », ne se ferme pas au clic sur le voile, et nomme l'œuvre dans son titre. Chemin
+complet parcouru sur un suivi jetable (créé, supprimé) : l'alerte se ferme, la fenêtre de la
+vignette se ferme derrière elle, et la carte repasse à « Suivre ». Aucune donnée d'essai laissée.
+La déconnexion redirige vers `/login`, et `/library` y rebondit ensuite — la session est réellement
+fermée, pas seulement masquée.
+
+**Conséquence à connaître** : vérifier la déconnexion avec une session rejouée supprime la ligne
+`session` d'Alexis en base, donc le déconnecte aussi de son propre navigateur. C'est noté dans la
+mémoire du projet.
+
+### La découverte passe en carrousels
+
+Troisième point de l'audit traité dans la foulée, sur demande : les cinq rangées de découverte
+étaient rendues en `MediaGrid`, soit soixante vignettes en grilles pleines. **Mesuré sur un
+téléphone de 390 px : une section de douze occupait 1 282 px — six rangées — quand la même en
+carrousel en occupe 322.** Sur cinq sections, l'accueil passe de ~12 écrans à 6,5.
+
+Le raisonnement n'est pas « c'est plus joli » : ces cinq sections sont **éditoriales**, on en
+regarde le début et on parcourt si le sujet accroche. La recherche, la bibliothèque et une liste
+montrent au contraire un ensemble dans lequel on cherche une œuvre précise — elles restent en
+grille, et `MediaGrid` n'a pas bougé.
+
+- **Les vignettes restent serveur, seule la mécanique descend au client.** `Carousel` exige
+  `"use client"` et `MediaCard` est `async` : la rendre depuis un composant client la casserait.
+  Les cartes traversent donc la frontière en `children`, ce que ARCHITECTURE.md demande déjà.
+- **Chaque palier montre les colonnes de la grille plus une demie** (`100 / (n + 0,5)` pour 2, 3, 4
+  et 6). La demi-vignette est ce qui dit que la rangée continue : coupée net au bord, elle se lit
+  comme une rangée qui s'arrête. Les flèches ne sont qu'un second recours, et elles n'existent pas
+  au doigt.
+- **Trois corrections sur le composant généré**, toutes trouvées à l'écran :
+  - les flèches étaient posées à `-left-12`, soit hors de la boîte — sous un `main` en `max-w-6xl`
+    elles tombaient dans la marge, et l'`overflow-x-clip` du layout les aurait rognées ;
+  - leur fond est peint à 30 % par la variante `outline` : une lettre de l'affiche se lisait à
+    l'intérieur du bouton. C'est la règle déjà écrite sur la pastille « 18+ ». **Le doublon `dark:`
+    est nécessaire** — `dark:bg-input/30` l'emporte sur une classe de base quoi qu'en dise l'ordre
+    d'écriture, et la première correction ne tenait donc qu'en thème clair ;
+  - `aria-roledescription="carousel"` et les libellés `sr-only` étaient en anglais sur une page
+    `lang="fr"` — même défaut que le `lang="en"` corrigé le 11 août. Les deux chaînes de
+    `components/ui/carousel.tsx` sont traduites : **modification locale assumée**, à conserver lors
+    d'un `shadcn add carousel --diff`.
+- **`useReducedMotion` (`hooks/`), parce que CSS ne peut rien ici** : le défilement d'Embla est animé
+  en JavaScript, et `motion-reduce` ne l'atteint pas. Le hook passe `duration: 0`.
+- L'`aria-label` des flèches préfixe le titre de la rangée : « voir les œuvres suivantes » répété
+  cinq fois sur la même page ne dirait pas de quoi.
+- Le squelette est dans le même fichier que la rangée, pour la raison qui vaut déjà pour
+  `MediaGrid`, et passe à sept vignettes pour les deux sections : une section fait désormais **une**
+  rangée quelle que soit sa longueur, donc les douze et six d'avant n'ont plus d'objet.
+
+**Vérifié à l'écran**, aux deux bouts : à 929 px, cinq régions nommées, une flèche qui avance de
+quatre vignettes (la largeur pleine de la rangée, pas une vignette), « précédent » désactivé au
+départ. À 390 px, 2,4 vignettes visibles, flèches masquées, aucun débordement horizontal.
+
+**Reste ouvert — le reste de l'audit, par gravité :**
+
+- **Aucune navigation sous 768 px.** `MainNav` est en `hidden md:flex` et rien ne prend le relais :
+  ni `Sheet`, ni tiroir. `/library`, `/lists`, `/search` et `/calendar` ne sont plus atteignables que
+  par la palette, dont le déclencheur mobile est une loupe qui se lit « chercher », pas « aller à ».
+  Frappant sur un produit dont tout le reste est dessiné pour le doigt.
+- **Corollaire, plus discret** : `max-sm:opacity-100` révèle le « +1 » et le crayon par la *largeur*,
+  pas par le *pointeur*. Sur une tablette tactile (768–1024 px), `group-hover` ne se déclenche pas et
+  la classe ne s'applique pas — le geste principal du produit y est invisible. L'axe correct est
+  `@media (hover: none)`.
+- **La cloche de notifications est un décor** : `notifications` est un tableau vide écrit en dur.
+  C'est la règle de `config/navigation.ts` retournée contre elle-même — une entrée qui ne mène nulle
+  part se lit comme une panne. Elle occupe en plus un des quatre emplacements de l'en-tête, où il
+  manque justement un bouton de navigation mobile.
+- **Pas de lien d'évitement** vers le contenu.
+- **Le tri ASC/DESC de la recherche** est resté deux `Button` avec un `aria-pressed` posé à la main —
+  exactement ce que `ViewToggle` a corrigé la veille en passant à `ToggleGroup`. La correction n'a
+  pas été portée.
+- **Le « +1 » de la palette n'est pas annulable** : le toast nomme l'œuvre « pour qu'un geste
+  involontaire se voie », mais le défaire demande d'ouvrir la fiche. Une action « Annuler » dans le
+  toast fermerait la boucle là où l'erreur se constate.
+- **La pagination n'a que précédent/suivant**, ce qui coûte cher sur un journal de profil paginé.
+- **Le tableau de bord de l'accueil reste en grille** — « En cours » (12) et « À reprendre » (6).
+  Non traité volontairement : ce ne sont pas des rangées éditoriales mais ce que je suis, et rien ne
+  dit encore qu'on veuille les parcourir plutôt que les voir en entier. C'est pourtant là que la
+  page reste longue sur mobile (1 282 px mesurés pour « En cours » seul), et la question mérite
+  d'être tranchée à l'usage.
+
+---
+
 ## 11 août 2026 — Les listes passent au crible des composants
 
 Séance d'UX sur les deux écrans de listes, demandée avec les skills `ui-ux-pro-max` et `shadcn`. La
