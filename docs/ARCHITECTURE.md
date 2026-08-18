@@ -184,6 +184,44 @@ import { getItems } from "@/features/<domaine>/server/<domaine>.queries";
 - `"use client"` se pose sur la feuille interactive (le formulaire, le dialog), jamais sur la
   page qui la contient. On passe les Server Components en `children` aux composants clients
   plutôt que de convertir tout le sous-arbre.
+- Les actions qui exigent un membre connecté passent par **`authActionClient`**, la variante de
+  `actionClient` qui vérifie la session en middleware (`src/lib/safe-action.ts`). Écrire la garde
+  dans le corps de l'action la rendrait facultative par oubli.
+
+## La garde d'accès et le proxy
+
+Trois règles, verrouillées par `src/proxy.test.ts` :
+
+- **La garde est `requireApprovedUser()` dans `app/(app)/layout.tsx`, appelée une seule fois.** Ne
+  pas la répéter page par page : une route oubliée ouvrirait tout le reste. Le raisonnement complet
+  est dans PRODUCT.md §7.1.
+- **`src/proxy.ts` ne fait qu'une redirection optimiste sur présence de cookie.** Il n'autorise
+  rien, et n'appelle **jamais** `auth.api.getSession()` — ce serait un aller-retour base à chaque
+  requête.
+- **Le proxy ne renvoie jamais un porteur de cookie hors des routes publiques.** Un cookie périmé
+  provoquerait une boucle infinie avec la garde du layout : le proxy renvoie vers l'app, le layout
+  renvoie vers la connexion, et ainsi de suite.
+
+Toute destination de redirection venue de l'URL passe par `safeRedirectPath`
+(`@/lib/security/safe-redirect`), **à la consommation** et pas seulement à la fabrication : un
+`?callbackUrl=` peut arriver dans une URL forgée sans jamais passer par le proxy.
+
+## Une panne d'API se rattrape hors du cache
+
+Deux règles apprises à l'écran le 15 août 2026, quand AniList a coupé son API en cours de journée.
+Elles valent pour toute source externe cachée, pas seulement AniList.
+
+**Le repli se fait hors du `"use cache"`, jamais dedans.** Un `null` mémorisé à l'intérieur
+laisserait l'écran vide pendant toute la durée du cache après le retour du service. La fonction
+cachée continue donc de lever, l'entrée n'est pas écrite, et la visite suivante retente. C'est
+l'appelant qui rattrape, via `tryAniList` (`src/lib/http/anilist.ts`).
+
+**Une erreur ne traverse pas `"use cache"` intacte** (Next 16.3). Côté appelant, ce n'est plus
+l'instance levée mais un `Error` nu : `instanceof` répond `false`, les propriétés ajoutées valent
+`undefined`, et **seuls `name` et `message` survivent**. La catégorie se porte donc dans le `name`
+(`AniListOutageError`), et `isAniListOutage` ne regarde que lui. Un test qui lèverait la vraie
+classe passerait au vert pendant que la page casserait : le test reconstitue la forme transportée
+à la main.
 
 ## Anatomie d'une feature
 
@@ -248,10 +286,15 @@ Versionné avec le projet, donc valable pour toute personne (ou session) qui ouv
 
 ```
 .claude/
+├── SKILLS.md                  # provenance des skills et des agents — à tenir à jour
 ├── settings.json              # permissions, hooks, plugins — commité
 ├── settings.local.json        # overrides perso — gitignoré
+├── agents/
+│   ├── convention-reviewer.md # relit un diff contre ce document et PRODUCT.md
+│   └── next-docs.md           # répond sur Next 16 en lisant node_modules/next/dist/docs/
 ├── hooks/
-│   └── biome-format.mjs       # PostToolUse : biome check --write sur chaque fichier écrit
+│   ├── biome-format.mjs       # PostToolUse : biome check --write sur chaque fichier écrit
+│   └── conventions-guard.mjs  # PreToolUse : refuse une écriture qui viole une règle d'ici
 └── skills/
     ├── new-feature/           # scaffold une feature selon ce document
     ├── better-auth-*/         # Better Auth : setup, sécurité, email/password
@@ -267,3 +310,18 @@ systématique, plans, revue, TDD).
 Le hook Biome formate automatiquement chaque `.ts`, `.tsx`, `.css` et `.json` écrit par
 l'agent. Il sort toujours en code 0 : une règle de lint non auto-corrigeable ne doit pas
 bloquer une édition. Il ne remplace pas `pnpm exec tsc --noEmit`.
+
+`conventions-guard.mjs` travaille dans l'autre sens : il **refuse** l'écriture qui viole une des
+huit règles de ce document qu'une machine sait voir — `process.env` hors de `config/env.ts`, un
+dossier `src/types/`, un fichier posé à plat dans `lib/`, un barrel `index.ts` dans `features/`, un
+`"use client"` sur une `page.tsx` ou un `layout.tsx`, un import relatif remontant, un `fetch` nu, et
+le `.schema()` de next-safe-action v7. Il ne s'applique qu'au code : un `.md` a le droit de citer
+`process.env`. Quand il bloque, c'est le code qu'il faut corriger, pas le hook.
+
+Les deux agents servent des questions distinctes : `convention-reviewer` relit un diff contre ce
+document et PRODUCT.md — il ne cherche pas les bugs, `/code-review` est là pour ça ; `next-docs`
+répond sur Next 16 en lisant la documentation embarquée dans `node_modules/next/dist/docs/` plutôt
+que de mémoire, ce qui compte vu que Next 16 diverge des données d'entraînement.
+
+La provenance de chaque skill et de chaque agent est dans [.claude/SKILLS.md](../.claude/SKILLS.md),
+à compléter à chaque ajout.
