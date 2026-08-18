@@ -32,12 +32,32 @@ export function EntryQuickProgress({
   progress,
   total,
   unit,
+  appearance = "overlay",
 }: {
   mediaId: number;
   progress: number;
   /** Épisodes ou chapitres connus. `null` sur une œuvre en cours de diffusion. */
   total: number | null;
   unit: EntryUnit;
+  /**
+   * Où le bouton est posé, ce qui change ce qu'il doit montrer.
+   *
+   * `overlay` est le cas d'origine et reste le défaut : une pastille ronde sur une jaquette, qui se
+   * découvre au survol pour ne pas encombrer une grille de vingt-quatre.
+   *
+   * `inline` est le bandeau d'ouverture de l'accueil, où le raisonnement s'inverse point par point.
+   * Le bouton y est **seul** au lieu d'être un parmi vingt-quatre, donc il n'a personne à qui céder
+   * la place ; il est l'action principale d'une diapositive qui occupe la moitié de l'écran, donc le
+   * révéler au survol le rendrait invisible à qui ne survole pas — et le survol n'existe pas au
+   * doigt. Il porte donc son intitulé en toutes lettres et ne se cache jamais.
+   *
+   * `compact` est la carte de reprise, qui tient des deux : le bouton y a une place réservée dans
+   * la mise en page — donc il ne mange le coin de rien et n'a aucune raison de se cacher — mais la
+   * carte en aligne plusieurs par rangée, où l'intitulé complet prendrait le tiers de la largeur.
+   * Il garde donc l'icône et le seul chiffre qui compte : « +1 ». C'est aussi le geste que la
+   * section entière sert à faire, et une commande principale ne se découvre pas au survol.
+   */
+  appearance?: "overlay" | "inline" | "compact";
 }) {
   const { execute, optimisticState, isPending } = useOptimisticAction(
     saveEntry,
@@ -54,17 +74,25 @@ export function EntryQuickProgress({
   // pas encombrer une grille de commandes mortes.
   if (total !== null && value >= total) return null;
 
-  const label = `Avancer d'un ${ENTRY_UNIT_LABELS[unit].singular} — ${value + 1}${
+  const unitLabel = ENTRY_UNIT_LABELS[unit].singular;
+  const label = `Avancer d'un ${unitLabel} — ${value + 1}${
     total ? ` sur ${total}` : ""
   }`;
+
+  const inline = appearance === "inline";
+  const compact = appearance === "compact";
 
   return (
     <Button
       aria-label={label}
-      className="size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+      className={
+        inline || compact
+          ? undefined
+          : "size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+      }
       disabled={isPending}
       onClick={() => execute({ mediaId, progress: value + 1 })}
-      size="icon"
+      size={inline ? "default" : compact ? "sm" : "icon"}
       title={label}
       type="button"
     >
@@ -73,6 +101,20 @@ export function EntryQuickProgress({
         chargement de dimensions différentes ferait sauter la grille à chaque clic.
       */}
       {isPending ? <Spinner /> : <PlusIcon />}
+
+      {/*
+        L'intitulé annonce **le geste**, pas l'état : « épisode 13 » se lirait comme l'endroit où
+        l'on en est, alors que le bouton fait passer à l'épisode suivant. La progression, elle, est
+        déjà écrite au-dessus dans la diapositive.
+      */}
+      {inline ? <span>Un {unitLabel} de plus</span> : null}
+
+      {/*
+        Le chiffre seul, sans son unité : à côté d'un « Chapitre 165 » écrit en gras juste à gauche,
+        « 1 » ne peut vouloir dire qu'une chose. L'`aria-label` porte la phrase entière, qui est ce
+        qu'un lecteur d'écran annonce.
+      */}
+      {compact ? <span>1</span> : null}
     </Button>
   );
 }

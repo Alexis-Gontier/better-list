@@ -1,6 +1,6 @@
 "use client";
 
-import { HeartIcon, Trash2Icon } from "lucide-react";
+import { HeartIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useId, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { RemoveEntryDialog } from "@/features/tracking/components/remove-entry-dialog";
 import { ScoreStars } from "@/features/tracking/components/score-stars";
 import {
   type EntryDraft,
@@ -36,10 +37,7 @@ import {
 } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
-import {
-  removeEntry,
-  saveEntry,
-} from "@/features/tracking/server/tracking.actions";
+import { saveEntry } from "@/features/tracking/server/tracking.actions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -60,6 +58,7 @@ import { cn } from "@/lib/utils";
  */
 export function EntryForm({
   mediaId,
+  title,
   entry,
   total,
   unit,
@@ -67,6 +66,12 @@ export function EntryForm({
   onRemoved,
 }: {
   mediaId: number;
+  /**
+   * Le titre déjà résolu, pour la confirmation de suppression. La fenêtre l'affiche déjà en
+   * en-tête, mais un `AlertDialog` la recouvre : ce qu'on lit au moment de confirmer doit nommer
+   * l'œuvre lui-même.
+   */
+  title: string;
   /** `null` quand l'œuvre n'est pas encore suivie — enregistrer la fait entrer en bibliothèque. */
   entry: EntryState | null;
   /** Épisodes ou chapitres connus. `null` sur une œuvre en cours de diffusion. */
@@ -90,12 +95,12 @@ export function EntryForm({
     onError: () => toast.error("Le suivi n'a pas pu être enregistré."),
   });
 
-  const remove = useAction(removeEntry, {
-    onSuccess: () => onRemoved?.(),
-    onError: () => toast.error("Le suivi n'a pas pu être supprimé."),
-  });
-
-  const pending = save.isPending || remove.isPending;
+  /*
+    La suppression n'est plus tenue ici : `RemoveEntryDialog` porte l'action avec sa confirmation.
+    `pending` ne dépend donc plus que de l'enregistrement — le dialogue est modal, et ce qu'il
+    recouvre est hors d'atteinte le temps de la requête, ce que `disabled` faisait à la main.
+  */
+  const pending = save.isPending;
 
   const submit = () => {
     const changes = entryDraftChanges(entry, draft);
@@ -266,17 +271,20 @@ export function EntryForm({
           Favori
         </Button>
 
-        {/* Le retrait n'existe que sur une œuvre suivie — sinon il n'y a rien à retirer. */}
+        {/*
+          Le retrait n'existe que sur une œuvre suivie — sinon il n'y a rien à retirer.
+
+          Il passe par une confirmation depuis qu'on a mesuré ce qu'il emporte : l'entrée **et son
+          journal**, en cascade. Ici plus qu'ailleurs, puisque cette fenêtre s'ouvre depuis
+          n'importe quelle vignette d'une grille de vingt-quatre, à quelques pixels du « +1 » qu'on
+          vient de cliquer dix fois.
+        */}
         {entry ? (
-          <Button
-            disabled={pending}
-            onClick={() => remove.execute({ mediaId })}
-            type="button"
-            variant="destructive"
-          >
-            {remove.isPending ? <Spinner /> : <Trash2Icon />}
-            Supprimer
-          </Button>
+          <RemoveEntryDialog
+            mediaId={mediaId}
+            onRemoved={onRemoved}
+            title={title}
+          />
         ) : null}
 
         {/*

@@ -419,7 +419,6 @@ const STALLED_AFTER_DAYS = 30;
 /** Ce que chaque section montre. Assez pour remplir une rangée, pas assez pour noyer la page. */
 const DASHBOARD_CURRENT_COUNT = 12;
 const DASHBOARD_STALLED_COUNT = 6;
-const DASHBOARD_ACTIVITY_COUNT = 12;
 
 /** Les colonnes du miroir dont les vignettes du tableau de bord ont besoin. */
 const DASHBOARD_MEDIA_SELECT = {
@@ -438,6 +437,67 @@ const DASHBOARD_MEDIA_SELECT = {
   meanScore: true,
   isAdult: true,
 } as const;
+
+/**
+ * Combien de diapositives le bandeau d'ouverture de l'accueil montre.
+ *
+ * Cinq, et le nombre est une limite haute plus qu'une cible : un carrousel qu'on ne parcourt pas
+ * jusqu'au bout ne sert que sa première vue, et au-delà de cinq points d'ancrage l'indicateur cesse
+ * de dire où l'on en est. La rangée « En cours » juste dessous, elle, en montre douze — c'est là
+ * qu'on fait le tour, pas ici.
+ */
+const HERO_COUNT = 5;
+
+/**
+ * Les colonnes du bandeau : celles du tableau de bord, plus les genres.
+ *
+ * Une sélection à part plutôt qu'un `genres: true` ajouté à `DASHBOARD_MEDIA_SELECT`, qui est
+ * partagée : le planning s'en sert pour **deux cents** lignes, et un tableau de chaînes rapporté
+ * deux cents fois pour n'être jamais lu se paie sur chaque chargement de `/calendar`. Cinq lignes
+ * ici, c'est gratuit.
+ */
+const HERO_MEDIA_SELECT = {
+  ...DASHBOARD_MEDIA_SELECT,
+  genres: true,
+} as const;
+
+/**
+ * Ce que le bandeau d'ouverture de l'accueil met en scène : mes séries en cours, en grand.
+ *
+ * **Une lecture à part de `getDashboard`, et non un `slice` de son résultat.** Les deux vivent dans
+ * des frontières de suspension distinctes — le bandeau porte l'image la plus lourde de la page et
+ * doit partir seul, sans attendre les listes ni le décompte de la bibliothèque. Partager l'appel
+ * obligerait à les réunir, c'est-à-dire à faire attendre le LCP derrière trois requêtes dont il n'a
+ * aucun besoin.
+ *
+ * **`bannerImage` non nulle est une condition, pas une préférence.** C'est un bandeau : une œuvre
+ * sans bannière y afficherait un aplat de deux cents pixels de haut sous un titre. AniList en pose
+ * une sur la quasi-totalité des animes et sur presque aucun manga, donc la clause ne retire en
+ * pratique que ce qu'elle doit retirer. Quand elle ne laisse rien, l'accueil se rabat sur les
+ * tendances (`home-hero.tsx`).
+ *
+ * Pas de fenêtre de trente jours ici, contrairement à « En cours » : une série reprise après deux
+ * mois reste la dernière chose qu'on ait regardée, et c'est bien elle qu'on vient continuer.
+ */
+export async function getHeroEntries() {
+  const session = await getSession();
+  if (!session) return [];
+
+  return prisma.entry.findMany({
+    where: {
+      userId: session.user.id,
+      status: "CURRENT",
+      media: { bannerImage: { not: null } },
+    },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: HERO_COUNT,
+    select: {
+      id: true,
+      ...ENTRY_STATE_SELECT,
+      media: { select: HERO_MEDIA_SELECT },
+    },
+  });
+}
 
 /**
  * Le suivi tel que l'accueil le montre : ce que je regarde, ce que j'ai laissé en plan.
@@ -472,8 +532,14 @@ export async function getDashboard() {
       take: DASHBOARD_CURRENT_COUNT,
       // L'état complet, pour la même raison que la bibliothèque : ces vignettes portent la fenêtre
       // d'édition du suivi.
+      //
+      // `updatedAt` sert la carte de reprise, qui écrit « vu aujourd'hui » à côté de l'épisode : sur
+      // une section qui ne montre que les trente derniers jours, la fraîcheur du geste est ce qui
+      // distingue la série qu'on a laissée hier de celle d'il y a trois semaines. C'est la colonne
+      // qui trie déjà cette liste — elle ne coûte rien de plus à rapporter.
       select: {
         id: true,
+        updatedAt: true,
         ...ENTRY_STATE_SELECT,
         media: { select: DASHBOARD_MEDIA_SELECT },
       },
@@ -571,44 +637,8 @@ export async function getAiringEntries() {
   });
 }
 
-/**
- * Le journal de **toutes** les œuvres — la lecture que l'index `[userId, createdAt]` de
- * `EntryEvent` attendait (prisma/schema.prisma). C'est aussi le brouillon de la timeline du
- * profil : même requête, sans le `take`.
- *
- * Comme les autres lectures du domaine, l'identifiant vient de la session et jamais d'un argument.
- */
-export async function getRecentActivity(take = DASHBOARD_ACTIVITY_COUNT) {
-  const session = await getSession();
-  if (!session) return [];
-
-  return prisma.entryEvent.findMany({
-    where: { userId: session.user.id },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take,
-    select: {
-      id: true,
-      type: true,
-      progressFrom: true,
-      progressTo: true,
-      statusFrom: true,
-      statusTo: true,
-      score: true,
-      note: true,
-      createdAt: true,
-      entry: {
-        select: {
-          media: {
-            select: {
-              id: true,
-              type: true,
-              titleRomaji: true,
-              titleEnglish: true,
-              titleNative: true,
-            },
-          },
-        },
-      },
-    },
-  });
-}
+// Le journal borné de l'accueil vivait ici (`getRecentActivity`). Il est parti avec la section
+// « Activité récente » : elle répondait à « qu'est-ce que j'ai fait », question qu'on ne se pose pas
+// en ouvrant l'application, et fermait la page par une liste de texte sous six rangées d'images. La
+// timeline complète du profil reste servie par `features/profile/`, qui n'a jamais dépendu de cette
+// lecture — c'est ce qui permet de la retirer sans rien casser.

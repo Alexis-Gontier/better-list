@@ -42,7 +42,15 @@ export function EntryDialog({
   entry,
   total,
   unit,
+  appearance = "overlay",
 }: {
+  /**
+   * Où le déclencheur est posé. `overlay` est la pastille sur la jaquette, et le défaut ;
+   * `inline` est le bouton libellé du bandeau d'ouverture de l'accueil. Le raisonnement complet est
+   * sur la propriété jumelle de `EntryQuickProgress` — les deux boutons voyagent ensemble, et l'un
+   * qui se cacherait au survol pendant que l'autre s'affiche déséquilibrerait la paire.
+   */
+  appearance?: "overlay" | "inline" | "compact";
   mediaId: number;
   /** Le titre déjà résolu dans la langue du compte : la fenêtre ne relit pas les préférences. */
   title: string;
@@ -72,6 +80,10 @@ export function EntryDialog({
    */
   const label = entry ? `Modifier le suivi de ${title}` : `Suivre ${title}`;
 
+  const inline = appearance === "inline";
+  /** Permanent et sans intitulé — le raisonnement est sur la propriété jumelle. */
+  const compact = appearance === "compact";
+
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
@@ -79,25 +91,37 @@ export function EntryDialog({
           aria-label={label}
           /**
            * Mêmes classes de révélation que le « +1 » : les deux boutons se découvrent ensemble au
-           * survol et restent visibles au doigt, où aucun survol n'existe. Le `secondary` les
-           * départage — avancer d'un épisode reste le geste principal, modifier est le recours.
+           * survol et restent visibles au doigt (`max-sm`), où aucun survol n'existe. Le clavier
+           * n'est pas oublié — `focus-visible` le fait apparaître à la tabulation.
            *
-           * **Sur une œuvre non suivie, le bouton est plein et permanent.** Il est seul sur la
-           * jaquette, donc il n'a personne à qui céder le premier rôle ; et une grille de résultats
-           * est précisément l'endroit où l'on ne sait pas encore qu'on peut suivre quelque chose —
-           * une commande qui n'apparaît qu'au survol y resterait invisible pour qui ne survole pas.
+           * **Y compris sur une œuvre non suivie.** Il y était auparavant plein et permanent, au
+           * motif qu'il fallait bien apprendre qu'on peut suivre quelque chose ; mais une pastille
+           * posée en dur sur chacune des vingt-quatre jaquettes d'une grille se lit comme une
+           * décoration avant de se lire comme une commande, et elle mange le coin de l'image — ce
+           * que la carte a précisément fini par refuser à tout le reste (`MediaCard`). Le `default`
+           * reste : au survol, il doit se distinguer du « +1 » qui l'accompagne parfois.
            */
           className={
-            entry
-              ? "size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
-              : "size-7 rounded-full shadow-sm"
+            inline || compact
+              ? undefined
+              : "size-7 rounded-full opacity-0 shadow-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
           }
-          size="icon"
+          size={inline ? "default" : compact ? "icon-sm" : "icon"}
           title={label}
           type="button"
-          variant={entry ? "secondary" : "default"}
+          variant={
+            inline || compact ? "secondary" : entry ? "secondary" : "default"
+          }
         >
           {entry ? <PencilIcon /> : <BookmarkPlusIcon />}
+
+          {/*
+            Le texte dit le geste, pas l'objet : le titre de l'œuvre est écrit en grand juste
+            au-dessus dans la diapositive, et le répéter sur le bouton allongerait une ligne de
+            commandes déjà serrée sur mobile. L'`aria-label`, lui, le garde — un lecteur d'écran qui
+            parcourt les boutons de la page n'a pas le titre sous les yeux.
+          */}
+          {inline ? <span>{entry ? "Modifier" : "Suivre"}</span> : null}
         </Button>
       </DialogTrigger>
 
@@ -181,6 +205,7 @@ export function EntryDialog({
           <EntryForm
             entry={entry}
             mediaId={mediaId}
+            title={title}
             /**
              * Enregistrer **et** retirer ferment la fenêtre. Le second surtout : elle éditerait
              * sinon un suivi qui n'existe plus, que le premier clic recréerait.

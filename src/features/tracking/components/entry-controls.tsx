@@ -1,7 +1,7 @@
 "use client";
 
-import { HeartIcon, MinusIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { useAction, useOptimisticAction } from "next-safe-action/hooks";
+import { HeartIcon, MinusIcon, PlusIcon } from "lucide-react";
+import { useOptimisticAction } from "next-safe-action/hooks";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { RemoveEntryDialog } from "@/features/tracking/components/remove-entry-dialog";
 import { ScoreStars } from "@/features/tracking/components/score-stars";
 import { toDateInputValue } from "@/features/tracking/lib/entry-draft";
 import {
@@ -32,10 +33,7 @@ import type {
   EntryStatus,
   SaveEntryInput,
 } from "@/features/tracking/schemas/tracking.schema";
-import {
-  removeEntry,
-  saveEntry,
-} from "@/features/tracking/server/tracking.actions";
+import { saveEntry } from "@/features/tracking/server/tracking.actions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -55,24 +53,23 @@ const IGNORED_IN_OPTIMISTIC = new Set(["mediaId", "startedAt", "finishedAt"]);
 
 export function EntryControls({
   mediaId,
+  title,
   entry,
   total,
   unit,
-  onRemoved,
 }: {
   mediaId: number;
+  /**
+   * Le titre déjà résolu dans la langue du compte, pour la confirmation de suppression — le seul
+   * endroit du panneau qui ait besoin de nommer l'œuvre. Partout ailleurs, le `h1` de la fiche est
+   * à quelques centimètres ; un dialogue modal, lui, recouvre la page qui le portait.
+   */
+  title: string;
   /** `null` tant que l'œuvre n'est pas suivie. */
   entry: EntryState | null;
   /** Épisodes ou chapitres connus. `null` sur une œuvre en cours de diffusion. */
   total: number | null;
   unit: "episode" | "chapitre";
-  /**
-   * Appelé quand l'œuvre vient de quitter la bibliothèque.
-   *
-   * La fiche n'en fait rien — elle reste sur l'œuvre, dont le panneau repasse simplement en « pas
-   * suivi ». La fenêtre d'une vignette, elle, doit se fermer : elle édite un suivi qui n'existe plus.
-   */
-  onRemoved?: () => void;
 }) {
   /**
    * Les identifiants sont dérivés d'un `useId` et non écrits en dur : ces contrôles se rendent
@@ -107,11 +104,6 @@ export function EntryControls({
       onError: () => toast.error("Le suivi n'a pas pu être enregistré."),
     },
   );
-
-  const remove = useAction(removeEntry, {
-    onSuccess: () => onRemoved?.(),
-    onError: () => toast.error("Le suivi n'a pas pu être supprimé."),
-  });
 
   const update = (changes: Omit<SaveEntryInput, "mediaId">) =>
     execute({ mediaId, ...changes });
@@ -311,16 +303,19 @@ export function EntryControls({
 
       <Separator />
 
-      <Button
-        className="w-full text-muted-foreground"
-        disabled={remove.isPending}
-        onClick={() => remove.execute({ mediaId })}
-        size="sm"
+      {/*
+        « Supprimer le suivi », et non plus « Retirer de ma liste ».
+        L'ancien libellé était devenu faux le jour où `/lists` a existé : il se lisait comme le
+        retrait d'une œuvre d'une `List`, geste sans conséquence qui se refait d'un clic, alors
+        qu'il détruit ici l'entrée **et son journal**. La fenêtre d'une vignette porte désormais le
+        même mot pour la même chose.
+      */}
+      <RemoveEntryDialog
+        className="w-full"
+        mediaId={mediaId}
+        title={title}
         variant="ghost"
-      >
-        <Trash2Icon />
-        Retirer de ma liste
-      </Button>
+      />
     </div>
   );
 }

@@ -229,6 +229,7 @@ const RELATIVE_FORMAT = new Intl.RelativeTimeFormat(LOCALE, {
   numeric: "auto",
 });
 
+const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
 const DAYS_PER_MONTH = 30;
 const DAYS_PER_YEAR = 365;
 
@@ -241,13 +242,22 @@ const DAYS_PER_YEAR = 365;
  * **Une durée, pas une date** : aucun fuseau n'intervient ici, contrairement aux intitulés de
  * journée. On dégrade l'unité avec l'âge — au-delà d'un mois, « il y a 47 jours » se compte au lieu
  * de se lire.
+ *
+ * **L'heure est le premier palier**, et elle a remplacé un « aujourd'hui » qui perdait l'essentiel
+ * là où on le lit le plus : la carte de reprise ne montre que les trente derniers jours, et sur une
+ * série qu'on suit, « il y a deux heures » et « ce matin » ne disent pas la même chose du fil qu'on
+ * est en train de reprendre. Le même mot couvrait les deux. Sous l'heure, on ne compte plus : « il y
+ * a 3 minutes » sur un suivi n'apprend rien de plus que « à l'instant », et rendrait le libellé
+ * mouvant entre le rendu serveur et la seconde suivante.
  */
 export function formatSince(date: Date, now: Date): string {
-  const days = Math.floor(
-    (now.getTime() - date.getTime()) / MILLISECONDS_PER_DAY,
-  );
+  const elapsed = now.getTime() - date.getTime();
+  const days = Math.floor(elapsed / MILLISECONDS_PER_DAY);
 
-  if (days < 1) return "aujourd'hui";
+  if (days < 1) {
+    const hours = Math.floor(elapsed / MILLISECONDS_PER_HOUR);
+    return hours < 1 ? "à l'instant" : RELATIVE_FORMAT.format(-hours, "hour");
+  }
   if (days < DAYS_PER_MONTH) return RELATIVE_FORMAT.format(-days, "day");
   if (days < DAYS_PER_YEAR) {
     return RELATIVE_FORMAT.format(-Math.floor(days / DAYS_PER_MONTH), "month");

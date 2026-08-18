@@ -1,5 +1,7 @@
+import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import { mediaTotalUnits } from "@/features/media/server/media.mirror";
+import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { EntryControls } from "@/features/tracking/components/entry-controls";
 import { getEntryForMedia } from "@/features/tracking/server/tracking.queries";
 
@@ -17,6 +19,13 @@ import { getEntryForMedia } from "@/features/tracking/server/tracking.queries";
 export async function EntryPanel({ media }: { media: MediaDetail }) {
   const entry = await getEntryForMedia(media.id);
 
+  /**
+   * La langue des titres est lue ici plutôt que reçue de la fiche, comme le font `MediaCard` et
+   * `EntryCardActions` : `getPreferences` porte le `cache` de React, donc cette lecture ne coûte
+   * rien de plus que celles déjà faites par la page.
+   */
+  const { titleLanguage } = await getPreferences();
+
   return (
     <section
       aria-labelledby="mon-suivi"
@@ -29,6 +38,7 @@ export async function EntryPanel({ media }: { media: MediaDetail }) {
       <EntryControls
         entry={entry}
         mediaId={media.id}
+        title={mediaTitle(media.title, titleLanguage)}
         total={mediaTotalUnits(media)}
         unit={media.type === "ANIME" ? "episode" : "chapitre"}
       />
