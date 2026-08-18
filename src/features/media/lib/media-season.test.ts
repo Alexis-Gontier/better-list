@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   currentSeason,
   nextSeason,
+  previousSeason,
+  recentSeasons,
   seasonOf,
 } from "@/features/media/lib/media-season";
 
@@ -56,6 +58,64 @@ describe("nextSeason", () => {
     const after = [1, 2, 3, 4].reduce(nextSeason, start);
 
     expect(after).toEqual({ season: "SPRING", seasonYear: 2027 });
+  });
+});
+
+describe("previousSeason", () => {
+  it("recule d'une saison à l'intérieur de la même année", () => {
+    expect(previousSeason({ season: "FALL", seasonYear: 2026 })).toEqual({
+      season: "SUMMER",
+      seasonYear: 2026,
+    });
+  });
+
+  /** Le pendant du saut d'année de `nextSeason`, et le seul endroit où se tromper de sens. */
+  it("change d'année en passant de l'hiver à l'automne", () => {
+    expect(previousSeason({ season: "WINTER", seasonYear: 2027 })).toEqual({
+      season: "FALL",
+      seasonYear: 2026,
+    });
+  });
+
+  it("défait exactement ce que nextSeason a fait", () => {
+    const start = { season: "FALL", seasonYear: 2026 } as const;
+
+    expect(previousSeason(nextSeason(start))).toEqual(start);
+  });
+});
+
+describe("recentSeasons", () => {
+  /**
+   * Le premier créneau est la saison **suivante**, pas la saison en cours : c'est ce qui rend le lien
+   * « La saison prochaine » de l'accueil exprimable dans la liste du sélecteur.
+   */
+  it("ouvre sur la saison à venir, puis redescend le temps", () => {
+    expect(recentSeasons(4, { season: "SUMMER", seasonYear: 2026 })).toEqual([
+      { season: "FALL", seasonYear: 2026 },
+      { season: "SUMMER", seasonYear: 2026 },
+      { season: "SPRING", seasonYear: 2026 },
+      { season: "WINTER", seasonYear: 2026 },
+    ]);
+  });
+
+  it("franchit les années en descendant", () => {
+    const slots = recentSeasons(3, { season: "WINTER", seasonYear: 2026 });
+
+    expect(slots).toEqual([
+      { season: "SPRING", seasonYear: 2026 },
+      { season: "WINTER", seasonYear: 2026 },
+      { season: "FALL", seasonYear: 2025 },
+    ]);
+  });
+
+  it("rend exactement le nombre de créneaux demandé, sans doublon", () => {
+    const slots = recentSeasons(13, { season: "SUMMER", seasonYear: 2026 });
+    const seen = new Set(
+      slots.map((slot) => `${slot.season}:${slot.seasonYear}`),
+    );
+
+    expect(slots).toHaveLength(13);
+    expect(seen.size).toBe(13);
   });
 });
 

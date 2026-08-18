@@ -9,7 +9,7 @@
  */
 export const routes = {
   /**
-   * Accueil : suivi, listes, catalogue du moment, journal.
+   * Accueil : bandeau de reprise, suivi, listes, catalogue du moment.
    *
    * Il n'y a **pas** de `/browse` en face, et ce n'est pas un oubli : le catalogue éditorialisé
    * était une deuxième porte de découverte pour un cercle de quatre comptes, et il a été replié ici

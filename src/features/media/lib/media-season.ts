@@ -62,6 +62,42 @@ const CALENDAR_IN_PARIS = new Intl.DateTimeFormat("en-US", {
   month: "numeric",
 });
 
+/** La saison précédente. Passer de l'hiver à l'automne fait reculer l'année. */
+export function previousSeason({ season, seasonYear }: SeasonSlot): SeasonSlot {
+  const index = SEASON_ORDER.indexOf(season);
+  const preceding =
+    SEASON_ORDER[(index - 1 + SEASON_ORDER.length) % SEASON_ORDER.length];
+
+  return {
+    season: preceding,
+    seasonYear: season === "WINTER" ? seasonYear - 1 : seasonYear,
+  };
+}
+
+/**
+ * Une suite de créneaux consécutifs, du plus récent au plus ancien.
+ *
+ * C'est ce dont le sélecteur de saison de la recherche a besoin : un filtre de saison n'a de sens
+ * qu'accompagné de son année (voir `searchMediaInputSchema.season`), donc l'interface ne propose pas
+ * deux contrôles à croiser mais une liste de trimestres déjà formés.
+ *
+ * On **descend** depuis un cran en avance : la saison prochaine est déjà annoncée chez AniList au
+ * moment où l'on regarde la saison en cours, et c'est précisément ce que la rangée « La saison
+ * prochaine » de l'accueil donne à voir. Commencer à la saison courante rendrait son lien
+ * inexprimable dans la liste.
+ */
+export function recentSeasons(count: number, from: SeasonSlot): SeasonSlot[] {
+  const slots: SeasonSlot[] = [];
+  let slot = nextSeason(from);
+
+  for (let index = 0; index < count; index++) {
+    slots.push(slot);
+    slot = previousSeason(slot);
+  }
+
+  return slots;
+}
+
 export function currentSeason(now: Date = new Date()): SeasonSlot {
   const parts = CALENDAR_IN_PARIS.formatToParts(now);
   const month = Number(parts.find((part) => part.type === "month")?.value);

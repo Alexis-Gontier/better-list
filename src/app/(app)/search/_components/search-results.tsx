@@ -68,6 +68,8 @@ export async function SearchResults({
     status: filters.status ?? undefined,
     genres: filters.genre.length > 0 ? filters.genre : undefined,
     tags: filters.tag.length > 0 ? filters.tag : undefined,
+    season: filters.season ?? undefined,
+    seasonYear: filters.year ?? undefined,
     sortField,
     sortDirection: filters.dir,
     page: filters.page,
@@ -184,7 +186,19 @@ export async function SearchResults({
                 jaquettes pour dire ce qu'on ne cherchait pas. Le format et l'année restent en vue
                 liste, où la largeur les rend comparables d'une ligne à l'autre, et sur la fiche.
               */}
-              <MediaCard action={item.action} media={item.media} />
+              {/*
+                Le synopsis et les genres ne descendent **que** dans l'encart de survol : le
+                document de recherche les rapporte déjà pour la vue liste, donc les passer ne coûte
+                aucune requête de plus. C'est le seul écran de l'application où l'on parcourt des
+                œuvres qu'on ne connaît pas encore — celui où « de quoi ça parle ? » se pose à
+                chaque vignette.
+              */}
+              <MediaCard
+                action={item.action}
+                description={item.media.description}
+                genres={item.genres}
+                media={item.media}
+              />
             </li>
           ))}
         </MediaGrid>

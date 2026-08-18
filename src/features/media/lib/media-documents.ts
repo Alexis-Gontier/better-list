@@ -116,11 +116,17 @@ const MEDIA_MIRROR_FIELDS = /* GraphQL */ `
 `;
 
 /**
- * Sélection du catalogue éditorialisé (`/browse`) : la carte compacte, plus l'année.
+ * Sélection du catalogue éditorialisé de l'accueil : la carte compacte, plus l'année et la bannière.
  *
  * `MediaCompactFields` ne porte pas `seasonYear`, or c'est l'information qui distingue deux entrées
  * d'une même franchise dans une rangée « les mieux notés ». Un champ de plus sur douze cartes, contre
  * la sélection complète de `MediaFields` qui en ramènerait quinze inutiles.
+ *
+ * `bannerImage` et `genres` servent au **hero** de l'accueil, et à lui seul : les vignettes n'en
+ * veulent pas. Ils sont demandés ici plutôt que dans un alias dédié parce qu'un sixième champ `Page`
+ * coûterait une entrée de plus dans la réponse pour redemander des œuvres que `trending` ramène déjà
+ * — le hero se sert dans cette rangée quand la bibliothèque est vide (`home-hero.tsx`). Deux champs
+ * de plus sur soixante cartes, contre une requête entière économisée.
  */
 const MEDIA_BROWSE_FIELDS = /* GraphQL */ `
   fragment MediaBrowseFields on Media {
@@ -131,6 +137,8 @@ const MEDIA_BROWSE_FIELDS = /* GraphQL */ `
     averageScore
     isAdult
     seasonYear
+    bannerImage
+    genres
     title {
       romaji
       english
@@ -289,6 +297,7 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
     $status: MediaStatus
     $genres: [String]
     $tags: [String]
+    $season: MediaSeason
     $seasonYear: Int
     $page: Int = 1
     $perPage: Int = 20
@@ -311,6 +320,7 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
         status: $status
         genre_in: $genres
         tag_in: $tags
+        season: $season
         seasonYear: $seasonYear
         sort: $sort
         isAdult: $isAdult

@@ -188,13 +188,26 @@ describe("progression affichée", () => {
 describe("ancienneté", () => {
   const jours = (count: number) =>
     new Date(NOW.getTime() - count * 24 * 60 * 60 * 1000);
+  const heures = (count: number) =>
+    new Date(NOW.getTime() - count * 60 * 60 * 1000);
 
   it("dégrade l'unité avec l'âge", () => {
-    expect(formatSince(jours(0), NOW)).toBe("aujourd'hui");
+    expect(formatSince(heures(5), NOW)).toBe("il y a 5 heures");
     expect(formatSince(jours(1), NOW)).toBe("hier");
     expect(formatSince(jours(12), NOW)).toBe("il y a 12 jours");
     expect(formatSince(jours(90), NOW)).toBe("il y a 3 mois");
     expect(formatSince(jours(800), NOW)).toBe("il y a 2 ans");
+  });
+
+  /**
+   * En deçà de l'heure, on ne compte plus : le libellé changerait entre le rendu serveur et la
+   * seconde d'après, sur une information qui ne décide de rien.
+   */
+  it("ne compte pas sous l'heure", () => {
+    expect(formatSince(jours(0), NOW)).toBe("à l'instant");
+    expect(formatSince(new Date(NOW.getTime() - 59 * 60 * 1000), NOW)).toBe(
+      "à l'instant",
+    );
   });
 });
 

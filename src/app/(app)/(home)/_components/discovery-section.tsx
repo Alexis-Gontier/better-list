@@ -1,8 +1,11 @@
 import { DashboardSection } from "@/app/(app)/(home)/_components/dashboard-section";
-import { MediaGrid, MediaGridSkeleton } from "@/components/shared/media-grid";
+import {
+  MediaCarousel,
+  MediaCarouselItem,
+  MediaCarouselSkeleton,
+} from "@/components/shared/media-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MediaCard } from "@/features/media/components/media-card";
-import { formatMediaFormat } from "@/features/media/lib/media-format";
 import type { MediaBrowse } from "@/features/media/schemas/media.schema";
 import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
@@ -44,9 +47,11 @@ export function DiscoverySection({
   /**
    * Vers la recherche préfiltrée, quand elle sait exprimer le même ensemble.
    *
-   * Volontairement facultatif : la recherche n'a pas de paramètre de saison, donc les rangées
-   * saisonnières n'ont pas de « Tout voir ». Un lien qui perdrait le filtre en chemin serait pire
-   * que pas de lien — il enverrait sur une page qui ne montre pas ce qu'on a cliqué.
+   * Reste facultatif, mais les cinq rangées en ont désormais un : la recherche a gagné un filtre de
+   * saison (`searchFilterParsers.season`), qui était ce qui manquait aux deux rangées saisonnières.
+   * La règle qui les en privait tient toujours pour la suivante — un lien qui perdrait le filtre en
+   * chemin serait pire que pas de lien, puisqu'il mènerait à une page qui ne montre pas ce qu'on a
+   * cliqué.
    */
   href?: string;
 }) {
@@ -54,9 +59,18 @@ export function DiscoverySection({
 
   return (
     <DashboardSection description={description} href={href} title={title}>
-      <MediaGrid>
+      {/*
+        Une rangée qui défile, et non plus une grille pleine : ces cinq sections se parcourent, elles
+        ne se fouillent pas. Le raisonnement complet est sur `MediaCarousel` — il tient à ce que ces
+        rangées sont éditoriales, là où la recherche et la bibliothèque montrent un ensemble dans
+        lequel on cherche une œuvre précise, et doivent donc rester en grille.
+
+        Les vignettes restent rendues **ici**, côté serveur, et traversent la frontière en `children` :
+        `MediaCard` est asynchrone et lit elle-même la langue des titres.
+      */}
+      <MediaCarousel label={title}>
         {media.map((item) => (
-          <li key={item.id}>
+          <MediaCarouselItem key={item.id}>
             <MediaCard
               action={
                 <EntryCardActions
@@ -72,14 +86,25 @@ export function DiscoverySection({
                   total={null}
                 />
               }
+              /*
+                Les genres, et pas de synopsis : le document du catalogue rapporte les premiers et
+                pas le second (voir `MediaBrowseFields`). L'encart de survol montre donc ce qu'il a —
+                c'est exactement le contrat des deux propriétés, qui n'exigent jamais une lecture de
+                plus pour être remplies.
+              */
+              genres={item.genres}
+              /*
+                Pas de ligne de contexte : « Série TV · 2026 » se répétait sous chaque jaquette de
+                chaque rangée pour dire ce qu'on ne cherche pas ici — une rangée de découverte se
+                parcourt à l'image. Même raisonnement que la grille de recherche
+                (`search-results.tsx`) : le format et l'année restent en vue liste, où la largeur
+                les rend comparables d'une ligne à l'autre, et sur la fiche.
+              */
               media={item}
-              meta={[formatMediaFormat(item.format), item.seasonYear]
-                .filter(Boolean)
-                .join(" · ")}
             />
-          </li>
+          </MediaCarouselItem>
         ))}
-      </MediaGrid>
+      </MediaCarousel>
     </DashboardSection>
   );
 }
@@ -92,7 +117,7 @@ export function DiscoverySectionSkeleton({ count }: { count: number }) {
         <Skeleton className="h-4 w-64" />
       </div>
 
-      <MediaGridSkeleton count={count} />
+      <MediaCarouselSkeleton count={count} />
     </section>
   );
 }

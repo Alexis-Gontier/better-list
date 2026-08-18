@@ -8,24 +8,17 @@
   // `src/components/ui/` est généré par shadcn : ses composants exportent volontairement plus que
   // ce qu'on consomme, et les supprimer casserait la prochaine régénération. (`src/generated/`,
   // produit par Prisma, est déjà écarté par le .gitignore.)
-  "ignore": ["src/components/ui/**"],
+  //
+  // `prisma/_legacy-import.ts` est un script de CLI lancé à la main (`tsx prisma/_legacy-import.ts
+  // <newUrl> <oldUrl>`) : rien ne l'importe, et c'est normal. Il est gardé au dépôt — la reprise
+  // des données de l'ancienne app peut être rejouée sur une autre branche Neon.
+  "ignore": ["src/components/ui/**", "prisma/_legacy-import.ts"],
 
   // Un export utilisé uniquement dans son propre fichier n'est pas du code mort : c'est souvent
   // un helper testable ou une constante exposée pour un test à venir.
-  "ignoreExportsUsedInFile": true,
+  "ignoreExportsUsedInFile": true
 
-  // ⚠️ Réglage temporaire, à supprimer (`error` est le défaut) une fois `/search` câblée.
-  //
-  // Ce qui reste signalé est exact et se réduit à deux poches, toutes deux du code écrit en
-  // avance de la route qui le consommera :
-  //   - `searchMedia`, `SearchFormInput`, `MediaSort`, `MediaCountry` → attendent `/search` ;
-  //   - `lib/safe-action.ts` et `next-safe-action` → attendent la première Server Action.
-  //
-  // En `warn`, l'information reste visible sans faire échouer la CI.
-  "rules": {
-    "files": "warn",
-    "dependencies": "warn",
-    "exports": "warn",
-    "types": "warn"
-  }
+  // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
+  // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux
+  // existent. Un garde-fou qu'on laisse en `warn` finit par ne plus rien garder.
 }

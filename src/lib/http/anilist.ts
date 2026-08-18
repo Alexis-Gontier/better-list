@@ -43,6 +43,33 @@ const anilistEnvelopeSchema = z.object({
 });
 
 /**
+ * Le `name` que porte une erreur de **panne** — API coupée, en erreur, ou quota épuisé.
+ *
+ * Ce n'est pas une coquetterie de nommage, c'est le seul canal disponible. Une erreur levée
+ * dans une fonction `"use cache"` est **resérialisée** en franchissant la frontière : côté
+ * appelant, ce n'est plus une `AniListError` mais un `Error` nu, dont il ne reste que `name`,
+ * `message` et un `digest` (mesuré le 15 août 2026 avec Next 16.3). `instanceof` répond `false`
+ * et `status` vaut `undefined`. Le tri doit donc être fait **avant** la frontière, à la
+ * construction, et déposé dans le seul champ qui la traverse.
+ */
+const ANILIST_OUTAGE_ERROR = "AniListOutageError";
+
+/**
+ * La panne, par statut.
+ *
+ * Le 403 n'est pas ici par excès de prudence : AniList coupe son endpoint en le renvoyant, avec
+ * pour message « The AniList API has been temporarily disabled due to severe stability issues. »
+ * (constaté le 15 août 2026). Aucune requête ne passe alors, quelle qu'elle soit — c'est une panne
+ * générale, à traiter comme un 5xx et non comme un refus d'accès à une ressource.
+ *
+ * Le 429 rejoint le lot côté affichage — un catalogue absent est un catalogue absent — tout en
+ * gardant son propre prédicat pour qui doit distinguer les deux.
+ */
+function isOutageStatus(status: number) {
+  return status === 403 || status === 429 || status >= 500;
+}
+
+/**
  * Erreur AniList normalisée : porte le statut renvoyé par l'API et son message métier plutôt
  * que le message générique de la couche transport.
  */
@@ -51,7 +78,9 @@ export class AniListError extends Error {
 
   constructor(message: string, status: number) {
     super(message);
-    this.name = "AniListError";
+    // Le nom encode la catégorie parce que lui seul survit à `"use cache"` — voir
+    // `ANILIST_OUTAGE_ERROR`.
+    this.name = isOutageStatus(status) ? ANILIST_OUTAGE_ERROR : "AniListError";
     this.status = status;
   }
 
@@ -68,6 +97,37 @@ export class AniListError extends Error {
 
 export function isAniListError(error: unknown): error is AniListError {
   return error instanceof AniListError;
+}
+
+/**
+ * AniList ne répond pas : coupure, erreur serveur ou quota épuisé.
+ *
+ * Se contente du `name`, sans `instanceof` : c'est ce qui la rend vraie **des deux côtés** d'un
+ * `"use cache"`, là où un `instanceof` ne l'est qu'en amont.
+ */
+export function isAniListOutage(error: unknown): boolean {
+  return error instanceof Error && error.name === ANILIST_OUTAGE_ERROR;
+}
+
+/**
+ * Exécute une lecture AniList et renvoie `null` si l'API est hors service ou saturée.
+ *
+ * **À appeler hors d'un `"use cache"`, jamais dedans.** Rattraper la panne à l'intérieur de la
+ * fonction cachée mémoriserait le `null` pour toute la durée du `cacheLife` — l'accueil resterait
+ * vide une heure après le retour d'AniList. Laissée remontée jusqu'ici, l'erreur empêche l'entrée
+ * d'être écrite, et la requête suivante retente.
+ *
+ * Le filet est **étroit à dessein** : seules la panne (403, 5xx) et le quota (429) donnent `null`.
+ * Un 404 reste un 404, et une charge utile qui ne valide pas reste une erreur de code — ni l'un ni
+ * l'autre ne doit se déguiser en « catalogue indisponible ».
+ */
+export async function tryAniList<T>(read: () => Promise<T>): Promise<T | null> {
+  try {
+    return await read();
+  } catch (error) {
+    if (isAniListOutage(error)) return null;
+    throw error;
+  }
 }
 
 type AniListQueryOptions<TSchema extends z.ZodType> = {

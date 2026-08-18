@@ -12,7 +12,6 @@ import * as z from "zod";
 // --- Énumérations (calquées sur les enums GraphQL d'AniList) ----------------
 
 export const mediaTypeSchema = z.enum(["ANIME", "MANGA"]);
-export type MediaType = z.infer<typeof mediaTypeSchema>;
 
 export const mediaFormatSchema = z.enum([
   "TV",
@@ -46,22 +45,6 @@ export type MediaSeason = z.infer<typeof mediaSeasonSchema>;
  * combinaison : MANGA + KR + `isAdult`.
  */
 export const mediaCountrySchema = z.enum(["JP", "KR", "CN", "TW"]);
-export type MediaCountry = z.infer<typeof mediaCountrySchema>;
-
-/** Sous-ensemble de `MediaSort` exposé. Utilisé en entrée seulement. */
-export const mediaSortSchema = z.enum([
-  "SEARCH_MATCH",
-  "POPULARITY_DESC",
-  "POPULARITY",
-  "SCORE_DESC",
-  "SCORE",
-  "TRENDING_DESC",
-  "FAVOURITES_DESC",
-  "START_DATE_DESC",
-  "UPDATED_AT_DESC",
-  "TITLE_ROMAJI",
-]);
-export type MediaSort = z.infer<typeof mediaSortSchema>;
 
 // --- Media -----------------------------------------------------------------
 
@@ -79,7 +62,6 @@ export const mediaCoverImageSchema = z.object({
   medium: z.string().nullable(),
   color: z.string().nullable(),
 });
-export type MediaCoverImage = z.infer<typeof mediaCoverImageSchema>;
 
 export const fuzzyDateSchema = z.object({
   year: z.number().int().nullable(),
@@ -324,13 +306,19 @@ export const mediaMirrorSchema = z.object({
 export type MediaMirror = z.infer<typeof mediaMirrorSchema>;
 
 /**
- * Carte du catalogue éditorialisé : la carte compacte, plus l'année de diffusion.
+ * Carte du catalogue éditorialisé : la carte compacte, plus l'année de diffusion et la bannière.
  *
  * `MediaCard` attend un `MediaCompact` ; l'extension le satisfait donc sans conversion, et la rangée
  * gagne « Série TV · 2024 » en ligne de contexte.
+ *
+ * `bannerImage` n'est lu que par le hero de l'accueil, qui se rabat sur les tendances quand la
+ * bibliothèque est vide. Elle est `null` sur la plupart des mangas et des webtoons chez AniList —
+ * l'appelant doit toujours prévoir le cas.
  */
 export const mediaBrowseSchema = mediaCompactSchema.extend({
   seasonYear: z.number().int().nullable(),
+  bannerImage: z.string().nullable(),
+  genres: z.array(z.string()),
 });
 export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
 

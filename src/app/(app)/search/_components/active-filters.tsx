@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useSearchFilters } from "@/features/media/hooks/use-search-filters";
+import { formatSeason } from "@/features/media/lib/media-format";
 import {
   STATUS_OPTIONS,
   TYPE_OPTIONS,
@@ -53,6 +54,25 @@ export function ActiveFilters() {
         STATUS_OPTIONS.find((option) => option.value === filters.status)
           ?.label ?? filters.status,
       remove: () => setFilters({ status: null, page: 1 }),
+    });
+  }
+
+  /**
+   * Une seule puce pour le trimestre, mais elle survit à une adresse qui ne porte que l'un des deux
+   * paramètres.
+   *
+   * C'est la raison d'être du repli sur l'année seule : `?year=2026` sans saison est une requête
+   * valide (voir `searchMediaInputSchema.season`) que le popover ne sait pas cocher — sans puce,
+   * elle filtrerait les résultats sans que rien à l'écran ne le dise. Le retrait emporte les deux
+   * paramètres dans tous les cas.
+   */
+  if (filters.season || filters.year !== null) {
+    chips.push({
+      key: `season:${filters.season}:${filters.year}`,
+      label:
+        formatSeason(filters.season, filters.year) ??
+        String(filters.year ?? ""),
+      remove: () => setFilters({ season: null, year: null, page: 1 }),
     });
   }
 
@@ -124,6 +144,8 @@ export function ActiveFilters() {
               status: null,
               genre: [],
               tag: [],
+              season: null,
+              year: null,
               page: 1,
             })
           }
