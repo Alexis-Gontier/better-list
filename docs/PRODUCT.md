@@ -1,7 +1,11 @@
 # Produit — Better-List
 
 Ce document dit **quoi** on construit et **pourquoi**. Le **comment** (structure de fichiers,
-conventions) est dans [ARCHITECTURE.md](./ARCHITECTURE.md).
+conventions) est dans [ARCHITECTURE.md](./ARCHITECTURE.md), et **ce qui est construit à ce jour**
+dans [STATE.md](./STATE.md).
+
+Il décrit une cible, pas un avancement : aucune phrase d'ici ne devient fausse parce qu'un écran a
+été livré. Si c'est le cas, elle appartient à STATE.md.
 
 ---
 
@@ -259,8 +263,9 @@ sont sur cinq étoiles pour tout le monde (§4.2).
 
 ## 5. Architecture des routes
 
-À refléter dans [src/config/routes.ts](../src/config/routes.ts), qui n'a aujourd'hui ni
-recherche ni fiche média — c'est-à-dire ni l'entrée ni le cœur de l'app.
+La carte que vise le produit. [src/config/routes.ts](../src/config/routes.ts) en est la mise en
+œuvre, et **la colonne `Palier` ci-dessous dit l'intention, pas l'avancement** : ce qui est construit à ce
+jour est dans [STATE.md](./STATE.md).
 
 | Route | Rôle | Palier |
 | --- | --- | --- |
