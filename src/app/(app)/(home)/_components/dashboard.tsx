@@ -2,6 +2,11 @@ import { CompassIcon } from "lucide-react";
 import Link from "next/link";
 
 import { DashboardSection } from "@/app/(app)/(home)/_components/dashboard-section";
+import {
+  ResumeCard,
+  ResumeCarouselItem,
+} from "@/app/(app)/(home)/_components/resume-card";
+import { MediaCarousel } from "@/components/shared/media-carousel";
 import { MediaGrid } from "@/components/shared/media-grid";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,9 +21,15 @@ import { routes } from "@/config/routes";
 import { ListCard } from "@/features/lists/components/list-card";
 import { getMyLists } from "@/features/lists/server/lists.queries";
 import { MediaCard } from "@/features/media/components/media-card";
-import { compactFromMirror } from "@/features/media/lib/media-format";
+import {
+  compactFromMirror,
+  mirroredTitle,
+} from "@/features/media/lib/media-format";
 import { mediaTotalUnits } from "@/features/media/server/media.mirror";
+import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
+import { EntryDialog } from "@/features/tracking/components/entry-dialog";
+import { EntryQuickProgress } from "@/features/tracking/components/entry-quick-progress";
 import {
   ENTRY_STATUS_LABELS,
   formatEntryProgress,
@@ -51,10 +62,24 @@ import { getDashboard } from "@/features/tracking/server/tracking.queries";
 const DASHBOARD_LISTS_COUNT = 3;
 
 export async function Dashboard() {
-  const [{ current, stalled, total }, lists] = await Promise.all([
-    getDashboard(),
-    getMyLists(),
-  ]);
+  /*
+    La langue des titres est lue **ici** parce que la carte de reprise compose elle-même ses deux
+    boutons : `EntryDialog` attend un titre déjà résolu, là où `EntryCardActions` allait le chercher
+    pour son compte. `getPreferences` porte le `cache` de React — la lecture est donc gratuite, les
+    vignettes de « À reprendre » l'ayant déjà payée.
+  */
+  const [{ current, stalled, total }, lists, { titleLanguage }] =
+    await Promise.all([getDashboard(), getMyLists(), getPreferences()]);
+
+  /**
+   * L'instant de référence, lu **une fois** pour tout le tableau de bord.
+   *
+   * Les trois sections comparent des dates à « maintenant » — la fraîcheur d'une reprise,
+   * l'ancienneté d'une série oubliée, la dernière retouche d'une liste. Prise dans chaque carte,
+   * cette valeur donnerait autant d'instants que de cartes ; prise ici, tout l'écran raconte la
+   * même seconde. C'est déjà ce que `ListCard` exigeait de son appelant.
+   */
+  const now = new Date();
 
   /**
    * Ce que chaque vignette de suivi porte, à l'identique dans les deux sections : où j'en suis, ce
@@ -128,18 +153,73 @@ export async function Dashboard() {
           })}
           title="En cours"
         >
-          <MediaGrid>
+          {/*
+            Une rangée qui défile, et non plus une grille.
+
+            **C'est la seule section de suivi qui change**, et la raison tient à ce qu'elle est
+            devenue : le bandeau d'ouverture montre déjà les cinq séries les plus fraîches en grand,
+            donc ce qui reste ici est la **queue** de la même liste — ce qu'on parcourt pour retrouver
+            une série précise, pas ce qu'on vient faire. Douze jaquettes en grille pleine y prenaient
+            deux rangées d'écran sur desktop et six sur mobile, juste sous une bannière qui occupe
+            déjà la moitié de la page.
+
+            « À reprendre » garde sa grille, et ce n'est pas une inconséquence : six séries oubliées
+            tiennent en une rangée à tous les paliers sauf le plus étroit, donc un carrousel n'y ferait
+            rien défiler — et surtout, c'est une section qu'on doit voir **en entier** pour choisir,
+            là où celle-ci se parcourt.
+
+            **Les cartes y sont larges depuis qu'elles servent à reprendre et non à choisir.** Une
+            jaquette répond à « laquelle ? », question déjà tranchée pour une série qu'on suit ; ce
+            qu'on vient chercher ici, c'est où l'on en était. Le raisonnement complet est sur
+            `ResumeCard`. La mécanique de défilement reste celle de `MediaCarousel` — même gouttière,
+            mêmes flèches, même fraction de carte laissée au bord : deux rangées voisines qui se
+            manœuvreraient différemment sur la même page se lisent comme un défaut.
+          */}
+          <MediaCarousel label="En cours">
             {current.map((entry) => (
-              <li key={entry.id}>
-                {/*
-                  Aucune ligne de contexte : la section dit déjà le statut, et « où j'en étais » —
-                  la seule information qui reste utile pour reprendre — s'affiche maintenant en
-                  pastille sur la jaquette.
-                */}
-                <MediaCard {...trackingProps(entry)} />
-              </li>
+              <ResumeCarouselItem key={entry.id}>
+                <ResumeCard
+                  /*
+                    Les deux boutons sont composés ici plutôt que pris à `EntryCardActions`, comme
+                    le fait déjà le bandeau d'ouverture : ils ont besoin de l'apparence `compact`,
+                    que le bloc partagé ne sait pas transmettre. Ils restent la même paire, dans le
+                    même ordre — le « +1 » d'abord, la fenêtre ensuite, qui est l'ordre de fréquence
+                    des deux gestes.
+                  */
+                  action={
+                    <div className="flex items-center gap-1">
+                      <EntryQuickProgress
+                        appearance="compact"
+                        mediaId={entry.media.id}
+                        progress={entry.progress}
+                        total={mediaTotalUnits(entry.media)}
+                        unit={
+                          entry.media.type === "ANIME" ? "episode" : "chapitre"
+                        }
+                      />
+
+                      <EntryDialog
+                        appearance="compact"
+                        entry={entry}
+                        image={entry.media.bannerImage}
+                        mediaId={entry.media.id}
+                        title={mirroredTitle(entry.media, titleLanguage)}
+                        total={mediaTotalUnits(entry.media)}
+                        unit={
+                          entry.media.type === "ANIME" ? "episode" : "chapitre"
+                        }
+                      />
+                    </div>
+                  }
+                  media={compactFromMirror(entry.media)}
+                  now={now}
+                  progress={entry.progress}
+                  total={mediaTotalUnits(entry.media)}
+                  updatedAt={entry.updatedAt}
+                />
+              </ResumeCarouselItem>
             ))}
-          </MediaGrid>
+          </MediaCarousel>
         </DashboardSection>
       ) : null}
 
@@ -158,7 +238,7 @@ export async function Dashboard() {
                    */
                   meta={[
                     ENTRY_STATUS_LABELS[entry.status],
-                    formatSince(entry.updatedAt, new Date()),
+                    formatSince(entry.updatedAt, now),
                   ].join(" · ")}
                 />
               </li>
@@ -172,7 +252,7 @@ export async function Dashboard() {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lists.slice(0, DASHBOARD_LISTS_COUNT).map((list) => (
               <li key={list.id}>
-                <ListCard list={list} now={new Date()} />
+                <ListCard list={list} now={now} />
               </li>
             ))}
           </ul>

@@ -1,11 +1,16 @@
 import { DiscoverySection } from "@/app/(app)/(home)/_components/discovery-section";
 import { routes } from "@/config/routes";
 import { formatSeason } from "@/features/media/lib/media-format";
-import { currentSeason, nextSeason } from "@/features/media/lib/media-season";
+import {
+  currentSeason,
+  nextSeason,
+  type SeasonSlot,
+} from "@/features/media/lib/media-season";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
 import { getBrowseCatalogue } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { getEntryStatesFor } from "@/features/tracking/server/tracking.queries";
+import { tryAniList } from "@/lib/http/anilist";
 
 /**
  * La part de découverte de l'accueil (docs/PRODUCT.md §5).
@@ -29,7 +34,20 @@ export async function Discovery() {
   const season = currentSeason();
   const upcoming = nextSeason(season);
 
-  const catalogue = await getBrowseCatalogue({ ...season, includeAdult });
+  /**
+   * AniList coupé : les rangées disparaissent, sans un mot. C'est le bandeau en tête de page
+   * (`CatalogueUnavailableBanner`) qui l'annonce, une fois pour les trois blocs concernés — dire ici
+   * la même chose ferait un second message à cinq écrans du premier.
+   *
+   * `tryAniList` est appelé ici et non dans `getBrowseCatalogue` : la fonction cachée doit continuer
+   * à lever, sinon le `null` d'une coupure de trente secondes serait mémorisé une heure. Le prix est
+   * une requête retentée à chaque visite pendant la panne — c'est le comportement qu'on veut.
+   */
+  const catalogue = await tryAniList(() =>
+    getBrowseCatalogue({ ...season, includeAdult }),
+  );
+
+  if (!catalogue) return null;
 
   /**
    * Ce que ce compte suit déjà, sur les cinq rangées d'un coup.
@@ -57,6 +75,27 @@ export async function Discovery() {
   const searchHref = (filters: Parameters<typeof serializeSearchFilters>[1]) =>
     serializeSearchFilters(routes.search, filters);
 
+  /**
+   * Une saison, telle que la recherche l'exprime maintenant : `season` **et** `year`.
+   *
+   * Ces deux rangées n'avaient pas de « Voir tout » — la recherche ne connaissait que l'année, et un
+   * lien qui aurait élargi « été 2026 » à « 2026 » aurait mené sur une page montrant quatre fois ce
+   * qu'on venait de cliquer. Le filtre existe désormais (`searchFilterParsers.season`), donc le lien
+   * est exact et la restriction tombe.
+   *
+   * `POPULARITY` et non `TRENDING` : c'est le tri de la rangée elle-même dans
+   * `BROWSE_CATALOGUE_QUERY`, et une page « Voir tout » qui reclasserait tout autrement ne serait pas
+   * la suite de ce qu'on regardait.
+   */
+  const seasonHref = ({ season, seasonYear }: SeasonSlot) =>
+    searchHref({
+      type: "ANIME",
+      season,
+      year: seasonYear,
+      sort: "POPULARITY",
+      dir: "DESC",
+    });
+
   return (
     <>
       <DiscoverySection
@@ -69,6 +108,7 @@ export async function Discovery() {
 
       <DiscoverySection
         description={`Les animes de la saison en cours — ${formatSeason(season.season, season.seasonYear)?.toLowerCase()}.`}
+        href={seasonHref(season)}
         entries={entries}
         media={catalogue.season}
         title="Cette saison"
@@ -76,6 +116,7 @@ export async function Discovery() {
 
       <DiscoverySection
         description={`Ce qui arrive en ${formatSeason(upcoming.season, upcoming.seasonYear)?.toLowerCase()}.`}
+        href={seasonHref(upcoming)}
         entries={entries}
         media={catalogue.upcoming}
         title="La saison prochaine"

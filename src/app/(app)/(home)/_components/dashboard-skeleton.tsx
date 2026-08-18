@@ -1,4 +1,4 @@
-import { MediaGridSkeleton } from "@/components/shared/media-grid";
+import { MediaCarouselSkeleton } from "@/components/shared/media-carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -8,6 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
  * l'arrivée du contenu ne pousse pas la page. On ne dessine pas les trois sections — une
  * bibliothèque jeune n'en aura qu'une, et un squelette trop long ment plus qu'il n'aide.
  *
+ * La première rangée est un squelette de **carrousel** depuis qu'« En cours » en est un : une grille
+ * de six vignettes y laissait deux rangées d'écran que le contenu ne remplissait plus, donc un saut
+ * de mise en page à chaque fin de chargement — exactement ce qu'un squelette existe pour éviter.
+ *
  * Comme `Dashboard`, il rend des sections sœurs et non un conteneur : l'espacement appartient à la
  * page, sans quoi le squelette et son contenu ne se remplaceraient pas au même endroit.
  */
@@ -16,7 +20,7 @@ export function DashboardSkeleton() {
     <>
       <section className="space-y-3">
         <Skeleton className="h-5 w-24" />
-        <MediaGridSkeleton count={6} />
+        <MediaCarouselSkeleton count={6} />
       </section>
 
       <section className="space-y-3">
