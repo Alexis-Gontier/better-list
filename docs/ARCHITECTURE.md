@@ -274,11 +274,20 @@ t3-env sépare `server` et `client` et refuse au build qu'une variable serveur s
 Client Component.
 
 - **Jamais de `process.env.X` dans le code applicatif.** Toujours `import { env } from "@/config/env"`.
-- **Les fichiers de CLI en sont dispensés**, et la liste est close : `prisma.config.ts` et
-  `prisma/seed.ts`. Ils tournent hors de Next, donc sans le `NODE_ENV` que t3-env exige — importer
-  `@/config/env` y ferait échouer le script avant sa première ligne utile. Le hook
-  `conventions-guard.mjs` les nomme un par un, ce qui interdit d'étendre l'exception par
-  inadvertance.
+- **La liste des exceptions est close, et c'est le hook qui la tient** (`ENV_ALLOWLIST` dans
+  `.claude/hooks/conventions-guard.mjs`) : `src/config/env.ts`, `next.config.ts`,
+  `postcss.config.mjs` et `prisma/seed.ts`. Les deux fichiers de configuration tournent avant que
+  `@/config/env` soit chargeable ; `prisma/seed.ts` tourne sous `tsx`, hors de Next, donc sans le
+  `NODE_ENV` que t3-env exige — l'importer y ferait échouer le script avant sa première ligne utile.
+  Les nommer un par un interdit d'étendre l'exception par inadvertance. `prisma.config.ts` n'en fait
+  pas partie et n'a pas à en faire partie : il lit sa variable par `env("DATABASE_URL")`, la
+  fonction de `prisma/config`, et non par `process.env`.
+
+- **Les scripts de `prisma/` sont hors du périmètre de deux autres règles**, pour la même raison
+  qu'ils tournent hors de Next : `prisma/seed.ts` et `prisma/_legacy-import.ts` instancient leur
+  propre `PrismaClient` et appellent AniList en `fetch` nu. Le hook ne les voit pas — ses règles ne
+  s'appliquent qu'à `src/`. Un fichier de `src/` qui ferait l'un ou l'autre est en faute ; ces deux
+  scripts ne le sont pas.
 - `next.config.ts` importe ce fichier : une variable manquante casse le build, pas une requête
   utilisateur en production.
 - Une variable client doit être déclarée **deux fois** — dans `client`, et dans
@@ -301,6 +310,7 @@ Versionné avec le projet, donc valable pour toute personne (ou session) qui ouv
 │   └── conventions-guard.mjs  # PreToolUse : refuse une écriture qui viole une règle d'ici
 └── skills/
     ├── new-feature/           # scaffold une feature selon ce document
+    ├── anilist-read/          # toute lecture de l'API AniList passe par là
     ├── better-auth-*/         # Better Auth : setup, sécurité, email/password
     ├── create-auth/           # scaffolding auth
     ├── prisma-*/              # Prisma : CLI, client API, setup base

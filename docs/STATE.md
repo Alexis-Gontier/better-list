@@ -64,7 +64,7 @@ Expose `searchMedia`, `getMediaById`, `getBrowseCatalogue`, `getAiringSchedule`,
 **`tracking`** — le suivi, le journal, la bibliothèque.
 Expose `getEntryForMedia`, `getEntryStatesFor`, `getEntryTimeline`, `getLibrary`,
 `getLibraryStatusCounts`, `searchEntries`, `getHeroEntries`, `getDashboard`, `getAiringEntries`, et
-les actions `saveEntry`, `removeEntry`. La feature la plus consommée : cinq routes en dépendent.
+les actions `saveEntry`, `removeEntry`. La feature la plus consommée : six routes en dépendent.
 
 **`lists`** — les listes et leur contenu.
 Expose `getMyLists`, `getListById`, `getSharedList`, `getListsForMedia`, et huit actions
@@ -72,8 +72,8 @@ Expose `getMyLists`, `getListById`, `getSharedList`, `getListsForMedia`, et huit
 `reorderListItem`, `removeFromList`). L'ordre passe par `fractional-indexing` (`lib/list-reorder`),
 le partage par un jeton (`lib/share-token`), jamais par l'`id`.
 
-**`profile`** — la vue publique d'un membre. `getProfileStats`, `getProfileTimeline`. Compose
-`tracking` et `media` sans leur appartenir.
+**`profile`** — la vue publique d'un membre. `getProfile`, `getProfileStats`, `getProfileTimeline`.
+Compose `tracking` et `media` sans leur appartenir.
 
 **`preferences`** — les réglages d'affichage, lus par presque tous les écrans.
 `getPreferences` et l'action `updatePreferences`. Porte `titleLanguage` et ses valeurs par défaut.

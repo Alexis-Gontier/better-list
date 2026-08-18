@@ -47,11 +47,12 @@ Elles sont justifiées dans ARCHITECTURE.md ; ici, seulement leur énoncé.
 - **Une lecture demandée par un composant client passe par un route handler, pas par une action.**
   Un route handler sous `src/app/api/` porte lui-même sa garde.
 - Aucune URL en dur : tout chemin passe par `src/config/routes.ts`.
-- Jamais de `process.env.X` : `import { env } from "@/config/env"`. Seules exceptions, liste close :
-  `prisma.config.ts` et `prisma/seed.ts`.
+- Jamais de `process.env.X` : `import { env } from "@/config/env"`. Liste close d'exceptions, tenue
+  par le hook : `src/config/env.ts`, `next.config.ts`, `postcss.config.mjs`, `prisma/seed.ts`.
 - Accès base via `import { prisma } from "@/lib/db/prisma"`, jamais un `PrismaClient` instancié
   ailleurs. Appels HTTP sortants via `upfetch` (`@/lib/http/fetch`) avec un `schema`, jamais `fetch`
-  nu.
+  nu. Ces deux règles valent pour `src/` ; les scripts de `prisma/`, qui tournent hors de Next, y
+  échappent.
 - Validation avec **Zod**. Pas de `src/types/` : les types se dérivent avec `z.infer`.
 - La garde d'accès est `requireApprovedUser()` dans `app/(app)/layout.tsx`, **une seule fois**.
   Toute destination de redirection venue de l'URL passe par `safeRedirectPath`, à la consommation.
