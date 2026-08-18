@@ -32,9 +32,11 @@ import {
 import { useSearchFilters } from "@/features/media/hooks/use-search-filters";
 import {
   EMPTY_FILTERS,
+  parseSeasonSlotValue,
   resolveSort,
   SORT_OPTIONS,
   STATUS_OPTIONS,
+  seasonSlotValue,
   TYPE_OPTIONS,
 } from "@/features/media/lib/search-params";
 import {
@@ -52,9 +54,18 @@ import {
 export function SearchFilters({
   genres,
   tags,
+  seasons,
 }: {
   genres: string[];
   tags: string[];
+  /**
+   * Les trimestres proposés, déjà formés et libellés par le serveur (`seasonSlotOptions`).
+   *
+   * Saison et année sont **un seul contrôle** parce qu'elles ne veulent rien dire séparément : « été »
+   * sans année ramène tous les étés depuis 1940, et personne ne cherche ça. Le popover parle donc en
+   * valeurs composites, qu'il redécoupe en deux paramètres d'URL à l'écriture.
+   */
+  seasons: Array<{ value: string; label: string }>;
 }) {
   const [filters, setFilters] = useSearchFilters();
 
@@ -93,8 +104,22 @@ export function SearchFilters({
     !filters.status &&
     filters.genre.length === 0 &&
     filters.tag.length === 0 &&
+    !filters.season &&
+    filters.year === null &&
     filters.sort === EMPTY_FILTERS.sort &&
     filters.dir === EMPTY_FILTERS.dir;
+
+  /**
+   * Le créneau sélectionné, reconstruit depuis les deux paramètres d'URL.
+   *
+   * Coché seulement quand les **deux** sont présents : une adresse ne portant que `?year=2026` est
+   * une année entière, que la liste des trimestres ne sait pas représenter — la puce de
+   * `ActiveFilters` s'en charge, et cocher un trimestre au hasard mentirait sur ce qui est filtré.
+   */
+  const selectedSeason =
+    filters.season && filters.year !== null
+      ? [seasonSlotValue({ season: filters.season, seasonYear: filters.year })]
+      : [];
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -161,6 +186,22 @@ export function SearchFilters({
         }
         options={[...STATUS_OPTIONS]}
         selected={filters.status ? [filters.status] : []}
+      />
+
+      <FilterPopover
+        label="Saison"
+        onChange={(values) => {
+          // Décocher remet les deux paramètres à zéro d'un coup : laisser `year` seul derrière
+          // élargirait silencieusement le filtre à l'année entière.
+          const [value] = values;
+          const slot = value
+            ? parseSeasonSlotValue(value)
+            : { season: null, year: null };
+
+          setFilters({ season: slot.season, year: slot.year, page: 1 });
+        }}
+        options={seasons}
+        selected={selectedSeason}
       />
 
       <FilterPopover

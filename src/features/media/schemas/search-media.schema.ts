@@ -4,6 +4,7 @@ import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import {
   mediaCountrySchema,
   mediaFormatSchema,
+  mediaSeasonSchema,
   mediaStatusSchema,
   mediaTypeSchema,
 } from "@/features/media/schemas/media.schema";
@@ -92,6 +93,19 @@ export const searchMediaInputSchema = z.object({
     .max(MAX_FILTER_VALUES)
     .nonempty()
     .optional(),
+  /**
+   * La saison de diffusion, **indissociable de son année** côté sens.
+   *
+   * AniList accepte les deux séparément : `season: SUMMER` seul ramène tous les étés depuis 1940,
+   * `seasonYear: 2026` seul ramène l'année entière. Les deux ensemble désignent un trimestre, et
+   * c'est la seule combinaison que l'interface propose (`SEASON_SLOT_OPTIONS`) — un sélecteur qui
+   * laisserait choisir « été » sans année produirait un ensemble que personne ne cherche.
+   *
+   * Le schéma ne l'impose pas pour autant : une URL forgée avec l'un des deux reste une requête
+   * valide chez AniList, et la rejeter obligerait à afficher une erreur là où le résultat est
+   * simplement plus large que prévu.
+   */
+  season: mediaSeasonSchema.optional(),
   seasonYear: z.coerce
     .number()
     .int()

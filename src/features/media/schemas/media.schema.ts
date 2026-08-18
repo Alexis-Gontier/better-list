@@ -324,13 +324,19 @@ export const mediaMirrorSchema = z.object({
 export type MediaMirror = z.infer<typeof mediaMirrorSchema>;
 
 /**
- * Carte du catalogue éditorialisé : la carte compacte, plus l'année de diffusion.
+ * Carte du catalogue éditorialisé : la carte compacte, plus l'année de diffusion et la bannière.
  *
  * `MediaCard` attend un `MediaCompact` ; l'extension le satisfait donc sans conversion, et la rangée
  * gagne « Série TV · 2024 » en ligne de contexte.
+ *
+ * `bannerImage` n'est lu que par le hero de l'accueil, qui se rabat sur les tendances quand la
+ * bibliothèque est vide. Elle est `null` sur la plupart des mangas et des webtoons chez AniList —
+ * l'appelant doit toujours prévoir le cas.
  */
 export const mediaBrowseSchema = mediaCompactSchema.extend({
   seasonYear: z.number().int().nullable(),
+  bannerImage: z.string().nullable(),
+  genres: z.array(z.string()),
 });
 export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
 

@@ -1,5 +1,6 @@
 import {
   createLoader,
+  createParser,
   createSerializer,
   parseAsArrayOf,
   parseAsInteger,
@@ -8,9 +9,20 @@ import {
 } from "nuqs/server";
 
 import { DEFAULT_VIEW_MODE, VIEW_MODES } from "@/config/catalogue";
-import type {
-  SortDirection,
-  SortField,
+import { formatSeason } from "@/features/media/lib/media-format";
+import {
+  recentSeasons,
+  type SeasonSlot,
+} from "@/features/media/lib/media-season";
+import {
+  type MediaSeason,
+  mediaSeasonSchema,
+} from "@/features/media/schemas/media.schema";
+import {
+  MAX_MEDIA_YEAR,
+  MIN_MEDIA_YEAR,
+  type SortDirection,
+  type SortField,
 } from "@/features/media/schemas/search-media.schema";
 
 /**
@@ -52,6 +64,84 @@ export const STATUS_OPTIONS = [
   { value: "HIATUS", label: "En pause" },
   { value: "CANCELLED", label: "Annulé" },
 ] as const;
+
+/**
+ * Les saisons, telles que l'URL les écrit. Reprises du schéma AniList plutôt que recopiées : une
+ * liste tenue à deux endroits diverge, et celle-ci décide de ce que `?season=` accepte.
+ */
+const SEASON_VALUES = mediaSeasonSchema.options;
+
+/**
+ * Combien de trimestres le sélecteur de saison propose.
+ *
+ * Trois ans en arrière, plus la saison à venir. Au-delà, la liste devient un défilement dans lequel
+ * on cherche une date au lieu de la choisir — et une saison de 2019 se trouve mieux par son titre
+ * que par son trimestre.
+ */
+const SEASON_SLOT_COUNT = 13;
+
+/**
+ * Les créneaux proposés, **calculés au moment de l'appel**.
+ *
+ * Ce n'est pas une constante de module : elle serait figée à la saison du premier rendu du serveur,
+ * et la liste annoncerait encore l'automne en janvier. Même raison que l'argument `season` de
+ * `getBrowseCatalogue`, et l'appelant est ici le chargeur serveur de la barre de filtres, qui passe
+ * le résultat à l'îlot client — le calcul ne traverse jamais la frontière, donc la saison du serveur
+ * et celle du client ne peuvent pas diverger à l'hydratation.
+ */
+export function seasonSlotOptions(
+  from: SeasonSlot,
+): Array<{ value: string; label: string }> {
+  return recentSeasons(SEASON_SLOT_COUNT, from).map((slot) => ({
+    value: seasonSlotValue(slot),
+    label: formatSeason(slot.season, slot.seasonYear) ?? "",
+  }));
+}
+
+/**
+ * Un créneau, vu de l'URL : `season` et `year` restent **deux paramètres distincts**.
+ *
+ * Les coller en un seul (`?saison=SUMMER-2026`) obligerait à réinventer un encodage, à le décoder
+ * des deux côtés, et rendrait impossible une adresse qui ne porte que l'année — que le schéma
+ * accepte déjà. Cette valeur composite ne sert donc qu'à la sélection dans un `FilterPopover`, qui
+ * parle en chaînes ; elle ne quitte jamais le composant.
+ */
+export function seasonSlotValue({ season, seasonYear }: SeasonSlot): string {
+  return `${season}:${seasonYear}`;
+}
+
+export function parseSeasonSlotValue(value: string): {
+  season: MediaSeason | null;
+  year: number | null;
+} {
+  const [season, year] = value.split(":");
+  const parsedYear = Number(year);
+
+  return {
+    season: (SEASON_VALUES as readonly string[]).includes(season)
+      ? (season as MediaSeason)
+      : null,
+    year: Number.isInteger(parsedYear) ? parsedYear : null,
+  };
+}
+
+/**
+ * L'année de diffusion, ramenée à `null` hors des bornes du schéma.
+ *
+ * `parseAsInteger` ne borne rien : `?year=0` traverserait le parseur, puis ferait échouer
+ * `searchFormSchema` — et le repli de `SearchResults` remet alors **tous** les filtres à zéro. Une
+ * année absurde effacerait donc le genre et le type saisis à côté d'elle. Borner ici garde le
+ * ratage local, comme le fait déjà `parseAsStringLiteral` pour le tri et le statut.
+ */
+const parseAsBoundedYear = createParser({
+  parse: (value: string) => {
+    const year = parseAsInteger.parse(value);
+    if (year === null) return null;
+
+    return year >= MIN_MEDIA_YEAR && year <= MAX_MEDIA_YEAR ? year : null;
+  },
+  serialize: (value: number) => String(value),
+});
 
 const SORT_VALUES = SORT_OPTIONS.map((option) => option.value) as [
   SortField,
@@ -101,6 +191,19 @@ export const searchFilterParsers = {
   /** Listes séparées par des virgules : `?genre=Action,Comedy` reste lisible. */
   genre: parseAsArrayOf(parseAsString).withDefault([]),
   tag: parseAsArrayOf(parseAsString).withDefault([]),
+  /**
+   * La saison de diffusion et son année, **deux paramètres**, comme chez AniList.
+   *
+   * L'interface ne les écrit qu'ensemble (`seasonSlotValue`), mais les garder séparés laisse
+   * `?year=2026` seul exprimer une année entière — ce que le schéma accepte déjà — sans inventer
+   * une syntaxe de plus.
+   *
+   * Les bornes de `year` sont celles du schéma : sans elles, `?year=0` partirait chez AniList, et
+   * `searchFormSchema` le rejetterait en bloc au lieu de le ramener à un défaut. Un parseur qui
+   * borne rend l'URL tolérante là où le schéma est strict.
+   */
+  season: parseAsStringLiteral(SEASON_VALUES),
+  year: parseAsBoundedYear,
   sort: parseAsStringLiteral(SORT_VALUES).withDefault("SEARCH_MATCH"),
   dir: parseAsStringLiteral(DIRECTION_VALUES).withDefault("DESC"),
   /**
@@ -135,6 +238,8 @@ export const EMPTY_FILTERS: {
   status: null;
   genre: string[];
   tag: string[];
+  season: null;
+  year: null;
   sort: SortField;
   dir: SortDirection;
   page: number;
@@ -144,6 +249,8 @@ export const EMPTY_FILTERS: {
   status: null,
   genre: [],
   tag: [],
+  season: null,
+  year: null,
   sort: "SEARCH_MATCH",
   dir: "DESC",
   page: 1,

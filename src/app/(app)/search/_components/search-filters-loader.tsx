@@ -1,4 +1,6 @@
 import { SearchFilters } from "@/app/(app)/search/_components/search-filters";
+import { currentSeason } from "@/features/media/lib/media-season";
+import { seasonSlotOptions } from "@/features/media/lib/search-params";
 import { getFilterVocabulary } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 
@@ -16,6 +18,13 @@ export async function SearchFiltersLoader() {
   return (
     <SearchFilters
       genres={genres}
+      /**
+       * Les trimestres sont calculés **ici**, pas dans l'îlot client : `currentSeason()` lit
+       * l'horloge, et deux horloges — celle du serveur, celle du visiteur — ne tombent pas
+       * forcément du même côté d'un changement de saison. Le calcul fait au rendu et transmis en
+       * propriété ne peut pas produire de désaccord d'hydratation.
+       */
+      seasons={seasonSlotOptions(currentSeason())}
       /**
        * On filtre les tags qui divulgâchent : ils décrivent des retournements d'intrigue, et les
        * proposer dans une liste de filtres revient à les révéler à qui la parcourt.
