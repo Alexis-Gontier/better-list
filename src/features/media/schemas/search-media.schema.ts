@@ -148,5 +148,3 @@ export type SearchMediaParams = z.output<typeof searchMediaInputSchema>;
 export const searchFormSchema = searchMediaInputSchema.omit({
   includeAdult: true,
 });
-export type SearchFormInput = z.input<typeof searchFormSchema>;
-export type SearchFormParams = z.output<typeof searchFormSchema>;

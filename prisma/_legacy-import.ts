@@ -2,7 +2,8 @@
  * Import ponctuel — recopie les données réelles de l'ancienne app (Neon "better-list-app",
  * schéma media_cache/media_entries/lists/list_items) dans le nouveau modèle.
  *
- * Script jetable, à supprimer une fois l'import validé et rejoué sur la branche cible.
+ * Gardé au dépôt : l'import peut être rejoué sur une autre branche Neon. Lancé à la main, jamais
+ * importé — d'où son exclusion dans `knip.jsonc`.
  *
  * Usage : `tsx prisma/_legacy-import.ts <newDatabaseUrl> <oldDatabaseUrl>` — les URLs passent en
  * argument plutôt qu'en variable d'environnement, pour ne pas dépendre du `.env` local (la cible

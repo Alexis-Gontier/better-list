@@ -12,7 +12,6 @@ import * as z from "zod";
 // --- Énumérations (calquées sur les enums GraphQL d'AniList) ----------------
 
 export const mediaTypeSchema = z.enum(["ANIME", "MANGA"]);
-export type MediaType = z.infer<typeof mediaTypeSchema>;
 
 export const mediaFormatSchema = z.enum([
   "TV",
@@ -46,22 +45,6 @@ export type MediaSeason = z.infer<typeof mediaSeasonSchema>;
  * combinaison : MANGA + KR + `isAdult`.
  */
 export const mediaCountrySchema = z.enum(["JP", "KR", "CN", "TW"]);
-export type MediaCountry = z.infer<typeof mediaCountrySchema>;
-
-/** Sous-ensemble de `MediaSort` exposé. Utilisé en entrée seulement. */
-export const mediaSortSchema = z.enum([
-  "SEARCH_MATCH",
-  "POPULARITY_DESC",
-  "POPULARITY",
-  "SCORE_DESC",
-  "SCORE",
-  "TRENDING_DESC",
-  "FAVOURITES_DESC",
-  "START_DATE_DESC",
-  "UPDATED_AT_DESC",
-  "TITLE_ROMAJI",
-]);
-export type MediaSort = z.infer<typeof mediaSortSchema>;
 
 // --- Media -----------------------------------------------------------------
 
@@ -79,7 +62,6 @@ export const mediaCoverImageSchema = z.object({
   medium: z.string().nullable(),
   color: z.string().nullable(),
 });
-export type MediaCoverImage = z.infer<typeof mediaCoverImageSchema>;
 
 export const fuzzyDateSchema = z.object({
   year: z.number().int().nullable(),
