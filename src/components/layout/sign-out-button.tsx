@@ -1,13 +1,10 @@
 "use client";
 
 import { LogOutIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { routes } from "@/config/routes";
-import { signOut } from "@/lib/auth/client";
+import { Spinner } from "@/components/ui/spinner";
+import { useSignOut } from "@/hooks/use-sign-out";
 
 type SignOutButtonProps = {
   variant?: "default" | "outline" | "ghost";
@@ -15,40 +12,26 @@ type SignOutButtonProps = {
 };
 
 /**
- * Déconnexion. `router.refresh()` après coup, sinon le rendu serveur déjà en cache continue
- * d'afficher la session qu'on vient de fermer.
+ * Déconnexion, en bouton — la forme qu'attend la page de liste d'attente, seule page où l'on n'a
+ * pas d'en-tête pour porter le menu du compte.
+ *
+ * La logique vit dans `useSignOut` : le menu du compte s'en sert aussi, sous une autre forme.
  */
 export function SignOutButton({
   variant = "ghost",
   className,
 }: SignOutButtonProps) {
-  const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
-
-  async function handleSignOut() {
-    setIsPending(true);
-
-    const { error } = await signOut();
-
-    if (error) {
-      toast.error("La déconnexion a échoué.");
-      setIsPending(false);
-      return;
-    }
-
-    router.push(routes.auth.login);
-    router.refresh();
-  }
+  const { signOut, isPending } = useSignOut();
 
   return (
     <Button
       className={className}
       disabled={isPending}
-      onClick={handleSignOut}
+      onClick={signOut}
       type="button"
       variant={variant}
     >
-      <LogOutIcon aria-hidden="true" />
+      {isPending ? <Spinner /> : <LogOutIcon aria-hidden="true" />}
       Se déconnecter
     </Button>
   );

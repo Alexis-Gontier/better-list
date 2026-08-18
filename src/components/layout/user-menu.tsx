@@ -12,7 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Spinner } from "@/components/ui/spinner";
 import { routes } from "@/config/routes";
+import { useSignOut } from "@/hooks/use-sign-out";
 
 type UserMenuProps = {
   name: string;
@@ -39,6 +41,8 @@ function getInitials(name: string) {
 }
 
 export function UserMenu({ name, email, username, image }: UserMenuProps) {
+  const { signOut, isPending } = useSignOut();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -80,8 +84,22 @@ export function UserMenu({ name, email, username, image }: UserMenuProps) {
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem variant="destructive">
-            <LogOutIcon />
+          {/*
+            `preventDefault` sur `onSelect`, et ce n'est pas une précaution de style : un item de
+            menu Radix referme le menu au choix, donc le composant serait démonté avant la fin de
+            l'appel — l'attente ne se verrait nulle part, et un échec afficherait son toast au-dessus
+            d'un menu déjà fermé. Le menu reste ouvert le temps de la requête, comme
+            `AlertDialogAction` reste ouvert le temps d'une suppression.
+          */}
+          <DropdownMenuItem
+            disabled={isPending}
+            onSelect={(event) => {
+              event.preventDefault();
+              signOut();
+            }}
+            variant="destructive"
+          >
+            {isPending ? <Spinner /> : <LogOutIcon />}
             Se déconnecter
           </DropdownMenuItem>
         </DropdownMenuGroup>
