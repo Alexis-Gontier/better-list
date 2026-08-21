@@ -1,4 +1,4 @@
-import { CalendarOffIcon, TvMinimalPlayIcon } from "lucide-react";
+import { CalendarOffIcon, CloudOffIcon, TvMinimalPlayIcon } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -24,6 +24,7 @@ import {
 import { loadCalendarParams } from "@/features/media/lib/calendar-params";
 import { getAiringSchedule } from "@/features/media/server/media.queries";
 import { getAiringEntries } from "@/features/tracking/server/tracking.queries";
+import { tryAniList } from "@/lib/http/anilist";
 import { cn } from "@/lib/utils";
 
 /**
@@ -79,11 +80,47 @@ export async function CalendarSchedule({
     );
   }
 
-  const schedules = await getAiringSchedule({
-    mediaIds: entries.map((entry) => entry.media.id),
-    from: calendar.from,
-    to: calendar.to,
-  });
+  /**
+   * Le repli se fait **ici, et non dans `getAiringSchedule`** : rattraper la panne à l'intérieur de
+   * la fonction cachée mémoriserait le `null` pour toute la durée du `cacheLife`, et le planning
+   * resterait vide plusieurs minutes après le retour d'AniList (voir `tryAniList`).
+   */
+  const schedules = await tryAniList(() =>
+    getAiringSchedule({
+      mediaIds: entries.map((entry) => entry.media.id),
+      from: calendar.from,
+      to: calendar.to,
+    }),
+  );
+
+  /**
+   * AniList ne répond pas. Seule la grille horaire en dépend : la navigation de semaine vit dans sa
+   * propre frontière de suspension et reste utilisable, et le retard déjà connu se lit dans la
+   * bibliothèque, qui est locale (docs/PRODUCT.md §4.1). On remplace donc la grille, pas la page.
+   */
+  if (schedules === null) {
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CloudOffIcon />
+          </EmptyMedia>
+          <EmptyTitle>Planning momentanément indisponible</EmptyTitle>
+          <EmptyDescription>
+            Les horaires de diffusion viennent d'AniList, qui ne répond pas pour
+            l'instant. Les {entries.length} séries que vous suivez sont
+            intactes, et votre progression reste à jour.
+          </EmptyDescription>
+        </EmptyHeader>
+
+        <EmptyContent>
+          <Button asChild size="sm" variant="outline">
+            <Link href={routes.library}>Ma bibliothèque</Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    );
+  }
 
   const byMedia = new Map(entries.map((entry) => [entry.media.id, entry]));
 
