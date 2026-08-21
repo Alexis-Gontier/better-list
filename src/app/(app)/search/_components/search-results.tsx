@@ -1,9 +1,12 @@
-import { SearchXIcon } from "lucide-react";
+import { CloudOffIcon, SearchXIcon } from "lucide-react";
+import Link from "next/link";
 
 import { MediaGrid, MediaList } from "@/components/shared/media-grid";
 import { Pagination } from "@/components/shared/pagination";
+import { Button } from "@/components/ui/button";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -28,6 +31,7 @@ import { searchMedia } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
 import { getEntryStatesFor } from "@/features/tracking/server/tracking.queries";
+import { tryAniList } from "@/lib/http/anilist";
 
 /**
  * Résultats de recherche, rendus côté serveur.
@@ -81,7 +85,43 @@ export async function SearchResults({
   // que les défauts restent définis à un seul endroit.
   const input = parsed.success ? parsed.data : searchFormSchema.parse({});
 
-  const { media, pageInfo } = await searchMedia(input);
+  /**
+   * Le repli est **hors** de `searchMedia`, qui porte un `"use cache"` : rattrapé dedans, le `null`
+   * serait mémorisé pour la durée du `cacheLife` et cette recherche resterait vide une heure après
+   * le retour d'AniList (voir `tryAniList`).
+   */
+  const results = await tryAniList(() => searchMedia(input));
+
+  /**
+   * AniList ne répond pas. Le catalogue est la seule chose qui en dépend : la barre de recherche et
+   * les filtres actifs vivent dans une autre frontière de suspension et gardent leur état, qui est
+   * dans l'URL. On ne la vide pas — l'adresse reste partageable et rejouable au retour de l'API.
+   */
+  if (results === null) {
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CloudOffIcon />
+          </EmptyMedia>
+          <EmptyTitle>Catalogue momentanément indisponible</EmptyTitle>
+          <EmptyDescription>
+            La recherche interroge AniList, qui ne répond pas pour l'instant.
+            Votre suivi, vos listes et votre bibliothèque n'en dépendent pas et
+            restent consultables.
+          </EmptyDescription>
+        </EmptyHeader>
+
+        <EmptyContent>
+          <Button asChild size="sm" variant="outline">
+            <Link href={routes.library}>Ma bibliothèque</Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    );
+  }
+
+  const { media, pageInfo } = results;
 
   if (media.length === 0) {
     return (

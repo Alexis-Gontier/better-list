@@ -3,6 +3,7 @@ import { currentSeason } from "@/features/media/lib/media-season";
 import { seasonSlotOptions } from "@/features/media/lib/search-params";
 import { getFilterVocabulary } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { tryAniList } from "@/lib/http/anilist";
 
 /**
  * Charge le vocabulaire de filtrage côté serveur, puis passe la main à l'îlot client.
@@ -13,7 +14,23 @@ import { getPreferences } from "@/features/preferences/server/preferences.querie
  */
 export async function SearchFiltersLoader() {
   const { includeAdult } = await getPreferences();
-  const { genres, tags } = await getFilterVocabulary({ includeAdult });
+
+  /**
+   * Le vocabulaire vient d'AniList, la barre de filtres non.
+   *
+   * Pendant une coupure, on rend la barre **avec des listes vides** plutôt que de la retirer : le
+   * terme de recherche, le type, le statut et le tri ne dépendent d'aucun appel réseau, et ce sont
+   * eux qu'on manipule le plus souvent. Retirer la barre entière ferait aussi disparaître les puces
+   * de filtres actifs, donc le seul moyen de *défaire* un filtre — l'utilisateur se retrouverait
+   * coincé sur une recherche qu'il ne peut plus modifier.
+   *
+   * Le repli se fait ici, hors du `"use cache"` de la query, pour que le retour d'AniList soit
+   * immédiat et non retardé du `cacheLife` (voir `tryAniList`).
+   */
+  const vocabulary = await tryAniList(() =>
+    getFilterVocabulary({ includeAdult }),
+  );
+  const { genres, tags } = vocabulary ?? { genres: [], tags: [] };
 
   return (
     <SearchFilters
