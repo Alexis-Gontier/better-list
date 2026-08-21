@@ -110,16 +110,14 @@ export type BrowseCatalogue = {
   upcoming: MediaBrowse[];
   /** Les mieux notés, hors œuvres non diffusées. */
   topRated: MediaBrowse[];
-  /** Mangas, webtoons et light novels du moment. */
-  topManga: MediaBrowse[];
 };
 
 /**
  * Le catalogue éditorialisé de `/browse` (docs/PRODUCT.md §5, V1).
  *
- * **Cinq rangées, une requête.** Le document GraphQL aligne cinq champs `Page` sous des alias
- * distincts, et c'est le quota qui l'impose : cinq lectures séparées prendraient cinq crédits sur les
- * trente de la minute, partagés par tous les visiteurs. La page entière en coûte un — et zéro dès la
+ * **Quatre rangées, une requête.** Le document GraphQL aligne quatre champs `Page` sous des alias
+ * distincts, et c'est le quota qui l'impose : quatre lectures séparées prendraient quatre crédits sur
+ * les trente de la minute, partagés par tous les visiteurs. La page entière en coûte un — et zéro dès la
  * deuxième visite dans l'heure.
  *
  * La saison est un **argument**, pas une lecture faite à l'intérieur du cache. `currentSeason()` change
@@ -178,7 +176,6 @@ async function getBrowseCatalogueCached({
     season: data.season.media,
     upcoming: data.upcoming.media,
     topRated: data.topRated.media,
-    topManga: data.topManga.media,
   };
 }
 

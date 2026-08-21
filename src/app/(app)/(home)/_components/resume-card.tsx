@@ -78,20 +78,40 @@ export async function ResumeCard({
   const percent = ratio === null ? null : Math.round(ratio * 100);
 
   return (
-    // Le montage de `MediaCard` et de `MediaRow` : le bouton est **frère** du lien et non son
-    // descendant. Un bouton dans une ancre est du HTML invalide, et le « +1 » ouvrirait la fiche.
-    <div className="group relative h-full">
+    /*
+      Le montage de `MediaCard` et de `MediaRow` : le bouton est **frère** du lien et non son
+      descendant. Un bouton dans une ancre est du HTML invalide, et le « +1 » ouvrirait la fiche.
+
+      **La carte est une colonne, et c'est ce qui a changé.** Les commandes étaient posées en absolu
+      au milieu du flanc droit, ce qui obligeait le texte à leur réserver vingt-quatre unités de
+      remplissage : sur une carte de quatre cents pixels, cette réserve mangeait le quart de la seule
+      colonne lisible, et un titre de série un peu long s'y coupait alors qu'il restait du vide à
+      droite du bouton. Elles descendent en pied, sur leur propre ligne, où elles ne disputent plus la
+      largeur à personne.
+
+      `overflow-hidden` est ce qui permet à la barre de progression de courir d'un bord à l'autre en
+      épousant l'arrondi — elle est le dernier élément de la colonne, sans remplissage.
+    */
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:bg-accent/40">
+      {/*
+        Le lien couvre la partie qu'on lit — jaquette et texte — et s'arrête avant le pied : une
+        ancre qui engloberait les boutons ferait de chaque clic sur « +1 » une ouverture de fiche.
+      */}
       <Link
-        className="flex h-full items-center gap-3 rounded-lg border bg-card p-2.5 transition-colors hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+        className="flex flex-1 items-start gap-3 p-3 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
         href={routes.media(media.id)}
       >
-        <div className="relative aspect-2/3 h-24 shrink-0 overflow-hidden rounded-md bg-muted">
+        {/*
+          La jaquette remonte à 112 px : elle était à 96, et la carte étant devenue plus haute d'une
+          ligne de commandes, une vignette inchangée y flottait en haut d'une colonne vide.
+        */}
+        <div className="relative aspect-2/3 h-28 shrink-0 overflow-hidden rounded-md bg-muted">
           {media.coverImage?.large ? (
             <Image
               alt=""
               className="object-cover"
               fill
-              sizes="64px"
+              sizes="80px"
               src={media.coverImage.large}
             />
           ) : null}
@@ -108,103 +128,91 @@ export async function ResumeCard({
           ) : null}
         </div>
 
-        {/*
-          `pr-16` réserve la place des commandes, posées en absolu au-dessus — sans elle, un titre
-          long passerait dessous. C'est la mesure de `MediaRow`, qui porte les deux mêmes boutons.
-        */}
-        {/*
-          La réserve de place des commandes, posées en absolu au-dessus — sans elle, le titre et la
-          barre passeraient dessous.
-
-          `pr-24` et non les `w-16` de `MediaRow` : là-bas les deux boutons sont des pastilles
-          rondes de vingt-huit pixels, ici le « +1 » porte son chiffre et s'élargit d'autant.
-          Mesuré à l'écran — à seize, le titre se coupait *sous* le bouton.
-        */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 pr-24">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/*
-            **Le format en exergue, puis le titre, puis l'unité en grand.** C'est l'inverse d'une
-            vignette, et c'est l'inverse exprès : sur une série qu'on suit déjà, « laquelle ? » est
-            une question tranchée — le titre n'a plus qu'à confirmer qu'on est au bon endroit. Ce
-            qu'on vient lire, c'est le numéro. Il prend donc la taille que le titre avait, et le
-            titre prend celle qu'il avait.
+            **Le titre repasse devant.** Il était en douze pixels gris, sous un exergue de format,
+            au motif que « laquelle ? » est une question tranchée sur une série qu'on suit — c'est
+            vrai du regard qui cherche, faux de celui qui balaie une rangée de douze cartes. Un titre
+            en gris clair plus petit que la ligne qui le suit se lit comme une légende, et la carte
+            n'avait plus de nom. Il reprend donc la taille de base et la couleur du texte.
 
-            L'exergue dit le **format** (« Série TV », « Manga ») et non le statut de suivi : la
-            section ne contient que des séries en cours, donc y écrire « En cours » aurait répété
-            son propre titre sur chaque carte. Le format, lui, distingue ce qui se regarde de ce qui
-            se lit — la seule chose que le reste de la carte laisse deviner sans la dire.
+            Deux lignes au plus : les titres japonais translittérés dépassent régulièrement la
+            largeur de la colonne, et une troisième ligne décalerait le pied d'une carte sur deux.
           */}
-          {formatMediaFormat(media.format) ? (
-            <p className="truncate font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">
-              {formatMediaFormat(media.format)}
-            </p>
-          ) : null}
-
-          <h3 className="truncate text-muted-foreground text-xs">{title}</h3>
+          <h3 className="line-clamp-2 font-semibold text-sm leading-snug">
+            {title}
+          </h3>
 
           {/*
+            Le format et la fraîcheur du geste sur une seule ligne discrète — deux repères de
+            contexte, pas deux informations à lire. Le format distingue ce qui se regarde de ce qui
+            se lit ; la date dit si on a laissé la série hier ou il y a trois semaines, ce qui est la
+            seule chose que cette section (trente derniers jours) laisse varier.
+
+            « Vu » pour un anime, « Lu » pour un manga : le participe s'accorde au support, comme
+            dans `ENTRY_UNIT_LABELS`. Une formulation unique aurait donné « lu il y a trois jours »
+            sur une série animée.
+          */}
+          <p className="truncate text-muted-foreground text-xs">
+            {[
+              formatMediaFormat(media.format),
+              `${unit === "episode" ? "Vu" : "Lu"} ${formatSince(updatedAt, now)}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+
+          {/*
+            Le numéro, en gras et en grand : c'est la réponse à « où j'en étais », qui est la seule
+            question que cette carte existe pour trancher.
+
             À zéro, la carte n'écrit pas de numéro : « Épisode 0 » se lit comme une donnée fausse,
             alors que l'information est « pas encore commencé ». Le cas existe — on peut marquer une
             série « en cours » le jour où on décide de s'y mettre.
           */}
-          <p className="truncate font-bold text-base leading-tight">
-            {progress > 0
-              ? `${unit === "episode" ? "Épisode" : "Chapitre"} ${progress}`
-              : "Pas encore commencé"}
-          </p>
+          <p className="mt-auto flex items-baseline gap-2 pt-1">
+            <span className="truncate font-bold text-base leading-tight tabular-nums">
+              {progress > 0
+                ? `${unit === "episode" ? "Épisode" : "Chapitre"} ${progress}`
+                : "Pas encore commencé"}
+            </span>
 
-          <div className="flex items-baseline gap-2 text-xs">
             {/*
-              La fraction, en gras : c'est elle qui dit ce qu'il reste, et elle remplace le
-              « Progression / 98 % » d'avant. Le pourcentage disait la même chose en moins précis —
-              la barre juste dessous le montre déjà, et sur une œuvre sans total connu il n'existait
-              pas, ce qui laissait un trou à cet endroit précis de la carte.
+              La fraction en second : elle dit ce qu'il reste, là où le numéro dit où l'on est. Elle
+              disparaît avant le premier épisode, où « 0 / 24 » n'ajouterait rien à la phrase qui la
+              précède.
             */}
             {progress > 0 ? (
-              <span className="shrink-0 font-semibold tabular-nums">
+              <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
                 {formatEntryProgress(progress, total)}
               </span>
             ) : null}
-
-            {/*
-              « Vu » pour un anime, « Lu » pour un manga : le participe s'accorde au support, comme
-              dans `ENTRY_UNIT_LABELS`. Une formulation unique aurait donné « lu il y a trois jours »
-              sur une série animée.
-            */}
-            {/*
-              Masquée sous `sm`, et pas seulement rognée : à cette largeur, la colonne de texte
-              tombe à cent quarante pixels et la date s'y affichait « Vu il y a… ». Une durée
-              amputée de son nombre ne dit rien du tout, alors que la fraction à côté garde tout son
-              sens — c'est donc elle qui reste.
-            */}
-            <span className="hidden min-w-0 truncate text-muted-foreground sm:inline">
-              {unit === "episode" ? "Vu" : "Lu"} {formatSince(updatedAt, now)}
-            </span>
-          </div>
-
-          {/*
-            La piste et son remplissage, à l'identique de `MediaRow` : deux barres de progression
-            qui ne se ressembleraient pas dans la même application se liraient comme deux choses
-            différentes.
-
-            Sans dénominateur — une série en cours de diffusion n'en a pas chez AniList — il n'y a
-            rien à remplir, et une piste vide se lit comme un gabarit cassé (c'est la précaution
-            déjà prise dans `MediaRow`). La carte garde alors sa hauteur : c'est la jaquette qui la
-            fixe, pas cette barre de six pixels.
-          */}
-          {percent !== null ? (
-            <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-          ) : null}
+          </p>
         </div>
       </Link>
 
-      {action ? (
-        <div className="-translate-y-1/2 absolute top-1/2 right-2.5">
-          {action}
+      {/*
+        Le pied : les commandes, puis la barre.
+
+        Il porte le même remplissage horizontal que le corps mais rien en bas — la barre de
+        progression est collée au bord inférieur, où elle sert de trait de fin à la carte plutôt que
+        d'élément flottant au milieu d'une colonne de texte.
+      */}
+      {action ? <div className="px-3 pb-3">{action}</div> : null}
+
+      {/*
+        La piste et son remplissage, à l'identique de `MediaRow` : deux barres de progression qui ne
+        se ressembleraient pas dans la même application se liraient comme deux choses différentes.
+        Seule la place change — pleine largeur, sans arrondi, en bas de carte.
+
+        Sans dénominateur — une série en cours de diffusion n'en a pas chez AniList — il n'y a rien à
+        remplir, et une piste vide se lit comme un gabarit cassé (c'est la précaution déjà prise dans
+        `MediaRow`). La carte garde alors sa hauteur : ce sont la jaquette et le pied qui la fixent,
+        pas ce trait de six pixels.
+      */}
+      {percent !== null ? (
+        <div className="h-1.5 bg-muted">
+          <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
         </div>
       ) : null}
     </div>

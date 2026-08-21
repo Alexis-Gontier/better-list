@@ -1,7 +1,6 @@
 "use client";
 
 import Autoplay from "embla-carousel-autoplay";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -36,6 +35,11 @@ import { cn } from "@/lib/utils";
  * cherche à savoir combien elle compte de vignettes. Ici les diapositives sont dénombrables et on
  * revient à la première : elles se centrent une par une, et il faut des points pour dire laquelle
  * est active. Les deux composants partagent Embla, le débordement des voisines — et rien d'autre.
+ *
+ * **Il n'a pas de flèches.** Il avance seul, et les deux commandes qui restent — le balayage et les
+ * points — sont celles qui répondent à une intention : « la suivante » n'en est pas une sur un
+ * bandeau qui l'amène de lui-même six secondes plus tard. Les flèches occupaient par ailleurs
+ * exactement la bande de débordement, donc rendaient la voisine survolable sans être atteignable.
  *
  * **Une diapositive n'occupe que 80 % de la boîte** (`HERO_PEEK`) : le dixième qui dépasse de chaque
  * côté est ce qui annonce qu'il y a une suite, et de quel côté. Une bannière coupée net aux deux
@@ -143,44 +147,14 @@ export function HeroCarousel({
       setApi={setApi}
     >
       {/*
-        `ml-0` annule le `-ml-4` du composant généré : la gouttière est portée par `gap`, et non par
-        un remplissage décalé — voir `HERO_PEEK` pour la raison, qui tient au centrage.
-
-        Avec une seule diapositive il n'y a ni voisine ni gouttière : elle reprend toute la boîte,
-        faute de quoi le bandeau serait une bannière rétrécie à 80 % flottant entre deux vides.
+        `ml-0` annule le `-ml-4` du composant généré : la gouttière n'est plus portée par la piste du
+        tout, mais par chaque diapositive — voir `HERO_PEEK`, dont le motif tient au mode `loop`.
       */}
-      <CarouselContent
-        className={cn("ml-0 h-full", count > 1 && HERO_PEEK.gutter)}
-      >
+      <CarouselContent className="ml-0 h-full">
         <HeroSlideContext value={{ current, count }}>
           {children}
         </HeroSlideContext>
       </CarouselContent>
-
-      {/*
-        **Les flèches sont les bandes de débordement elles-mêmes, pas des pastilles.**
-
-        Une pastille ronde posée sur une bannière doit se peindre un fond opaque pour rester visible
-        (c'est ce que fait `MediaCarousel`, où elle chevauche une jaquette) ; ici le dixième laissé
-        par la diapositive active est déjà une cible pleine hauteur qui ne recouvre rien de ce qu'on
-        lit. La commande et ce qu'elle amène occupent alors le même endroit : cliquer sur le morceau
-        de la voisine, c'est aller la chercher.
-
-        Masquées sous `md` : au doigt le balayage fait le travail, et le débordement suffit à
-        l'annoncer.
-      */}
-      <HeroArrow
-        disabled={count < 2}
-        label={`${label} : diapositive précédente`}
-        onClick={() => api?.scrollPrev()}
-        side="left"
-      />
-      <HeroArrow
-        disabled={count < 2}
-        label={`${label} : diapositive suivante`}
-        onClick={() => api?.scrollNext()}
-        side="right"
-      />
 
       {/*
         Les points, et ce sont de **vrais boutons** : ils disent où l'on est *et* permettent d'aller
@@ -224,44 +198,6 @@ export function HeroCarousel({
 
 /** Six secondes : le temps de lire un titre et une ligne de contexte sans avoir à se dépêcher. */
 const AUTOPLAY_DELAY = 6000;
-
-/**
- * Une bande de commande sur le flanc de la bannière.
- *
- * `z-20` la place au-dessus du voile **et** du calque de contenu, faute de quoi le second — qui
- * couvre toute la boîte pour disposer texte et jaquette — intercepterait le clic sur toute la
- * hauteur.
- */
-function HeroArrow({
-  side,
-  label,
-  onClick,
-  disabled,
-}: {
-  side: "left" | "right";
-  label: string;
-  onClick: () => void;
-  disabled: boolean;
-}) {
-  const Icon = side === "left" ? ChevronLeftIcon : ChevronRightIcon;
-
-  if (disabled) return null;
-
-  return (
-    <button
-      aria-label={label}
-      className={cn(
-        "absolute top-0 bottom-0 z-20 hidden items-center justify-center bg-transparent text-white/70 transition-colors hover:bg-black/35 hover:text-white focus-visible:bg-black/35 focus-visible:text-white focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2 md:flex",
-        HERO_PEEK.band,
-        side === "left" ? "left-0" : "right-0",
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      <Icon aria-hidden="true" className="size-7" />
-    </button>
-  );
-}
 
 /**
  * Ce que la diapositive a besoin de savoir du carrousel : **où l'on en est, et combien il y en a**.
@@ -318,7 +254,11 @@ export function HeroCarouselItem({
       className={cn(
         "relative pl-0",
         HERO_HEIGHT,
-        count > 1 ? HERO_PEEK.basis : "basis-full",
+        /*
+          Avec une seule diapositive il n'y a ni voisine ni gouttière : elle reprend toute la boîte,
+          faute de quoi le bandeau serait une bannière rétrécie à 80 % flottant entre deux vides.
+        */
+        count > 1 ? `${HERO_PEEK.basis} ${HERO_PEEK.gutter}` : "basis-full",
       )}
     >
       <div
@@ -350,16 +290,18 @@ export function HeroCarouselSkeleton() {
         voisines pour autant — deux aplats gris supplémentaires ne diraient rien de plus qu'un seul,
         et le nombre de diapositives n'est pas connu à ce moment-là.
       */}
-      <div className={cn(HERO_SLIDE_BOX, HERO_PEEK.basis, "shrink-0 bg-muted")}>
-        <div className="flex h-full max-w-175 flex-col justify-center gap-4 px-4 sm:px-6 md:px-12">
-          <Skeleton className="h-9 w-2/3" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-20" />
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-8 w-16" />
+      <div className={cn(HERO_PEEK.basis, HERO_PEEK.gutter, "h-full shrink-0")}>
+        <div className={cn(HERO_SLIDE_BOX, "bg-muted")}>
+          <div className="flex h-full max-w-175 flex-col justify-center gap-4 px-4 sm:px-6 md:px-12">
+            <Skeleton className="h-9 w-2/3" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-11 w-56" />
           </div>
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-11 w-56" />
         </div>
       </div>
     </div>

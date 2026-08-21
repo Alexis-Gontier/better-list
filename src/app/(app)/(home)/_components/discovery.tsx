@@ -19,7 +19,7 @@ import { tryAniList } from "@/lib/http/anilist";
  * se lit dans le miroir local et répond en quelques millisecondes, ces rangées attendent AniList.
  * Les réunir ferait attendre à toute la page ce que seule sa moitié basse demande.
  *
- * Les cinq rangées, en revanche, partagent une seule frontière : elles viennent de la **même**
+ * Les quatre rangées, en revanche, partagent une seule frontière : elles viennent de la **même**
  * requête — `getBrowseCatalogue` les ramène par un document à alias multiples et le mémorise une
  * heure —, donc elles sont prêtes ensemble, et les éclater ne multiplierait que les sauts de mise
  * en page. Sur les trente requêtes par minute que le serveur partage entre tous les visiteurs,
@@ -66,7 +66,6 @@ export async function Discovery() {
         catalogue.season,
         catalogue.upcoming,
         catalogue.topRated,
-        catalogue.topManga,
       ].flatMap((row) => row.map((item) => item.id)),
     ),
   ]);
@@ -128,14 +127,6 @@ export async function Discovery() {
         entries={entries}
         media={catalogue.topRated}
         title="Les mieux notés"
-      />
-
-      <DiscoverySection
-        description="Mangas, webtoons et light novels dont on parle."
-        href={searchHref({ type: "MANGA", sort: "TRENDING", dir: "DESC" })}
-        entries={entries}
-        media={catalogue.topManga}
-        title="Côté papier"
       />
     </>
   );

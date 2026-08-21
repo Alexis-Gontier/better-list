@@ -50,3 +50,34 @@ Trois choses tranchées en chemin :
 
 Reste ouvert : le prochain pas est dans STATE.md, et c'est le repli de panne AniList sur `/search`,
 `/calendar` et `/media/[id]`.
+
+## 19 août 2026 — l'accueil se resserre
+
+Cinq gestes sur la même page, dont un vrai bug.
+
+- **Le bandeau collait sa voisine de gauche.** La gouttière était un `gap` sur la piste Embla ; en
+  mode `loop`, Embla ne réordonne pas le DOM, il **translate** la dernière diapositive pour la
+  placer avant la première — et cette translation ignore le `gap` du conteneur flex. D'où un défaut
+  visible à gauche seulement, sur la première diapositive seulement, c'est-à-dire exactement à
+  l'arrivée sur le site. La gouttière est descendue en remplissage symétrique **dans** chaque
+  diapositive, où elle voyage avec elle. La leçon générale : sous `loop`, un espacement porté par le
+  conteneur ne survit pas au déplacement des diapositives.
+- **Les flèches du bandeau ont disparu**, le défilement automatique reste. Elles occupaient
+  précisément la bande de débordement, ce qui rendait la voisine survolable sans être atteignable.
+- **La carte « En cours » a été refaite** : les commandes quittent le flottement absolu au flanc
+  droit — qui obligeait le texte à leur réserver un quart de sa largeur et coupait les titres — pour
+  une ligne en pied. Le titre y reprend la taille du texte courant, la barre de progression court
+  d'un bord à l'autre.
+- **Deux blocs partent, un arrive.** « À reprendre » (six vignettes) devient une tuile de chiffres,
+  qui mène à la bibliothèque filtrée ; la grille paginée du bas et la rangée « Côté papier » sont
+  supprimées. `page.tsx` n'a plus aucun paramètre d'adresse, et le document AniList descend de cinq
+  rangées à quatre.
+- **Le bandeau et la rangée ne se répètent plus** : `getHeroEntries` porte le `cache` de React, ce
+  qui permet à `getDashboard` d'exclure les cinq œuvres déjà montrées en grand sans les relire.
+
+Un accident en chemin, qui vaut d'être écrit : une boucle de conversion de fins de ligne écrite
+`io.open(p,"wb").write(io.open(p,"rb").read())` **vide les fichiers** — Python évalue l'ouverture en
+écriture, donc la troncature, avant la lecture. Treize fichiers perdus, tous récupérés depuis les
+`sourcesContent` des source maps de `.next` (les parenthèses des groupes de routes y sont
+URL-encodées, `%28app%29`). À retenir : lire puis écrire en deux instructions, et `.next` est un
+filet de sécurité réel tant que le serveur de dev n'a pas recompilé.

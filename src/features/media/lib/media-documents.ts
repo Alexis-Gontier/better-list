@@ -232,11 +232,6 @@ export const BROWSE_CATALOGUE_QUERY = /* GraphQL */ `
         ...MediaBrowseFields
       }
     }
-    topManga: Page(page: 1, perPage: $perPage) {
-      media(type: MANGA, sort: [TRENDING_DESC], isAdult: $isAdult) {
-        ...MediaBrowseFields
-      }
-    }
   }
   ${MEDIA_BROWSE_FIELDS}
 `;

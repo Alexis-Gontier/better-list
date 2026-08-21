@@ -19,7 +19,7 @@ Chaque route, ce qu'elle consomme et où elle en est. La clé entre parenthèses
 
 | Route | Rôle | Features consommées | Modèles | État |
 | --- | --- | --- | --- | --- |
-| `/` (`home`) | Bandeau de reprise, tableau de bord, catalogue du moment, listes | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **livré** |
+| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, quatre rangées de découverte | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **livré** |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `media`, `tracking`, `preferences` | `Media`, `Entry` | **partiel** — tombe en entier pendant une coupure AniList |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `media`, `tracking`, `lists`, `preferences` | `Media`, `Entry`, `EntryEvent`, `ListItem` | **partiel** — même coupure |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `tracking`, `media` | `Entry`, `Media` | **livré** |

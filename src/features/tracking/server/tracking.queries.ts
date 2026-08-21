@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import type { EntryEventView } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
@@ -416,9 +418,8 @@ export async function searchEntries({
  */
 const STALLED_AFTER_DAYS = 30;
 
-/** Ce que chaque section montre. Assez pour remplir une rangée, pas assez pour noyer la page. */
+/** Ce que la rangée « En cours » montre. Assez pour la remplir, pas assez pour noyer la page. */
 const DASHBOARD_CURRENT_COUNT = 12;
-const DASHBOARD_STALLED_COUNT = 6;
 
 /** Les colonnes du miroir dont les vignettes du tableau de bord ont besoin. */
 const DASHBOARD_MEDIA_SELECT = {
@@ -479,7 +480,17 @@ const HERO_MEDIA_SELECT = {
  * Pas de fenêtre de trente jours ici, contrairement à « En cours » : une série reprise après deux
  * mois reste la dernière chose qu'on ait regardée, et c'est bien elle qu'on vient continuer.
  */
-export async function getHeroEntries() {
+/**
+ * Porte le `cache` de React, et pas seulement pour l'économie de requête.
+ *
+ * La rangée « En cours » de l'accueil doit **sauter** les œuvres que le bandeau montre déjà en
+ * grand, sinon ses trois premières cartes répètent ce qu'on vient de voir juste au-dessus. Elle a
+ * donc besoin de la même liste — mais les deux blocs vivent dans des frontières de suspension
+ * distinctes, sans moyen de se passer quoi que ce soit. Le cache de la requête est ce qui leur donne
+ * la même réponse sans la relire : le bandeau et le tableau de bord voient exactement les mêmes cinq
+ * identifiants, dans la même seconde.
+ */
+export const getHeroEntries = cache(async () => {
   const session = await getSession();
   if (!session) return [];
 
@@ -497,10 +508,10 @@ export async function getHeroEntries() {
       media: { select: HERO_MEDIA_SELECT },
     },
   });
-}
+});
 
 /**
- * Le suivi tel que l'accueil le montre : ce que je regarde, ce que j'ai laissé en plan.
+ * Le suivi tel que l'accueil le montre : ce que je regarde, moins ce que le bandeau montre déjà.
  *
  * **Un seul `Promise.all`** : ces trois lectures sont indépendantes et toutes locales, les
  * séquencer ajouterait deux allers-retours pour rien.
@@ -510,14 +521,15 @@ export async function getHeroEntries() {
  * Le coût de la séparation est nul — `getSession` porte le `cache` de React, et les deux lectures
  * partent en parallèle puisque les frontières sont sœurs.
  *
- * Les deux sections sont **disjointes par construction** : une série en cours touchée il y a moins
- * de trente jours est « en cours », au-delà elle est « à reprendre ». Sans cette coupure, la même
- * œuvre s'afficherait deux fois sur un écran qui tient en une hauteur de page.
+ * La coupure à trente jours reste, alors que la section « À reprendre » a disparu de l'accueil : une
+ * série qu'on n'a pas touchée depuis un mois n'est pas « ce que je regarde », et la laisser remonter
+ * dans la rangée en repousserait une qu'on suit vraiment. Ce qui tombe de l'autre côté de la coupure
+ * se compte désormais dans une tuile (`getStalledCount`).
  */
 export async function getDashboard() {
   const session = await getSession();
   if (!session) {
-    return { current: [], stalled: [], total: 0 };
+    return { current: [], total: 0 };
   }
 
   const userId = session.user.id;
@@ -525,9 +537,25 @@ export async function getDashboard() {
     Date.now() - STALLED_AFTER_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  const [current, stalled, total] = await Promise.all([
+  /**
+   * Ce que le bandeau montre déjà, pour ne pas le remontrer.
+   *
+   * Les cinq diapositives d'ouverture sont les cinq entrées les plus fraîches — c'est-à-dire
+   * exactement la tête de la liste que cette rangée affiche ensuite. Sans cette exclusion, les trois
+   * ou quatre premières cartes sont les mêmes œuvres que celles qu'on vient de faire défiler en
+   * grand, à deux centimètres. La lecture est gratuite : `getHeroEntries` porte le `cache` de React
+   * et le bandeau l'a déjà payée.
+   */
+  const heroIds = (await getHeroEntries()).map((entry) => entry.id);
+
+  const [current, total] = await Promise.all([
     prisma.entry.findMany({
-      where: { userId, status: "CURRENT", updatedAt: { gte: stalledBefore } },
+      where: {
+        userId,
+        status: "CURRENT",
+        updatedAt: { gte: stalledBefore },
+        id: { notIn: heroIds },
+      },
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       take: DASHBOARD_CURRENT_COUNT,
       // L'état complet, pour la même raison que la bibliothèque : ces vignettes portent la fenêtre
@@ -545,30 +573,41 @@ export async function getDashboard() {
       },
     }),
 
-    prisma.entry.findMany({
-      where: {
-        userId,
-        OR: [
-          { status: "PAUSED" },
-          { status: "CURRENT", updatedAt: { lt: stalledBefore } },
-        ],
-      },
-      // Du plus ancien au plus récent : la série qu'on a le plus oubliée est celle qu'il faut
-      // remettre sous les yeux en premier.
-      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
-      take: DASHBOARD_STALLED_COUNT,
-      select: {
-        id: true,
-        updatedAt: true,
-        ...ENTRY_STATE_SELECT,
-        media: { select: DASHBOARD_MEDIA_SELECT },
-      },
-    }),
-
     prisma.entry.count({ where: { userId } }),
   ]);
 
-  return { current, stalled, total };
+  return { current, total };
+}
+
+/**
+ * Combien d'œuvres attendent qu'on les reprenne.
+ *
+ * Même définition que celle qui gouvernait la section « À reprendre » de l'accueil : les séries
+ * mises en pause, plus celles restées « en cours » sans le moindre geste depuis
+ * `STALLED_AFTER_DAYS`. La section a disparu — six vignettes pour une information qui tient en un
+ * nombre —, la définition reste, portée par la tuile de chiffres qui l'a remplacée et qui mène à la
+ * bibliothèque filtrée.
+ *
+ * Un `count` et non un `findMany` tronqué : la tuile n'affiche aucune jaquette, donc rapporter le
+ * miroir de six œuvres pour n'en garder que la longueur serait payer une lecture pour la jeter.
+ */
+export async function getStalledCount() {
+  const session = await getSession();
+  if (!session) return 0;
+
+  const stalledBefore = new Date(
+    Date.now() - STALLED_AFTER_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  return prisma.entry.count({
+    where: {
+      userId: session.user.id,
+      OR: [
+        { status: "PAUSED" },
+        { status: "CURRENT", updatedAt: { lt: stalledBefore } },
+      ],
+    },
+  });
 }
 
 /**

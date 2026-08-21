@@ -7,7 +7,6 @@ import {
   ResumeCarouselItem,
 } from "@/app/(app)/(home)/_components/resume-card";
 import { MediaCarousel } from "@/components/shared/media-carousel";
-import { MediaGrid } from "@/components/shared/media-grid";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -20,22 +19,14 @@ import {
 import { routes } from "@/config/routes";
 import { ListCard } from "@/features/lists/components/list-card";
 import { getMyLists } from "@/features/lists/server/lists.queries";
-import { MediaCard } from "@/features/media/components/media-card";
 import {
   compactFromMirror,
   mirroredTitle,
 } from "@/features/media/lib/media-format";
 import { mediaTotalUnits } from "@/features/media/server/media.mirror";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
-import { EntryCardActions } from "@/features/tracking/components/entry-card-actions";
 import { EntryDialog } from "@/features/tracking/components/entry-dialog";
 import { EntryQuickProgress } from "@/features/tracking/components/entry-quick-progress";
-import {
-  ENTRY_STATUS_LABELS,
-  formatEntryProgress,
-  formatScore,
-  formatSince,
-} from "@/features/tracking/lib/entry-format";
 import { serializeLibraryFilters } from "@/features/tracking/lib/library-params";
 import { getDashboard } from "@/features/tracking/server/tracking.queries";
 
@@ -65,11 +56,14 @@ export async function Dashboard() {
   /*
     La langue des titres est lue **ici** parce que la carte de reprise compose elle-même ses deux
     boutons : `EntryDialog` attend un titre déjà résolu, là où `EntryCardActions` allait le chercher
-    pour son compte. `getPreferences` porte le `cache` de React — la lecture est donc gratuite, les
-    vignettes de « À reprendre » l'ayant déjà payée.
+    pour son compte. `getPreferences` porte le `cache` de React — la lecture est donc gratuite, le
+    bandeau d'ouverture l'ayant déjà payée.
   */
-  const [{ current, stalled, total }, lists, { titleLanguage }] =
-    await Promise.all([getDashboard(), getMyLists(), getPreferences()]);
+  const [{ current, total }, lists, { titleLanguage }] = await Promise.all([
+    getDashboard(),
+    getMyLists(),
+    getPreferences(),
+  ]);
 
   /**
    * L'instant de référence, lu **une fois** pour tout le tableau de bord.
@@ -80,36 +74,6 @@ export async function Dashboard() {
    * même seconde. C'est déjà ce que `ListCard` exigeait de son appelant.
    */
   const now = new Date();
-
-  /**
-   * Ce que chaque vignette de suivi porte, à l'identique dans les deux sections : où j'en suis, ce
-   * que j'en ai pensé, et de quoi avancer ou tout corriger sans quitter l'accueil.
-   *
-   * Convertir une note 0–100 en étoiles appartient au suivi (docs/PRODUCT.md §4.2), pas à la
-   * carte : c'est pour ça que la conversion se fait ici et que `MediaCard` ne reçoit qu'une chaîne.
-   */
-  const trackingProps = (entry: (typeof current)[number]) => {
-    const media = compactFromMirror(entry.media);
-    const totalUnits = mediaTotalUnits(entry.media);
-
-    return {
-      media,
-      progress: {
-        value: entry.progress,
-        total: totalUnits,
-        label: formatEntryProgress(entry.progress, totalUnits),
-      },
-      score: entry.score === null ? null : formatScore(entry.score),
-      action: (
-        <EntryCardActions
-          bannerImage={entry.media.bannerImage}
-          entry={entry}
-          media={media}
-          total={totalUnits}
-        />
-      ),
-    };
-  };
 
   /**
    * Bibliothèque vide : une seule porte d'entrée, pas trois sections creuses.
@@ -163,10 +127,10 @@ export async function Dashboard() {
             deux rangées d'écran sur desktop et six sur mobile, juste sous une bannière qui occupe
             déjà la moitié de la page.
 
-            « À reprendre » garde sa grille, et ce n'est pas une inconséquence : six séries oubliées
-            tiennent en une rangée à tous les paliers sauf le plus étroit, donc un carrousel n'y ferait
-            rien défiler — et surtout, c'est une section qu'on doit voir **en entier** pour choisir,
-            là où celle-ci se parcourt.
+            C'est désormais la **seule** section de suivi de l'accueil : « À reprendre » y montrait six
+            vignettes de séries oubliées, ce qui était beaucoup d'écran pour une information qui tient
+            dans un nombre. Le nombre est passé en tuile (`HomeStats`), d'où il mène à la bibliothèque
+            filtrée — l'écran fait pour trier ces œuvres.
 
             **Les cartes y sont larges depuis qu'elles servent à reprendre et non à choisir.** Une
             jaquette répond à « laquelle ? », question déjà tranchée pour une série qu'on suit ; ce
@@ -181,15 +145,22 @@ export async function Dashboard() {
                 <ResumeCard
                   /*
                     Les deux boutons sont composés ici plutôt que pris à `EntryCardActions`, comme
-                    le fait déjà le bandeau d'ouverture : ils ont besoin de l'apparence `compact`,
-                    que le bloc partagé ne sait pas transmettre. Ils restent la même paire, dans le
-                    même ordre — le « +1 » d'abord, la fenêtre ensuite, qui est l'ordre de fréquence
-                    des deux gestes.
+                    le fait déjà le bandeau d'ouverture : ils ont besoin d'apparences que le bloc
+                    partagé ne sait pas transmettre. Ils restent la même paire, dans le même ordre —
+                    le « +1 » d'abord, la fenêtre ensuite, qui est l'ordre de fréquence des deux
+                    gestes.
+
+                    **Le « +1 » porte son intitulé (`inline`), la fenêtre non (`compact`).** Depuis
+                    que les commandes ont une ligne à elles en pied de carte, la place existe pour
+                    dire ce que fait le bouton principal, et « Un épisode de plus » est ce qui rend
+                    la rangée manœuvrable sans avoir à deviner ce que fait un « +1 ». Le crayon reste
+                    muet : le geste est secondaire, et deux intitulés côte à côte feraient deux
+                    boutons de même poids là où l'un des deux se clique dix fois plus souvent.
                   */
                   action={
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <EntryQuickProgress
-                        appearance="compact"
+                        appearance="inline"
                         mediaId={entry.media.id}
                         progress={entry.progress}
                         total={mediaTotalUnits(entry.media)}
@@ -220,30 +191,6 @@ export async function Dashboard() {
               </ResumeCarouselItem>
             ))}
           </MediaCarousel>
-        </DashboardSection>
-      ) : null}
-
-      {stalled.length > 0 ? (
-        <DashboardSection title="À reprendre">
-          <MediaGrid>
-            {stalled.map((entry) => (
-              <li key={entry.id}>
-                <MediaCard
-                  {...trackingProps(entry)}
-                  /**
-                   * L'ancienneté est ici l'information : « En pause » n'apprend rien, « en pause
-                   * depuis huit mois » décide (docs/PRODUCT.md §8.4). Le statut l'accompagne, parce
-                   * que la section mélange les séries en pause et celles qu'on a laissées filer
-                   * sans le dire.
-                   */
-                  meta={[
-                    ENTRY_STATUS_LABELS[entry.status],
-                    formatSince(entry.updatedAt, now),
-                  ].join(" · ")}
-                />
-              </li>
-            ))}
-          </MediaGrid>
         </DashboardSection>
       ) : null}
 

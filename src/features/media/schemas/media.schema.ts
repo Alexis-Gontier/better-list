@@ -376,7 +376,7 @@ export const mediaMirrorDataSchema = z.object({
 });
 
 /**
- * Les cinq rangées de `/browse`, ramenées par un seul document à alias multiples.
+ * Les quatre rangées de l'accueil, ramenées par un seul document à alias multiples.
  *
  * Les clés sont les alias du document GraphQL : les renommer ici sans les renommer là-bas fait
  * échouer la validation, ce qui est le bon côté pour se tromper.
@@ -386,7 +386,6 @@ export const browseCatalogueDataSchema = z.object({
   season: z.object({ media: z.array(mediaBrowseSchema) }),
   upcoming: z.object({ media: z.array(mediaBrowseSchema) }),
   topRated: z.object({ media: z.array(mediaBrowseSchema) }),
-  topManga: z.object({ media: z.array(mediaBrowseSchema) }),
 });
 
 export const airingScheduleDataSchema = z.object({

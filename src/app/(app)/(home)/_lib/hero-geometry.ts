@@ -75,22 +75,28 @@ export const HERO_SLIDE_BOX = "relative h-full overflow-hidden rounded-lg";
  * demi-vignette des rangées de découverte (`MediaCarousel`) : une image coupée net au bord se lit
  * comme la fin de la page, là où un morceau de la suivante dit « il y en a d'autres » sans écrire un
  * mot. Les points en bas disent *combien* et *où l'on est*, jamais *de quel côté est la suite* —
- * c'est cette bande qui le dit, et elle le dit aussi au doigt, là où les flèches n'existent pas.
+ * c'est cette bande qui le dit, et elle le dit aussi au doigt, là où il n'y a plus de flèches.
  *
  * L'arithmétique : 80 % pour la diapositive, centrée, donc les 20 % restants se partagent en deux.
- * `gap` et non le remplissage négatif de shadcn (`-ml-4` sur la piste, `pl-4` sur chaque
- * diapositive) : sous un centrage, une gouttière portée d'un seul côté rendrait les deux bandes
- * inégales de sa propre largeur — visible, puisqu'elles se regardent l'une l'autre par-dessus le
- * contenu.
  *
- * `band` est la largeur des flèches, calée sur la bande visible : une commande plus étroite que ce
- * qu'elle donne à voir laisserait un morceau de voisine qui ne réagit pas au survol, ce qui se lit
- * comme un bouton en panne juste à côté d'un bouton qui marche.
+ * **La gouttière est un remplissage porté par chaque diapositive, et c'est une correction faite à
+ * l'écran.** Elle a d'abord été un `gap` sur la piste — la façon évidente d'écarter des éléments
+ * flex, et symétrique sous un centrage, contrairement au `-ml`/`pl` de shadcn. Mais en mode `loop`,
+ * Embla ne réordonne pas le DOM : il **translate** la dernière diapositive pour la faire apparaître
+ * à gauche de la première, et cette translation est calculée sur la largeur des diapositives, sans
+ * le `gap` du conteneur flex. La voisine bouclée arrivait donc collée à la diapositive active — à
+ * gauche seulement, et seulement sur la première diapositive, c'est-à-dire précisément à l'arrivée
+ * sur la page. À droite, la voisine est un vrai frère dans le flux : le `gap` s'y appliquait, d'où
+ * une asymétrie qui se lisait comme un défaut d'affichage.
+ *
+ * Un remplissage vit **dans** la diapositive : il voyage avec elle quand Embla la déplace. Posé des
+ * deux côtés en demi-gouttière, il reste par ailleurs symétrique sous le centrage, ce qui était la
+ * raison d'avoir écarté le motif shadcn.
  */
 export const HERO_PEEK = {
   basis: "basis-4/5",
-  gutter: "gap-3",
-  band: "w-[10%]",
+  /** La demi-gouttière, de chaque côté de chaque diapositive : 12 px entre deux voisines. */
+  gutter: "px-1.5",
 } as const;
 
 /**
