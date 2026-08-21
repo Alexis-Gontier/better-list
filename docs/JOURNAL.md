@@ -81,3 +81,39 @@ Un accident en chemin, qui vaut d'être écrit : une boucle de conversion de fin
 `sourcesContent` des source maps de `.next` (les parenthèses des groupes de routes y sont
 URL-encodées, `%28app%29`). À retenir : lire puis écrire en deux instructions, et `.next` est un
 filet de sécurité réel tant que le serveur de dev n'a pas recompilé.
+
+## 21 août 2026 — plus aucun écran ne tombe avec AniList
+
+Le « prochain pas » traînait depuis le 15 août. Il est fait, et il a coûté moins cher que prévu pour
+une raison qu'on n'avait pas vue.
+
+**Le repli de `/media/[id]` ne demande aucun travail par composant.** On redoutait d'avoir à décider,
+section par section sur une vingtaine de fichiers, ce qui survit à une coupure. En fait `buildTabs`
+masque déjà tout onglet dont la collection est vide — une règle écrite pour une autre raison (un
+manga n'a pas de casting vocal). Il a donc suffi de fabriquer un `MediaDetail` dégradé depuis le
+miroir, avec ses collections vides : la fiche perd ses onglets d'elle-même, et aucun composant
+d'affichage n'a besoin de connaître la panne. La leçon générale : une règle « ne montre pas ce qui
+est vide » est aussi, gratuitement, une règle de dégradation.
+
+Le schéma a aidé au même endroit. Tous les champs que `mediaDetailSchema` ajoute à `mediaSchema`
+portent un `default`, donc le repli se construit en repassant par `parse()` plutôt qu'en assemblant
+l'objet à la main — et il suivra tout seul le jour où un champ s'ajoute.
+
+**Un `null` qui voulait dire deux choses.** `getMediaById` renvoie `null` pour « cette œuvre
+n'existe pas », `tryAniList` renvoie `null` pour « AniList ne répond pas ». Emboîtés naïvement, les
+deux se confondent et chaque coupure devient un `notFound()`. On emballe donc la lecture dans un
+objet (`{ media }`) : le `null` de `tryAniList` ne peut plus désigner que la panne. À retenir dès
+qu'on compose deux fonctions qui renvoient toutes les deux `null` pour des raisons différentes.
+
+**Sur `/search`, on garde la barre de filtres, vide.** Le premier réflexe était de la retirer faute
+de vocabulaire. Mais elle porte aussi les puces de filtres actifs, c'est-à-dire le seul moyen de
+*défaire* un filtre : la retirer aurait laissé l'utilisateur coincé sur une recherche qu'il ne peut
+plus modifier. Un état vide ne doit pas emporter les commandes qui permettent d'en sortir.
+
+**Et une cause de fond réglée en passant.** `pnpm lint` échouait sur trois fichiers que personne
+n'avait touchés : l'index les stockait en LF, git les recheckoutait en CRLF sous Windows, et biome
+lisait la copie de travail. Il manquait un `.gitattributes` depuis le début. C'est la même famille
+que l'accident du 19 août — les fins de ligne ne devraient jamais passer par les mains de quelqu'un.
+
+Reste ouvert : ces cinq chemins de repli ne sont vérifiés par aucun test, et ils ont ceci de
+particulier qu'on ne les voit jamais tourner. C'est le prochain pas dans STATE.md.

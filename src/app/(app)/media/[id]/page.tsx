@@ -8,6 +8,7 @@ import { MediaCharacters } from "@/app/(app)/media/[id]/_components/media-charac
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
 import { MediaOverview } from "@/app/(app)/media/[id]/_components/media-overview";
+import { MediaPartialNotice } from "@/app/(app)/media/[id]/_components/media-partial-notice";
 import { MediaRecommendations } from "@/app/(app)/media/[id]/_components/media-recommendations";
 import { MediaRelations } from "@/app/(app)/media/[id]/_components/media-relations";
 import { MediaStaff } from "@/app/(app)/media/[id]/_components/media-staff";
@@ -21,12 +22,14 @@ import {
   mediaTitle,
 } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
+import { getMediaDetailFromMirror } from "@/features/media/server/media.mirror";
 import { getMediaById } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { EntryPanel } from "@/features/tracking/components/entry-panel";
 import { EntryPanelSkeleton } from "@/features/tracking/components/entry-panel-skeleton";
 import { EntryTimeline } from "@/features/tracking/components/entry-timeline";
 import { EntryTimelineSkeleton } from "@/features/tracking/components/entry-timeline-skeleton";
+import { tryAniList } from "@/lib/http/anilist";
 
 type MediaParams = PageProps<"/media/[id]">["params"];
 
@@ -42,6 +45,34 @@ function parseMediaId(raw: string): number | null {
   return result.success ? result.data : null;
 }
 
+/**
+ * La fiche, et par où elle est arrivée.
+ *
+ * **Le `null` de `getMediaById` et celui de `tryAniList` ne veulent pas dire la même chose** — l'un
+ * est « cette œuvre n'existe pas », l'autre « AniList ne répond pas » — et les confondre enverrait
+ * un `notFound()` à chaque coupure. D'où l'emballage dans un objet : le `null` de `tryAniList` ne
+ * peut alors désigner que la panne, et le « introuvable » reste porté par `media`.
+ *
+ * Le repli est ici, **hors** du `"use cache"` de `getMediaById` : rattrapé dedans, il mémoriserait
+ * l'absence pour la durée du `cacheLife`, soit un jour (voir `tryAniList`).
+ */
+async function loadMediaDetail(
+  id: number,
+  includeAdult: boolean,
+): Promise<{ media: MediaDetail | null; isPartial: boolean }> {
+  const fresh = await tryAniList(async () => ({
+    media: await getMediaById(id, { includeAdult }),
+  }));
+
+  if (fresh) return { media: fresh.media, isPartial: false };
+
+  // AniList est hors service : ce que le miroir sait de cette œuvre vaut mieux qu'une page morte.
+  return {
+    media: await getMediaDetailFromMirror(id, { includeAdult }),
+    isPartial: true,
+  };
+}
+
 export async function generateMetadata({
   params,
 }: PageProps<"/media/[id]">): Promise<Metadata> {
@@ -51,7 +82,12 @@ export async function generateMetadata({
   // `getMediaById` porte un `"use cache"` : cet appel et celui du contenu ne coûtent qu'une
   // requête AniList — à condition de lui passer le même `includeAdult`, qui fait partie de sa clé.
   const { includeAdult, titleLanguage } = await getPreferences();
-  const media = await getMediaById(id, { includeAdult });
+  /**
+   * Les métadonnées **ne doivent jamais jeter** : une exception ici emporterait le document entier,
+   * y compris la fiche dégradée que le contenu sait pourtant rendre. Pendant une coupure, le titre
+   * vient donc du miroir, et le reste sort vide plutôt que faux.
+   */
+  const { media } = await loadMediaDetail(id, includeAdult);
   if (!media) return {};
 
   const [summary] = cleanDescription(media.description);
@@ -94,14 +130,18 @@ async function MediaDetailContent({ params }: { params: MediaParams }) {
   if (id === null) notFound();
 
   const { includeAdult } = await getPreferences();
-  const media = await getMediaById(id, { includeAdult });
+  const { media, isPartial } = await loadMediaDetail(id, includeAdult);
 
   // `null` couvre deux cas volontairement confondus : l'id n'existe pas, ou l'œuvre est classée
-  // adulte alors que la préférence est éteinte. Dans les deux cas, la page n'existe pas.
+  // adulte alors que la préférence est éteinte. Dans les deux cas, la page n'existe pas. Pendant
+  // une coupure, s'y ajoute l'œuvre qu'aucun compte n'a jamais suivie : elle n'est pas au miroir,
+  // et on n'a rien à en dire — c'est le seul cas où la fiche reste injoignable.
   if (!media) notFound();
 
   return (
     <article className="space-y-8">
+      {isPartial ? <MediaPartialNotice /> : null}
+
       <MediaHero media={media} />
 
       <div className="grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]">

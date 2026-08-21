@@ -10,7 +10,9 @@ import {
   VOLATILE_STATUSES,
 } from "@/features/media/lib/media-freshness";
 import {
+  type MediaDetail,
   type MediaMirror,
+  mediaDetailSchema,
   mediaMirrorDataSchema,
 } from "@/features/media/schemas/media.schema";
 import { getMediaById } from "@/features/media/server/media.queries";
@@ -241,6 +243,78 @@ export async function refreshStaleMirror({
   }
 
   return summary;
+}
+
+/**
+ * La fiche telle que le miroir local peut la raconter, quand AniList ne répond pas.
+ *
+ * **Pourquoi un repli plutôt qu'un écran vide.** `/media/[id]` porte le « +1 », le geste le plus
+ * fréquent du produit (docs/PRODUCT.md §6), et le suivi ne dépend pas d'AniList : il vit dans
+ * `Entry`, en base. Rendre la page injoignable pendant une coupure retirerait le geste pour une
+ * requête dont il n'a aucun besoin. Le miroir existe précisément pour ça (§4.1).
+ *
+ * **Une fiche amputée, pas une fiche inventée.** Ce que la table ne stocke pas — le synopsis, les
+ * personnages, l'équipe, les œuvres liées, les recommandations, les liens externes — sort en vide,
+ * jamais en valeur de remplacement. `mediaDetailSchema` donne un `default` à chacun de ces champs,
+ * et `buildTabs` masque déjà tout onglet dont la collection est vide : la fiche dégradée perd donc
+ * ses onglets d'elle-même, sans qu'aucun composant d'affichage ait à connaître la panne.
+ *
+ * Renvoie `null` aux mêmes conditions que `getMediaById` : l'œuvre est inconnue du miroir — elle n'a
+ * jamais été suivie, listée ni possédée — ou elle est adulte alors que la préférence est éteinte.
+ */
+export async function getMediaDetailFromMirror(
+  id: number,
+  { includeAdult = false }: { includeAdult?: boolean } = {},
+): Promise<MediaDetail | null> {
+  const row = await prisma.media.findUnique({ where: { id } });
+
+  if (!row) return null;
+  if (row.isAdult && !includeAdult) return null;
+
+  /**
+   * On repasse par le schéma au lieu de fabriquer l'objet à la main : les champs absents de la
+   * table prennent leurs `default`, et le jour où `MediaDetail` en gagne un, ce repli le suit sans
+   * qu'on y pense. Les colonnes que la table n'a pas restent `null` — `description`, `averageScore`,
+   * `siteUrl` et les deux dates ne sont pas miroitées.
+   */
+  return mediaDetailSchema.parse({
+    id: row.id,
+    type: row.type,
+    format: row.format,
+    status: row.status,
+    description: null,
+    season: row.season,
+    seasonYear: row.seasonYear,
+    episodes: row.episodes,
+    chapters: row.chapters,
+    volumes: row.volumes,
+    countryOfOrigin: row.countryOfOrigin,
+    isAdult: row.isAdult,
+    averageScore: null,
+    meanScore: row.meanScore,
+    genres: row.genres,
+    coverImage: {
+      extraLarge: row.coverImage,
+      large: row.coverImage,
+      medium: row.coverImage,
+      color: row.coverColor,
+    },
+    bannerImage: row.bannerImage,
+    title: {
+      romaji: row.titleRomaji,
+      english: row.titleEnglish,
+      native: row.titleNative,
+      /**
+       * `userPreferred` est le choix fait côté AniList, que le miroir ne stocke pas. Le laisser
+       * `null` rend la main à `mediaTitle`, qui applique la préférence du compte — c'est la même
+       * règle que partout ailleurs dans l'app.
+       */
+      userPreferred: null,
+    },
+    siteUrl: null,
+    startDate: null,
+    endDate: null,
+  });
 }
 
 /**
