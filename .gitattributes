@@ -1,0 +1,16 @@
+# Les fins de ligne se normalisent en LF dans le dépôt, quelle que soit la machine.
+# Sans cette règle, git recheckout en CRLF sous Windows et biome refuse le fichier
+# au commit suivant — voir docs/JOURNAL.md, 19 août 2026.
+* text=auto eol=lf
+
+# Les binaires ne se convertissent jamais.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
