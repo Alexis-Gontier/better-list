@@ -39,6 +39,9 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-overlay: var(--overlay);
+  --color-surface-raised: var(--surface-raised);
+  --color-ring-accent: var(--ring-accent);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,77 +51,99 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Cool slate palette in light, cool charcoal in dark. */
+/* Le mode clair, tenu par cohérence : même accent, même neutre, inversés. */
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.1371 0.036 258.53);
+  --foreground: oklch(0.1448 0.0032 285.82);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.1371 0.036 258.53);
+  --card-foreground: oklch(0.1448 0.0032 285.82);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1371 0.036 258.53);
-  --primary: oklch(0.2079 0.0399 265.73);
-  --primary-foreground: oklch(0.9838 0.0035 247.86);
-  --secondary: oklch(0.9684 0.0068 247.9);
-  --secondary-foreground: oklch(0.2079 0.0399 265.73);
-  --muted: oklch(0.9684 0.0068 247.9);
-  --muted-foreground: oklch(0.5547 0.0407 257.44);
-  --accent: oklch(0.9684 0.0068 247.9);
-  --accent-foreground: oklch(0.2079 0.0399 265.73);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.0126 255.53);
-  --input: oklch(0.929 0.0126 255.53);
-  --ring: oklch(0.1371 0.036 258.53);
-  --chart-1: oklch(0.87 0.013 256);
-  --chart-2: oklch(0.5547 0.0407 257.44);
-  --chart-3: oklch(0.44 0.038 257);
-  --chart-4: oklch(0.37 0.04 258);
-  --chart-5: oklch(0.2079 0.0399 265.73);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.9838 0.0035 247.86);
-  --sidebar-foreground: oklch(0.1371 0.036 258.53);
-  --sidebar-primary: oklch(0.2079 0.0399 265.73);
-  --sidebar-primary-foreground: oklch(0.9838 0.0035 247.86);
-  --sidebar-accent: oklch(0.9684 0.0068 247.9);
-  --sidebar-accent-foreground: oklch(0.2079 0.0399 265.73);
-  --sidebar-border: oklch(0.929 0.0126 255.53);
-  --sidebar-ring: oklch(0.1371 0.036 258.53);
+  --popover-foreground: oklch(0.1448 0.0032 285.82);
+  --primary: oklch(0.5106 0.2301 276.97);
+  --primary-foreground: oklch(0.9851 0 0);
+  --secondary: oklch(0.967 0.0029 286.35);
+  --secondary-foreground: oklch(0.1448 0.0032 285.82);
+  --muted: oklch(0.967 0.0029 286.35);
+  --muted-foreground: oklch(0.552 0.0143 285.94);
+  --accent: oklch(0.967 0.0029 286.35);
+  --accent-foreground: oklch(0.1448 0.0032 285.82);
+  --destructive: oklch(0.5916 0.2073 22.16);
+  --border: oklch(0.92 0.0039 286.32);
+  --input: oklch(0.92 0.0039 286.32);
+  --ring: oklch(0.5106 0.2301 276.97);
+  --overlay: oklch(1 0 0 / 0.92);
+  --surface-raised: oklch(1 0 0);
+  --ring-accent: oklch(0.5106 0.2301 276.97);
+  --radius: 0.375rem;
+  --chart-1: oklch(0.5106 0.2301 276.97);
+  --chart-2: oklch(0.552 0.0143 285.94);
+  --chart-3: oklch(0.4419 0.0146 285.79);
+  --chart-4: oklch(0.3407 0.0134 285.81);
+  --chart-5: oklch(0.2103 0.0038 285.87);
+  --sidebar: oklch(0.9851 0 0);
+  --sidebar-foreground: oklch(0.1448 0.0032 285.82);
+  --sidebar-primary: oklch(0.5106 0.2301 276.97);
+  --sidebar-primary-foreground: oklch(0.9851 0 0);
+  --sidebar-accent: oklch(0.967 0.0029 286.35);
+  --sidebar-accent-foreground: oklch(0.1448 0.0032 285.82);
+  --sidebar-border: oklch(0.92 0.0039 286.32);
+  --sidebar-ring: oklch(0.5106 0.2301 276.97);
 }
 
+/* « Obsidienne » — quasi-noir neutre, accent iris. Le mode canon. */
 .dark {
-  --background: oklch(0.2161 0.0037 228.98);
-  --foreground: oklch(0.9843 0.0017 247.84);
-  --card: oklch(0.2381 0.0044 229);
-  --card-foreground: oklch(0.9843 0.0017 247.84);
-  --popover: oklch(0.2381 0.0044 229);
-  --popover-foreground: oklch(0.9843 0.0017 247.84);
-  --primary: oklch(0.9848 0 0);
-  --primary-foreground: oklch(0.2146 0.0038 248.01);
-  --secondary: oklch(0.3015 0.0062 229.03);
-  --secondary-foreground: oklch(0.9843 0.0017 247.84);
-  --muted: oklch(0.3015 0.0062 229.03);
-  --muted-foreground: oklch(0.7255 0.0096 228.93);
-  --accent: oklch(0.342 0.0073 229.04);
-  --accent-foreground: oklch(0.9843 0.0017 247.84);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.3015 0.0062 229.03);
-  --input: oklch(0.3015 0.0062 229.03);
-  --ring: oklch(0.8845 0 0);
-  --chart-1: oklch(0.87 0.008 229);
-  --chart-2: oklch(0.7255 0.0096 228.93);
-  --chart-3: oklch(0.5734 0.0102 229);
-  --chart-4: oklch(0.4196 0.0094 229.06);
-  --chart-5: oklch(0.3015 0.0062 229.03);
-  --sidebar: oklch(0.2381 0.0044 229);
-  --sidebar-foreground: oklch(0.9843 0.0017 247.84);
-  --sidebar-primary: oklch(0.9848 0 0);
-  --sidebar-primary-foreground: oklch(0.2146 0.0038 248.01);
-  --sidebar-accent: oklch(0.342 0.0073 229.04);
-  --sidebar-accent-foreground: oklch(0.9843 0.0017 247.84);
-  --sidebar-border: oklch(0.3015 0.0062 229.03);
-  --sidebar-ring: oklch(0.8845 0 0);
+  --background: oklch(0.1448 0.0032 285.82);
+  --foreground: oklch(0.9851 0 0);
+  --card: oklch(0.1822 0.0032 285.82);
+  --card-foreground: oklch(0.9851 0 0);
+  --popover: oklch(0.2103 0.0038 285.87);
+  --popover-foreground: oklch(0.9851 0 0);
+  --primary: oklch(0.5854 0.2041 277.12);
+  --primary-foreground: oklch(0.9851 0 0);
+  --secondary: oklch(0.2103 0.0038 285.87);
+  --secondary-foreground: oklch(0.9851 0 0);
+  --muted: oklch(0.2103 0.0038 285.87);
+  --muted-foreground: oklch(0.6368 0.0119 285.94);
+  --accent: oklch(0.2603 0.0055 286.03);
+  --accent-foreground: oklch(0.9851 0 0);
+  --destructive: oklch(0.5916 0.2073 22.16);
+  --border: oklch(0.2603 0.0055 286.03);
+  --input: oklch(0.2603 0.0055 286.03);
+  --ring: oklch(0.5854 0.2041 277.12);
+
+  /* Le fond d'une pastille posée sur une jaquette. Il remplace le `bg-background/95` que
+     media-card.tsx écrivait deux fois en dur : le contraste d'un texte sur une image quelconque
+     n'est garanti par rien, donc ce fond est presque opaque, et il suit le thème. */
+  --overlay: oklch(0.1448 0.0032 285.82 / 0.92);
+
+  /* Le second niveau d'élévation. shadcn n'a que `card` ; en dark-first, une carte posée et un
+     panneau flottant qui partagent la même surface s'aplatissent l'un dans l'autre. */
+  --surface-raised: oklch(0.2103 0.0038 285.87);
+
+  /* Le halo du focus clavier — le seul endroit de l'interface où quelque chose brille. */
+  --ring-accent: oklch(0.5854 0.2041 277.12);
+
+  --chart-1: oklch(0.5854 0.2041 277.12);
+  --chart-2: oklch(0.6368 0.0119 285.94);
+  --chart-3: oklch(0.5106 0.0093 285.94);
+  --chart-4: oklch(0.3715 0.0072 285.98);
+  --chart-5: oklch(0.2603 0.0055 286.03);
+  --sidebar: oklch(0.1822 0.0032 285.82);
+  --sidebar-foreground: oklch(0.9851 0 0);
+  --sidebar-primary: oklch(0.5854 0.2041 277.12);
+  --sidebar-primary-foreground: oklch(0.9851 0 0);
+  --sidebar-accent: oklch(0.2603 0.0055 286.03);
+  --sidebar-accent-foreground: oklch(0.9851 0 0);
+  --sidebar-border: oklch(0.2603 0.0055 286.03);
+  --sidebar-ring: oklch(0.5854 0.2041 277.12);
 }
 
 @layer base {
+  h1,
+  h2,
+  h3 {
+    @apply font-heading tracking-tight;
+  }
   * {
     @apply border-border outline-ring/50;
   }
