@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { LibraryFilters } from "@/app/(app)/library/_components/library-filters";
+import { LibraryGenreFilter } from "@/app/(app)/library/_components/library-genre-filter";
 import { LibraryResults } from "@/app/(app)/library/_components/library-results";
 import { LibraryResultsSkeleton } from "@/app/(app)/library/_components/library-results-skeleton";
 import { LibraryStatusNav } from "@/app/(app)/library/_components/library-status-nav";
@@ -21,8 +22,8 @@ export const metadata: Metadata = {
  * onglets de statut d'un `groupBy`, et les résultats d'une requête paginée.
  *
  * L'ordre à l'écran suit l'ordre du geste : on cherche, on restreint, on choisit un statut, on
- * regarde. La barre d'outils passe donc **avant** les onglets, alors qu'elle est le seul élément
- * qui n'attende rien — c'est aussi ce qui donne un premier rendu immédiatement utilisable.
+ * regarde. La barre d'outils passe donc **avant** les onglets, alors qu'elle est presque le seul
+ * élément qui n'attende rien — c'est aussi ce qui donne un premier rendu immédiatement utilisable.
  */
 export default function LibraryPage({ searchParams }: PageProps<"/library">) {
   return (
@@ -34,13 +35,24 @@ export default function LibraryPage({ searchParams }: PageProps<"/library">) {
         </p>
       </header>
 
-      <LibraryFilters />
+      {/*
+        Le genre est le seul contrôle de la barre qui demande la base — la liste proposée est celle
+        des genres qu'on suit vraiment. Il arrive donc dans sa propre frontière, et le reste de la
+        barre part sans l'attendre : la recherche est tapable avant que la requête revienne.
+      */}
+      <LibraryFilters
+        genreSlot={
+          <Suspense fallback={<Skeleton className="h-8 w-36" />}>
+            <LibraryGenreFilter />
+          </Suspense>
+        }
+      />
 
       {/*
-        La hauteur du repli est celle de la rangée d'onglets réelle (`h-8` + le padding du lien) :
+        La hauteur du repli est celle de la rangée d'onglets réelle (`h-9` + le filet) :
         un squelette plus court ferait remonter toute la grille au moment où les compteurs arrivent.
       */}
-      <Suspense fallback={<Skeleton className="h-8 w-full max-w-2xl" />}>
+      <Suspense fallback={<Skeleton className="h-9 w-full max-w-2xl" />}>
         <LibraryStatusNav searchParams={searchParams} />
       </Suspense>
 

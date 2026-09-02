@@ -2,7 +2,7 @@
 
 import { SearchIcon, XIcon } from "lucide-react";
 import { debounce } from "nuqs";
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 
 import { ViewToggle } from "@/components/shared/view-toggle";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import {
 } from "@/features/tracking/lib/library-params";
 
 /**
- * Recherche, type d'œuvre, tri et disposition. Seul îlot client de la page — le filtre par statut,
+ * Recherche, type d'œuvre, genre, tri et disposition. Seul îlot client de la page — le filtre par statut,
  * lui, est en liens serveur.
  *
  * Comme sur la recherche, chaque changement remet `page` à 1 : sans ça, changer de tri depuis la
@@ -34,7 +34,13 @@ import {
 /** `null` n'est pas une valeur de `<Select>` : il lui faut une chaîne pour « tous ». */
 const ALL = "all";
 
-export function LibraryFilters() {
+/**
+ * Le genre arrive en `children` (`genreSlot`) et non en import : c'est un Server Component, qui lit
+ * la base pour ne proposer que les genres réellement suivis. Le passer en emplacement le laisse
+ * serveur alors que la barre qui l'accueille est cliente — la règle « passer les Server Components
+ * en children plutôt que convertir le sous-arbre » (docs/ARCHITECTURE.md).
+ */
+export function LibraryFilters({ genreSlot }: { genreSlot?: ReactNode }) {
   const [filters, setFilters] = useLibraryFilters();
 
   /**
@@ -127,6 +133,8 @@ export function LibraryFilters() {
           ))}
         </SelectContent>
       </Select>
+
+      {genreSlot}
 
       <Label className="sr-only" htmlFor="library-sort">
         Trier par

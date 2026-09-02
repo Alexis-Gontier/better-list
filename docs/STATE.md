@@ -22,7 +22,7 @@ Chaque route, ce qu'elle consomme et où elle en est. La clé entre parenthèses
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, quatre rangées de découverte | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **livré** |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `media`, `tracking`, `preferences` | `Media`, `Entry` | **livré** |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `media`, `tracking`, `lists`, `preferences` | `Media`, `Entry`, `EntryEvent`, `ListItem` | **livré** |
-| `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `tracking`, `media` | `Entry`, `Media` | **livré** |
+| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `tracking`, `media` | `Entry`, `Media` | **livré** |
 | `/lists` (`lists.root`) | Mes listes | `lists`, `media`, `preferences` | `List`, `ListItem` | **livré** |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `lists`, `media`, `command` | `List`, `ListItem`, `Media` | **livré** |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | — | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |

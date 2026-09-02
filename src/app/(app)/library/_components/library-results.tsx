@@ -57,7 +57,9 @@ export async function LibraryResults({
   const search = filters.q.trim();
 
   if (entries.length === 0) {
-    const filtered = Boolean(search || filters.status || filters.type);
+    const filtered = Boolean(
+      search || filters.status || filters.type || filters.genre,
+    );
 
     return (
       <Empty>
@@ -107,6 +109,9 @@ export async function LibraryResults({
   const summary = [
     `${total.toLocaleString("fr-FR")} ${total > 1 ? "œuvres" : "œuvre"}`,
     search ? `pour « ${search} »` : null,
+    // Le genre se dit ici et nulle part ailleurs dans la zone des résultats : sans lui, une grille
+    // brusquement plus courte n'a aucune explication à l'écran.
+    filters.genre ? `en ${filters.genre}` : null,
   ]
     .filter(Boolean)
     .join(" ");

@@ -78,6 +78,16 @@ export const libraryFilterParsers = {
   q: parseAsString.withDefault(""),
   status: parseAsStringLiteral(STATUS_VALUES),
   type: parseAsStringLiteral(TYPE_VALUES),
+  /**
+   * Le genre — **le seul filtre ouvert de cette liste**, et l'exception se justifie.
+   *
+   * Les autres valeurs sont closes parce qu'on les connaît à l'écriture ; les genres, eux,
+   * viennent d'AniList et sont rendus par la base (`getLibraryGenres`). Les figer ici les ferait
+   * diverger du jour où AniList en ajoute un. Le risque est nul côté requête : la valeur part dans
+   * un `has` sur une colonne de tableau, donc un genre inventé dans l'URL ne rend rien plutôt que
+   * d'élargir le périmètre.
+   */
+  genre: parseAsString,
   sort: parseAsStringLiteral(SORT_VALUES).withDefault("recent"),
   /** Grille ou liste dense — la disposition est dans l'URL, donc partageable et rejouée au retour. */
   view: parseAsStringLiteral(VIEW_MODES).withDefault(DEFAULT_VIEW_MODE),

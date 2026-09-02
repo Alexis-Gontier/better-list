@@ -178,15 +178,18 @@ export const LIBRARY_PAGE_SIZE = CATALOGUE_PAGE_SIZE;
  */
 function libraryWhere(
   userId: string,
-  { q, type }: Pick<LibraryFilterValues, "q" | "type">,
+  { q, type, genre }: Pick<LibraryFilterValues, "q" | "type" | "genre">,
 ): Prisma.EntryWhereInput {
   const search = q.trim();
 
   return {
     userId,
-    ...((type || search) && {
+    ...((type || genre || search) && {
       media: {
         ...(type && { type }),
+        // `has` et non `hasSome` : le filtre ne propose qu'un genre à la fois, et `hasSome` sur un
+        // tableau d'un élément dirait la même chose en laissant croire à une liste multiple.
+        ...(genre && { genres: { has: genre } }),
         ...(search && {
           OR: [
             { titleRomaji: { contains: search, mode: "insensitive" } },
@@ -211,7 +214,7 @@ function libraryWhere(
  * l'actif afficheraient zéro.
  */
 export async function getLibraryStatusCounts(
-  filters: Pick<LibraryFilterValues, "q" | "type">,
+  filters: Pick<LibraryFilterValues, "q" | "type" | "genre">,
 ): Promise<{ byStatus: Record<EntryStatus, number>; total: number }> {
   const empty = Object.fromEntries(
     LIBRARY_STATUS_ORDER.map((status) => [status, 0]),
@@ -273,6 +276,7 @@ export async function getLibrary({
   q,
   status,
   type,
+  genre,
   sort,
   page,
 }: LibraryFilterValues) {
@@ -282,7 +286,7 @@ export async function getLibrary({
   }
 
   const where: Prisma.EntryWhereInput = {
-    ...libraryWhere(session.user.id, { q, type }),
+    ...libraryWhere(session.user.id, { q, type, genre }),
     ...(status && { status }),
   };
 
@@ -341,6 +345,39 @@ export async function getLibrary({
   });
 
   return { entries, total, currentPage, lastPage };
+}
+
+/**
+ * Les genres présents dans ma bibliothèque, par ordre alphabétique.
+ *
+ * **Ceux que je suis vraiment, pas la nomenclature d'AniList.** Une liste figée des dix-neuf genres
+ * du service proposerait « Mahou Shoujo » à qui n'en a aucun, et chaque choix creux renverrait sur
+ * une grille vide — un filtre qui ment sur ce qu'il contient ne se réutilise pas.
+ *
+ * Le dédoublonnage se fait en mémoire et non en base : `genres` est une colonne de tableau, que
+ * Postgres ne sait pas `DISTINCT` sans `unnest`, hors de portée de Prisma sans SQL brut. Le coût
+ * réel est celui d'une colonne déjà indexée sur quelques centaines de lignes — le cercle privé de
+ * PRODUCT.md, pas un catalogue public.
+ *
+ * Le filtre courant n'entre pas dans la lecture : la liste doit rester la même une fois un genre
+ * choisi, faute de quoi elle se réduirait à ce seul genre et on ne pourrait plus en changer.
+ *
+ * Comme les autres lectures du domaine, l'identifiant vient de la session et jamais d'un argument.
+ */
+export async function getLibraryGenres(): Promise<string[]> {
+  const session = await getSession();
+  if (!session) return [];
+
+  const rows = await prisma.entry.findMany({
+    where: { userId: session.user.id },
+    select: { media: { select: { genres: true } } },
+  });
+
+  const genres = new Set<string>();
+  for (const row of rows)
+    for (const genre of row.media.genres) genres.add(genre);
+
+  return [...genres].sort((a, b) => a.localeCompare(b, "fr"));
 }
 
 /** Les colonnes du miroir dont la palette de commandes a besoin — un intitulé et un plafond. */
