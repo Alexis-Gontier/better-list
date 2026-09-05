@@ -32,12 +32,33 @@ export function seasonOf(month: number, year: number): SeasonSlot {
   return { season: "FALL", seasonYear: year };
 }
 
-const SEASON_ORDER: MediaSeason[] = ["WINTER", "SPRING", "SUMMER", "FALL"];
+/**
+ * Le cycle des saisons, **en tables plutôt qu'en arithmétique modulaire**.
+ *
+ * La version précédente cherchait l'index puis prenait `(index ± 1) % 4`. C'était juste, mais le
+ * type ne le savait pas : un accès indexé par un nombre calculé rend toujours `T | undefined`, donc
+ * `noUncheckedIndexedAccess` refuse d'y voir une saison. Une assertion `!` aurait fait taire le
+ * compilateur sans rendre le code plus sûr — la table, elle, est **totale par construction** :
+ * `satisfies Record<MediaSeason, MediaSeason>` casse la compilation si une saison manque le jour où
+ * AniList en déclarerait une cinquième, ce qu'un `indexOf` renvoyant `-1` aurait tu.
+ */
+const NEXT_SEASON = {
+  WINTER: "SPRING",
+  SPRING: "SUMMER",
+  SUMMER: "FALL",
+  FALL: "WINTER",
+} as const satisfies Record<MediaSeason, MediaSeason>;
+
+const PREVIOUS_SEASON = {
+  WINTER: "FALL",
+  SPRING: "WINTER",
+  SUMMER: "SPRING",
+  FALL: "SUMMER",
+} as const satisfies Record<MediaSeason, MediaSeason>;
 
 /** La saison suivante. Passer de l'automne à l'hiver fait avancer l'année. */
 export function nextSeason({ season, seasonYear }: SeasonSlot): SeasonSlot {
-  const following =
-    SEASON_ORDER[(SEASON_ORDER.indexOf(season) + 1) % SEASON_ORDER.length];
+  const following = NEXT_SEASON[season];
 
   return {
     season: following,
@@ -64,12 +85,8 @@ const CALENDAR_IN_PARIS = new Intl.DateTimeFormat("en-US", {
 
 /** La saison précédente. Passer de l'hiver à l'automne fait reculer l'année. */
 export function previousSeason({ season, seasonYear }: SeasonSlot): SeasonSlot {
-  const index = SEASON_ORDER.indexOf(season);
-  const preceding =
-    SEASON_ORDER[(index - 1 + SEASON_ORDER.length) % SEASON_ORDER.length];
-
   return {
-    season: preceding,
+    season: PREVIOUS_SEASON[season],
     seasonYear: season === "WINTER" ? seasonYear - 1 : seasonYear,
   };
 }

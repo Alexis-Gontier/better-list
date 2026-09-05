@@ -114,7 +114,9 @@ export function parseSeasonSlotValue(value: string): {
   season: MediaSeason | null;
   year: number | null;
 } {
-  const [season, year] = value.split(":");
+  // Le défaut ne se déclenche jamais — `split` rend toujours au moins un élément — mais il dit au
+  // type ce que l'exécution garantit déjà, sans assertion.
+  const [season = "", year] = value.split(":");
   const parsedYear = Number(year);
 
   return {
