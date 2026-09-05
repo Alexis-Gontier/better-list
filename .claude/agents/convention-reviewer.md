@@ -26,6 +26,9 @@ incohérent avec ses propres règles.
   logique métier réutilisable.
 - Un composant utilisé par une seule route reste dans `_components/`. Il ne monte dans
   `features/` qu'à partir d'un deuxième appelant réel.
+- **La même règle vaut pour les helpers.** Un fichier de `features/<d>/lib/` dont tous les
+  consommateurs vivent sous une seule route appartient au `_lib/` de cette route, pas à la feature.
+  Se vérifie : `grep -rl "@/features/<d>/lib/<fichier>" src --include=*.ts --include=*.tsx`.
 - Les quatre maisons ne se recouvrent pas : `components/ui/` (shadcn), `components/layout/`
   (chrome), `components/shared/` (composite sans métier), `features/<d>/components/` (connaît une
   entité métier). Un composant qui connaît le métier n'a rien à faire dans `shared/`.
@@ -33,6 +36,10 @@ incohérent avec ses propres règles.
 **Frontière server / client**
 - `features/*/server/*.queries.ts` commence par `import "server-only";`, `*.actions.ts` par
   `"use server"`.
+- **Un helper de `features/*/lib/` dont tous les consommateurs sont dans `server/` porte lui aussi
+  `import "server-only";`.** Le dossier `lib/` ne dit rien de la frontière ; sans le marqueur, rien
+  n'empêche un composant client d'embarquer le fichier — et le hook `conventions-guard.mjs` ne sait
+  pas voir cette règle, qui demande de lire les consommateurs et non le fichier écrit.
 - Aucun fichier n'exporte à la fois du code server et du code client.
 - `"use client"` est sur la feuille interactive, jamais sur une `page.tsx` ou un `layout.tsx`.
   Un composant client qui doit envelopper du serveur le reçoit en `children`.

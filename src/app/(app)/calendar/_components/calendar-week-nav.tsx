@@ -1,17 +1,16 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import Link from "next/link";
-
-import { Button } from "@/components/ui/button";
-import { routes } from "@/config/routes";
 import {
   airingWeek,
   clampWeekOffset,
   WEEK_OFFSET_LIMIT,
-} from "@/features/media/lib/airing-week";
+} from "@/app/(app)/calendar/_lib/airing-week";
 import {
   loadCalendarParams,
   serializeCalendarParams,
-} from "@/features/media/lib/calendar-params";
+} from "@/app/(app)/calendar/_lib/calendar-params";
+import { Button } from "@/components/ui/button";
+import { routes } from "@/config/routes";
 
 /**
  * D'une semaine à l'autre — en liens, pas en boutons.

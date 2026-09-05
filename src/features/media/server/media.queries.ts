@@ -1,14 +1,6 @@
 import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
-
-import {
-  AIRING_SCHEDULE_QUERY,
-  BROWSE_CATALOGUE_QUERY,
-  FILTER_VOCABULARY_QUERY,
-  MEDIA_BY_ID_QUERY,
-  SEARCH_MEDIA_QUERY,
-} from "@/features/media/lib/media-documents";
 import { nextSeason, type SeasonSlot } from "@/features/media/lib/media-season";
 import {
   type AiringSchedule,
@@ -30,6 +22,13 @@ import {
   searchMediaInputSchema,
   toAniListSort,
 } from "@/features/media/schemas/search-media.schema";
+import {
+  AIRING_SCHEDULE_QUERY,
+  BROWSE_CATALOGUE_QUERY,
+  FILTER_VOCABULARY_QUERY,
+  MEDIA_BY_ID_QUERY,
+  SEARCH_MEDIA_QUERY,
+} from "@/features/media/server/media.documents";
 import { anilistQuery, isAniListError } from "@/lib/http/anilist";
 
 /**

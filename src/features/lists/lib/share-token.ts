@@ -1,3 +1,8 @@
+// `server-only`, et ici ce n'est pas une hygiène mais une garde : ce fichier fabrique le secret
+// dont dépend toute la confidentialité d'une liste partagée. Il ne doit jamais atteindre un bundle
+// client, ni par import direct ni par transitivité — le marqueur en fait une erreur de build.
+import "server-only";
+
 import { randomBytes } from "node:crypto";
 
 /**

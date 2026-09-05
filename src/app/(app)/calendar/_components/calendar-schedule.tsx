@@ -5,6 +5,12 @@ import {
   AiringEpisode,
   type AiringEpisodeView,
 } from "@/app/(app)/calendar/_components/airing-episode";
+import {
+  airingWeek,
+  clampWeekOffset,
+  groupAiringByDay,
+} from "@/app/(app)/calendar/_lib/airing-week";
+import { loadCalendarParams } from "@/app/(app)/calendar/_lib/calendar-params";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +22,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { routes } from "@/config/routes";
-import {
-  airingWeek,
-  clampWeekOffset,
-  groupAiringByDay,
-} from "@/features/media/lib/airing-week";
-import { loadCalendarParams } from "@/features/media/lib/calendar-params";
 import { getAiringSchedule } from "@/features/media/server/media.queries";
 import { getAiringEntries } from "@/features/tracking/server/tracking.queries";
 import { tryAniList } from "@/lib/http/anilist";

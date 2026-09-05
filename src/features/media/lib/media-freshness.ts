@@ -1,3 +1,7 @@
+// `server-only` bien que le fichier soit pur : seul `server/media.mirror.ts` l'appelle, et le
+// marqueur transforme une fuite dans un bundle client en erreur de build plutôt qu'en poids mort.
+import "server-only";
+
 import type { MediaStatus } from "@/features/media/schemas/media.schema";
 
 /**

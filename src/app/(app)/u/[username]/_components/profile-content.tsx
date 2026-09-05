@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 
 import { ProfileHeader } from "@/app/(app)/u/[username]/_components/profile-header";
 import { ProfileStats } from "@/app/(app)/u/[username]/_components/profile-stats";
+import {
+  loadProfileFilters,
+  serializeProfileFilters,
+} from "@/app/(app)/u/[username]/_lib/profile-params";
 import { Pagination } from "@/components/shared/pagination";
 import {
   Empty,
@@ -12,10 +16,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { routes } from "@/config/routes";
-import {
-  loadProfileFilters,
-  serializeProfileFilters,
-} from "@/features/profile/lib/profile-params";
 import {
   getProfile,
   getProfileStats,

@@ -1,3 +1,7 @@
+// `server-only` bien que le fichier soit pur : seul `server/lists.actions.ts` l'appelle. Le calcul
+// d'un rang n'a aucune raison de traverser la frontière, et le marqueur le garantit au build.
+import "server-only";
+
 import { generateKeyBetween } from "fractional-indexing";
 
 /**

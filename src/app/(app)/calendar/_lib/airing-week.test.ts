@@ -7,7 +7,7 @@ import {
   formatAiringTime,
   groupAiringByDay,
   WEEK_OFFSET_LIMIT,
-} from "@/features/media/lib/airing-week";
+} from "@/app/(app)/calendar/_lib/airing-week";
 
 /**
  * Le sujet de ce fichier est le fuseau, pas le calendrier.
@@ -39,9 +39,9 @@ describe("airingWeek", () => {
     const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 0);
 
     expect(week.days).toHaveLength(7);
-    expect(week.days[0].key).toBe("2026-08-03");
-    expect(week.days[0].label).toBe("Lundi 3 août");
-    expect(week.days[6].key).toBe("2026-08-09");
+    expect(week.days[0]?.key).toBe("2026-08-03");
+    expect(week.days[0]?.label).toBe("Lundi 3 août");
+    expect(week.days[6]?.key).toBe("2026-08-09");
     expect(plain(week.label)).toBe("3–9 août 2026");
   });
 
@@ -50,33 +50,33 @@ describe("airingWeek", () => {
     // semaine le lendemain et le planning du jour disparaîtrait de sa propre page.
     const week = airingWeek(new Date("2026-08-09T10:00:00Z"), 0);
 
-    expect(week.days[0].key).toBe("2026-08-03");
-    expect(week.days[6].key).toBe("2026-08-09");
-    expect(week.days[6].isToday).toBe(true);
+    expect(week.days[0]?.key).toBe("2026-08-03");
+    expect(week.days[6]?.key).toBe("2026-08-09");
+    expect(week.days[6]?.isToday).toBe(true);
   });
 
   it("marque le jour courant, et lui seul", () => {
     const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 0);
 
     expect(week.days.filter((day) => day.isToday)).toHaveLength(1);
-    expect(week.days[5].key).toBe("2026-08-08");
-    expect(week.days[5].isToday).toBe(true);
+    expect(week.days[5]?.key).toBe("2026-08-08");
+    expect(week.days[5]?.isToday).toBe(true);
   });
 
   it("change de semaine à minuit à Paris, pas à minuit UTC", () => {
     // Dimanche 23 h 30 UTC, donc lundi 1 h 30 à Paris : la semaine a déjà tourné ici, pas là-bas.
     const week = airingWeek(new Date("2026-08-09T23:30:00Z"), 0);
 
-    expect(week.days[0].key).toBe("2026-08-10");
-    expect(week.days[0].isToday).toBe(true);
+    expect(week.days[0]?.key).toBe("2026-08-10");
+    expect(week.days[0]?.isToday).toBe(true);
   });
 
   it("décale d'une semaine entière, dans les deux sens", () => {
     const now = new Date("2026-08-08T10:00:00Z");
 
-    expect(airingWeek(now, 1).days[0].key).toBe("2026-08-10");
-    expect(airingWeek(now, -1).days[0].key).toBe("2026-07-27");
-    expect(airingWeek(now, -1).days[6].key).toBe("2026-08-02");
+    expect(airingWeek(now, 1).days[0]?.key).toBe("2026-08-10");
+    expect(airingWeek(now, -1).days[0]?.key).toBe("2026-07-27");
+    expect(airingWeek(now, -1).days[6]?.key).toBe("2026-08-02");
   });
 
   it("borne la semaine sur des minuits parisiens", () => {
@@ -92,8 +92,8 @@ describe("airingWeek", () => {
     // `from + 7 jours` la ferait déborder d'une heure sur le lundi suivant.
     const week = airingWeek(new Date("2026-03-25T12:00:00Z"), 0);
 
-    expect(week.days[0].key).toBe("2026-03-23");
-    expect(week.days[6].key).toBe("2026-03-29");
+    expect(week.days[0]?.key).toBe("2026-03-23");
+    expect(week.days[6]?.key).toBe("2026-03-29");
     expect(week.from).toBe(seconds("2026-03-22T23:00:00Z"));
     expect(week.to).toBe(seconds("2026-03-29T22:00:00Z"));
     expect(week.to - week.from).toBe(WEEK - HOUR);
@@ -102,8 +102,8 @@ describe("airingWeek", () => {
   it("gagne une heure sur la semaine du retour à l'heure d'hiver", () => {
     const week = airingWeek(new Date("2026-10-21T12:00:00Z"), 0);
 
-    expect(week.days[0].key).toBe("2026-10-19");
-    expect(week.days[6].key).toBe("2026-10-25");
+    expect(week.days[0]?.key).toBe("2026-10-19");
+    expect(week.days[6]?.key).toBe("2026-10-25");
     expect(week.to).toBe(seconds("2026-10-25T23:00:00Z"));
     expect(week.to - week.from).toBe(WEEK + HOUR);
   });
@@ -113,8 +113,8 @@ describe("airingWeek", () => {
     expect(plain(straddling.label)).toBe("30 novembre – 6 décembre 2026");
 
     const newYear = airingWeek(new Date("2026-12-31T12:00:00Z"), 0);
-    expect(newYear.days[0].key).toBe("2026-12-28");
-    expect(newYear.days[6].key).toBe("2027-01-03");
+    expect(newYear.days[0]?.key).toBe("2026-12-28");
+    expect(newYear.days[6]?.key).toBe("2027-01-03");
   });
 });
 
@@ -155,7 +155,7 @@ describe("groupAiringByDay", () => {
     ]);
 
     expect(days).toHaveLength(7);
-    expect(days[2].items).toHaveLength(1);
+    expect(days[2]?.items).toHaveLength(1);
     expect(days.filter((day) => day.items.length === 0)).toHaveLength(6);
   });
 
@@ -165,7 +165,7 @@ describe("groupAiringByDay", () => {
       { airingAt: seconds("2026-08-05T16:00:00Z"), episode: 2 },
     ]);
 
-    expect(days[2].items.map((item) => item.episode)).toEqual([1, 2]);
+    expect(days[2]?.items.map((item) => item.episode)).toEqual([1, 2]);
   });
 
   it("ignore une diffusion hors des bornes plutôt que de la ranger de force", () => {

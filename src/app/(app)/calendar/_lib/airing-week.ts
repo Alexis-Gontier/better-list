@@ -190,8 +190,16 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
   const civilMonday =
     civilToday + (offset * DAYS_PER_WEEK - sinceMonday) * MS_PER_DAY;
 
-  /** Huit bornes pour sept jours : la dernière est le début de la semaine suivante. */
-  const boundaries = Array.from({ length: DAYS_PER_WEEK + 1 }, (_, index) => {
+  /**
+   * Une borne, **calculée à la demande plutôt que tirée d'un tableau**.
+   *
+   * Il y avait ici huit bornes rangées dans un `Array.from`, dont trois se relisaient par index
+   * (`boundaries[0]`, `[6]`, `[7]`). L'invariant — le tableau en contient exactement huit — n'était
+   * connu que du lecteur : sous `noUncheckedIndexedAccess`, chacun de ces trois accès rend
+   * `Date | undefined`. Les asserter aurait rétabli le silence sans rétablir la garantie. Une
+   * fonction rend une `Date`, toujours, et il n'y a plus de tableau intermédiaire à traverser.
+   */
+  function boundary(index: number): Date {
     const civil = new Date(civilMonday + index * MS_PER_DAY);
 
     return parisMidnight(
@@ -199,9 +207,10 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
       civil.getUTCMonth() + 1,
       civil.getUTCDate(),
     );
-  });
+  }
 
-  const days = boundaries.slice(0, DAYS_PER_WEEK).map((start) => {
+  const days = Array.from({ length: DAYS_PER_WEEK }, (_, index) => {
+    const start = boundary(index);
     const key = dayKey(civilInParis(start));
 
     return {
@@ -211,8 +220,10 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
     };
   });
 
-  const first = boundaries[0];
-  const last = boundaries[DAYS_PER_WEEK - 1];
+  const first = boundary(0);
+  const last = boundary(DAYS_PER_WEEK - 1);
+  /** La huitième borne : le lundi suivant, qui ferme l'intervalle sans en faire partie. */
+  const nextMonday = boundary(DAYS_PER_WEEK);
 
   return {
     offset,
@@ -222,7 +233,7 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
     // main demanderait de traiter les deux cas.
     label: WEEK_LABEL_FORMAT.formatRange(first, last),
     from: Math.floor(first.getTime() / 1000),
-    to: Math.floor(boundaries[DAYS_PER_WEEK].getTime() / 1000),
+    to: Math.floor(nextMonday.getTime() / 1000),
   };
 }
 

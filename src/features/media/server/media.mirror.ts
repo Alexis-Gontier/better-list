@@ -1,6 +1,5 @@
 import "server-only";
 
-import { MEDIA_MIRROR_QUERY } from "@/features/media/lib/media-documents";
 import {
   isMirrorStale,
   MIRROR_BATCH_SIZE,
@@ -15,6 +14,7 @@ import {
   mediaDetailSchema,
   mediaMirrorDataSchema,
 } from "@/features/media/schemas/media.schema";
+import { MEDIA_MIRROR_QUERY } from "@/features/media/server/media.documents";
 import { getMediaById } from "@/features/media/server/media.queries";
 import { prisma } from "@/lib/db/prisma";
 import { anilistQuery } from "@/lib/http/anilist";

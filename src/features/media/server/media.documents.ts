@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * Documents GraphQL AniList.
  *

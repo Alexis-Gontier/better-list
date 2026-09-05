@@ -1,9 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-
+import { formatAiringTime } from "@/app/(app)/calendar/_lib/airing-week";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
-import { formatAiringTime } from "@/features/media/lib/airing-week";
 import {
   type MirroredMedia,
   mirroredTitle,

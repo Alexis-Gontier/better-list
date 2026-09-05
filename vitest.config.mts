@@ -1,4 +1,21 @@
+import { createRequire } from "node:module";
+
 import { defineConfig } from "vitest/config";
+
+/**
+ * `server-only` lève dès l'import — c'est tout son intérêt — sauf sous la condition d'export
+ * `react-server`, qui le résout vers un module vide. Cette condition est posée par le compilateur
+ * RSC de Next, jamais par Vitest : sans alias, tout test d'un module marqué `server-only` échoue à
+ * l'import avant sa première assertion.
+ *
+ * On vise le fichier vide du paquet, que son champ `exports` interdit d'atteindre par spécifieur —
+ * d'où le `require.resolve` sur l'entrée principale puis la substitution du nom de fichier. Passer
+ * par `resolve.conditions` ne marche pas : l'environnement `node` de Vitest ne les applique pas.
+ */
+const require = createRequire(import.meta.url);
+const SERVER_ONLY_STUB = require
+  .resolve("server-only")
+  .replace(/index\.js$/, "empty.js");
 
 /**
  * Tests unitaires — schémas Zod, helpers purs, couche transport.
@@ -14,6 +31,7 @@ export default defineConfig({
     // Reprend l'alias `@/*` de tsconfig.json — une seule source de vérité, et une dépendance de
     // moins depuis que Vite le fait nativement.
     tsconfigPaths: true,
+    alias: { "server-only": SERVER_ONLY_STUB },
   },
   test: {
     environment: "node",

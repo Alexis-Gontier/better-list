@@ -40,9 +40,17 @@ src/features/<domaine>/
 ├── hooks/
 ├── schemas/
 │   └── <domaine>.schema.ts
-├── lib/
-└── types.ts
+└── lib/
 ```
+
+Pas de `types.ts` : `z.infer` sur le schéma a suffi aux six features existantes. Le créer d'avance
+donne une source de vérité en double qui finit par diverger.
+
+`lib/` n'accueille que les helpers **partagés par plusieurs routes**. Un helper qu'une seule route
+consomme reste dans le `_lib/` de cette route et ne monte qu'au deuxième appelant réel — c'est la
+règle de promotion des composants, appliquée aux fonctions. Et un helper dont **tous** les
+consommateurs sont dans `server/` porte `import "server-only";` : le dossier `lib/` ne dit rien de
+la frontière, contrairement à `server/`.
 
 ### 3. Écrire les fichiers `server/`
 
