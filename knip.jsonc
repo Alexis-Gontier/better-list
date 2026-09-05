@@ -22,48 +22,72 @@
   "ignoreExportsUsedInFile": true,
 
   // ─────────────────────────────────────────────────────────────────────────────────────────────
-  // GEL DE LA MISE À BLANC — posé le 5 septembre 2026.
+  // GEL DE LA MISE À BLANC — posé le 5 septembre 2026, élargi le même jour.
   //
-  // La refonte a vidé cinq routes de toute leur présentation (`docs/STATE.md`). Le code qu'elles
-  // appelaient n'est pas mort, il est **sans écran** : plus personne n'importe `getLibrary` parce
-  // que `/library` est un placeholder, pas parce que la requête serait devenue inutile.
+  // Les dix routes de l'app sont des placeholders (`docs/STATE.md`). Ce qui reste sous `src/` est
+  // donc, presque entièrement, du code **sans écran** : personne n'importe `media.documents.ts`
+  // parce qu'aucune page n'interroge AniList, pas parce que ces documents GraphQL seraient devenus
+  // faux. Le gel dit « en attente », jamais « inutile ».
   //
-  // Le gel est volontairement posé par **chemin**, et non en `exclude` global : knip continue de
-  // signaler le code mort partout ailleurs dans le dépôt pendant toute la refonte. Chaque entrée
-  // ci-dessous nomme l'écran qu'elle attend — c'est la liste de reconstruction, et elle se vide
-  // par le bas : une entrée se retire le jour où sa route rebranche ce qu'elle couvrait.
+  // Ce qui est gelé a été choisi, pas subi. Trois natures, et rien d'autre :
   //
-  // **Si ce bloc existe encore une fois les cinq routes reconstruites, c'est un oubli, pas une
-  // décision.** Le dernier à partir doit emporter `ignoreIssues` et `ignoreDependencies` avec lui.
+  //   1. **des contrats d'URL** — `calendar-params`, `profile-params`, `search-params` : ils fixent
+  //      la forme des liens qu'on peut envoyer, une décision produit que la refonte ne rejoue pas ;
+  //   2. **des schémas Zod et les types qui en dérivent** — la forme du domaine, dont `z.infer`
+  //      tient lieu de `src/types/` (ARCHITECTURE.md) ;
+  //   3. **des acquis coûteux à réécrire** — `media.documents.ts` et ses 488 lignes de GraphQL
+  //      AniList, `lib/safe-action.ts` qui porte `actionClient` et `authActionClient`, et les
+  //      helpers purs couverts par les 133 tests épargnés.
+  //
+  // Tout le rendu, lui, a été supprimé plutôt que gelé : geler du code qu'on sait devoir jeter,
+  // c'est se promettre de le relire une fois de trop.
+  //
+  // Le gel est posé par **chemin**, jamais en `exclude` global : knip continue de signaler le code
+  // mort partout ailleurs. Chaque entrée nomme l'écran qu'elle attend — c'est la liste de
+  // reconstruction, et elle se vide par le bas.
+  //
+  // **Si ce bloc existe encore une fois les routes reconstruites, c'est un oubli, pas une
+  // décision.** Le dernier à partir emporte `ignoreIssues` et `ignoreDependencies` avec lui.
   // ─────────────────────────────────────────────────────────────────────────────────────────────
   "ignoreIssues": {
-    // Fichiers sans importateur — des hooks dont la présentation était le seul client.
-    //
-    // Ils sont gelés et non supprimés parce qu'ils portent une décision et non un rendu :
-    // `calendar-params.ts` tient le contrat d'URL du planning, et `use-url-filters.ts` l'abstraction
-    // de filtres extraite le 5 septembre (commit a5be9d5). Les trois composants qui étaient ici — les
-    // vignettes d'avancement rapide et leur formulaire — ont été supprimés le même jour : c'était du
-    // rendu, et du rendu que la refonte réécrira de toute façon.
-    "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // attend /calendar
+    // ── Fichiers sans importateur ───────────────────────────────────────────────────────────────
+    "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // contrat d'URL — attend /calendar
+    "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
+    "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
+    "src/features/lists/schemas/lists.schema.ts": ["files"], // forme du domaine — attend /lists
+    "src/features/media/server/media.documents.ts": ["files"], // 488 l. de GraphQL AniList
+    "src/features/tracking/lib/library-params.ts": ["files"], // contrat d'URL — attend /library
+    "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
-    "src/hooks/use-url-filters.ts": ["files"], // attend la coquille /search + /library
+    "src/hooks/use-url-filters.ts": ["files"], // abstraction extraite en a5be9d5 — attend /search
+    "src/lib/safe-action.ts": ["files"], // actionClient / authActionClient — attend la 1re action
 
-    // Exports sans appelant — la couche données, gardée intacte par décision (voir STATE.md).
-    "src/components/shared/media-grid.tsx": ["exports"], // MediaList : attend /search
-    "src/features/lists/server/lists.actions.ts": ["exports"], // 5 actions : attendent /lists/[id]
-    "src/features/lists/server/lists.queries.ts": ["exports"], // getMyLists : attend /lists
-    "src/features/media/lib/media-format.ts": ["exports"], // compactFromMirror : attend l'accueil
-    "src/features/media/lib/search-params.ts": ["exports"], // EMPTY_FILTERS : attend /search
-    "src/features/media/server/media.queries.ts": ["exports"], // catalogue, planning, vocabulaire
-    "src/features/tracking/lib/library-params.ts": ["exports"], // options de statut : attend /library
-    "src/features/tracking/server/tracking.queries.ts": ["exports"] // 7 lectures : attendent 4 routes
+    // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
+    "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
+    "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
+    "src/features/media/lib/search-params.ts": ["exports"], // EMPTY_FILTERS — attend /search
+    "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types
+    "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
+    "src/features/preferences/schemas/preferences.schema.ts": ["exports"], // défauts — attendent /settings
+    "src/features/tracking/lib/entry-format.ts": ["exports"], // formatEventTime — attend le journal
+    "src/features/tracking/schemas/tracking.schema.ts": ["exports"] // removeEntrySchema — attend l'action
   },
 
-  // Deux familles employées uniquement par de la présentation supprimée : `@dnd-kit` par le
-  // réordonnancement de `/lists/[id]`, `embla` par les carrousels de l'accueil. Elles restent au
-  // `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte les reprendra,
-  // et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
-  "ignoreDependencies": ["@dnd-kit/.*", "embla-carousel.*"]
+  // Quatre familles employées uniquement par de la présentation supprimée : `@dnd-kit` par le
+  // réordonnancement de `/lists/[id]`, `embla` par les carrousels de l'accueil, `cmdk` et
+  // `react-hotkeys-hook` par la palette `⌘K`. `next-safe-action` suit `lib/safe-action.ts`, gelé
+  // ci-dessus : c'est le passage obligé de toute Server Action (CLAUDE.md), et il n'y en a plus
+  // aucune.
+  //
+  // Elles restent au `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte
+  // les reprendra, et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
+  "ignoreDependencies": [
+    "@dnd-kit/.*",
+    "cmdk",
+    "embla-carousel.*",
+    "next-safe-action",
+    "react-hotkeys-hook"
+  ]
 
   // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
   // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux

@@ -30,6 +30,12 @@ export const env = createEnv({
      * C'est la **seule** protection de `/api/cron/*` : ces routes ne portent pas de session, donc la
      * garde de `(app)/layout.tsx` ne les couvre pas. Longueur minimale imposée pour qu'un secret
      * bricolé à la main ne passe pas la validation du build.
+     *
+     * **Sans emploi depuis la mise à blanc du 5 septembre 2026** : `api/cron/refresh-media` a été
+     * supprimé avec `media.mirror.ts` qu'il appelait, et l'entrée `crons` de `vercel.json` avec lui.
+     * La variable est conservée plutôt que retirée — le rafraîchissement du miroir revient à la
+     * reconstruction, et faire disparaître puis réapparaître un secret validé coûte plus qu'un
+     * commentaire. Si la reconstruction s'en passe finalement, c'est ici qu'il faut la retirer.
      */
     CRON_SECRET: z.string().min(32),
   },

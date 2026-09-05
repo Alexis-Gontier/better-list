@@ -6,7 +6,6 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
-import { CommandPalette } from "@/features/command/components/command-palette";
 import type { SessionUser } from "@/lib/auth/server";
 
 /**
@@ -32,8 +31,14 @@ export function Header({ user }: { user: SessionUser }) {
             <MainNav />
           </div>
 
+          {/*
+            La palette `⌘K` manque ici depuis la mise à blanc du 5 septembre 2026 : elle vivait dans
+            `features/command/`, et son route handler `api/command` est parti avec elle. Son schéma
+            (`features/command/schemas/command.schema.ts`) est épargné — il porte la règle du « +1 »,
+            seul endroit où elle survive. La remonter est le premier geste de la reconstruction du
+            chrome.
+          */}
           <div className="flex items-center gap-2">
-            <CommandPalette />
             <NotificationsMenu />
             <ThemeToggle />
             <UserMenu

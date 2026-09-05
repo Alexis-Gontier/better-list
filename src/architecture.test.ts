@@ -100,8 +100,26 @@ describe("frontière server / client", () => {
    * Le corollaire : ces composants ne sont des Server Components que tant qu'ils le restent. Le
    * test ci-dessus deviendrait vide et silencieusement inutile si la détection cessait de trouver
    * quoi que ce soit — une regex qui ne correspond plus à rien passe au vert.
+   *
+   * ─────────────────────────────────────────────────────────────────────────────────────────────
+   * **En pause depuis la mise à blanc totale du 5 septembre 2026, et il faut savoir ce que ça
+   * coûte.**
+   *
+   * Il ne reste aucun Server Component `async` dans le dépôt : les six qu'il surveillait vivaient
+   * dans `features/*​/components/`, supprimés avec le reste du rendu. Le canari a donc échoué
+   * exactement comme prévu — c'est la seule fois où sa panne est une bonne nouvelle.
+   *
+   * La conséquence est désagréable et doit être dite : **le test précédent est, en attendant, vrai
+   * par vacuité.** Il parcourt un ensemble vide et passe au vert sans rien garder. C'est
+   * précisément l'état que ce canari existait pour rendre visible, et le neutraliser en abaissant
+   * son assertion à `>= 0` l'aurait rendu invisible à la place.
+   *
+   * `.skip` plutôt que la suppression, donc : le test reste lisible, sa panne reste expliquée, et
+   * **le premier écran reconstruit qui pose un Server Component `async` doit retirer ce `.skip`**.
+   * C'est noté dans les écarts connus de `docs/STATE.md`.
+   * ─────────────────────────────────────────────────────────────────────────────────────────────
    */
-  it("en trouve effectivement, pour que le test précédent ait un objet", () => {
+  it.skip("en trouve effectivement, pour que le test précédent ait un objet", () => {
     expect(asyncServerComponents.length).toBeGreaterThan(0);
   });
 });

@@ -1,37 +1,29 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
-import { ProfileContent } from "@/app/(app)/u/[username]/_components/profile-content";
-import { ProfileSkeleton } from "@/app/(app)/u/[username]/_components/profile-skeleton";
-import { getProfile } from "@/features/profile/server/profile.queries";
+import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
+
+export const metadata: Metadata = {
+  title: "Profil",
+  description: "Le suivi et le journal d'un membre.",
+  // Le profil reste hors index, comme avant la mise à blanc : le cercle est privé, et `robots.ts`
+  // ferme déjà tout le site. Les deux gardes se doublent volontairement.
+  robots: { index: false, follow: false },
+};
 
 /**
- * `getProfile` porte le `cache` de React : cet appel et celui de la page ne coûtent qu'une requête.
+ * Le profil d'un membre — vidé par la mise à blanc totale du 5 septembre 2026.
+ *
+ * Son `_lib/profile-params.ts` est épargné : il porte le contrat d'URL de la pagination du journal,
+ * une décision et non un rendu — même traitement que `calendar/_lib/calendar-params.ts`.
+ *
+ * Le titre redevient statique : il nommait le membre via `getProfile`, supprimé avec la feature
+ * `profile` dont il était le seul consommateur.
  */
-export async function generateMetadata({
-  params,
-}: PageProps<"/u/[username]">): Promise<Metadata> {
-  const { username } = await params;
-  const profile = await getProfile(username);
-
-  if (!profile) return {};
-
-  return {
-    title: `${profile.name} (@${profile.username})`,
-    description: `Le suivi et le journal de ${profile.name}.`,
-    // Un profil n'a aucune raison d'être indexé : le cercle est privé (docs/PRODUCT.md §2), et les
-    // pages authentifiées ne devraient de toute façon jamais atteindre un robot.
-    robots: { index: false, follow: false },
-  };
-}
-
-export default function ProfilePage({
-  params,
-  searchParams,
-}: PageProps<"/u/[username]">) {
+export default function ProfilePage() {
   return (
-    <Suspense fallback={<ProfileSkeleton />}>
-      <ProfileContent params={params} searchParams={searchParams} />
-    </Suspense>
+    <RouteUnderConstruction
+      description="Le suivi et le journal d'un membre."
+      title="Profil"
+    />
   );
 }

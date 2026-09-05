@@ -1,37 +1,25 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
-import { PreferencesForm } from "@/app/(app)/settings/_components/preferences-form";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
 
 export const metadata: Metadata = {
   title: "Paramètres",
   description: "Échelle de notation, langue des titres, contenu adulte.",
 };
 
+/**
+ * Les préférences — vidées par la mise à blanc totale du 5 septembre 2026.
+ *
+ * `features/preferences/` ne garde que son schéma Zod : `titleLanguage` et ses valeurs par défaut
+ * restent la source de vérité, et `media-format.ts` continue de s'en servir. Ce qui a disparu, c'est
+ * la lecture (`getPreferences`) et l'écriture (`updatePreferences`) — douze appelants au moment de
+ * la suppression, tous dans des écrans désormais vides.
+ */
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-semibold text-xl">Paramètres</h1>
-        <p className="text-muted-foreground text-sm">
-          Ces réglages ne changent que votre affichage : ils ne modifient aucune
-          donnée enregistrée.
-        </p>
-      </header>
-
-      <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
-        <PreferencesLoader />
-      </Suspense>
-    </div>
+    <RouteUnderConstruction
+      description="Échelle de notation, langue des titres, contenu adulte."
+      title="Paramètres"
+    />
   );
-}
-
-/**
- * La lecture est suspendue à part : elle dépend du compte, donc elle n'est pas mémorisable, et
- * l'en-tête n'a aucune raison de l'attendre.
- */
-async function PreferencesLoader() {
-  return <PreferencesForm preferences={await getPreferences()} />;
 }

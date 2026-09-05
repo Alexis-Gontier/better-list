@@ -10,150 +10,181 @@ l'intention.
 
 Relevé le **5 septembre 2026**.
 
+> ### En un mot : l'app n'a plus d'écran.
+>
+> La mise à blanc du 5 septembre a supprimé **toute** la présentation. Les dix routes construites
+> sont des placeholders ; seule l'authentification affiche encore quelque chose de réel. Ce qui
+> reste sous `src/` est le socle et les acquis testés — décrits plus bas, et volontairement choisis.
+>
+> **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
+> l'ordre de reconstruction est au bas de la page.
+
 ---
 
 ## La carte
 
-Chaque route, ce qu'elle consomme et où elle en est. La clé entre parenthèses est celle de
+Chaque route et où elle en est. La clé entre parenthèses est celle de
 [`src/config/routes.ts`](../src/config/routes.ts) — aucun chemin ne s'écrit en dur.
 
-| Route | Rôle | Features consommées | Modèles | État |
-| --- | --- | --- | --- | --- |
-| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, quatre rangées de découverte | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
-| `/search` (`search`) | Recherche du catalogue, filtres en URL | `media`, `tracking`, `preferences` | `Media`, `Entry` | **vidé** — en refonte |
-| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `media`, `tracking`, `lists`, `preferences` | `Media`, `Entry`, `EntryEvent`, `ListItem` | **livré** |
-| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `tracking`, `media` | `Entry`, `Media` | **vidé** — en refonte |
-| `/lists` (`lists.root`) | Mes listes | `lists`, `media`, `preferences` | `List`, `ListItem` | **vidé** — en refonte |
-| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `lists`, `media`, `command` | `List`, `ListItem`, `Media` | **vidé** — en refonte |
-| `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | — | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
-| `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `lists` | `List`, `ListItem` | **livré** |
-| `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `profile` | `User`, `Entry`, `EntryEvent` | **livré** |
-| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `media`, `tracking`, `preferences` | `Media`, `Entry` | **vidé** — en refonte |
-| `/settings` (`settings`) | Préférences d'affichage | `preferences` | `UserPreferences` | **livré** |
-| `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | — | `Edition`, `OwnedVolume` | **déclaré, non construit** |
-| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | — | `Edition`, `OwnedVolume` | **déclaré, non construit** |
-| `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | — | `User`, `Session`, `Account` | **livré** |
+| Route | Rôle | Modèles | État |
+| --- | --- | --- | --- |
+| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
+| `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **vidé** — en refonte |
+| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **vidé** — en refonte |
+| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `Entry`, `Media` | **vidé** — en refonte |
+| `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **vidé** — en refonte |
+| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **vidé** — en refonte |
+| `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
+| `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **vidé** — en refonte |
+| `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
+| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **vidé** — en refonte |
+| `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **vidé** — en refonte |
+| `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
+| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | `Edition`, `OwnedVolume` | **déclaré, non construit** |
+| `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
+
+La colonne « Features consommées » a disparu de ce tableau : plus aucune route ne consomme de
+feature, puisqu'il ne reste ni query ni action. Elle reviendra avec les écrans.
 
 Les tables `ListView`, `ListViewItem`, `Edition` et `OwnedVolume` existent au schéma depuis la
-migration initiale et ne sont employées par aucun écran. C'est voulu, pas un oubli — PRODUCT.md §6
-dit pourquoi.
+migration initiale et ne sont employées par aucun écran. C'était déjà vrai avant la mise à blanc, et
+c'est voulu — PRODUCT.md §6 dit pourquoi.
 
 ### La mise à blanc du 5 septembre 2026
 
-Six lignes du tableau portent **vidé**. Le 5 septembre, la présentation de cinq arbres de routes a
-été supprimée d'un coup — 38 fichiers d'UI, plus 7 modules devenus orphelins par ricochet
+Trois passes le même jour, de plus en plus larges.
+
+**La première** a vidé cinq arbres de routes — l'accueil, `/search`, `/library`, `/calendar`,
+`/lists` et `/lists/[id]` : 38 fichiers d'UI, plus 7 modules orphelins par ricochet
 (`media-carousel`, `view-toggle`, `list-card`, `media-row`, `use-search-filters`,
 `use-library-filters`, `entry-card-actions`). Le diagnostic est celui de la spec du 2 septembre :
 les écrans avaient été construits par ajout, et `/search` et `/library` étaient le même écran écrit
 deux fois.
 
-Une seconde passe, le même jour, a emporté trois composants de `features/tracking/` que la première
-avait laissés sans importateur : `entry-dialog`, `entry-form` et `entry-quick-progress` — 647 lignes
-de rendu que la refonte réécrira. `score-stars` et `remove-entry-dialog`, que `entry-form` était
-seul à partager avec `entry-controls`, survivent par ce dernier et servent toujours `/media/[id]`.
-Avec eux, le gel knip passe de 14 à 11 chemins.
+**La deuxième** a emporté trois composants de `features/tracking/` que la première laissait sans
+importateur : `entry-dialog`, `entry-form`, `entry-quick-progress` — 647 lignes de rendu.
 
-Trois choses n'ont **pas** été supprimées, et il faut le savoir avant de reconstruire :
+**La troisième** a étendu la mise à blanc aux quatre routes qui tenaient encore (`/media/[id]`,
+`/u/[username]`, `/settings`, `/l/[token]`) et à tout ce qu'elles faisaient vivre : les composants,
+les queries et les actions de `features/`, `components/shared/media-grid` et `pagination`, la palette
+`⌘K` avec son route handler `api/command`, et le rafraîchissement du miroir avec `api/cron`.
 
-1. **Les `page.tsx` des cinq routes.** Ils sont réduits à un placeholder
-   (`components/shared/route-under-construction.tsx`), pas effacés. `routes.home` est la cible de
-   redirection après connexion, le `callbackURL` GitHub, la sortie de la liste d'attente et le repli
-   de `proxy.ts` ; `config/navigation.ts` et la palette `⌘K` pointent vers les quatre autres ; et
-   les Server Actions de `lists` et `tracking` y adressent seize `revalidatePath()`. Effacer les
-   fichiers aurait fait atterrir toute connexion sur un 404.
-2. **La couche données.** Queries, actions, schémas et helpers de `features/` sont intacts, tests
-   compris — les 192 tests passent toujours, ce qui confirme qu'aucun ne portait sur l'UI supprimée.
-3. **Deux modules de `calendar/_lib/`.** `airing-week.ts` (calcul de semaine, couvert) et
-   `calendar-params.ts` (le contrat d'URL : la semaine en décalage, pas en date) sont des décisions
-   de domaine, pas d'apparence.
+#### Ce qui a été gardé, et pourquoi
 
-### Les trois route handlers
+Le choix n'est pas « ce qui restait » mais « ce qui coûte cher à réécrire et ne dépend d'aucun
+écran ». Quatre familles :
 
-Ils ne vivent pas sous le layout `(app)` et le `matcher` du proxy exclut `api/` : chacun porte donc
-sa propre garde.
+1. **Les `page.tsx` des dix routes**, réduits à un placeholder
+   ([`components/shared/route-under-construction.tsx`](../src/components/shared/route-under-construction.tsx)),
+   jamais effacés. `routes.home` est la cible de redirection après connexion, le `callbackURL`
+   GitHub, la sortie de la liste d'attente et le repli de `proxy.ts` ; `config/navigation.ts` pointe
+   vers les autres. Effacer les fichiers aurait fait atterrir toute connexion sur un 404.
+2. **Les helpers purs et leurs tests** — 10 fichiers, **133 des 192 tests**. Transitions de statut,
+   brouillon d'entrée, formatage, saison, fraîcheur du miroir, `fractional-indexing`, jeton de
+   partage. Aucun ne dépend d'un écran.
+3. **Les schémas Zod**, qui tiennent lieu de `src/types/` (ARCHITECTURE.md) : c'est la forme du
+   domaine, et elle ne change pas parce que l'apparence change.
+4. **Trois acquis coûteux** : [`media.documents.ts`](../src/features/media/server/media.documents.ts)
+   et ses 488 lignes de GraphQL AniList (sélection de champs, budget de requêtes),
+   [`lib/safe-action.ts`](../src/lib/safe-action.ts) qui porte `actionClient` et `authActionClient`,
+   et les contrats d'URL (`calendar-params`, `profile-params`, `search-params`) — la forme des liens
+   qu'on peut envoyer est une décision produit, pas un rendu.
+
+Tout le reste — le rendu — a été **supprimé plutôt que gelé**. Geler du code qu'on sait devoir jeter,
+c'est se promettre de le relire une fois de trop.
+
+#### Ce que ça a coûté, sans arrondi
+
+- **`api/cron/refresh-media` et `vercel.json` sont supprimés.** Le miroir `Media` n'est donc plus
+  rafraîchi quotidiennement en production. `CRON_SECRET` reste déclaré dans `config/env.ts`, sans
+  emploi, avec un commentaire qui le dit — le cron revient à la reconstruction.
+- **`api/command` est supprimé** avec la palette `⌘K` qu'il servait. Son schéma survit : il porte la
+  règle du « +1 », dont `command.queries.ts` était le seul autre dépositaire.
+- **Le canari de `architecture.test.ts` est en `.skip`.** Voir les écarts connus — c'est le point le
+  plus important de cette page.
+
+### Le seul route handler restant
+
+Il ne vit pas sous le layout `(app)` et le `matcher` du proxy exclut `api/` : il porte sa propre
+garde.
 
 | Handler | Rôle | Sa garde |
 | --- | --- | --- |
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
-| `api/command` | Palette `⌘K` — lecture client, donc `GET` annulable et non Server Action | session **et** statut `APPROVED`, plus `rate-limit` ; répond `401`, jamais un `redirect()` |
-| `api/cron/refresh-media` | Rafraîchissement du miroir `Media` | `Authorization: Bearer $CRON_SECRET` — pas de session, c'est un appel machine |
 
-### Et trois conventions de fichier, posées le 5 septembre 2026
+`api/command` et `api/cron/refresh-media` ont été supprimés par la mise à blanc, avec le code qu'ils
+appelaient.
+
+### Et trois conventions de fichier
 
 | Fichier | Rôle |
 | --- | --- |
-| `app/robots.ts` | `disallow: "/"` **total**. `/l/<jeton>` s'ouvre sans session : un lien secret indexé n'est plus un secret, il est cherchable. |
+| `app/robots.ts` | `disallow: "/"` **total**. `/l/<jeton>` s'ouvre sans session : un lien secret indexé n'est plus un secret, il est cherchable. Le placeholder de `/l/[token]` porte en plus son propre `noindex`. |
 | `app/icon.tsx` | L'icône d'onglet, dessinée par `ImageResponse` — aucun binaire à relire dans `public/`. |
 | `instrumentation.ts` | `onRequestError` : relie le `digest` qu'`error.tsx` affiche au visiteur à une ligne de journal cherchable. |
 
 ---
 
-## Les six features
+## Ce qui reste dans `features/`
 
-`profile` et `command` composent plusieurs domaines sans appartenir à aucun — la raison est dans
-[ARCHITECTURE.md](./ARCHITECTURE.md#anatomie-dune-feature).
+**27 fichiers, dont 10 de tests.** Plus aucune query, aucune action, aucun composant — la couche
+`server/` a disparu à l'exception de `media.documents.ts`.
 
-**`media`** — le catalogue AniList et son miroir local.
-Expose `searchMedia`, `getMediaById`, `getBrowseCatalogue`, `getAiringSchedule`,
-`getFilterVocabulary`, `mediaCacheTag` (queries) et `ensureMediaMirror`, `refreshStaleMirror`,
-`mediaTotalUnits` (miroir). Dépend de `lib/http/anilist`. C'est la seule feature qui sort du serveur.
+| Feature | Ce qui reste |
+| --- | --- |
+| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/media.documents.ts` — les documents GraphQL. |
+| **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. |
+| **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
+| **`preferences`** | `schemas/preferences.schema` seul — `titleLanguage` et ses valeurs par défaut. |
+| **`command`** | `schemas/command.schema` seul — il porte la règle du « +1 ». |
+| **`profile`** | *supprimée en entier* — elle n'était que des queries, et `/u/[username]` était son seul consommateur. |
 
-**`tracking`** — le suivi, le journal, la bibliothèque.
-Expose `getEntryForMedia`, `getEntryStatesFor`, `getEntryTimeline`, `getLibrary`,
-`getLibraryStatusCounts`, `searchEntries`, `getHeroEntries`, `getDashboard`, `getAiringEntries`, et
-les actions `saveEntry`, `removeEntry`. Elle était la feature la plus consommée — six routes en
-dépendaient. Depuis la mise à blanc, il n'en reste que deux (`/media/[id]` et `/u/[username]`) : les
-sept lectures gelées dans `knip.jsonc` attendent les quatre autres.
-
-**`lists`** — les listes et leur contenu.
-Expose `getMyLists`, `getListById`, `getSharedList`, `getListsForMedia`, et huit actions
-(`createList`, `updateList`, `deleteList`, `shareList`, `unshareList`, `addToList`,
-`reorderListItem`, `removeFromList`). L'ordre passe par `fractional-indexing` (`lib/list-reorder`),
-le partage par un jeton (`lib/share-token`), jamais par l'`id`.
-
-**`profile`** — la vue publique d'un membre. `getProfile`, `getProfileStats`, `getProfileTimeline`.
-Compose `tracking` et `media` sans leur appartenir.
-
-**`preferences`** — les réglages d'affichage, lus par presque tous les écrans.
-`getPreferences` et l'action `updatePreferences`. Porte `titleLanguage` et ses valeurs par défaut.
-
-**`command`** — la palette `⌘K`. `getCommandResults`, servie par `api/command` en `GET`.
+`lib/http/anilist.ts` n'a pas bougé : c'est du transport, il vit dans `lib/` et non dans une feature.
+Avec `media.documents.ts`, l'intégration AniList est donc intacte des deux côtés — seul le cache qui
+les reliait (`media.queries.ts`) est parti.
 
 ---
 
 ## Contrôle de santé
 
-Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y fier.**
+Relevé le 5 septembre 2026, après la mise à blanc. **À rejouer et à redater dès qu'on prétend s'y
+fier.**
 
 | Commande | Résultat |
 | --- | --- |
-| `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs depuis le 5 septembre |
-| `pnpm test` | 192 tests, 16 fichiers — **inchangé après la mise à blanc** |
-| `pnpm lint` | 199 fichiers, aucune correction (246 avant la mise à blanc) |
-| `pnpm build` | 19 pages, toutes en rendu partiel sauf les handlers |
-| `pnpm knip` | aucun signalement — **mais sous gel**, voir les écarts |
+| `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
+| `pnpm test` | **191 passés, 1 en pause**, 16 fichiers (192 avant) |
+| `pnpm lint` | 143 fichiers, aucune correction (246 avant la mise à blanc) |
+| `pnpm build` | 17 pages (19 avant), un seul route handler |
+| `pnpm knip` | aucun signalement — **mais sous gel**, voir ci-dessous |
 
 **Écarts connus :**
 
-- Les composants React ne sont couverts par **aucun test de rendu** : les 16 fichiers portent sur
-  des helpers purs, des schémas, le proxy et l'arborescence. Playwright est prévu (PRODUCT.md §7) et
-  pas posé.
-- `src/architecture.test.ts` couvre en revanche ce qu'aucun autre garde-fou ne voit : aucun module
-  `"use client"` n'importe un Server Component `async`, `src/app/` ne contient que des conventions
-  Next, `features/` n'a pas de barrel.
-- `/collection` est déclarée dans `routes.ts` sans écran derrière. Rien ne pointe dessus — ni la
-  navigation, ni la palette. `routes.ts` le dit lui-même dans son commentaire.
-- Le repli de panne AniList n'est vérifié par **aucun test**, et la mise à blanc a emporté les cinq
-  appelants de `tryAniList` : il n'en reste qu'un, `/media/[id]`. `tryAniList` garde ses propres
-  tests. Le repli est donc à **re-poser écran par écran** pendant la reconstruction, et c'est un
-  chemin qu'on ne voit jamais en développement — il ne se déclenche que quand l'API tombe.
-- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte depuis le 5 septembre un bloc `ignoreIssues`
-  qui couvre 11 chemins, plus `ignoreDependencies` pour `@dnd-kit` et `embla`. Ce ne sont pas des
-  faux positifs : ce code est réellement sans appelant, parce que les écrans qui l'appelaient
-  n'existent plus. Le gel est posé **par chemin** et non en `exclude` global, pour que knip continue
-  de signaler le code mort partout ailleurs. Chaque entrée nomme la route qu'elle attend : c'est la
-  liste de reconstruction, et elle doit être vide — le bloc supprimé — quand les six routes sont
-  refaites. Une décision assumée, prise en connaissance du coût le 5 septembre.
+- **Le canari de la frontière server/client est en pause, et son voisin ne garde plus rien.** C'est
+  l'écart le plus important de cette page. `architecture.test.ts` vérifiait qu'aucun module
+  `"use client"` n'importe un Server Component `async` — et, juste après, qu'il en trouvait au moins
+  un, pour que le premier test ne passe pas au vert en parcourant un ensemble vide. Il n'en reste
+  aucun dans le dépôt : ils vivaient tous dans `features/*/components/`. Le canari a donc échoué
+  exactement comme il devait, et il est passé en `.skip` plutôt qu'abaissé à `>= 0` — l'abaisser
+  aurait rendu le problème invisible au lieu de le rendre visible. **En attendant, le test voisin ne
+  garde rien.** Le premier écran reconstruit qui pose un Server Component `async` doit retirer ce
+  `.skip`.
+- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant 10 fichiers
+  et 8 chemins d'exports/types, plus `ignoreDependencies` pour cinq familles (`@dnd-kit`, `embla`,
+  `cmdk`, `react-hotkeys-hook`, `next-safe-action`). Ce ne sont pas des faux positifs : ce code est
+  réellement sans appelant, parce qu'aucun écran n'existe. Le gel est posé **par chemin** et non en
+  `exclude` global, pour que knip continue de signaler le code mort partout ailleurs. Chaque entrée
+  nomme ce qu'elle attend : c'est la liste de reconstruction, et le bloc doit avoir disparu quand les
+  routes sont refaites.
+- Les composants React ne sont couverts par **aucun test de rendu** — mais il n'y a plus de
+  composant à couvrir, hors le chrome. Playwright est prévu (PRODUCT.md §7) et pas posé.
+- Le repli de panne AniList n'est vérifié par **aucun test**, et la mise à blanc a emporté ses six
+  appelants. Il ne reste que `tryAniList` (`lib/http/anilist.ts`) et ses propres tests. Le repli est
+  donc à **re-poser écran par écran** pendant la reconstruction — un chemin qu'on ne voit jamais en
+  développement, puisqu'il demande qu'une API tierce soit en panne.
+- Le miroir `Media` n'est plus rafraîchi : le cron est supprimé (voir plus haut).
+- `/collection` est déclarée dans `routes.ts` sans écran derrière, comme avant la mise à blanc.
+  `routes.ts` le dit lui-même dans son commentaire.
 
 ---
 
@@ -167,20 +198,28 @@ tokens « Obsidienne », les composants shadcn manquants, les deux variants, la 
 la grille dense. Aucune de ces tâches n'a été entamée — les 54 cases du plan sont vides, et
 `--font-heading` alias toujours `--font-sans`.
 
-Cet ordre n'est pas négociable pour une raison simple : la `MediaCard` et la grille apparaissent sur
-les six routes à reconstruire. Les redessiner après le premier écran obligerait à refaire cet
-écran.
+⚠️ **Ce plan a été écrit avant la mise à blanc.** Ses tâches 5, 8, 9 et 10 modifient des fichiers
+qui n'existent plus (`MediaCard`, `MediaRow`, les filtres de `/search` et `/library`). Il faut le
+relire contre l'arbre actuel avant de le lancer : les tâches 1 à 4 restent valables telles quelles,
+les suivantes deviennent des créations plutôt que des modifications.
 
 ### Puis, une route par branche
 
 L'ordre est choisi, et l'accueil est volontairement dernier — c'est l'écran qui compose le
 vocabulaire de tous les autres.
 
-1. `/search`, puis `/library` — ensemble, via la coquille commune (tâches 8 à 10 du plan). C'est le
-   premier gain réel : la fin du double emploi, avant même le changement d'apparence.
-2. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
-3. `/lists`, puis `/lists/[id]` — le réordonnancement revient, et `@dnd-kit` sort du gel.
-4. `/` — en dernier, avec le vocabulaire complet sous les yeux.
+1. `/search`, puis `/library` — ensemble, via la coquille commune. C'est le premier gain réel : la
+   fin du double emploi, avant même le changement d'apparence.
+2. `/media/[id]` — la fiche, et avec elle le premier Server Component `async` : c'est cette branche
+   qui doit retirer le `.skip` du canari.
+3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
+4. `/lists`, puis `/lists/[id]`, puis `/l/[token]` — le réordonnancement revient, `@dnd-kit` sort du
+   gel, et le jeton de partage retrouve un écran.
+5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
+6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
+
+Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`, et le cron de
+rafraîchissement du miroir avec son `vercel.json`.
 
 Chaque branche retire du bloc `ignoreIssues` de `knip.jsonc` les entrées que sa route rebranche.
 Quand la dernière part, le bloc entier part avec elle.
