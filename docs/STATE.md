@@ -190,57 +190,47 @@ fier.**
 
 ## Le prochain pas
 
-**Récupérer le socle visuel de la branche `refonte-design` — il est déjà écrit.**
+**Dessiner `/search`, puis `/library`. Le socle visuel est posé ; tout le reste est à écrire.**
 
-### ⚠️ À lire avant toute chose : `git branch`
+### Le socle visuel est en place — et c'est tout ce qui a été repris
 
-Les cases à cocher du plan du 2 septembre
-([plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md)) sont **toutes vides, et c'est
-trompeur**. Le plan a bel et bien été exécuté, le 2 septembre, sur la branche **`refonte-design`** —
-15 commits, 2 018 lignes, les tâches 1 à 10. Personne n'a coché les cases en chemin.
+`styles/globals.css` porte les tokens « Obsidienne » et `styles/fonts.ts` charge Archivo, désaliasé
+de `--font-sans`. `@layer base` applique déjà `font-heading` aux `h1`, `h2` et `h3` : le titrage est
+en place avant qu'un seul écran soit écrit.
 
-Cette page a affirmé le contraire pendant une journée, et la mise à blanc a été menée sans le
-savoir. **Le fichier de plan n'est pas l'état du dépôt : `git branch` l'est.**
+Ces deux commits viennent de la branche `refonte-design`, par cherry-pick. **Rien d'autre n'en sera
+repris.** Cette branche était un essai : ses 13 autres commits — les six composants shadcn, les deux
+variants, la `MediaCard`, la grille, la coquille catalogue, `/search` et `/library` — ne sont pas des
+patchs à appliquer. La reconstruction repart de zéro sur les tokens.
 
-```
-6830f10  le titrage prend sa propre police          Tâche 1
-f03d737  l'interface passe en Obsidienne            Tâche 2
-19af4c5  six composants pour les filtres avancés    Tâche 3
-516b73e  deux variants                              Tâche 4
-0928f21  la vignette porte enfin sa signature       Tâche 5
-133f58a  la grille passe à huit colonnes            Tâche 6
-d25187e  compter les facettes actives               Tâche 7
-096e988  la coquille partagée des écrans à filtres  Tâche 8
-99db79d  la recherche entre dans la coquille        Tâche 9
-3687f77  les deux écrans n'en font plus qu'un       Tâche 10
-```
+`refonte-design` reste au dépôt en lecture seule. On peut y aller voir comment un problème avait été
+résolu ; on n'y cherche pas de code à ramener.
 
-### Ce qui est récupérable, et ce qui ne l'est plus
+### ⚠️ Le plan du 2 septembre est un document d'intention, pas une liste de tâches
 
-La mise à blanc n'a pas touché `styles/`, `components/ui/` ni `lib/` : une bonne moitié de cette
-branche s'applique donc encore.
+Ses 54 cases sont vides et le resteront : le
+[plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md) a été exécuté une fois, sur
+`refonte-design`, et cette exécution est abandonnée. Ses tâches 1 et 2 sont faites (elles sont sur
+`main`) ; les tâches 3 à 10 décrivent des fichiers qui n'existent plus.
 
-| Ce que `refonte-design` a écrit | Sort |
-| --- | --- |
-| `styles/globals.css` — les tokens « Obsidienne » | **récupérable** — le fichier existe |
-| `styles/fonts.ts` — Archivo | **récupérable** |
-| 6 composants `ui/` : accordion, checkbox, radio-group, scroll-area, sheet, slider | **récupérable** — `components/ui/` intact |
-| `lib/filters/count-active.ts` + son test | **récupérable** — fichier neuf, aucun conflit |
-| `search-params.ts`, `search-media.schema.ts` retravaillés | **récupérable** — les deux existent |
-| `catalogue-shell`, `filter-bar`, `filter-chips`, `filter-panel` | **à relire** — neufs, mais consomment des composants supprimés |
-| `MediaCard`, `MediaRow`, filtres de `/search` et `/library` | **perdus** — supprimés par la mise à blanc, à réécrire |
+En revanche, la **spec** qui l'a produit reste valable et vaut la lecture avant de dessiner :
+[2026-09-02-refonte-design-ui-design.md](./superpowers/specs/2026-09-02-refonte-design-ui-design.md).
+Elle fixe le principe directeur — *la jaquette est la seule chose colorée de l'écran* — et les quatre
+seuls emplois autorisés de l'accent. C'est de l'intention visuelle, elle ne périme pas avec le code.
 
-Donc : **cherry-pick des tâches 1 à 4, 6 et 7 sur `main`** avant de dessiner quoi que ce soit. Ça
-rend Archivo, les tokens et les six composants sans écrire une ligne. Les tâches 5 et 8 à 10 servent
-de matériau de lecture, pas de patch — leurs fichiers cibles n'existent plus.
+Et la leçon de la séance, qui vaut pour n'importe quelle conclusion sur ce dépôt : **un fichier de
+plan décrit une intention, seul `git branch` décrit un dépôt.**
 
-### Puis, une route par branche
+### Une route par branche
 
 L'ordre est choisi, et l'accueil est volontairement dernier — c'est l'écran qui compose le
 vocabulaire de tous les autres.
 
-1. `/search`, puis `/library` — ensemble, via la coquille commune. C'est le premier gain réel : la
-   fin du double emploi, avant même le changement d'apparence.
+1. `/search`, puis `/library` — **ensemble, et sur une coquille commune à écrire.** C'est le premier
+   gain réel de la refonte : ces deux écrans étaient le même, écrit deux fois, et c'est ce doublon
+   qui a motivé toute l'opération. Chaque écran demande sa query (`searchMedia`, `getLibrary`), sa
+   grille et sa barre de filtres — les contrats d'URL, eux, existent déjà et sont gelés
+   (`search-params.ts`, `library-params.ts`).
 2. `/media/[id]` — la fiche, et avec elle le premier Server Component `async` : c'est cette branche
    qui doit retirer le `.skip` du canari.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
