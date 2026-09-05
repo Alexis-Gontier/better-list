@@ -8,7 +8,7 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **21 août 2026**.
+Relevé le **5 septembre 2026**.
 
 ---
 
@@ -49,6 +49,14 @@ sa propre garde.
 | `api/command` | Palette `⌘K` — lecture client, donc `GET` annulable et non Server Action | session **et** statut `APPROVED`, plus `rate-limit` ; répond `401`, jamais un `redirect()` |
 | `api/cron/refresh-media` | Rafraîchissement du miroir `Media` | `Authorization: Bearer $CRON_SECRET` — pas de session, c'est un appel machine |
 
+### Et trois conventions de fichier, posées le 5 septembre 2026
+
+| Fichier | Rôle |
+| --- | --- |
+| `app/robots.ts` | `disallow: "/"` **total**. `/l/<jeton>` s'ouvre sans session : un lien secret indexé n'est plus un secret, il est cherchable. |
+| `app/icon.tsx` | L'icône d'onglet, dessinée par `ImageResponse` — aucun binaire à relire dans `public/`. |
+| `instrumentation.ts` | `onRequestError` : relie le `digest` qu'`error.tsx` affiche au visiteur à une ligne de journal cherchable. |
+
 ---
 
 ## Les six features
@@ -84,20 +92,24 @@ Compose `tracking` et `media` sans leur appartenir.
 
 ## Contrôle de santé
 
-Relevé le 21 août 2026. **À rejouer et à redater dès qu'on prétend s'y fier.**
+Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y fier.**
 
 | Commande | Résultat |
 | --- | --- |
-| `pnpm typecheck` | propre |
-| `pnpm test` | 177 tests, 13 fichiers |
-| `pnpm lint` | 234 fichiers, aucune correction |
-| `pnpm build` | 17 pages, toutes en rendu partiel sauf les handlers |
+| `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs depuis le 5 septembre |
+| `pnpm test` | 192 tests, 16 fichiers |
+| `pnpm lint` | 246 fichiers, aucune correction |
+| `pnpm build` | 19 pages, toutes en rendu partiel sauf les handlers |
 | `pnpm knip` | aucun signalement |
 
 **Écarts connus :**
 
-- Les composants React ne sont couverts par **aucun test** : les 13 fichiers de test portent tous
-  sur des helpers purs, des schémas ou le proxy. Playwright est prévu (PRODUCT.md §7) et pas posé.
+- Les composants React ne sont couverts par **aucun test de rendu** : les 16 fichiers portent sur
+  des helpers purs, des schémas, le proxy et l'arborescence. Playwright est prévu (PRODUCT.md §7) et
+  pas posé.
+- `src/architecture.test.ts` couvre en revanche ce qu'aucun autre garde-fou ne voit : aucun module
+  `"use client"` n'importe un Server Component `async`, `src/app/` ne contient que des conventions
+  Next, `features/` n'a pas de barrel.
 - `/collection` est déclarée dans `routes.ts` sans écran derrière. Rien ne pointe dessus — ni la
   navigation, ni la palette. `routes.ts` le dit lui-même dans son commentaire.
 - Le repli de panne AniList n'est vérifié par **aucun test** : `tryAniList` a les siens, les cinq

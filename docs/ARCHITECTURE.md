@@ -20,16 +20,18 @@ src/
 │   ├── layout.tsx                # Root layout (html/body, Providers, fonts)
 │   ├── error.tsx  global-error.tsx  not-found.tsx
 │   ├── loading.tsx  forbidden.tsx  unauthorized.tsx
+│   ├── robots.ts  icon.tsx       # Conventions de métadonnées
 │   ├── (app)/                    # Groupe : app authentifiée
-│   │   ├── layout.tsx            # Header, nav, shell
+│   │   ├── layout.tsx            # Header, nav, shell — porte requireApprovedUser()
 │   │   ├── page.tsx
 │   │   └── <segment>/
 │   │       ├── page.tsx
-│   │       ├── loading.tsx
-│   │       └── _components/      # Utilisé par CETTE route seulement
+│   │       ├── _components/      # Utilisé par CETTE route seulement
+│   │       └── _lib/             # Helpers utilisés par CETTE route seulement
 │   ├── (auth)/                   # Groupe : login / signup (layout dédié)
 │   │   ├── login/
 │   │   └── signup/
+│   ├── (share)/                  # Groupe : pages ouvertes sans compte (+ son error.tsx)
 │   └── api/                      # Route handlers (callbacks, crons, lectures client)
 │
 ├── features/                     # Le cœur du code métier, découpé par domaine
@@ -40,8 +42,7 @@ src/
 │       │   └── <domaine>.actions.ts
 │       ├── hooks/                # Hooks clients du domaine
 │       ├── schemas/              # Schémas Zod (entrées d'actions, forms)
-│       ├── lib/                  # Helpers purs du domaine
-│       └── types.ts              # Types dérivés des schémas + types du domaine
+│       └── lib/                  # Helpers du domaine partagés par plusieurs routes
 │
 ├── components/
 │   ├── ui/                       # shadcn/ui — généré, on n'invente pas ici
@@ -60,8 +61,28 @@ src/
 │   └── utils.ts                  # cn() — NE PAS DÉPLACER, components.json y pointe
 ├── generated/                    # Client Prisma — GÉNÉRÉ, gitignoré, on n'y touche jamais
 ├── styles/                       # globals.css, fonts.ts
+├── instrumentation.ts            # onRequestError — la remontée des erreurs serveur
 └── proxy.ts                      # ex-middleware.ts (renommé dans Next 16)
 ```
+
+Et deux dossiers **hors de `src/`**, parce que rien de ce qu'ils contiennent ne tourne dans Next :
+
+```
+prisma/                           # schema.prisma + seed.ts (chemin imposé par Prisma)
+scripts/                          # exécutables manuels, lancés à la main et jamais importés
+├── legacy-import.ts              #   reprise des données de l'ancienne app (tsx)
+└── dev-session-cookie.mjs        #   gitignoré — rejoue une session pour le navigateur de test
+```
+
+**`scripts/` existe pour ce qui s'exécute, pas pour ce qui s'importe.** Ces fichiers n'ont ni
+appelant ni test ; ils se lancent depuis un terminal, avec des arguments. `legacy-import.ts` vivait
+dans `prisma/` où seul un préfixe `_` le cachait de la CLI Prisma — un dossier dont le nom dit la
+nature vaut mieux qu'un underscore qui camoufle. `prisma/seed.ts` **ne suit pas** : son chemin est
+attendu par l'outillage Prisma et nommé dans `ENV_ALLOWLIST`.
+
+Un script échappe à trois règles de `src/` (`process.env`, `PrismaClient` instancié, `fetch` nu) et
+c'est délibéré : il tourne sous `tsx` ou `node`, hors du runtime Next, donc hors de portée de
+`@/config/env`. Le hook ne les voit pas — ses règles ne s'appliquent qu'à `src/`.
 
 `src/generated/` est sous `src/` pour rester joignable par l'alias `@/*` — c'est la contrepartie
 de la règle « un seul alias ». Il est gitignoré, reconstruit par le `postinstall`, et exclu de
@@ -90,7 +111,7 @@ dans `features/`.
 
 ### `lib/` est rangé par sujet
 
-`lib/` est le seul dossier transverse qui grossit sans limite naturelle : tout ce qui n'est ni une
+`lib/` grossit sans limite naturelle : tout ce qui n'est ni une
 route, ni un composant, ni du métier finit par y atterrir. À plat, une douzaine de fichiers y
 suffisent à ce qu'on ne voie plus lesquels vont ensemble — `auth.ts`, `auth-client.ts` et
 `auth-session.ts` se rangeaient alphabétiquement à côté d'`anilist.ts` sans que rien ne dise que
@@ -112,6 +133,69 @@ Un dossier de `lib/` se crée quand un deuxième fichier rejoint le premier, pas
 règle de promotion que `features/`. `lib/db/` n'a qu'un fichier aujourd'hui parce que c'est la
 porte de la base et qu'on sait où iront ses voisins.
 
+### `features/*/lib/` obéit aux mêmes règles — et c'est lui qui dérive
+
+`src/lib/` se tient parce qu'on l'a rangé. Les `lib/` de features, eux, ont grossi quatre fois plus
+vite sans que personne les regarde : ce sont **eux**, pas `src/lib/`, qui deviennent le fourre-tout
+du projet. Trois populations s'y mélangent, et deux n'y ont pas leur place.
+
+**Un helper dont tous les consommateurs sont dans `server/` porte `import "server-only";`.** Le
+dossier `lib/` ne dit rien de la frontière — contrairement à `lib/auth/server.ts`, dont le nom la
+porte. Sans le marqueur, rien n'empêche un composant client d'embarquer le fichier : un document
+GraphQL de cinq cents lignes, ou pire, le générateur de jeton de partage. C'est une erreur de build
+qu'on veut, pas un poids mort dans un bundle.
+
+**Un helper dont tous les consommateurs vivent sous une seule route redescend dans le `_lib/` de
+cette route.** C'est exactement la règle de promotion des composants, appliquée aux fonctions : on
+ne monte dans `features/` qu'au deuxième appelant *réel*, et un helper promu trop tôt donne un
+domaine qui a l'air partagé sans l'être. `app/(app)/(home)/_lib/hero-geometry.ts` est le gabarit.
+
+Ne restent donc dans `features/<d>/lib/` que les helpers **réellement partagés entre plusieurs
+routes ou plusieurs features** — le vocabulaire du domaine (`media-format.ts`, `entry-format.ts`),
+ses règles métier (`entry-transition.ts`) et ses contrats d'URL multi-routes (`search-params.ts`,
+`library-params.ts`).
+
+Aucune de ces deux règles n'est tenue par `conventions-guard.mjs`, et ce n'est pas un oubli : le
+hook reçoit un **fragment** sur un `Edit`, donc il ne sait pas vérifier qu'un fichier *contient*
+quelque chose ; et « qui importe ce fichier ? » est une question inter-fichiers. Elles sont donc
+dans la grille de l'agent `convention-reviewer`, qui lit un diff entier.
+
+---
+
+## Le chargement : une frontière Suspense par zone, pas un `loading.tsx`
+
+**Il n'y a délibérément aucun `loading.tsx` de segment dans ce projet.** La convention Next existe et
+fonctionne, mais elle ne sait faire qu'une chose : remplacer *toute* la page tant que *quoi que ce
+soit* n'est pas prêt. Or nos écrans n'ont pas une attente, ils en ont plusieurs, et elles ne durent
+pas pareil — sur `/search`, le titre est instantané, le vocabulaire des filtres vient d'AniList, et
+les résultats d'une autre requête. Un `loading.tsx` les alignerait sur la plus lente et ferait
+clignoter le titre pour rien.
+
+La règle est donc : **chaque zone qui attend porte son propre `<Suspense>`, avec un composant
+squelette nommé d'après elle.**
+
+```tsx
+<Suspense fallback={<SearchResultsSkeleton />}>
+  <SearchResults searchParams={searchParams} />
+</Suspense>
+```
+
+Trois conséquences qu'on veut, et qui justifient de renoncer à la convention :
+
+- **La page ne devient jamais dynamique en entier.** Avec `cacheComponents`, ce qui est hors des
+  frontières se prérend ; le titre et le chrome sont dans le HTML initial. C'est ce qui rend une
+  navigation instantanée, et un `loading.tsx` y renoncerait par construction.
+- **Le squelette dit ce qu'il remplace.** `SearchResultsSkeleton` a la forme d'une grille de
+  jaquettes, `EntryPanelSkeleton` celle du panneau de suivi. Un squelette générique de page ne
+  ressemble à rien de ce qui va s'afficher, donc il déplace la mise en page au moment où il s'en va.
+- **La page n'attend rien elle-même.** Elle ne lit pas `searchParams`, elle transmet la promesse à
+  ses enfants. Une page qui `await` avant de rendre annule toutes les frontières placées dessous.
+
+Un squelette vit avec la zone qu'il double : dans le `_components/` de la route (`search-results-skeleton.tsx`)
+ou dans `features/<d>/components/` quand la zone y vit déjà (`entry-panel-skeleton.tsx`).
+
+`app/loading.tsx` existe, lui, et reste : c'est le filet de la racine, pas le chargement d'un écran.
+
 ---
 
 ## Où poser un nouveau fichier
@@ -128,15 +212,18 @@ porte de la base et qu'on sait où iront ses voisins.
 | une mutation (`"use server"`) | `features/<domaine>/server/*.actions.ts` |
 | un schéma de validation Zod | `features/<domaine>/schemas/` |
 | un hook lié à un domaine | `features/<domaine>/hooks/` |
+| un helper de domaine partagé par **plusieurs** routes | `features/<domaine>/lib/` |
+| un helper utilisé par **une seule** route | `app/**/_lib/` — on ne le promeut qu'au deuxième appelant |
 | un hook générique réutilisable partout | `hooks/` |
 | une constante d'URL, un flag, du contenu statique | `config/` |
 | un helper transverse sans domaine | `lib/<sujet>/` — voir la table ci-dessus |
 | un appel sortant vers une API tierce | `lib/http/` (sur `upfetch`, jamais `fetch` nu) |
 | une garde de sécurité sans domaine | `lib/security/` |
 
-**Règle de promotion :** on démarre toujours dans `_components/` de la route. Dès qu'un
-deuxième endroit en a besoin, on remonte le fichier dans `features/<domaine>/`. On ne crée pas
-un `features/` "au cas où".
+**Règle de promotion :** on démarre toujours dans le `_components/` — ou le `_lib/` — de la route.
+Dès qu'un deuxième endroit en a besoin, on remonte le fichier dans `features/<domaine>/`. On ne crée
+pas un `features/` "au cas où". Elle vaut pour les composants **comme pour les helpers** : un
+fichier de `features/<d>/lib/` qu'une seule route consomme est un fichier qu'on a promu trop tôt.
 
 ---
 
@@ -148,6 +235,43 @@ un `features/` "au cas où".
 - **Suffixes de rôle** dans `features/*/server/` : `.queries.ts`, `.actions.ts`, `.schema.ts`.
 - **Un composant = un fichier.** Pas de barrel `index.ts` dans `features/` : les barrels
   cassent le tree-shaking et brouillent la frontière server/client.
+
+## Les commentaires : le pourquoi reste, l'historique s'en va
+
+Ce projet commente beaucoup, et **c'est un choix qu'on garde** : ce qu'on écrit est presque toujours
+du *pourquoi* — l'invariant, le piège évité, la raison d'un chiffre — c'est-à-dire exactement ce
+qu'un lecteur ne peut pas retrouver seul. Un commentaire qui paraphrase le code mérite d'être
+supprimé ; ceux-là, non.
+
+Mais la densité a une limite au-delà de laquelle elle se retourne. Relevé le 5 septembre 2026 :
+`_lib/hero-geometry.ts` était à **87 % de lignes de commentaire**, `share-token.ts` à 76 %,
+`api/cron/refresh-media/route.ts` à 66 %. À ce niveau, deux choses cassent : le fichier ne se
+parcourt plus — il faut lire trois paragraphes pour atteindre la ligne suivante —, et la prose
+devient un **second artefact à tenir vrai**, qu'aucun test ne vérifie. Un commentaire de quinze
+lignes qui décrit une décision d'affichage périmée est plus nuisible qu'un fichier sans commentaire,
+parce qu'on le croit.
+
+La ligne de partage n'est donc pas la longueur, c'est la **nature** :
+
+| Ce qui reste dans le fichier | Ce qui part au journal |
+| --- | --- |
+| L'invariant : « ceci ne marche que tant que… » | Le récit : « il y a d'abord eu un `gap` sur la piste, puis… » |
+| Le piège : « un `h-full` ici s'effondrerait à zéro » | La séance : ce qu'on a essayé, dans quel ordre, un jour donné |
+| Le chiffre et son motif : « 24, parce que la grille a 2, 3, 4 et 6 colonnes » | La comparaison avec la référence dont on s'est inspiré |
+| La frontière : « lu des deux côtés, d'où sa place ici » | Le bug tel qu'il est apparu à l'écran, et comment on l'a vu |
+
+C'est la même règle que celle de [JOURNAL.md](./JOURNAL.md) vue de l'autre bout, et elle ne la
+contredit pas : le **détail d'implémentation** reste bien dans le fichier « où il sera lu ». Ce qui
+s'en va est l'**historique de la séance**, qui n'est pas un détail d'implémentation mais le compte
+rendu d'un jour de travail — et c'est précisément ce que le journal existe pour porter.
+
+En pratique : le commentaire garde le *pourquoi* en une à trois lignes et renvoie au journal pour le
+récit — `voir docs/JOURNAL.md, 2026-09-05`. On y gagne deux fois : le fichier redevient scannable, et
+le récit, daté, cesse de prétendre décrire le présent.
+
+`_lib/hero-geometry.ts` est l'étalon de cette règle.
+
+---
 
 ## Imports
 
@@ -249,8 +373,13 @@ src/features/<domaine>/
 │   └── use-<domaine>-filters.ts     # nuqs pour l'état dans l'URL
 ├── schemas/
 │   └── <domaine>.schema.ts          # Zod — les types sortent de z.infer
-└── types.ts
+└── lib/
+    └── <helpers partagés par plusieurs routes — voir la règle de promotion>
 ```
+
+Pas de `types.ts` dans ce gabarit : aucune des six features n'en a jamais eu besoin. `z.infer` sur
+le schéma a suffi à chaque fois, ce qui est exactement l'effet recherché. Le fichier reste possible
+pour un type qu'aucun schéma ne produit — il n'est simplement pas à créer d'avance.
 
 ## `config/`
 
@@ -283,9 +412,9 @@ Client Component.
   pas partie et n'a pas à en faire partie : il lit sa variable par `env("DATABASE_URL")`, la
   fonction de `prisma/config`, et non par `process.env`.
 
-- **Les scripts de `prisma/` sont hors du périmètre de deux autres règles**, pour la même raison
-  qu'ils tournent hors de Next : `prisma/seed.ts` et `prisma/_legacy-import.ts` instancient leur
-  propre `PrismaClient` et appellent AniList en `fetch` nu. Le hook ne les voit pas — ses règles ne
+- **Les scripts sont hors du périmètre de deux autres règles**, pour la même raison qu'ils tournent
+  hors de Next : `prisma/seed.ts` et `scripts/legacy-import.ts` instancient leur propre
+  `PrismaClient` et appellent AniList en `fetch` nu. Le hook ne les voit pas — ses règles ne
   s'appliquent qu'à `src/`. Un fichier de `src/` qui ferait l'un ou l'autre est en faute ; ces deux
   scripts ne le sont pas.
 - `next.config.ts` importe ce fichier : une variable manquante casse le build, pas une requête
@@ -342,9 +471,21 @@ La provenance de chaque skill et de chaque agent est dans [.claude/SKILLS.md](..
 
 ## Vérification
 
+- **`src/architecture.test.ts`** tient les règles qu'aucun autre garde-fou ne sait tenir, parce
+  qu'elles portent sur **l'arbre** et non sur un fichier : aucun module `"use client"` n'importe un
+  Server Component `async` (l'invariant tacite de `MediaCard`, généralisé aux six qui existent),
+  `src/app/` ne contient que des conventions Next et des dossiers privés, et `features/` n'a aucun
+  barrel. Le hook ne peut rien pour ces trois-là — il juge le fichier écrit, pas ses importateurs, et
+  il reçoit un simple fragment sur un `Edit`. Une quatrième assertion vérifie que la détection trouve
+  encore des Server Components : une regex qui ne correspond plus à rien passe au vert et rend le
+  garde-fou muet.
 - **Vitest** (`vitest.config.mts`) : environnement `node`, fichiers `src/**/*.test.ts` colocalisés
-  avec leur sujet. Les composants React ne sont pas encore couverts.
-- **Knip** : `src/components/ui/**` est ignoré (généré par shadcn) et `prisma/_legacy-import.ts`
+  avec leur sujet — y compris sous `app/**/_lib/`, que l'`include` couvre. Les composants React ne
+  sont pas encore couverts. La config **aliase `server-only` vers le module vide du paquet** : ce
+  marqueur lève dès l'import sauf sous la condition d'export `react-server`, que le compilateur RSC
+  de Next pose et que Vitest ne pose pas. Sans l'alias, tout test d'un helper `server-only` échoue à
+  l'import avant sa première assertion.
+- **Knip** : `src/components/ui/**` est ignoré (généré par shadcn) et `scripts/legacy-import.ts`
   aussi (script de CLI lancé à la main). Les règles sont au défaut, c'est-à-dire `error` — elles ont
   passé un temps en `warn` et un garde-fou qu'on laisse en `warn` finit par ne plus rien garder.
 - **Lefthook**, installé au `pnpm install` : `pre-commit` formate les fichiers indexés avec Biome,

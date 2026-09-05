@@ -19,6 +19,59 @@ Ce qui n'a **rien à faire ici** : une décision de périmètre (PRODUCT.md), un
 (ARCHITECTURE.md), l'avancement d'un écran (STATE.md), le détail d'une implémentation (le
 commentaire du fichier concerné, où il sera lu).
 
+**Et ce qui y a sa place, à l'inverse** : l'*historique* d'une implémentation — ce qu'on a essayé
+avant, dans quel ordre, et le bug tel qu'il est apparu à l'écran. Ce n'est pas un détail
+d'implémentation mais le compte rendu d'un jour de travail, et c'est ce qui étouffe les fichiers
+quand on le laisse en commentaire : le pourquoi vieillit bien, le récit non. La ligne de partage
+exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquoi-reste-lhistorique-sen-va).
+
+---
+
+## 5 septembre 2026 — le bandeau d'accueil, et ce qui l'a mis dans cet état
+
+Entrée écrite **après coup**, en dégraissant `_lib/hero-geometry.ts` — 87 % de lignes de commentaire,
+le record du dépôt. Tout ce qui suit y était en prose ; ce qui reste dans le fichier est l'invariant,
+ce qui vient ici est le chemin. C'est l'étalon de la règle de commentaire posée le même jour dans
+ARCHITECTURE.md.
+
+- **Les constantes ont dû quitter `hero-carousel.tsx`.** Elles vivaient à côté du composant qui les
+  emploie, mais ce fichier porte `"use client"` et `home-hero.tsx` est un Server Component. Next
+  remplace alors tout export non composant d'un module client par une **référence client** : la
+  constante importée côté serveur n'était plus une chaîne mais une fonction-piège, dont
+  l'interpolation dans une `className` a produit `class="relative function() { throw new Error(…) }"`.
+  Rien à la compilation, rien au typecheck — un bandeau de 252 px au lieu de 480, trouvé à l'écran.
+  La règle « jamais d'export server et client depuis le même fichier » ne vaut donc pas que pour les
+  fonctions.
+
+- **Pleine largeur → dans la colonne.** Le bandeau était d'abord `w-screen` recentré, échappé du
+  `max-w-6xl` du layout. Le ramener dans la gouttière change ce qu'il raconte : une carte posée sur
+  la page plutôt que l'ouverture de la page. Le reste de l'accueil s'aligne sur la même gouttière, et
+  un seul bloc qui la franchissait décalait l'œil à chaque défilement.
+
+- **`vh` abandonné pour des hauteurs fixes.** `55vh` sur un téléphone en paysage donne une bande de
+  deux cents pixels où le titre et les boutons ne tiennent pas ; et `vh` se redimensionne quand la
+  barre d'adresse mobile apparaît en cours de défilement, donc le bandeau sautait sous le doigt.
+
+- **L'arrondi à tous les paliers, contre la référence.** La disposition vient d'une référence qui
+  n'arrondit qu'à partir de `md` — juste chez elle, dont la boîte touche les bords de l'écran sur
+  mobile, où un arrondi flotterait dans le vide. La nôtre garde la gouttière du `main` (mesuré :
+  343 px de large, 16 px de marge à 390 px de viewport), donc des coins carrés au milieu d'une marge
+  se lisent comme un rendu inachevé. **La règle copiée sans son motif produisait l'inverse de ce
+  qu'elle visait.**
+
+- **Le `gap` de la piste remplacé par un remplissage dans la diapositive.** Un `gap` sur le conteneur
+  flex était la façon évidente d'écarter les diapositives, et symétrique sous un centrage
+  contrairement au `-ml`/`pl` de shadcn. Mais en mode `loop`, Embla ne réordonne pas le DOM : il
+  **translate** la dernière diapositive pour la faire apparaître à gauche de la première, et cette
+  translation se calcule sur la largeur des diapositives, sans le `gap` du conteneur. La voisine
+  bouclée arrivait collée — à gauche seulement, et seulement sur la première diapositive, donc
+  précisément à l'arrivée sur la page. Un remplissage vit *dans* la diapositive : il voyage avec elle.
+
+- **Le voile en noir fixe plutôt qu'en `background`.** Le bandeau fondait d'abord vers la couleur de
+  page — joli, mais le contraste dépendait du thème : il fallait un dégradé par thème, et le texte
+  changeait de couleur avec lui. Un voile noir constant porte du texte blanc dans les deux thèmes
+  avec le même ratio ; le contraste cesse d'être une chose à vérifier deux fois.
+
 ---
 
 ## 19 août 2026 — La documentation se remet d'aplomb
