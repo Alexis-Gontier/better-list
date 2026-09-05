@@ -27,6 +27,47 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 5 septembre 2026 — la mise à blanc, et la branche qu'on n'avait pas regardée
+
+Séance de suppression : les dix routes construites deviennent des placeholders, `features/` passe de
+49 à 27 fichiers, 7 300 lignes s'en vont. Le détail est dans [STATE.md](./STATE.md) — ici, seulement
+ce qu'on a appris.
+
+**Le plan n'est pas l'état du dépôt.** Le plan du 2 septembre avait ses 54 cases vides, et STATE.md
+en a conclu — puis affirmé deux fois — qu'aucune tâche n'avait été entamée. C'était faux : la branche
+`refonte-design` portait les 15 commits qui l'exécutaient, 2 018 lignes, datés du 2 septembre. La
+mise à blanc a donc été menée en croyant qu'aucun remplacement n'existait, alors qu'il en existait un
+à moitié réutilisable.
+
+Personne n'avait coché les cases en avançant, ce qui est humain. La leçon n'est pas « mieux cocher »,
+c'est **`git branch` avant de conclure quoi que ce soit sur ce qui existe.** Un fichier de plan
+décrit une intention ; seul le graphe des commits décrit un dépôt. STATE.md porte désormais cet
+avertissement en tête de son « prochain pas ».
+
+**Supprimer plutôt que geler, quand on sait qu'on jettera.** `pnpm knip` a signalé 32 puis 41
+éléments sans appelant au fil des passes. Deux traitements, et la frontière s'est révélée nette :
+ce qui portait une **décision** — contrats d'URL, schémas Zod, les 488 lignes de GraphQL AniList,
+`actionClient` — a été gelé dans `knip.jsonc` par chemin, chaque entrée nommant l'écran qu'elle
+attend. Ce qui ne portait qu'un **rendu** a été supprimé. Geler du code qu'on sait devoir réécrire,
+c'est se promettre de le relire une fois de trop.
+
+Le gel est posé par chemin et jamais en `exclude` global : c'est ce qui permet à knip de continuer à
+garder le reste du dépôt pendant des semaines de chantier. Un garde-fou désactivé globalement « le
+temps de », on connaît la suite — c'est écrit dans le commentaire de `knip.jsonc` depuis août.
+
+**Un canari qui chante faux est un canari qui marche.** `architecture.test.ts` vérifie qu'aucun
+module `"use client"` n'importe un Server Component `async`, puis — c'est tout l'intérêt — qu'il en
+trouve au moins un, pour que le premier test ne passe pas au vert en parcourant un ensemble vide. La
+mise à blanc a supprimé le dernier : le canari a échoué, exactement comme prévu.
+
+La tentation était d'abaisser l'assertion à `>= 0`. Elle aurait rendu le problème **invisible** au
+lieu de le rendre visible — et le problème est réel, puisque le test voisin ne garde plus rien en
+attendant. Il est donc passé en `.skip`, avec la consigne écrite : le premier écran qui repose un
+Server Component `async` retire le `.skip`. Un test en pause qui explique sa pause vaut mieux qu'un
+test vert qui ment.
+
+---
+
 ## 5 septembre 2026 — le bandeau d'accueil, et ce qui l'a mis dans cet état
 
 Entrée écrite **après coup**, en dégraissant `_lib/hero-geometry.ts` — 87 % de lignes de commentaire,

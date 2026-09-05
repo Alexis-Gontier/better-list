@@ -190,18 +190,49 @@ fier.**
 
 ## Le prochain pas
 
-**Poser le socle visuel, avant de redessiner le premier écran.**
+**Récupérer le socle visuel de la branche `refonte-design` — il est déjà écrit.**
 
-Les tâches 1 à 6 du plan du 2 septembre
-([plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md)) : la police Archivo, les
-tokens « Obsidienne », les composants shadcn manquants, les deux variants, la `MediaCard` signée et
-la grille dense. Aucune de ces tâches n'a été entamée — les 54 cases du plan sont vides, et
-`--font-heading` alias toujours `--font-sans`.
+### ⚠️ À lire avant toute chose : `git branch`
 
-⚠️ **Ce plan a été écrit avant la mise à blanc.** Ses tâches 5, 8, 9 et 10 modifient des fichiers
-qui n'existent plus (`MediaCard`, `MediaRow`, les filtres de `/search` et `/library`). Il faut le
-relire contre l'arbre actuel avant de le lancer : les tâches 1 à 4 restent valables telles quelles,
-les suivantes deviennent des créations plutôt que des modifications.
+Les cases à cocher du plan du 2 septembre
+([plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md)) sont **toutes vides, et c'est
+trompeur**. Le plan a bel et bien été exécuté, le 2 septembre, sur la branche **`refonte-design`** —
+15 commits, 2 018 lignes, les tâches 1 à 10. Personne n'a coché les cases en chemin.
+
+Cette page a affirmé le contraire pendant une journée, et la mise à blanc a été menée sans le
+savoir. **Le fichier de plan n'est pas l'état du dépôt : `git branch` l'est.**
+
+```
+6830f10  le titrage prend sa propre police          Tâche 1
+f03d737  l'interface passe en Obsidienne            Tâche 2
+19af4c5  six composants pour les filtres avancés    Tâche 3
+516b73e  deux variants                              Tâche 4
+0928f21  la vignette porte enfin sa signature       Tâche 5
+133f58a  la grille passe à huit colonnes            Tâche 6
+d25187e  compter les facettes actives               Tâche 7
+096e988  la coquille partagée des écrans à filtres  Tâche 8
+99db79d  la recherche entre dans la coquille        Tâche 9
+3687f77  les deux écrans n'en font plus qu'un       Tâche 10
+```
+
+### Ce qui est récupérable, et ce qui ne l'est plus
+
+La mise à blanc n'a pas touché `styles/`, `components/ui/` ni `lib/` : une bonne moitié de cette
+branche s'applique donc encore.
+
+| Ce que `refonte-design` a écrit | Sort |
+| --- | --- |
+| `styles/globals.css` — les tokens « Obsidienne » | **récupérable** — le fichier existe |
+| `styles/fonts.ts` — Archivo | **récupérable** |
+| 6 composants `ui/` : accordion, checkbox, radio-group, scroll-area, sheet, slider | **récupérable** — `components/ui/` intact |
+| `lib/filters/count-active.ts` + son test | **récupérable** — fichier neuf, aucun conflit |
+| `search-params.ts`, `search-media.schema.ts` retravaillés | **récupérable** — les deux existent |
+| `catalogue-shell`, `filter-bar`, `filter-chips`, `filter-panel` | **à relire** — neufs, mais consomment des composants supprimés |
+| `MediaCard`, `MediaRow`, filtres de `/search` et `/library` | **perdus** — supprimés par la mise à blanc, à réécrire |
+
+Donc : **cherry-pick des tâches 1 à 4, 6 et 7 sur `main`** avant de dessiner quoi que ce soit. Ça
+rend Archivo, les tokens et les six composants sans écrire une ligne. Les tâches 5 et 8 à 10 servent
+de matériau de lecture, pas de patch — leurs fichiers cibles n'existent plus.
 
 ### Puis, une route par branche
 
