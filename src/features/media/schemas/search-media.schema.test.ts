@@ -26,11 +26,12 @@ describe("searchMediaInputSchema", () => {
 
   /**
    * La contrainte qui a fait exister la constante : une page qui n'est pas un multiple du nombre de
-   * colonnes se termine par une rangée incomplète. Les paliers de `media-grid.tsx` sont 2, 3, 4 et
-   * 6 — ce test casse si quelqu'un remonte la taille de page à un nombre qui rouvre le trou.
+   * colonnes se termine par une rangée incomplète. Les paliers de la grille sont **3 et 7** depuis
+   * le passage à sept colonnes (`config/catalogue.ts`) — ce test casse si la taille de page et les
+   * paliers divergent, dans un sens comme dans l'autre.
    */
   it("sert une page qui remplit des rangées entières à chaque palier de la grille", () => {
-    for (const columns of [2, 3, 4, 6]) {
+    for (const columns of [3, 7]) {
       expect(CATALOGUE_PAGE_SIZE % columns).toBe(0);
     }
   });

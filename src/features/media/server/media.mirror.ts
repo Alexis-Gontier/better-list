@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { MediaDetail } from "@/features/media/schemas/media.schema";
+import { compactFromMirror } from "@/features/media/lib/media-format";
+import type {
+  MediaCompact,
+  MediaDetail,
+} from "@/features/media/schemas/media.schema";
 import { prisma } from "@/lib/db/prisma";
 
 /**
@@ -121,4 +125,57 @@ export async function getMediaDetailFromMirror(
     relations: { edges: [] },
     recommendations: { nodes: [] },
   };
+}
+
+/**
+ * Un échantillon du miroir, pour **voir des cartes** avant que la recherche n'en serve.
+ *
+ * Ce n'est pas la grille de résultats : elle lira AniList par `searchMedia` et honorera les
+ * filtres. Celle-ci ne lit que la copie locale et ignore tout ce qui est dans l'URL — son seul
+ * rôle est de mettre de vraies jaquettes et de vrais titres sous les yeux pendant qu'on dessine la
+ * carte. **Elle disparaît avec la vraie grille**, et c'est le seul appelant qui la garde en vie.
+ *
+ * De vraies données plutôt que des rectangles gris : c'est la longueur réelle des titres qui casse
+ * une carte, pas une maquette où ils font tous deux mots.
+ *
+ * `includeAdult` est appliqué **dans la requête**, jamais par un masque d'affichage — la règle vaut
+ * ici comme ailleurs (docs/recherche-filtres.md §2.5).
+ */
+export async function getMediaSampleFromMirror({
+  take,
+  includeAdult,
+}: {
+  take: number;
+  includeAdult: boolean;
+}): Promise<MediaCompact[]> {
+  const rows = await prisma.media.findMany({
+    take,
+    where: includeAdult ? {} : { isAdult: false },
+    // Les mieux notées d'abord : un échantillon pris au hasard tombe sur des œuvres sans jaquette
+    // et sans titre anglais, ce qui donne une idée fausse de la carte.
+    orderBy: [{ meanScore: "desc" }, { id: "asc" }],
+    select: {
+      id: true,
+      type: true,
+      format: true,
+      status: true,
+      countryOfOrigin: true,
+      titleRomaji: true,
+      titleEnglish: true,
+      titleNative: true,
+      coverImage: true,
+      coverColor: true,
+      bannerImage: true,
+      episodes: true,
+      chapters: true,
+      volumes: true,
+      season: true,
+      seasonYear: true,
+      genres: true,
+      meanScore: true,
+      isAdult: true,
+    },
+  });
+
+  return rows.map(compactFromMirror);
 }

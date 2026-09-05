@@ -90,6 +90,44 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 /**
+ * Genres AniList, en français.
+ *
+ * **Cette table n'est pas un doublon du vocabulaire d'AniList, c'est sa traduction.** `GenreCollection`
+ * rend « Slice of Life » ; l'interface est en français (docs/PRODUCT.md §7), donc il faut cette
+ * correspondance de toute façon — la fetcher n'y changerait rien. Ce sont les **valeurs** (les clés)
+ * qui appartiennent à AniList et qui partent dans `genre_in` ; les libellés sont à nous.
+ *
+ * Volontairement un `Record<string, string>` : le genre arrive en `string` du schéma, et une valeur
+ * inconnue retombe sur le brut plutôt que de disparaître — c'est ce qui se passera le jour où
+ * AniList en ajoute un, et c'est le bon comportement.
+ */
+const GENRE_LABELS: Record<string, string> = {
+  Action: "Action",
+  Adventure: "Aventure",
+  Comedy: "Comédie",
+  Drama: "Drame",
+  Ecchi: "Ecchi",
+  Fantasy: "Fantastique",
+  Hentai: "Hentai",
+  Horror: "Horreur",
+  "Mahou Shoujo": "Magical girl",
+  Mecha: "Mecha",
+  Music: "Musique",
+  Mystery: "Mystère",
+  Psychological: "Psychologique",
+  Romance: "Romance",
+  "Sci-Fi": "Science-fiction",
+  "Slice of Life": "Tranche de vie",
+  Sports: "Sport",
+  Supernatural: "Surnaturel",
+  Thriller: "Thriller",
+};
+
+export function formatGenre(genre: string): string {
+  return GENRE_LABELS[genre] ?? genre;
+}
+
+/**
  * Statuts de suivi de la communauté AniList (`MediaListStatus`). Mêmes valeurs que `EntryStatus`
  * en base (docs/PRODUCT.md §4.2) : le jour où le suivi arrive, cette table lui sert aussi.
  */

@@ -58,7 +58,6 @@
     "src/features/tracking/lib/library-params.ts": ["files"], // contrat d'URL — attend /library
     "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
-    "src/hooks/use-url-filters.ts": ["files"], // abstraction extraite en a5be9d5 — attend /search
     "src/lib/safe-action.ts": ["files"], // actionClient / authActionClient — attend la 1re action
 
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
@@ -68,7 +67,13 @@
     // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
     "src/features/media/server/media.documents.ts": ["exports"],
     "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
-    "src/features/media/lib/search-params.ts": ["exports"], // EMPTY_FILTERS — attend /search
+    // Le contrat d'URL a retrouvé un importateur avec la barre du 5 septembre, puis son panneau :
+    // il sort du gel « files » pour le gel « exports ». La barre consomme les parseurs, les listes
+    // d'options, `resolveSort` et `EMPTY_FILTERS` ; le panneau consomme les helpers de saison. Ne
+    // restent gelés que **`loadSearchFilters` et `serializeSearchFilters`** — la lecture serveur
+    // des filtres et la construction des liens de pagination, c'est-à-dire précisément ce que la
+    // grille de résultats apportera. Cette entrée part avec elle.
+    "src/features/media/lib/search-params.ts": ["exports"],
     "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types
     "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
     "src/features/preferences/schemas/preferences.schema.ts": ["exports"], // défauts — attendent /settings

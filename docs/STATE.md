@@ -301,7 +301,11 @@ vocabulaire de tous les autres.
    qui a motivé toute l'opération. Chaque écran demande sa query (`searchMedia`, `getLibrary`), sa
    grille et sa barre de filtres — les contrats d'URL, eux, existent déjà et sont gelés
    (`search-params.ts`, `library-params.ts`). Les trois contrôles de suivi les attendent déjà dans
-   `features/tracking/components/`, promus d'avance pour eux.
+   `features/tracking/components/`, promus d'avance pour eux. **L'inventaire des filtres possibles
+   est relevé dans [recherche-filtres.md](./recherche-filtres.md)** : 66 lignes, 15 cochées —
+   c'est la liste à cocher de cette branche, comme fiche-media.md l'est pour la fiche. La barre et
+   son panneau de facettes sont posés et **écrivent dans l'URL sans que rien ne la lise** ; la
+   grille de résultats est le prochain pas.
 2. `/media/[id]` — **le hero est fait** (6 septembre). Reste le suivi qui écrit vraiment, le journal,
    les onglets lourds et les chiffres de la communauté. L'inventaire à cocher est dans
    [fiche-media.md](./fiche-media.md).

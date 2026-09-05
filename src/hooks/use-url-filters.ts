@@ -19,7 +19,7 @@ import { useQueryStates } from "nuqs";
  */
 export function useUrlFilters<
   Parsers extends Parameters<typeof useQueryStates>[0],
->(parsers: Parsers) {
+>(parsers: Parsers, options?: Parameters<typeof useQueryStates>[1]) {
   return useQueryStates(parsers, {
     /** Le bouton retour doit défaire un filtre, pas quitter la page. */
     history: "push",
@@ -31,5 +31,13 @@ export function useUrlFilters<
     shallow: false,
     /** Une valeur par défaut n'encombre pas l'URL, donc ne se retrouve pas dans un lien partagé. */
     clearOnDefault: true,
+    /*
+      Ce que l'écran ajoute, et lui seul. Posé **après** les trois réglages pour qu'un appelant
+      puisse compléter — l'anti-rebond d'un champ de saisie, par exemple — mais l'ordre le laisse
+      aussi en écraser un. C'est voulu : les trois ci-dessus sont un défaut partagé, pas une règle,
+      et un écran qui a besoin d'un autre comportement doit pouvoir le dire ici plutôt que de
+      contourner le hook et de recopier les deux autres.
+    */
+    ...options,
   });
 }

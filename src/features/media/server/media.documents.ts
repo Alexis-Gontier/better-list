@@ -289,7 +289,7 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
   query SearchMedia(
     $search: String
     $type: MediaType
-    $format: MediaFormat
+    $formats: [MediaFormat]
     $countryOfOrigin: CountryCode
     $status: MediaStatus
     $genres: [String]
@@ -312,7 +312,7 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
       media(
         search: $search
         type: $type
-        format: $format
+        format_in: $formats
         countryOfOrigin: $countryOfOrigin
         status: $status
         genre_in: $genres

@@ -75,7 +75,20 @@ export function toAniListSort(
 export const searchMediaInputSchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
   type: mediaTypeSchema.optional(),
-  format: mediaFormatSchema.optional(),
+  /**
+   * Les formats, **au pluriel** : AniList les accepte en `format_in`, et c'est la seule facette de
+   * cette liste dont on veuille vraiment plusieurs valeurs à la fois — « film ou spécial » est une
+   * question qu'on se pose, « en cours ou terminé » beaucoup moins.
+   *
+   * Le `type`, lui, reste au singulier et le restera : `Page.media` n'a **pas** de `type_in`. Un
+   * catalogue mêlant animes et mangas ne s'obtient pas en cochant les deux, mais en n'en cochant
+   * aucun.
+   */
+  formats: z
+    .array(mediaFormatSchema)
+    .max(MAX_FILTER_VALUES)
+    .nonempty()
+    .optional(),
   countryOfOrigin: mediaCountrySchema.optional(),
   status: mediaStatusSchema.optional(),
   /**
