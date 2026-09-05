@@ -173,12 +173,18 @@ appelaient.
 
 ## Ce qui reste dans `features/`
 
-**33 fichiers, dont 10 de tests.** La couche `server/` reprend forme — trois lectures, toujours
+**34 fichiers, dont 10 de tests.** La couche `server/` reprend forme — trois lectures, toujours
 aucune action —, et `tracking` retrouve des composants.
+
+**`media` en a un aussi depuis le 6 septembre**, et il y est arrivé par la règle plutôt que par
+anticipation : `MediaCard` a démarré dans le `_components/` de `/search` et a été promue le jour où
+`/library` l'a demandée. C'est la première promotion du dépôt faite *au deuxième appelant*, comme
+ARCHITECTURE.md le veut — les trois contrôles de suivi, eux, avaient été promus d'avance et en
+connaissance de cause.
 
 | Feature | Ce qu'elle contient |
 | --- | --- |
-| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (la fiche, cachée un jour), `media.mirror` (le repli de panne). |
+| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (la fiche, cachée un jour), `media.mirror` (le repli de panne). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
 | **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating` — **l'interface seule, aucun ne persiste quoi que ce soit**. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
@@ -188,6 +194,27 @@ aucune action —, et `tracking` retrouve des composants.
 `lib/http/anilist.ts` n'a pas bougé : c'est du transport, il vit dans `lib/` et non dans une feature.
 Avec `media.documents.ts` et `media.queries.ts`, l'intégration AniList est de nouveau complète — le
 transport, les documents, et le cache qui les relie.
+
+### Et `components/shared/` reprend forme, par la même règle
+
+Quatre fichiers. `route-under-construction` et `step-button` restaient de la mise à blanc ; les deux
+autres sont arrivés le 6 septembre avec `/library`, promus de `/search` au deuxième appelant :
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `catalogue-grid` | Les paliers 3 et 7 autour de ses enfants, et le squelette aux mêmes proportions. Il ne regarde pas ce qu'il range. |
+| `filter-bar` | La rangée, le champ borné, les sélecteurs à étiquette visible, le bouton dépliant et la ligne de puces actives. |
+
+Ils sont dans `shared/` et non dans une feature parce qu'ils ne connaissent **aucune** entité : ce
+sont leurs appelants qui posent le vocabulaire. `search-filter-bar` parle de formats et de saisons,
+`library-filter-bar` de statuts de suivi, et les deux se ressemblent parce qu'ils composent les
+mêmes pièces — pas parce que l'un a été recopié sur l'autre. C'est le doublon de la mise à blanc
+qu'on refuse de refaire.
+
+**Le panneau de facettes, lui, n'a pas été promu** : `/library` filtre par un contrat plus court et
+n'a pas de panneau du tout, donc `FacetColumn`, `ChipGroup`, `RangeSlider` et `CheckboxList`
+n'auraient toujours qu'un seul consommateur. Ils restent dans `search/_components/`. Les promouvoir
+« puisqu'on y était » aurait été exactement la faute que la règle interdit.
 
 ---
 

@@ -14,10 +14,12 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
  * décide **une fois qu'on a vu la grille**. On pose le squelette d'abord, et on ajoute ce qui
  * manque en le regardant plutôt qu'en l'imaginant.
  *
- * Elle vit dans le `_components/` de `/search` parce que c'est sa première route. Elle rejoindra
- * `features/media/components/` le jour où `/library` la demandera aussi — c'est la règle de
- * promotion d'ARCHITECTURE.md, et elle a déjà été enfreinte une fois en connaissance de cause pour
- * les contrôles de suivi ; il n'y a pas de raison de recommencer ici.
+ * Elle a démarré dans le `_components/` de `/search` et **a été promue ici le 6 septembre 2026,
+ * quand `/library` en a eu besoin** : deuxième route, donc `features/media/components/`, la maison
+ * d'un composant qui connaît une entité métier (`MediaCompact`, `mediaTitle`, `routes.media`).
+ * C'est la règle de promotion d'ARCHITECTURE.md appliquée à la lettre — celle qui avait été
+ * enfreinte en connaissance de cause pour les contrôles de suivi, promus avant leur deuxième
+ * appelant.
  *
  * Composant **serveur** : il ne fait que rendre du texte et une image. Le rendre client
  * embarquerait la grille entière dans le bundle pour aucun interactif.
@@ -29,13 +31,13 @@ type MediaCardProps = {
   /**
    * Charger la jaquette **sans attendre**, pour la première rangée seulement.
    *
-   * `next/image` diffère tout par défaut, ce qui est juste pour vingt-quatre vignettes dont la
+   * `next/image` diffère tout par défaut, ce qui est juste pour vingt et une vignettes dont la
    * plupart sont sous la ligne de flottaison — mais la toute première est le plus grand élément
    * affiché de la page, donc sa mesure de LCP. La différer, c'est retarder le seul instant que
    * mesure cette métrique. Next le signale d'ailleurs en clair dans la console.
    *
    * À ne donner qu'à ce qui est réellement visible au chargement : tout marquer prioritaire revient
-   * à ne rien prioriser, et fait concurrencer la première image par vingt-trois autres.
+   * à ne rien prioriser, et fait concurrencer la première image par vingt autres.
    */
   priority?: boolean;
 };
@@ -87,7 +89,7 @@ export function MediaCard({ media, titleLanguage, priority }: MediaCardProps) {
             /*
               Les tailles suivent les paliers de la grille — sans elles, `next/image` sert une
               image pleine largeur de viewport pour une vignette de 140 px, soit dix fois trop de
-              pixels sur une page qui en affiche vingt-quatre.
+              pixels sur une page qui en affiche vingt et une.
             */
             sizes="(min-width: 1280px) 12vw, (min-width: 1024px) 16vw, (min-width: 640px) 25vw, 45vw"
             src={cover}

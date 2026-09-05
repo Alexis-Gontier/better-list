@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { MediaCard } from "@/app/(app)/search/_components/media-card";
 import { SearchFilterBar } from "@/app/(app)/search/_components/search-filter-bar";
 import { getYearBounds } from "@/app/(app)/search/_lib/year-bounds";
+import {
+  CatalogueGrid,
+  CatalogueGridSkeleton,
+  WIDEST_COLUMN_COUNT,
+} from "@/components/shared/catalogue-grid";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
+import { MediaCard } from "@/features/media/components/media-card";
 import { getMediaSampleFromMirror } from "@/features/media/server/media.mirror";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 
@@ -52,28 +56,12 @@ export default async function SearchPage() {
         statique, elle n'a aucune raison d'attendre une lecture en base pour s'afficher. Une
         frontière par zone, jamais de `loading.tsx` de segment (docs/ARCHITECTURE.md).
       */}
-      <Suspense fallback={<MediaGridSkeleton />}>
+      <Suspense fallback={<CatalogueGridSkeleton />}>
         <MediaSampleGrid />
       </Suspense>
     </div>
   );
 }
-
-/**
- * Les paliers de colonnes — **3 et 7, les deux seuls diviseurs utiles de 21**.
- *
- * `CATALOGUE_PAGE_SIZE` vaut trois rangées de sept (`config/catalogue.ts`), et une page dont la
- * taille n'est pas un multiple du nombre de colonnes se termine par une rangée incomplète. D'où le
- * saut direct de 3 à 7 : les paliers intermédiaires habituels — 4, 5, 6 — laisseraient tous un trou
- * en bas d'écran, qui se lit comme un chargement raté plutôt que comme une fin de page.
- *
- * `search-media.schema.test.ts` tient le lien entre les deux : il casse si l'un change sans
- * l'autre.
- */
-const GRID_COLUMNS = "grid grid-cols-3 gap-x-4 gap-y-6 lg:grid-cols-7";
-
-/** Le dernier palier de `GRID_COLUMNS`, donc la taille d'une rangée sur un écran large. */
-const WIDEST_COLUMN_COUNT = 7;
 
 async function MediaSampleGrid() {
   const { includeAdult, titleLanguage } = await getPreferences();
@@ -87,7 +75,7 @@ async function MediaSampleGrid() {
   if (media.length === 0) return null;
 
   return (
-    <div className={GRID_COLUMNS}>
+    <CatalogueGrid>
       {media.map((item, index) => (
         <MediaCard
           key={item.id}
@@ -98,37 +86,6 @@ async function MediaSampleGrid() {
           titleLanguage={titleLanguage}
         />
       ))}
-    </div>
+    </CatalogueGrid>
   );
 }
-
-/**
- * Le squelette, **aux proportions exactes des cartes** : même grille, même rapport 2:3, même ligne
- * de titre. C'est ce qui évite que la page saute au remplacement — un squelette approximatif
- * déplace ce qu'il annonce.
- */
-function MediaGridSkeleton() {
-  return (
-    <div className={GRID_COLUMNS}>
-      {SKELETON_KEYS.map((key) => (
-        <div className="flex flex-col gap-2" key={key}>
-          <Skeleton className="aspect-2/3 w-full rounded-md" />
-          <Skeleton className="h-4 w-4/5" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Les clés du squelette, calculées une fois au module.
- *
- * Des identifiants plutôt que l'indice de boucle : le linter refuse l'indice, et il a raison même
- * ici — c'est le genre de code qu'on recopie ensuite sur une vraie liste, où l'indice comme clé
- * fait réutiliser l'état d'une carte par sa voisine au premier réordonnancement. Ces cases-ci ne
- * bougent jamais, donc autant que la forme soit celle qu'on veut voir imitée.
- */
-const SKELETON_KEYS = Array.from(
-  { length: CATALOGUE_PAGE_SIZE },
-  (_, index) => `card-${index}`,
-);
