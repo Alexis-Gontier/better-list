@@ -27,6 +27,67 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 6 septembre 2026 — la fiche, et le jour où AniList était vraiment coupée
+
+Première séance de reconstruction. `/media/[id]` retrouve son hero — l'avancement est dans
+[STATE.md](./STATE.md), l'inventaire de ce qui reste à y mettre dans
+[fiche-media.md](./fiche-media.md). Ici, seulement ce qu'on a appris.
+
+**Une panne d'API tierce n'est pas un cas de test, c'est un jour comme un autre.** AniList était
+coupée pendant toute la séance — 403, « temporarily disabled due to severe stability issues », le
+même incident qu'en août. Conséquence immédiate : rien n'était vérifiable à l'écran, puisque la fiche
+n'était qu'une page d'erreur. Le repli sur le miroir local, qu'on avait rangé dans « plus tard »,
+est devenu la condition pour voir quoi que ce soit — il a donc été écrit tout de suite. Ce n'est pas
+une entorse au plan, c'est le plan qui ignorait un fait. Bénéfice inattendu : le chemin de panne a
+été **vu fonctionner**, ce qui n'arrive jamais en développement puisqu'il demande qu'un tiers tombe.
+
+**Le canari n'a pas pu être rallumé, et c'est le test qui avait raison.** STATE.md annonçait depuis
+la mise à blanc que « le premier écran reconstruit qui pose un Server Component `async` » retirerait
+le `.skip`. La fiche en pose un — et le canari est resté éteint : la détection ne regarde que les
+composants **exportés**, et celui de la fiche est interne à sa page. La règle du test est juste (un
+composant qu'on n'exporte pas ne peut être importé par personne, donc il n'y a rien à garder) ;
+c'était la promesse de STATE.md qui était trop large. On a corrigé la phrase, pas le test. Le réflexe
+inverse — élargir la détection pour que la case se coche — aurait transformé un garde-fou en
+formalité.
+
+**Une marge négative fixe ne peut pas aligner deux colonnes de hauteurs différentes.** Le bas de la
+jaquette devait tomber sur le bas de la barre de suivi. Première tentative : une marge négative
+choisie à l'œil, juste sur la fiche qu'on regardait. Elle tombait faux dès que le titre passait sur
+deux lignes ou qu'un fait manquait. La solution tient en une phrase : **la colonne de la jaquette ne
+porte aucune hauteur propre** (son contenu est hors flux), la rangée est donc mesurée par la seule
+colonne de droite, et la jaquette s'y accroche par le bas. Elle déborde vers le haut d'autant qu'il
+faut, sans qu'on ait à savoir combien.
+
+Le piège de la suite, trouvé en testant une **deuxième** œuvre et pas la même : sur un webtoon sans
+bannière, au titre court et sans saison, la rangée devient si basse que la jaquette remonte sous
+l'en-tête. D'où une hauteur minimale de rangée, et une bande sans image assez haute pour l'encaisser.
+La leçon est moins sur le CSS que sur la vérification : le premier essai marchait, et il ne prouvait
+rien.
+
+**Une ombre interne se peint sous le contenu.** Le liseré de la jaquette a été posé en `ring-inset`
+sur le conteneur de l'image : invisible, parce que l'image le recouvrait exactement. Deux issues —
+un calque posé par-dessus, ou un vrai `border`. C'est le `border` qui a gagné, en couleur de fond,
+sur choix visuel d'Alexis. Même famille de piège que le `overflow-x-clip` du layout : ces choses-là
+ne se voient qu'à l'écran, jamais au typecheck.
+
+**Le CLI shadcn n'écrit pas toujours du code qui compile.** `pnpm dlx shadcn add button-group` a
+laissé `import { cn } from "cn"` — l'alias du registre, non réécrit — et **installé un paquet npm
+nommé `cn`** en dépendance du projet. Le premier casse le build, le second est passé inaperçu jusqu'à
+`pnpm knip`. La skill shadcn prévient de relire les fichiers ajoutés ; la vraie leçon est que la
+chaîne de vérification a rattrapé les deux, et qu'il n'y avait rien à deviner.
+
+**Un composant peut être promu avant son deuxième appelant, si quelqu'un décide de le faire.** La
+règle d'ARCHITECTURE.md dit d'attendre le deuxième consommateur réel. Les trois contrôles de suivi
+sont montés dans `features/tracking/components/` alors que seule la fiche les emploie — décision
+d'Alexis, qui sait que `/search` et `/library` les demanderont. La règle reste bonne ; ce qui la
+rend acceptable ici, c'est que l'entorse est **explicite et datée** plutôt que subie par distraction.
+
+Au passage, la même arbitrage a bien fonctionné dans l'autre sens : le bouton ± ne connaît aucune
+entité métier, il est donc allé dans `shared/` et non dans la feature. La question « qu'est-ce que ce
+composant connaît ? » tranche mieux que « où est-ce que je l'utilise ? ».
+
+---
+
 ## 5 septembre 2026 — la mise à blanc, et la branche qu'on n'avait pas regardée
 
 Séance de suppression : les dix routes construites deviennent des placeholders, `features/` passe de

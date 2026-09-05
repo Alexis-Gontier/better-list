@@ -55,7 +55,6 @@
     "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
     "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
     "src/features/lists/schemas/lists.schema.ts": ["files"], // forme du domaine — attend /lists
-    "src/features/media/server/media.documents.ts": ["files"], // 488 l. de GraphQL AniList
     "src/features/tracking/lib/library-params.ts": ["files"], // contrat d'URL — attend /library
     "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
@@ -64,6 +63,10 @@
 
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
     "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
+    // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
+    // pour le gel « exports ». `MEDIA_BY_ID_QUERY` est consommée ; les cinq autres — miroir,
+    // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
+    "src/features/media/server/media.documents.ts": ["exports"],
     "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
     "src/features/media/lib/search-params.ts": ["exports"], // EMPTY_FILTERS — attend /search
     "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types

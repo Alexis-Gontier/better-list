@@ -115,8 +115,14 @@ describe("frontière server / client", () => {
    * son assertion à `>= 0` l'aurait rendu invisible à la place.
    *
    * `.skip` plutôt que la suppression, donc : le test reste lisible, sa panne reste expliquée, et
-   * **le premier écran reconstruit qui pose un Server Component `async` doit retirer ce `.skip`**.
-   * C'est noté dans les écarts connus de `docs/STATE.md`.
+   * **le premier module qui exporte un Server Component `async` doit retirer ce `.skip`**. C'est
+   * noté dans les écarts connus de `docs/STATE.md`.
+   *
+   * Le mot « exporte » n'est pas un détail de formulation : la reconstruction de `/media/[id]`
+   * (hero, 6 septembre 2026) pose bien un composant serveur `async`, mais **interne à sa page**,
+   * donc invisible à la détection — et c'est correct, puisqu'un composant qu'on n'exporte pas ne
+   * peut être importé par personne, client compris. Le canari se rallumera au premier composant
+   * `async` de `features/*​/components/`, c'est-à-dire avec le panneau de suivi.
    * ─────────────────────────────────────────────────────────────────────────────────────────────
    */
   it.skip("en trouve effectivement, pour que le test précédent ait un objet", () => {

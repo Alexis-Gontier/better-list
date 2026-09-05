@@ -1,4 +1,5 @@
 import { Header } from "@/components/layout/header";
+import { NoticeSlot } from "@/components/layout/notice-slot";
 import { requireApprovedUser } from "@/lib/auth/session";
 
 /**
@@ -39,6 +40,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       coller.
     */
     <div className="flex min-h-full flex-1 flex-col overflow-x-clip">
+      {/* Au-dessus de l'en-tête : un avis d'incident vaut pour toute l'app, pas pour une page. */}
+      <NoticeSlot />
       <Header user={user} />
       <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children}
