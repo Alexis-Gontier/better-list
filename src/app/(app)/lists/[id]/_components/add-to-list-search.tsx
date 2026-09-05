@@ -2,7 +2,7 @@
 
 import { CheckIcon, LibraryIcon, PlusIcon, SparklesIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import * as React from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -71,11 +71,11 @@ export function AddToListSearch({
    */
   presentMediaIds: number[];
 }) {
-  const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-  const inputRef = React.useRef<HTMLInputElement>(null);
-  const [results, setResults] = React.useState<CommandResults>(EMPTY_RESULTS);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [results, setResults] = useState<CommandResults>(EMPTY_RESULTS);
+  const [isLoading, setIsLoading] = useState(false);
 
   /**
    * Les œuvres ajoutées pendant que le panneau est ouvert.
@@ -84,9 +84,7 @@ export function AddToListSearch({
    * local, une œuvre qu'on vient d'ajouter resterait proposée comme si de rien n'était pendant tout
    * l'aller-retour, et un second clic partirait pour rien.
    */
-  const [justAdded, setJustAdded] = React.useState<ReadonlySet<number>>(
-    new Set(),
-  );
+  const [justAdded, setJustAdded] = useState<ReadonlySet<number>>(new Set());
 
   const trimmedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(trimmedQuery, SEARCH_DEBOUNCE_MS);
@@ -114,7 +112,7 @@ export function AddToListSearch({
    * « frieren ». Le `signal` coupe la requête en vol dès la frappe suivante, ce qui règle la course
    * **et** rend son budget au serveur.
    */
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) return;
 
     // Une saisie vide ne cherche rien ici. La palette, elle, répond « voilà où tu en es » — mais on ne

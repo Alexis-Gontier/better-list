@@ -2,7 +2,7 @@
 
 import { HeartIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { useOptimisticAction } from "next-safe-action/hooks";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { EntryNotes } from "@/features/tracking/components/entry-notes";
 import { RemoveEntryDialog } from "@/features/tracking/components/remove-entry-dialog";
 import { ScoreStars } from "@/features/tracking/components/score-stars";
 import { toDateInputValue } from "@/features/tracking/lib/entry-draft";
@@ -316,51 +316,6 @@ export function EntryControls({
         title={title}
         variant="ghost"
       />
-    </div>
-  );
-}
-
-/**
- * Les notes personnelles ne s'enregistrent pas à la frappe.
- *
- * Chaque sauvegarde ajoute une ligne au journal (`EntryEvent` de type `NOTE`, append-only) : un
- * enregistrement automatique en produirait une par mot tapé, et le journal — qui porte la timeline
- * et le récap annuel — deviendrait illisible.
- */
-function EntryNotes({
-  notes,
-  onSave,
-  disabled,
-}: {
-  notes: string | null;
-  onSave: (notes: string | null) => void;
-  disabled?: boolean;
-}) {
-  const fieldId = useId();
-  const [draft, setDraft] = useState(notes ?? "");
-  const dirty = draft !== (notes ?? "");
-
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={fieldId}>Mes notes</Label>
-      <Textarea
-        className="min-h-20 resize-y"
-        disabled={disabled}
-        id={fieldId}
-        onChange={(event) => setDraft(event.target.value)}
-        placeholder="Ce que j'en ai pensé…"
-        value={draft}
-      />
-      {dirty ? (
-        <Button
-          disabled={disabled}
-          onClick={() => onSave(draft.trim() || null)}
-          size="sm"
-          variant="secondary"
-        >
-          Enregistrer la note
-        </Button>
-      ) : null}
     </div>
   );
 }

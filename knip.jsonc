@@ -9,10 +9,13 @@
   // ce qu'on consomme, et les supprimer casserait la prochaine régénération. (`src/generated/`,
   // produit par Prisma, est déjà écarté par le .gitignore.)
   //
-  // `prisma/_legacy-import.ts` est un script de CLI lancé à la main (`tsx prisma/_legacy-import.ts
+  // `scripts/legacy-import.ts` est un script de CLI lancé à la main (`tsx scripts/legacy-import.ts
   // <newUrl> <oldUrl>`) : rien ne l'importe, et c'est normal. Il est gardé au dépôt — la reprise
   // des données de l'ancienne app peut être rejouée sur une autre branche Neon.
-  "ignore": ["src/components/ui/**", "prisma/_legacy-import.ts"],
+  //
+  // Il vivait dans `prisma/`, où seul son préfixe `_` le cachait de la CLI Prisma ; `scripts/` dit
+  // ce qu'il est — un exécutable manuel — sans avoir à le camoufler, d'où la perte du préfixe.
+  "ignore": ["src/components/ui/**", "scripts/legacy-import.ts"],
 
   // Un export utilisé uniquement dans son propre fichier n'est pas du code mort : c'est souvent
   // un helper testable ou une constante exposée pour un test à venir.

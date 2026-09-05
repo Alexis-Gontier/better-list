@@ -46,7 +46,7 @@ next-env.d.ts
 # instantanés et journaux du navigateur piloté par Playwright
 .playwright-mcp/
 # outil local : rejoue une session existante dans le navigateur de test (voir l'en-tête du fichier)
-dev-session-cookie.mjs
+scripts/dev-session-cookie.mjs
 
 # lefthook — overrides locaux, non partagés
 lefthook-local.yml

@@ -5,7 +5,7 @@
  * Gardé au dépôt : l'import peut être rejoué sur une autre branche Neon. Lancé à la main, jamais
  * importé — d'où son exclusion dans `knip.jsonc`.
  *
- * Usage : `tsx prisma/_legacy-import.ts <newDatabaseUrl> <oldDatabaseUrl>` — les URLs passent en
+ * Usage : `tsx scripts/legacy-import.ts <newDatabaseUrl> <oldDatabaseUrl>` — les URLs passent en
  * argument plutôt qu'en variable d'environnement, pour ne pas dépendre du `.env` local (la cible
  * est une branche Neon de test, pas forcément celle de `DATABASE_URL`).
  */

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
-import * as React from "react";
+import { Fragment, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { toast } from "sonner";
 
@@ -28,15 +28,10 @@ import {
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { routes } from "@/config/routes";
-import {
-  type CommandEntry,
-  type CommandResults,
-  commandResultsSchema,
-} from "@/features/command/schemas/command.schema";
+import { useCommandSearch } from "@/features/command/hooks/use-command-search";
+import type { CommandEntry } from "@/features/command/schemas/command.schema";
 import { ENTRY_UNIT_LABELS } from "@/features/tracking/lib/entry-format";
 import { saveEntry } from "@/features/tracking/server/tracking.actions";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { upfetch } from "@/lib/http/fetch";
 
 /**
  * La palette de commandes — `⌘K` (docs/PRODUCT.md §6, V1).
@@ -58,17 +53,6 @@ import { upfetch } from "@/lib/http/fetch";
  * Le risque assumé : ouvrir la palette et valider par réflexe enregistre un « +1 ». D'où le toast qui
  * nomme l'œuvre et l'épisode — une erreur se voit tout de suite, et se défait depuis la fiche.
  */
-
-const EMPTY_RESULTS: CommandResults = { entries: [], media: [] };
-
-/**
- * Le délai avant de partir en requête.
- *
- * Autour de 200 ms, l'interface est encore perçue comme immédiate, et une frappe rapide cesse de
- * déclencher une requête par caractère. Plus court, on paie le quota AniList pour des résultats que
- * personne ne lit ; plus long, la palette traîne.
- */
-const SEARCH_DEBOUNCE_MS = 220;
 
 /**
  * Une ligne de la palette.
@@ -127,55 +111,42 @@ function entryMeta(entry: CommandEntry) {
 }
 
 export function CommandPalette() {
-  const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
-  const [results, setResults] = React.useState<CommandResults>(EMPTY_RESULTS);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   /** Ligne survolée. `""` = « celle que la palette choisirait », voir `selectedValue` plus bas. */
-  const [highlighted, setHighlighted] = React.useState("");
+  const [highlighted, setHighlighted] = useState("");
   const router = useRouter();
 
-  const trimmedQuery = query.trim();
-  const debouncedQuery = useDebouncedValue(trimmedQuery, SEARCH_DEBOUNCE_MS);
+  const { results, isLoading, trimmedQuery, debouncedQuery } = useCommandSearch(
+    {
+      open,
+      query,
+    },
+  );
 
   const { execute: advance } = useAction(saveEntry, {
     onError: () => toast.error("La progression n'a pas pu être enregistrée."),
   });
 
   /**
-   * La lecture part vers `/api/command`, pas vers une Server Action : celles-ci sont des POST que Next
-   * sérialise, donc la réponse à « fri » arriverait après celle à « frieren ». Le `signal` annule la
-   * requête en vol dès la frappe suivante, ce qui règle la course **et** rend le quota au serveur.
+   * La liste vient de changer sous le curseur : le laisser où il était le poserait sur une autre
+   * œuvre que celle qu'on visait, et `Entrée` écrirait au mauvais endroit.
+   *
+   * **Un ajustement au rendu, pas un effet.** Le geste appartient à la palette et non à
+   * `useCommandSearch` — le surlignage est un état d'affichage, le faire remonter dans le hook le
+   * rendrait dépendant de qui l'appelle. Mais l'écrire en `useEffect(…, [results])` donne une
+   * dépendance que le corps ne lit pas, ce que `useExhaustiveDependencies` refuse à juste titre :
+   * un effet dont le corps ignore ses propres dépendances est un effet qui ment. C'est le motif que
+   * React documente pour « remettre un état à zéro quand une valeur change » — il s'applique avant
+   * la peinture, donc sans le rendu intermédiaire pendant lequel l'ancienne ligne resterait
+   * surlignée.
    */
-  React.useEffect(() => {
-    if (!open) return;
+  const [shownResults, setShownResults] = useState(results);
 
-    const controller = new AbortController();
-    setIsLoading(true);
-
-    upfetch("/api/command", {
-      params: { q: debouncedQuery },
-      schema: commandResultsSchema,
-      signal: controller.signal,
-    })
-      .then((next) => {
-        setResults(next);
-        // La liste vient de changer sous le curseur : le laisser où il était le poserait sur une autre
-        // œuvre que celle qu'on visait, et `Entrée` écrirait au mauvais endroit.
-        setHighlighted("");
-      })
-      .catch(() => {
-        // Une annulation n'est pas une panne : c'est le comportement voulu à chaque frappe. Seule une
-        // vraie erreur doit vider la liste, sinon on effacerait des résultats encore valables.
-        if (controller.signal.aborted) return;
-        setResults(EMPTY_RESULTS);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [open, debouncedQuery]);
+  if (shownResults !== results) {
+    setShownResults(results);
+    setHighlighted("");
+  }
 
   useHotkeys(
     "mod+k",
@@ -352,7 +323,7 @@ export function CommandPalette() {
             </CommandEmpty>
 
             {sections.map((section, index) => (
-              <React.Fragment key={section.heading}>
+              <Fragment key={section.heading}>
                 {/* La navigation est un registre à part : le trait la sépare du contenu métier. */}
                 {section.heading === "Navigation" && index > 0 ? (
                   <CommandSeparator />
@@ -375,7 +346,7 @@ export function CommandPalette() {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-              </React.Fragment>
+              </Fragment>
             ))}
           </CommandList>
         </Command>
