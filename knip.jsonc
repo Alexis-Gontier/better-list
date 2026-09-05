@@ -19,9 +19,51 @@
 
   // Un export utilisé uniquement dans son propre fichier n'est pas du code mort : c'est souvent
   // un helper testable ou une constante exposée pour un test à venir.
-  "ignoreExportsUsedInFile": true
+  "ignoreExportsUsedInFile": true,
+
+  // ─────────────────────────────────────────────────────────────────────────────────────────────
+  // GEL DE LA MISE À BLANC — posé le 5 septembre 2026.
+  //
+  // La refonte a vidé cinq routes de toute leur présentation (`docs/STATE.md`). Le code qu'elles
+  // appelaient n'est pas mort, il est **sans écran** : plus personne n'importe `getLibrary` parce
+  // que `/library` est un placeholder, pas parce que la requête serait devenue inutile.
+  //
+  // Le gel est volontairement posé par **chemin**, et non en `exclude` global : knip continue de
+  // signaler le code mort partout ailleurs dans le dépôt pendant toute la refonte. Chaque entrée
+  // ci-dessous nomme l'écran qu'elle attend — c'est la liste de reconstruction, et elle se vide
+  // par le bas : une entrée se retire le jour où sa route rebranche ce qu'elle couvrait.
+  //
+  // **Si ce bloc existe encore une fois les cinq routes reconstruites, c'est un oubli, pas une
+  // décision.** Le dernier à partir doit emporter `ignoreIssues` et `ignoreDependencies` avec lui.
+  // ─────────────────────────────────────────────────────────────────────────────────────────────
+  "ignoreIssues": {
+    // Fichiers sans importateur — de la présentation, ou des hooks qui n'en servaient plus qu'elle.
+    "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // attend /calendar
+    "src/features/tracking/components/entry-dialog.tsx": ["files"], // attend /library et l'accueil
+    "src/features/tracking/components/entry-form.tsx": ["files"], // idem
+    "src/features/tracking/components/entry-quick-progress.tsx": ["files"], // idem
+    "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
+    "src/hooks/use-url-filters.ts": ["files"], // attend la coquille /search + /library
+
+    // Exports sans appelant — la couche données, gardée intacte par décision (voir STATE.md).
+    "src/components/shared/media-grid.tsx": ["exports"], // MediaList : attend /search
+    "src/features/lists/server/lists.actions.ts": ["exports"], // 5 actions : attendent /lists/[id]
+    "src/features/lists/server/lists.queries.ts": ["exports"], // getMyLists : attend /lists
+    "src/features/media/lib/media-format.ts": ["exports"], // compactFromMirror : attend l'accueil
+    "src/features/media/lib/search-params.ts": ["exports"], // EMPTY_FILTERS : attend /search
+    "src/features/media/server/media.queries.ts": ["exports"], // catalogue, planning, vocabulaire
+    "src/features/tracking/lib/library-params.ts": ["exports"], // options de statut : attend /library
+    "src/features/tracking/server/tracking.queries.ts": ["exports"] // 7 lectures : attendent 4 routes
+  },
+
+  // Deux familles employées uniquement par de la présentation supprimée : `@dnd-kit` par le
+  // réordonnancement de `/lists/[id]`, `embla` par les carrousels de l'accueil. Elles restent au
+  // `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte les reprendra,
+  // et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
+  "ignoreDependencies": ["@dnd-kit/.*", "embla-carousel.*"]
 
   // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
   // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux
-  // existent. Un garde-fou qu'on laisse en `warn` finit par ne plus rien garder.
+  // existent. Un garde-fou qu'on laisse en `warn` finit par ne plus rien garder. Le gel ci-dessus
+  // est la même dette sous une autre forme, et porte donc la même date de péremption.
 }

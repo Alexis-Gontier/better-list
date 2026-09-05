@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
-import { LibraryFilters } from "@/app/(app)/library/_components/library-filters";
-import { LibraryGenreFilter } from "@/app/(app)/library/_components/library-genre-filter";
-import { LibraryResults } from "@/app/(app)/library/_components/library-results";
-import { LibraryResultsSkeleton } from "@/app/(app)/library/_components/library-results-skeleton";
-import { LibraryStatusNav } from "@/app/(app)/library/_components/library-status-nav";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
 
 export const metadata: Metadata = {
   title: "Ma bibliothèque",
@@ -14,51 +8,16 @@ export const metadata: Metadata = {
 };
 
 /**
- * Ma bibliothèque — le premier écran qui lit `Entry` en liste (docs/PRODUCT.md §5, V1).
+ * Ma bibliothèque — vidée par la mise à blanc.
  *
- * La page n'attend rien : elle transmet la promesse `searchParams` à ses enfants suspendus, et
- * l'en-tête part immédiatement. Trois frontières, parce que les trois attentes n'ont pas la même
- * durée : la barre d'outils ne dépend de rien (c'est un îlot client qui lit l'URL lui-même), les
- * onglets de statut d'un `groupBy`, et les résultats d'une requête paginée.
- *
- * L'ordre à l'écran suit l'ordre du geste : on cherche, on restreint, on choisit un statut, on
- * regarde. La barre d'outils passe donc **avant** les onglets, alors qu'elle est presque le seul
- * élément qui n'attende rien — c'est aussi ce qui donne un premier rendu immédiatement utilisable.
+ * Se reconstruit juste après `/search`, sur la même coquille : c'est la fusion de ces deux écrans
+ * qui est le premier gain de la refonte, avant même le changement d'apparence.
  */
-export default function LibraryPage({ searchParams }: PageProps<"/library">) {
+export default function LibraryPage() {
   return (
-    <div className="space-y-5">
-      <header className="space-y-1">
-        <h1 className="font-semibold text-xl">Ma bibliothèque</h1>
-        <p className="text-muted-foreground text-sm">
-          Ce que je regarde, ce que je lis, et où j'en suis.
-        </p>
-      </header>
-
-      {/*
-        Le genre est le seul contrôle de la barre qui demande la base — la liste proposée est celle
-        des genres qu'on suit vraiment. Il arrive donc dans sa propre frontière, et le reste de la
-        barre part sans l'attendre : la recherche est tapable avant que la requête revienne.
-      */}
-      <LibraryFilters
-        genreSlot={
-          <Suspense fallback={<Skeleton className="h-8 w-36" />}>
-            <LibraryGenreFilter />
-          </Suspense>
-        }
-      />
-
-      {/*
-        La hauteur du repli est celle de la rangée d'onglets réelle (`h-9` + le filet) :
-        un squelette plus court ferait remonter toute la grille au moment où les compteurs arrivent.
-      */}
-      <Suspense fallback={<Skeleton className="h-9 w-full max-w-2xl" />}>
-        <LibraryStatusNav searchParams={searchParams} />
-      </Suspense>
-
-      <Suspense fallback={<LibraryResultsSkeleton />}>
-        <LibraryResults searchParams={searchParams} />
-      </Suspense>
-    </div>
+    <RouteUnderConstruction
+      description="Ce que je regarde, ce que je lis, et où j'en suis."
+      title="Ma bibliothèque"
+    />
   );
 }

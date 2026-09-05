@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
-import { ListDetail } from "@/app/(app)/lists/[id]/_components/list-detail";
-import { MediaGridSkeleton } from "@/components/shared/media-grid";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
 import { getListById } from "@/features/lists/server/lists.queries";
 
+/**
+ * Le titre reste dynamique alors même que l'écran est vidé : la liste, elle, existe toujours en
+ * base, et l'onglet du navigateur est la seule chose qui puisse encore la nommer pendant la
+ * refonte.
+ */
 export async function generateMetadata({
   params,
 }: PageProps<"/lists/[id]">): Promise<Metadata> {
@@ -23,20 +25,18 @@ export async function generateMetadata({
   };
 }
 
-export default function ListPage({ params }: PageProps<"/lists/[id]">) {
+/**
+ * Une liste — vidée par la mise à blanc.
+ *
+ * C'est l'écran qui portait le réordonnancement (`fractional-indexing` via `lib/list-reorder`) et
+ * le partage par jeton. Ces deux mécaniques vivent dans `features/lists/`, tests compris : rien
+ * n'en a été perdu ici, seule leur présentation a disparu.
+ */
+export default function ListPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-56" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <MediaGridSkeleton count={12} />
-        </div>
-      }
-    >
-      <ListDetail params={params} />
-    </Suspense>
+    <RouteUnderConstruction
+      description="Une liste d'œuvres, réordonnable et partageable."
+      title="Liste"
+    />
   );
 }

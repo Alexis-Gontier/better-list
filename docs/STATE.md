@@ -19,16 +19,16 @@ Chaque route, ce qu'elle consomme et où elle en est. La clé entre parenthèses
 
 | Route | Rôle | Features consommées | Modèles | État |
 | --- | --- | --- | --- | --- |
-| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, quatre rangées de découverte | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **livré** |
-| `/search` (`search`) | Recherche du catalogue, filtres en URL | `media`, `tracking`, `preferences` | `Media`, `Entry` | **livré** |
+| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, quatre rangées de découverte | `tracking`, `media`, `lists`, `preferences` | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
+| `/search` (`search`) | Recherche du catalogue, filtres en URL | `media`, `tracking`, `preferences` | `Media`, `Entry` | **vidé** — en refonte |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `media`, `tracking`, `lists`, `preferences` | `Media`, `Entry`, `EntryEvent`, `ListItem` | **livré** |
-| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `tracking`, `media` | `Entry`, `Media` | **livré** |
-| `/lists` (`lists.root`) | Mes listes | `lists`, `media`, `preferences` | `List`, `ListItem` | **livré** |
-| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `lists`, `media`, `command` | `List`, `ListItem`, `Media` | **livré** |
+| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `tracking`, `media` | `Entry`, `Media` | **vidé** — en refonte |
+| `/lists` (`lists.root`) | Mes listes | `lists`, `media`, `preferences` | `List`, `ListItem` | **vidé** — en refonte |
+| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `lists`, `media`, `command` | `List`, `ListItem`, `Media` | **vidé** — en refonte |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | — | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `lists` | `List`, `ListItem` | **livré** |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `profile` | `User`, `Entry`, `EntryEvent` | **livré** |
-| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `media`, `tracking`, `preferences` | `Media`, `Entry` | **livré** |
+| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `media`, `tracking`, `preferences` | `Media`, `Entry` | **vidé** — en refonte |
 | `/settings` (`settings`) | Préférences d'affichage | `preferences` | `UserPreferences` | **livré** |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | — | `Edition`, `OwnedVolume` | **déclaré, non construit** |
 | `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | — | `Edition`, `OwnedVolume` | **déclaré, non construit** |
@@ -37,6 +37,29 @@ Chaque route, ce qu'elle consomme et où elle en est. La clé entre parenthèses
 Les tables `ListView`, `ListViewItem`, `Edition` et `OwnedVolume` existent au schéma depuis la
 migration initiale et ne sont employées par aucun écran. C'est voulu, pas un oubli — PRODUCT.md §6
 dit pourquoi.
+
+### La mise à blanc du 5 septembre 2026
+
+Six lignes du tableau portent **vidé**. Le 5 septembre, la présentation de cinq arbres de routes a
+été supprimée d'un coup — 38 fichiers d'UI, plus 7 modules devenus orphelins par ricochet
+(`media-carousel`, `view-toggle`, `list-card`, `media-row`, `use-search-filters`,
+`use-library-filters`, `entry-card-actions`). Le diagnostic est celui de la spec du 2 septembre :
+les écrans avaient été construits par ajout, et `/search` et `/library` étaient le même écran écrit
+deux fois.
+
+Trois choses n'ont **pas** été supprimées, et il faut le savoir avant de reconstruire :
+
+1. **Les `page.tsx` des cinq routes.** Ils sont réduits à un placeholder
+   (`components/shared/route-under-construction.tsx`), pas effacés. `routes.home` est la cible de
+   redirection après connexion, le `callbackURL` GitHub, la sortie de la liste d'attente et le repli
+   de `proxy.ts` ; `config/navigation.ts` et la palette `⌘K` pointent vers les quatre autres ; et
+   les Server Actions de `lists` et `tracking` y adressent seize `revalidatePath()`. Effacer les
+   fichiers aurait fait atterrir toute connexion sur un 404.
+2. **La couche données.** Queries, actions, schémas et helpers de `features/` sont intacts, tests
+   compris — les 192 tests passent toujours, ce qui confirme qu'aucun ne portait sur l'UI supprimée.
+3. **Deux modules de `calendar/_lib/`.** `airing-week.ts` (calcul de semaine, couvert) et
+   `calendar-params.ts` (le contrat d'URL : la semaine en décalage, pas en date) sont des décisions
+   de domaine, pas d'apparence.
 
 ### Les trois route handlers
 
@@ -72,7 +95,9 @@ Expose `searchMedia`, `getMediaById`, `getBrowseCatalogue`, `getAiringSchedule`,
 **`tracking`** — le suivi, le journal, la bibliothèque.
 Expose `getEntryForMedia`, `getEntryStatesFor`, `getEntryTimeline`, `getLibrary`,
 `getLibraryStatusCounts`, `searchEntries`, `getHeroEntries`, `getDashboard`, `getAiringEntries`, et
-les actions `saveEntry`, `removeEntry`. La feature la plus consommée : six routes en dépendent.
+les actions `saveEntry`, `removeEntry`. Elle était la feature la plus consommée — six routes en
+dépendaient. Depuis la mise à blanc, il n'en reste que deux (`/media/[id]` et `/u/[username]`) : les
+sept lectures gelées dans `knip.jsonc` attendent les quatre autres.
 
 **`lists`** — les listes et leur contenu.
 Expose `getMyLists`, `getListById`, `getSharedList`, `getListsForMedia`, et huit actions
@@ -97,10 +122,10 @@ Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y 
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs depuis le 5 septembre |
-| `pnpm test` | 192 tests, 16 fichiers |
-| `pnpm lint` | 246 fichiers, aucune correction |
+| `pnpm test` | 192 tests, 16 fichiers — **inchangé après la mise à blanc** |
+| `pnpm lint` | 202 fichiers, aucune correction (246 avant la mise à blanc) |
 | `pnpm build` | 19 pages, toutes en rendu partiel sauf les handlers |
-| `pnpm knip` | aucun signalement |
+| `pnpm knip` | aucun signalement — **mais sous gel**, voir les écarts |
 
 **Écarts connus :**
 
@@ -112,29 +137,50 @@ Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y 
   Next, `features/` n'a pas de barrel.
 - `/collection` est déclarée dans `routes.ts` sans écran derrière. Rien ne pointe dessus — ni la
   navigation, ni la palette. `routes.ts` le dit lui-même dans son commentaire.
-- Le repli de panne AniList n'est vérifié par **aucun test** : `tryAniList` a les siens, les cinq
-  écrans qui l'appellent n'en ont pas. C'est le même trou que le reste de l'affichage, mais il porte
-  ici sur un chemin qu'on ne voit jamais en développement — il ne se déclenche que quand l'API
-  tombe.
+- Le repli de panne AniList n'est vérifié par **aucun test**, et la mise à blanc a emporté les cinq
+  appelants de `tryAniList` : il n'en reste qu'un, `/media/[id]`. `tryAniList` garde ses propres
+  tests. Le repli est donc à **re-poser écran par écran** pendant la reconstruction, et c'est un
+  chemin qu'on ne voit jamais en développement — il ne se déclenche que quand l'API tombe.
+- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte depuis le 5 septembre un bloc `ignoreIssues`
+  qui couvre 14 chemins, plus `ignoreDependencies` pour `@dnd-kit` et `embla`. Ce ne sont pas des
+  faux positifs : ce code est réellement sans appelant, parce que les écrans qui l'appelaient
+  n'existent plus. Le gel est posé **par chemin** et non en `exclude` global, pour que knip continue
+  de signaler le code mort partout ailleurs. Chaque entrée nomme la route qu'elle attend : c'est la
+  liste de reconstruction, et elle doit être vide — le bloc supprimé — quand les six routes sont
+  refaites. Une décision assumée, prise en connaissance du coût le 5 septembre.
 
 ---
 
 ## Le prochain pas
 
-**Poser Playwright, et commencer par le repli de panne.**
+**Poser le socle visuel, avant de redessiner le premier écran.**
 
-Depuis le 21 août, aucun écran ne tombe sur `app/error.tsx` quand AniList ne répond pas : l'accueil
-et `/search` remplacent le catalogue par un message, `/calendar` remplace la grille, et
-`/media/[id]` sert la fiche depuis le miroir local pour garder le « +1 ». Ces cinq chemins ont une
-propriété commune et gênante : **on ne les voit jamais tourner**, puisqu'ils demandent qu'une API
-tierce soit en panne. Ils ne peuvent pas être vérifiés à l'œil, seulement par un test qui simule la
-coupure.
+Les tâches 1 à 6 du plan du 2 septembre
+([plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md)) : la police Archivo, les
+tokens « Obsidienne », les composants shadcn manquants, les deux variants, la `MediaCard` signée et
+la grille dense. Aucune de ces tâches n'a été entamée — les 54 cases du plan sont vides, et
+`--font-heading` alias toujours `--font-sans`.
 
-C'est ce qui fait passer les tests de composants — jusqu'ici « sans engagement » — devant la
-collection physique : ils ne couvrent plus seulement du confort, mais du code qui ne s'exécute
-qu'un jour de panne.
+Cet ordre n'est pas négociable pour une raison simple : la `MediaCard` et la grille apparaissent sur
+les six routes à reconstruire. Les redessiner après le premier écran obligerait à refaire cet
+écran.
+
+### Puis, une route par branche
+
+L'ordre est choisi, et l'accueil est volontairement dernier — c'est l'écran qui compose le
+vocabulaire de tous les autres.
+
+1. `/search`, puis `/library` — ensemble, via la coquille commune (tâches 8 à 10 du plan). C'est le
+   premier gain réel : la fin du double emploi, avant même le changement d'apparence.
+2. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
+3. `/lists`, puis `/lists/[id]` — le réordonnancement revient, et `@dnd-kit` sort du gel.
+4. `/` — en dernier, avec le vocabulaire complet sous les yeux.
+
+Chaque branche retire du bloc `ignoreIssues` de `knip.jsonc` les entrées que sa route rebranche.
+Quand la dernière part, le bloc entier part avec elle.
 
 ### Ensuite, peut-être
 
-Sans engagement, et sans ordre : la collection physique (`/collection`, V1.5), l'ordre de
-visionnage d'une franchise (PRODUCT.md §8, meilleur rapport valeur/effort du projet).
+Sans engagement, et sans ordre : Playwright et le repli de panne AniList (à re-poser de toute façon
+pendant la reconstruction), la collection physique (`/collection`, V1.5), l'ordre de visionnage
+d'une franchise (PRODUCT.md §8, meilleur rapport valeur/effort du projet).
