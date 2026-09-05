@@ -37,11 +37,14 @@
   // décision.** Le dernier à partir doit emporter `ignoreIssues` et `ignoreDependencies` avec lui.
   // ─────────────────────────────────────────────────────────────────────────────────────────────
   "ignoreIssues": {
-    // Fichiers sans importateur — de la présentation, ou des hooks qui n'en servaient plus qu'elle.
+    // Fichiers sans importateur — des hooks dont la présentation était le seul client.
+    //
+    // Ils sont gelés et non supprimés parce qu'ils portent une décision et non un rendu :
+    // `calendar-params.ts` tient le contrat d'URL du planning, et `use-url-filters.ts` l'abstraction
+    // de filtres extraite le 5 septembre (commit a5be9d5). Les trois composants qui étaient ici — les
+    // vignettes d'avancement rapide et leur formulaire — ont été supprimés le même jour : c'était du
+    // rendu, et du rendu que la refonte réécrira de toute façon.
     "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // attend /calendar
-    "src/features/tracking/components/entry-dialog.tsx": ["files"], // attend /library et l'accueil
-    "src/features/tracking/components/entry-form.tsx": ["files"], // idem
-    "src/features/tracking/components/entry-quick-progress.tsx": ["files"], // idem
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
     "src/hooks/use-url-filters.ts": ["files"], // attend la coquille /search + /library
 

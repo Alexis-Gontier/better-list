@@ -40,8 +40,13 @@ export const commandEntrySchema = z.object({
   total: z.number().int().nullable(),
   unit: z.enum(ENTRY_UNITS),
   /**
-   * Reste-t-il quelque chose à avancer ? Calculé côté serveur, seul juge du plafond — même règle que
-   * le « +1 » des vignettes (`entry-quick-progress.tsx`).
+   * Reste-t-il quelque chose à avancer ? Calculé côté serveur, seul juge du plafond
+   * (`command.queries.ts` : `total === null || progress < total`).
+   *
+   * Ce champ portait la même règle que le « +1 » des vignettes, dans `entry-quick-progress.tsx` —
+   * supprimé par la mise à blanc du 5 septembre 2026. La palette est donc, pour l'instant, le seul
+   * endroit où l'avancement rapide existe encore : c'est ici qu'il faudra revenir lire la règle
+   * quand les vignettes seront reconstruites, plutôt que de la réinventer.
    */
   canAdvance: z.boolean(),
 });

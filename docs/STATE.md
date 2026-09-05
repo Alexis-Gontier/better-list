@@ -47,6 +47,12 @@ Six lignes du tableau portent **vidé**. Le 5 septembre, la présentation de cin
 les écrans avaient été construits par ajout, et `/search` et `/library` étaient le même écran écrit
 deux fois.
 
+Une seconde passe, le même jour, a emporté trois composants de `features/tracking/` que la première
+avait laissés sans importateur : `entry-dialog`, `entry-form` et `entry-quick-progress` — 647 lignes
+de rendu que la refonte réécrira. `score-stars` et `remove-entry-dialog`, que `entry-form` était
+seul à partager avec `entry-controls`, survivent par ce dernier et servent toujours `/media/[id]`.
+Avec eux, le gel knip passe de 14 à 11 chemins.
+
 Trois choses n'ont **pas** été supprimées, et il faut le savoir avant de reconstruire :
 
 1. **Les `page.tsx` des cinq routes.** Ils sont réduits à un placeholder
@@ -123,7 +129,7 @@ Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y 
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs depuis le 5 septembre |
 | `pnpm test` | 192 tests, 16 fichiers — **inchangé après la mise à blanc** |
-| `pnpm lint` | 202 fichiers, aucune correction (246 avant la mise à blanc) |
+| `pnpm lint` | 199 fichiers, aucune correction (246 avant la mise à blanc) |
 | `pnpm build` | 19 pages, toutes en rendu partiel sauf les handlers |
 | `pnpm knip` | aucun signalement — **mais sous gel**, voir les écarts |
 
@@ -142,7 +148,7 @@ Relevé le 5 septembre 2026. **À rejouer et à redater dès qu'on prétend s'y 
   tests. Le repli est donc à **re-poser écran par écran** pendant la reconstruction, et c'est un
   chemin qu'on ne voit jamais en développement — il ne se déclenche que quand l'API tombe.
 - **`pnpm knip` est vert sous gel.** `knip.jsonc` porte depuis le 5 septembre un bloc `ignoreIssues`
-  qui couvre 14 chemins, plus `ignoreDependencies` pour `@dnd-kit` et `embla`. Ce ne sont pas des
+  qui couvre 11 chemins, plus `ignoreDependencies` pour `@dnd-kit` et `embla`. Ce ne sont pas des
   faux positifs : ce code est réellement sans appelant, parce que les écrans qui l'appelaient
   n'existent plus. Le gel est posé **par chemin** et non en `exclude` global, pour que knip continue
   de signaler le code mort partout ailleurs. Chaque entrée nomme la route qu'elle attend : c'est la
