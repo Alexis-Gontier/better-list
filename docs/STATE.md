@@ -198,20 +198,26 @@ fier.**
 de `--font-sans`. `@layer base` applique déjà `font-heading` aux `h1`, `h2` et `h3` : le titrage est
 en place avant qu'un seul écran soit écrit.
 
-Ces deux commits viennent de la branche `refonte-design`, par cherry-pick. **Rien d'autre n'en sera
+Ces deux commits viennent de la branche `refonte-design`, par cherry-pick. **Rien d'autre n'en a été
 repris.** Cette branche était un essai : ses 13 autres commits — les six composants shadcn, les deux
 variants, la `MediaCard`, la grille, la coquille catalogue, `/search` et `/library` — ne sont pas des
 patchs à appliquer. La reconstruction repart de zéro sur les tokens.
 
-`refonte-design` reste au dépôt en lecture seule. On peut y aller voir comment un problème avait été
-résolu ; on n'y cherche pas de code à ramener.
+**La branche a été supprimée le 5 septembre 2026**, une fois les deux commits de style sur `main`.
+Le dépôt n'a donc plus qu'une seule branche. Ne pas la chercher : ses 13 commits non repris ne sont
+plus atteignables, et le prochain `git gc` les effacera pour de bon.
+
+Ce qu'ils avaient résolu — la coquille catalogue, les filtres avancés, la `MediaCard` signée, la
+grille dense — est donc à retrouver par le raisonnement, pas par la lecture. La spec citée plus bas
+en garde l'intention ; l'implémentation, elle, est perdue et c'était le choix assumé.
 
 ### ⚠️ Le plan du 2 septembre est un document d'intention, pas une liste de tâches
 
 Ses 54 cases sont vides et le resteront : le
-[plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md) a été exécuté une fois, sur
-`refonte-design`, et cette exécution est abandonnée. Ses tâches 1 et 2 sont faites (elles sont sur
-`main`) ; les tâches 3 à 10 décrivent des fichiers qui n'existent plus.
+[plan](./superpowers/plans/2026-09-02-refonte-design-fondations.md) a été exécuté une fois, sur une
+branche depuis supprimée. Ses tâches 1 et 2 sont faites — elles sont sur `main`. Ses tâches 3 à 10
+décrivent des fichiers qui n'existent plus, et l'implémentation qui les avait honorées n'existe plus
+non plus : elles sont à refaire, pas à retrouver.
 
 En revanche, la **spec** qui l'a produit reste valable et vaut la lecture avant de dessiner :
 [2026-09-02-refonte-design-ui-design.md](./superpowers/specs/2026-09-02-refonte-design-ui-design.md).

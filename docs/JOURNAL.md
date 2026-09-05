@@ -44,6 +44,13 @@ c'est **`git branch` avant de conclure quoi que ce soit sur ce qui existe.** Un 
 décrit une intention ; seul le graphe des commits décrit un dépôt. STATE.md porte désormais cet
 avertissement en tête de son « prochain pas ».
 
+L'histoire se termine en fin de séance : deux commits en ont été tirés par cherry-pick — Archivo et
+les tokens « Obsidienne » — et la branche a été **supprimée**, décision prise en connaissance de ce
+qu'elle emportait. Le dépôt n'a plus qu'une branche. Ce que les treize autres commits avaient résolu
+est à refaire, pas à relire ; seule la spec en garde l'intention. C'est cohérent avec le reste de la
+séance — on repart de zéro, et une implémentation qu'on garde « au cas où » est une implémentation
+qu'on relira une fois de trop.
+
 **Supprimer plutôt que geler, quand on sait qu'on jettera.** `pnpm knip` a signalé 32 puis 41
 éléments sans appelant au fil des passes. Deux traitements, et la frontière s'est révélée nette :
 ce qui portait une **décision** — contrats d'URL, schémas Zod, les 488 lignes de GraphQL AniList,
