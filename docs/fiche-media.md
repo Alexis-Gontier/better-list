@@ -203,7 +203,7 @@ récupérer, tout à afficher.
 
 ### 2.7 États de l'écran
 
-- [x] Le repli sur le miroir local quand AniList ne répond pas, et son bandeau d'avis
+- [x] Le repli sur le miroir local quand AniList ne répond pas. **Son bandeau d'avis n'appartient plus à cette page** : il est rendu par le layout et vaut pour tout le site (`components/layout/anilist-outage-notice.tsx`) ; la fiche ne fait que rapporter par où sa lecture est passée
 - [x] Le squelette de chargement, aux proportions du hero
 - [ ] L'œuvre pas encore suivie, distinguée de l'œuvre suivie à zéro
 

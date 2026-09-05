@@ -1,6 +1,7 @@
+import { AniListOutageNotice } from "@/components/layout/anilist-outage-notice";
 import { Header } from "@/components/layout/header";
-import { NoticeSlot } from "@/components/layout/notice-slot";
 import { requireApprovedUser } from "@/lib/auth/session";
+import { isAniListDown } from "@/lib/http/anilist";
 
 /**
  * L'application authentifiée bloque sur la lecture de session, et c'est assumé.
@@ -40,8 +41,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       coller.
     */
     <div className="flex min-h-full flex-1 flex-col overflow-x-clip">
-      {/* Au-dessus de l'en-tête : un avis d'incident vaut pour toute l'app, pas pour une page. */}
-      <NoticeSlot />
+      {/*
+        Au-dessus de l'en-tête : un avis d'incident vaut pour toute l'app, pas pour une page. Il
+        est donc rendu **ici**, une fois, et non par l'écran qui a découvert la panne — c'était le
+        cas jusqu'au 5 septembre, et seule la fiche savait alors l'afficher.
+
+        La lecture est synchrone et ne coûte rien : `isAniListDown` interroge la mémoire du
+        processus, pas AniList. Sonder l'API à chaque affichage de page dépenserait le quota qu'on
+        prétend justement protéger.
+      */}
+      <AniListOutageNotice initialDown={isAniListDown()} />
       <Header user={user} />
       <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children}

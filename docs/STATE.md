@@ -235,8 +235,12 @@ s'y fier.**
   état vit dans le composant et disparaît au rechargement. Ce n'est pas une régression, c'est l'ordre
   choisi : la mise en page se valide avant qu'on écrive les Server Actions.
 - Le repli de panne AniList n'est vérifié par **aucun test**, mais il a été **vu fonctionner** le
-  6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Il
-  reste à re-poser écran par écran pour les autres routes.
+  6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Le
+  **repli lui-même** reste à re-poser écran par écran ; son **bandeau d'avis**, lui, est désormais
+  global — rendu par le layout, il apparaît sur toutes les routes, y compris celles qui
+  n'interrogent jamais AniList. Il repose sur une variable de module (`isAniListDown`), donc sur la
+  mémoire d'une instance de serveur : au pire il manque à quelqu'un pendant une requête, jamais
+  l'inverse. Le raisonnement est dans `lib/http/anilist.ts`.
 - « Retirer de ma bibliothèque » figure au menu de la fiche **sans confirmation**. Sans conséquence
   aujourd'hui — l'entrée ne fait rien —, mais c'est une action destructive : elle doit passer par
   `alert-dialog`, déjà installé, le jour où elle écrira.

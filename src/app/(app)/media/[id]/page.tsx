@@ -5,8 +5,8 @@ import * as z from "zod";
 
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
-import { MediaPartialNotice } from "@/app/(app)/media/[id]/_components/media-partial-notice";
 import { MediaSynopsis } from "@/app/(app)/media/[id]/_components/media-synopsis";
+import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import { Separator } from "@/components/ui/separator";
 import {
   cleanDescription,
@@ -142,11 +142,12 @@ async function MediaDetailContent({
       séparateur lui ferait dicter l'espacement de ses deux voisins, et la prochaine section
       ajoutée ici arriverait avec un rythme différent selon qu'elle suit un trait ou non.
 
-      Le bandeau de coupure ne compte pas comme enfant : il se dépose par un portail dans la fente
-      ouverte au-dessus de l'en-tête (`components/layout/notice-slot.tsx`) et ne rend rien ici.
+      Le rapporteur de panne ne compte pas comme enfant : il ne rend rien. Il dit au bandeau du
+      layout — qui, lui, vaut pour tout le site — si cette lecture est passée par AniList ou par le
+      miroir (`components/layout/anilist-outage-notice.tsx`).
     */
-    <article className="flex flex-col gap-8">
-      {isPartial ? <MediaPartialNotice /> : null}
+    <article className="flex flex-col gap-4">
+      <ReportAniListStatus down={isPartial} />
 
       <MediaHero media={media} titleLanguage={titleLanguage} />
 
