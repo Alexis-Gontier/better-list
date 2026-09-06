@@ -39,6 +39,12 @@ type EntryProgressStepperProps = {
   unit: EntryUnit;
   /** Le total connu. `null` sur une œuvre en cours, dont AniList ignore le nombre d'épisodes. */
   total: number | null;
+  /**
+   * La largeur du groupe. Même raison que sur `entry-status-select` : la rangée de la fiche veut
+   * une largeur naturelle, une colonne de grille veut `w-full`. Le champ, lui, est déjà `flex-1` —
+   * c'est lui qui absorbe la place en plus, pas les deux crans, dont la taille est celle du doigt.
+   */
+  className?: string;
 };
 
 export function EntryProgressStepper({
@@ -46,6 +52,7 @@ export function EntryProgressStepper({
   onValueChange,
   unit,
   total,
+  className,
 }: EntryProgressStepperProps) {
   const unitLabel = ENTRY_UNIT_LABELS[unit];
   const ceiling = total && total > 0 ? total : null;
@@ -59,7 +66,7 @@ export function EntryProgressStepper({
   };
 
   return (
-    <ButtonGroup>
+    <ButtonGroup className={className}>
       <StepButton
         direction="decrement"
         disabled={current <= 0}
@@ -67,7 +74,7 @@ export function EntryProgressStepper({
         onClick={() => step(-1)}
       />
 
-      <InputGroup className="w-32">
+      <InputGroup className="w-32 flex-1">
         <InputGroupInput
           aria-label={unitLabel.consumed}
           // Sans ça, un gestionnaire de mots de passe propose ses suggestions sur un champ qui ne

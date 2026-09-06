@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { ENTRY_STATUS_LABELS } from "@/features/tracking/lib/entry-format";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
+import { cn } from "@/lib/utils";
 
 /**
  * Le statut de suivi d'une œuvre (docs/PRODUCT.md §4.2).
@@ -36,12 +37,22 @@ type EntryStatusSelectProps = {
   value: EntryStatus;
   onValueChange: (value: EntryStatus) => void;
   disabled?: boolean;
+  /**
+   * La largeur est **négociable, pas le reste.**
+   *
+   * `w-40` tient les six libellés sans les couper, et c'est le bon défaut dans une rangée de
+   * contrôles alignés — celle de la fiche. Dans une grille où chaque colonne a sa part, il faut
+   * `w-full`, sinon le sélecteur laisse une gouttière morte à sa droite. Le second appelant a
+   * demandé exactement ça, donc l'ouverture se fait maintenant et pour cette raison-là.
+   */
+  className?: string;
 };
 
 export function EntryStatusSelect({
   value,
   onValueChange,
   disabled,
+  className,
 }: EntryStatusSelectProps) {
   return (
     <Select
@@ -49,7 +60,10 @@ export function EntryStatusSelect({
       onValueChange={(next) => onValueChange(next as EntryStatus)}
       value={value}
     >
-      <SelectTrigger aria-label="Statut de suivi" className="w-40">
+      <SelectTrigger
+        aria-label="Statut de suivi"
+        className={cn("w-40", className)}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

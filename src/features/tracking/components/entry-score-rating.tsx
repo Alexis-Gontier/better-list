@@ -37,16 +37,24 @@ type EntryScoreRatingProps = {
   /** Le score stocké, sur 0–100. `null` quand l'œuvre n'est pas notée. */
   score: number | null;
   onScoreChange: (score: number) => void;
+  /**
+   * La largeur du groupe. Même raison que sur ses deux voisins — une rangée veut la largeur
+   * naturelle, une colonne de grille veut `w-full`. Ce sont les **étoiles** qui absorbent la place
+   * en plus (`flex-1` sur leur segment), jamais les crans : un cran plus large ne se vise pas
+   * mieux, il déséquilibre juste le groupe.
+   */
+  className?: string;
 };
 
 export function EntryScoreRating({
   score,
   onScoreChange,
+  className,
 }: EntryScoreRatingProps) {
   const stars = scoreToStars(score ?? 0);
 
   return (
-    <ButtonGroup>
+    <ButtonGroup className={className}>
       <StepButton
         direction="decrement"
         disabled={stars <= 0}
@@ -61,7 +69,7 @@ export function EntryScoreRating({
         l'`InputGroup` — les deux modes compris, sans quoi le clair et le sombre ne seraient pas
         d'accord.
       */}
-      <ButtonGroupText className="bg-background dark:bg-input/30">
+      <ButtonGroupText className="flex-1 justify-center bg-background dark:bg-input/30">
         <Rating
           aria-label="Ma note"
           onValueChange={(next) => onScoreChange(starsToScore(next))}
