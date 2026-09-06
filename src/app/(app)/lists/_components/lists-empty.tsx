@@ -1,7 +1,9 @@
 import { ListPlusIcon } from "lucide-react";
 
+import { CreateListDialog } from "@/app/(app)/lists/_components/create-list-dialog";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -16,10 +18,13 @@ import {
  * Une bibliothèque vide et une recherche sans résultat en ont trois à distinguer, c'est ce qui les
  * a fait reporter ; « aucune liste » ne se confond avec rien.
  *
- * **Il ne porte pas encore le geste de création.** Le plan prévoyait de poser le bouton inerte ici
- * pour le brancher à la passe suivante ; c'est exactement ce que le dépôt vient de retirer deux
- * fois — le menu à trois points de la fiche, et « Ajouter à une liste ». Un bouton qui ne fait rien
- * apprend au membre que l'écran est cassé. Il arrive donc avec `createList`, pas avant.
+ * **Le geste de création y est, et il n'y a été posé qu'une fois qu'il marchait.** Le plan
+ * prévoyait de poser le bouton inerte à la passe précédente pour le brancher à celle-ci ; c'est
+ * exactement ce que le dépôt venait de retirer deux fois — le menu à trois points de la fiche, et
+ * « Ajouter à une liste ». Un bouton qui ne fait rien apprend au membre que l'écran est cassé.
+ *
+ * Le bouton est le même qu'en tête d'écran, sans réglage : `CreateListDialog` n'en accepte plus
+ * depuis qu'il est plein des deux côtés (décision d'Alexis, 6 septembre 2026).
  */
 export function ListsEmpty() {
   return (
@@ -34,6 +39,10 @@ export function ListsEmpty() {
           une sélection à faire découvrir, la pile de la saison prochaine.
         </EmptyDescription>
       </EmptyHeader>
+
+      <EmptyContent>
+        <CreateListDialog />
+      </EmptyContent>
     </Empty>
   );
 }

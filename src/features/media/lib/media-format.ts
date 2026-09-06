@@ -263,6 +263,40 @@ export function mirroredTitle(
  * interroge l'API, une notion qui n'existe pas en base. `mediaTitle` retombe alors sur le romaji,
  * qui est exactement ce qu'on veut afficher.
  */
+/**
+ * Les colonnes du miroir qu'une **vignette** demande : celles de `compactFromMirror`, plus les
+ * trois qui voyagent à côté.
+ *
+ * **Promue ici le 6 septembre 2026**, avec `/lists/[id]`. Elle était écrite deux fois — dans
+ * `media.mirror.ts` sous le nom `MIRROR_CARD_SELECT` et dans `library.queries.ts` sous celui-ci —
+ * avec exactement les mêmes treize colonnes dans un ordre différent. Le troisième appelant a rendu
+ * la duplication visible ; elle vit désormais auprès de la fonction qui la consomme.
+ *
+ * `episodes`, `chapters` et `bannerImage` ne sont pas dans `MediaCompact` et n'ont rien à y faire :
+ * cette forme décrit une œuvre pour une vignette, et trois colonnes de plus sur toutes les listes
+ * du produit pour servir la fenêtre d'édition rapide serait un mauvais échange. Elles voyagent donc
+ * à côté, dans `total` et `banner` — et le plafond n'est pas un confort : un pas de progression
+ * sans lui laisse taper « épisode 900 » sur une série de douze.
+ *
+ * C'est un littéral de sélection Prisma, donc **de la donnée** : ce fichier reste importable depuis
+ * un composant client, comme il l'est déjà pour `mediaTitle`.
+ */
+export const MIRRORED_MEDIA_SELECT = {
+  id: true,
+  type: true,
+  format: true,
+  status: true,
+  titleRomaji: true,
+  titleEnglish: true,
+  titleNative: true,
+  coverImage: true,
+  meanScore: true,
+  isAdult: true,
+  episodes: true,
+  chapters: true,
+  bannerImage: true,
+} as const;
+
 export function compactFromMirror(media: MirroredMedia): MediaCompact {
   return {
     id: media.id,

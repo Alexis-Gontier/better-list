@@ -1,5 +1,11 @@
 import "server-only";
 
+import {
+  compactFromMirror,
+  MIRRORED_MEDIA_SELECT,
+} from "@/features/media/lib/media-format";
+import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -151,4 +157,85 @@ export async function getLists({
       title: item.media.titleRomaji ?? item.media.titleEnglish ?? "",
     })),
   }));
+}
+
+/** Une œuvre d'une liste, dans la forme que `MediaCard` et la fenêtre d'édition rapide attendent. */
+export type ListDetailItem = {
+  media: MediaCompact;
+  /** La bannière du miroir — l'en-tête de la fenêtre d'édition rapide. `null` sur la plupart des mangas. */
+  banner: string | null;
+  unit: EntryUnit;
+  /** Le plafond de progression. `null` quand AniList ignore le total — une série en cours. */
+  total: number | null;
+};
+
+export type ListDetail = {
+  id: string;
+  title: string;
+  description: string | null;
+  /** Le nombre d'œuvres **réel**, avant le filtre 18+ : c'est ce que la suppression emporterait. */
+  itemCount: number;
+  items: ListDetailItem[];
+};
+
+/**
+ * Une liste et son contenu, **dans son ordre**.
+ *
+ * `null` quand la liste n'existe pas **ou n'est pas la mienne**, et les deux cas se confondent
+ * volontairement : distinguer « elle n'existe pas » de « elle ne t'appartient pas » dirait à qui
+ * essaie des identifiants au hasard lesquels ont trouvé quelque chose. L'appelant rend un 404 dans
+ * les deux cas.
+ *
+ * **Pas de pagination.** Une liste tient dans les dizaines d'œuvres, pas dans les milliers ; la
+ * paginer coûterait un compte de plus par affichage pour un cran qu'on n'atteindrait jamais. C'est
+ * la différence avec `/library`, qui pagine parce qu'elle peut porter des centaines de lignes et
+ * qu'on y arrive par un filtre, pas par une intention.
+ *
+ * **`includeAdult` filtre les œuvres, pas `itemCount`** — la règle de `getLists`, pour la même
+ * raison : le décompte parle de la liste, la grille de ce qu'on en montre. C'est aussi ce qui rend
+ * la confirmation de suppression honnête, puisqu'elle annonce ce qui partirait vraiment.
+ *
+ * Le suivi ne vient **pas** d'ici : `getLibraryEntriesFor` le rapporte en une requête pour toute la
+ * page, et son docstring prévoyait déjà de servir les listes. Le mêler à cette lecture aurait
+ * dupliqué une jointure que le catalogue fait déjà.
+ */
+export async function getList(
+  listId: string,
+  { includeAdult }: { includeAdult: boolean },
+): Promise<ListDetail | null> {
+  const ownerId = await currentUserId();
+
+  const list = await prisma.list.findFirst({
+    where: { id: listId, ownerId },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      _count: { select: { items: true } },
+      items: {
+        orderBy: { rank: "asc" },
+        ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
+        select: { media: { select: MIRRORED_MEDIA_SELECT } },
+      },
+    },
+  });
+
+  if (!list) return null;
+
+  return {
+    id: list.id,
+    title: list.title,
+    description: list.description,
+    itemCount: list._count.items,
+    items: list.items.map(({ media }) => ({
+      media: compactFromMirror(media),
+      banner: media.bannerImage,
+      /*
+        L'unité suit le type de l'œuvre, comme partout ailleurs : un anime se compte en épisodes,
+        tout le reste en chapitres. La même condition décide de ce qu'on compte et de jusqu'où.
+      */
+      unit: media.type === "ANIME" ? "episode" : "chapitre",
+      total: media.type === "ANIME" ? media.episodes : media.chapters,
+    })),
+  };
 }

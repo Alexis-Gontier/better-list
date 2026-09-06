@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { CreateListDialog } from "@/app/(app)/lists/_components/create-list-dialog";
 import { ListCard } from "@/app/(app)/lists/_components/list-card";
 import { ListsEmpty } from "@/app/(app)/lists/_components/lists-empty";
 import { PageHeading } from "@/components/shared/page-heading";
@@ -31,10 +32,25 @@ export default function ListsPage() {
         voisins.
       */}
       <div className="flex flex-col gap-4">
-        <PageHeading
-          description="Ce qu'aucun statut ne sait dire : classements, sélections à faire découvrir, piles de saison."
-          title="Mes listes"
-        />
+        {/*
+          **Empilé sur téléphone, en ligne à partir de `sm`** — corrigé le 6 septembre 2026 après
+          l'avoir vu en 390 : côte à côte, le bouton prenait un tiers de la largeur et poussait la
+          description à trois lignes, si bien que le titre de l'écran se retrouvait à l'étroit dans
+          ce qui restait.
+
+          En ligne, `items-start` et non `center` : le titre fait deux lignes avec sa description, et
+          centrer le bouton sur cette hauteur le poserait en face du texte d'aide plutôt qu'en face
+          du titre. `shrink-0` pour qu'une description longue ne le comprime pas.
+        */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <PageHeading
+            description="Ce qu'aucun statut ne sait dire : classements, sélections à faire découvrir, piles de saison."
+            title="Mes listes"
+          />
+          <div className="shrink-0">
+            <CreateListDialog />
+          </div>
+        </div>
         <Separator />
       </div>
 

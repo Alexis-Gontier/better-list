@@ -7,9 +7,14 @@ import type { ListSummary } from "@/features/lists/server/lists.queries";
 /**
  * La carte d'une liste : son aperçu, son nom, ce qu'elle dit d'elle, et ce qu'elle contient.
  *
- * Composant **serveur**. Elle n'a aucun geste propre à la passe 1 ; le menu « renommer / supprimer »
- * arrivera par un slot, comme `MediaCard` reçoit son `action` — c'est ce qui garde la grille hors
- * du bundle client, seul le menu y partant.
+ * Composant **serveur**, et **sans aucun geste** : décision d'Alexis du 6 septembre 2026, prise à
+ * l'écran. Un menu à trois points y avait été posé, dans le coin de la mosaïque ; il tombait sur la
+ * quatrième jaquette, et il donnait à une grille de consultation deux façons d'agir au lieu d'une.
+ * Renommer et supprimer vivent donc dans la barre d'actions de `/lists/[id]` — là où la spec du
+ * 2 septembre les mettait, et là où l'on est déjà quand on décide du sort d'une liste.
+ *
+ * Conséquence : **toute la grille reste serveur**, sans un octet de JavaScript. Le seul îlot client
+ * de l'écran est le bouton « Nouvelle liste » de l'en-tête.
  *
  * **Elle est cliquable vers `/lists/[id]`, qui n'est encore qu'un placeholder.** C'est délibéré :
  * la route répond, et une carte inerte serait un mensonge à retirer une passe plus tard. Le dépôt
@@ -21,6 +26,11 @@ import type { ListSummary } from "@/features/lists/server/lists.queries";
  */
 export function ListCard({ list }: { list: ListSummary }) {
   return (
+    /*
+      Le lien **est** la case de la grille, sans enveloppe : celle-ci n'existait que pour ancrer le
+      menu en position absolue, et elle est partie avec lui. La grille étire donc directement le
+      lien à la hauteur de sa rangée, ce qui donne au `mt-auto` du décompte l'espace qu'il absorbe.
+    */
     <Link
       className="flex flex-col gap-3 rounded-lg p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors hover:bg-muted/40"
       href={routes.lists.detail(list.id)}

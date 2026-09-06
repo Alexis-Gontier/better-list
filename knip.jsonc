@@ -54,7 +54,6 @@
     "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // contrat d'URL — attend /calendar
     "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
     "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
-    "src/features/lists/schemas/lists.schema.ts": ["files"], // forme du domaine — attend /lists
     // `library-params.ts` est **sorti du gel le 6 septembre 2026** : `/library` le consomme de bout
     // en bout — les parseurs et les listes d'options par la barre, `loadLibraryFilters` par la page,
     // `serializeLibraryFilters` par la rangée de statuts. Première entrée à disparaître pour de bon
@@ -73,6 +72,15 @@
     // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
     "src/features/media/server/media.documents.ts": ["exports"],
     "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
+    // `lists.schema.ts` **quitte le gel « files » le 6 septembre 2026** : `/lists` l'importe, et
+    // `lists.actions.ts` consomme ses trois entrées de création, modification et suppression. Il se
+    // rétrograde en gel « exports », comme `media.documents.ts` avant lui.
+    //
+    // Ce qui reste gelé, et ce que ça attend : `addToListSchema` et `removeFromListSchema` attendent
+    // la fenêtre de rangement de la fiche, à la passe suivante de cette même branche.
+    // `reorderListItemSchema` **en est sorti le jour même** — le mode réorganisation le consomme.
+    // Ne reste donc que `shareListSchema`, qui attend `/l/[token]`, hors du périmètre de la branche.
+    "src/features/lists/schemas/lists.schema.ts": ["exports"],
     // `search-params.ts` est **sorti du gel** : la grille de résultats a consommé ses deux derniers
     // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
     // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que
@@ -94,9 +102,13 @@
     "src/features/tracking/schemas/tracking.schema.ts": ["exports"]
   },
 
-  // Quatre familles employées uniquement par de la présentation supprimée : `@dnd-kit` par le
-  // réordonnancement de `/lists/[id]`, `embla` par les carrousels de l'accueil, `cmdk` et
-  // `react-hotkeys-hook` par la palette `⌘K`.
+  // Trois familles employées uniquement par de la présentation supprimée : `embla` par les
+  // carrousels de l'accueil, `cmdk` et `react-hotkeys-hook` par la palette `⌘K`.
+  //
+  // **`@dnd-kit` en est sorti le 6 septembre 2026**, avec le mode réorganisation de `/lists/[id]` :
+  // `core`, `sortable`, `modifiers` et `utilities` sont tous les quatre consommés par
+  // `list-reorder-grid.tsx`, et `rankAfterMove` — testé depuis le premier jour et gelé depuis —
+  // fait enfin le calcul pour lequel il avait été isolé.
   //
   // **`next-safe-action` en est sorti le 6 septembre 2026**, avec `lib/safe-action.ts` : la
   // première Server Action du dépôt l'importe, et son hook `useAction` est consommé par les deux
@@ -104,12 +116,7 @@
   //
   // Elles restent au `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte
   // les reprendra, et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
-  "ignoreDependencies": [
-    "@dnd-kit/.*",
-    "cmdk",
-    "embla-carousel.*",
-    "react-hotkeys-hook"
-  ]
+  "ignoreDependencies": ["cmdk", "embla-carousel.*", "react-hotkeys-hook"]
 
   // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
   // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux

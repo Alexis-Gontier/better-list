@@ -27,6 +27,46 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 6 septembre 2026 — les listes, et une liste qui a disparu
+
+**Le `take` imbriqué de Prisma n'est pas un `LIMIT`.** La mosaïque de quatre jaquettes de `/lists`
+demandait quatre `ListItem` par liste sans faire de N+1 ; le journal des requêtes a montré trois
+requêtes constantes — donc pas de N+1 — mais aussi que `items: { take: 4 }` **ne descend pas en
+SQL** : Prisma rapatrie tous les items de toutes les listes et tranche en mémoire. Le repli qu'on
+avait prévu n'existe pas non plus — `relationLoadStrategy: "join"` est rejeté par Prisma 7.9.1 avec
+le générateur `prisma-client` et le driver adapter. On garde et on documente : la sur-lecture porte
+trois colonnes étroites, et la table `media` n'est lue que pour ce qui s'affiche.
+
+**Une réserve de place pour aligner des cartes est presque toujours une erreur.** Deux lignes vides
+avaient été gardées sous les titres sans description, pour que les cartes fassent la même hauteur.
+La grille CSS le faisait déjà. En une colonne — 390 px —, la réserve devenait un trou entre le titre
+et le décompte. `mt-auto` sur la dernière ligne fait le travail sans rien réserver.
+
+**`touch-action: none` tue le défilement, et il faut le voir en 390 pour s'en rendre compte.** Le
+mode réorganisation employait un `PointerSensor` unique, ce qui oblige à neutraliser le geste
+tactile sur chaque jaquette. Résultat : une grille faite presque entièrement de jaquettes, donc plus
+un endroit où poser le doigt pour descendre — et donc aucun moyen d'atteindre la dix-huitième œuvre
+pour la déplacer. Séparer `MouseSensor` (seuil de 8 px) et `TouchSensor` (appui de 200 ms) rend le
+défilement au navigateur et le maintien à dnd-kit.
+
+**`bg-muted` ne dessine rien sur une `popover` en thème sombre.** La puce qui porte le nom à recopier
+dans la fenêtre de suppression était invisible ; il a fallu un liseré et le fond de page. Vu à
+l'écran, pas au typecheck.
+
+**Une tentative d'ajout shadcn peut laisser une dépendance derrière elle.** `shadcn add field` a
+échoué sur un prompt d'écrasement de `label.tsx` — mais avait déjà installé un paquet `cn` au
+`package.json`. C'est `knip` qui l'a trouvé. Vérifier `git diff package.json` après toute commande
+de registre qui s'interrompt.
+
+**Une liste d'Alexis a disparu de la base, et on ne sait pas comment.** « Randil recommendation »,
+vide, présente à 17 h 26 et absente à 17 h 48. Les seules suppressions déclenchées visaient une
+liste de test et une confirmation annulée sur une autre liste — intacte. Le récit et ce qui reste à
+décider sont dans [STATE.md](./STATE.md) ; la leçon est ici : **`List` et `ListItem` n'ont aucun
+journal**, là où `EntryEvent` aurait répondu en une requête. C'est la première fois que l'absence de
+trace coûte quelque chose.
+
+---
+
 ## 6 septembre 2026 — la fiche, et le jour où AniList était vraiment coupée
 
 Première séance de reconstruction. `/media/[id]` retrouve son hero — l'avancement est dans
