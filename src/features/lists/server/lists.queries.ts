@@ -1,0 +1,154 @@
+import "server-only";
+
+import { getSession } from "@/lib/auth/session";
+import { prisma } from "@/lib/db/prisma";
+
+/**
+ * Les lectures de mes listes (docs/PRODUCT.md §4.4).
+ *
+ * **Aucun cache, ni `"use cache"` ni `cache` de React**, pour la raison de `library.queries.ts` :
+ * ces lectures dépendent du visiteur — elles n'ont donc rien à mémoriser entre deux visiteurs — et
+ * chacune n'est appelée qu'une fois par rendu, si bien qu'une déduplication n'aurait rien à
+ * dédupliquer.
+ */
+
+/**
+ * Le compte courant, pour un écran qui vit **sous la garde du layout**.
+ *
+ * `requireApprovedUser()` est appelée une fois et une seule, dans `app/(app)/layout.tsx`
+ * (docs/ARCHITECTURE.md) : la redemander ici serait une deuxième garde, c'est-à-dire deux endroits
+ * où l'on peut se tromper. Arriver sans session est donc un défaut de câblage — une route sortie du
+ * groupe `(app)` —, pas un cas d'usage à traiter en silence. Renvoyer une page sans liste le
+ * masquerait précisément le jour où il compte.
+ */
+async function currentUserId(): Promise<string> {
+  const session = await getSession();
+
+  if (!session) {
+    throw new Error(
+      "Lecture de listes hors de la garde de `app/(app)/layout.tsx`.",
+    );
+  }
+
+  return session.user.id;
+}
+
+/** Une jaquette de la mosaïque. Le titre ne sert qu'à l'`alt` — la carte n'affiche pas les œuvres. */
+export type ListCover = {
+  mediaId: number;
+  cover: string | null;
+  title: string;
+};
+
+export type ListSummary = {
+  id: string;
+  title: string;
+  description: string | null;
+  itemCount: number;
+  /** Au plus quatre, dans l'ordre `rank` de la liste. Vide quand la liste n'a rien. */
+  covers: ListCover[];
+};
+
+/**
+ * Mes listes, avec de quoi dessiner leur carte : le décompte et les quatre premières jaquettes.
+ *
+ * **`List` n'a ni `cover` ni compteur d'items** — `PRODUCT.md` §4.4 mentionne la première, elle
+ * n'existe pas au schéma. Les deux se dérivent donc des `ListItem`, et c'était le seul vrai
+ * problème de lecture de cet écran : quatre jaquettes par carte, sur une page de listes, sans faire
+ * une requête par liste.
+ *
+ * **Ce qui est mesuré, et non supposé** (6 septembre 2026, journal `query` de Prisma, cinq listes).
+ * Ce `findMany` émet **trois** requêtes, et ce nombre ne bouge pas avec le nombre de listes — donc
+ * **pas de N+1**, qui était la crainte :
+ *
+ * 1. les listes, le `_count` porté par un `LEFT JOIN` sur un `GROUP BY` de `list_items` ;
+ * 2. `list_items WHERE "listId" IN (…) ORDER BY rank` — **sans `LIMIT`** ;
+ * 3. `media WHERE id IN (…)`, pour les seules jaquettes retenues.
+ *
+ * **Le `take: 4` n'est pas poussé en SQL** : Prisma rapatrie tous les items de toutes mes listes,
+ * puis tranche en mémoire. C'est le fait que la spec demandait d'établir, et il n'est pas celui
+ * qu'on attendait — le coût n'est pas un aller-retour de trop, c'est une sur-lecture de la requête
+ * 2. Elle reste **bornée et étroite** : trois colonnes (`id`, `mediaId`, `listId`), et surtout la
+ * table large n'y passe pas — la requête 3 ne lit que les jaquettes réellement affichées. Sur un
+ * cercle de quatre comptes aux listes de quelques dizaines d'œuvres, c'est sans conséquence ; ça
+ * cesserait de l'être vers le millier d'items, et il faudrait alors une fenêtre
+ * (`ROW_NUMBER() OVER (PARTITION BY "listId" ORDER BY rank)`) écrite à la main.
+ *
+ * **`relationLoadStrategy: "join"` n'est pas une issue : il n'existe pas ici.** Essayé le même
+ * jour, Prisma 7.9.1 rejette l'argument avec le générateur `prisma-client` et le driver adapter —
+ * `Unknown argument relationLoadStrategy`. Le repli que la spec envisageait n'est donc pas
+ * disponible, et c'est pour ça qu'on garde celui-ci en le documentant plutôt qu'en le contournant.
+ *
+ * `_count` plutôt que compter `items` en mémoire : la carte annonce « 8 œuvres » alors qu'on n'en
+ * rapatrie que quatre, et compter en base est la seule façon d'avoir les deux.
+ *
+ * **Les jaquettes se rangent par `rank`, jamais par `addedAt`.** C'est l'ordre que la liste a, et
+ * celui que `/lists/[id]` montrera : deux ordres pour une même liste donneraient une carte qui ment
+ * sur ce qu'elle ouvre.
+ *
+ * L'ordre des cartes suit `updatedAt` — l'index `@@index([ownerId, updatedAt])` est posé pour ça,
+ * et c'est le seul ordre possible : `List` ne porte aucune colonne de rang, donc les listes ne se
+ * réarrangent pas entre elles.
+ *
+ * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026,
+ * prise en regardant l'écran. Le filtre est dans la requête et non en masque d'affichage, comme
+ * partout ailleurs (docs/recherche-filtres.md §2.5) ; mais il ne porte que sur les quatre vignettes,
+ * parce que le décompte parle de la liste et non de ce qu'on en montre. Une liste que j'ai composée
+ * moi-même annonce donc toujours ce qu'elle contient, même quand sa préférence en cache l'aperçu.
+ *
+ * La conséquence à connaître : une liste **entièrement** 18+ montre quatre cases vides sur un
+ * décompte non nul. C'est le seul cas où la mosaïque et le décompte ne parlent pas de la même
+ * chose, et c'est précisément le décompte qui la distingue d'une liste réellement vide.
+ */
+export async function getLists({
+  includeAdult,
+}: {
+  includeAdult: boolean;
+}): Promise<ListSummary[]> {
+  const ownerId = await currentUserId();
+
+  const rows = await prisma.list.findMany({
+    where: { ownerId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      _count: { select: { items: true } },
+      items: {
+        take: 4,
+        orderBy: { rank: "asc" },
+        ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
+        select: {
+          media: {
+            select: {
+              id: true,
+              coverImage: true,
+              titleRomaji: true,
+              titleEnglish: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    itemCount: row._count.items,
+    /*
+      Le titre sert d'`alt`, donc il doit dire quelque chose : le romaji d'abord, l'anglais en
+      repli. Ce n'est pas `mediaTitle` — celle-ci honore la préférence `titleLanguage` du membre, ce
+      qui a du sens sur une carte d'œuvre, pas sur une vignette de 40 px qu'on ne lit pas. La chaîne
+      vide reste possible sur une ligne de miroir sans aucun titre, et c'est le bon `alt` : une
+      jaquette décorative dans une mosaïque qui porte déjà le nom de la liste.
+    */
+    covers: row.items.map((item) => ({
+      mediaId: item.media.id,
+      cover: item.media.coverImage,
+      title: item.media.titleRomaji ?? item.media.titleEnglish ?? "",
+    })),
+  }));
+}
