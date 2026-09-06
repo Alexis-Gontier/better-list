@@ -1,30 +1,302 @@
+import {
+  ArrowLeftIcon,
+  ArrowUpDownIcon,
+  CheckIcon,
+  LibraryBigIcon,
+} from "lucide-react";
 import type { Metadata } from "next";
-
-import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
+import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
+import {
+  CatalogueGrid,
+  CatalogueGridSkeleton,
+  WIDEST_COLUMN_COUNT,
+} from "@/components/shared/catalogue-grid";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { routes } from "@/config/routes";
+import { getList } from "@/features/lists/server/lists.queries";
+import { MediaCard } from "@/features/media/components/media-card";
+import { mediaTitle } from "@/features/media/lib/media-format";
+import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
+import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
+import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 export const metadata: Metadata = {
   title: "Liste",
-  description: "Une liste d'œuvres, réordonnable et partageable.",
+  description: "Une liste d'œuvres.",
   // Une liste est privée par défaut (docs/PRODUCT.md §4.4), et l'app est derrière une garde : rien
   // à indexer.
   robots: { index: false, follow: false },
 };
 
 /**
- * Une liste — vidée par la mise à blanc.
+ * Une liste et son contenu.
  *
- * Le titre était dynamique tant que `getListById` existait ; la seconde passe du 5 septembre a
- * emporté `lists/server/` avec toutes les queries, et il redevient statique.
+ * **C'est la coquille du catalogue, réemployée telle quelle** : `CatalogueGrid`, `MediaCard`, la
+ * pastille de statut et la fenêtre d'édition rapide. Une liste est une grille d'œuvres, donc elle a
+ * droit à la même carte que `/search` et `/library` — si on redessinait une carte ici, c'est que
+ * quelque chose n'irait pas.
  *
- * Les deux mécaniques qui faisaient cet écran sont épargnées et testées : le réordonnancement
- * (`features/lists/lib/list-reorder.ts`, `fractional-indexing`) et le partage par jeton
- * (`features/lists/lib/share-token.ts`). Seule leur présentation a disparu.
+ * **Deux modes, et le mode vit dans l'URL** (`?mode=reorder`). En consultation, c'est la grille du
+ * catalogue. En réorganisation, une grille cliente où l'on glisse — `ListReorderGrid`. Aucune des
+ * deux n'est rendue quand c'est l'autre qui est demandée, donc le mode consultation ne paie pas le
+ * poids de dnd-kit.
+ *
+ * **Ce que cet écran n'a pas**, et ce sont des décisions, pas des oublis :
+ *
+ * - **Pas de partage.** `generateShareToken` attend `/l/[token]`, qui est une autre branche.
+ * - **Pas de bouton « ajouter une œuvre » ici.** On remplit une liste depuis la fiche d'une œuvre,
+ *   là où l'envie naît — décision d'Alexis, même jour.
+ *
+ * **La page n'attend rien elle-même** : elle transmet la promesse `params` à l'enfant suspendu, ce
+ * qui laisse la coquille s'afficher pendant que la base répond (docs/ARCHITECTURE.md).
  */
-export default function ListPage() {
+export default function ListPage({
+  params,
+  searchParams,
+}: PageProps<"/lists/[id]">) {
   return (
-    <RouteUnderConstruction
-      description="Une liste d'œuvres, réordonnable et partageable."
-      title="Liste"
-    />
+    <div className="flex flex-col gap-6">
+      <Suspense fallback={<ListDetailSkeleton />}>
+        <ListDetail params={params} searchParams={searchParams} />
+      </Suspense>
+    </div>
   );
+}
+
+/**
+ * **Le mode vit dans l'URL, pas dans un état client.**
+ *
+ * C'est l'idiome de la disposition de `/library` (`library-params.ts`) : un mode dans l'adresse se
+ * partage, survit au retour arrière et au rechargement, et n'oblige pas la page à devenir cliente
+ * pour se souvenir d'un booléen. Le basculement est donc un simple lien, et chaque mode est rendu
+ * par le serveur avec exactement ce dont il a besoin — la grille du catalogue d'un côté, la grille
+ * réordonnable de l'autre, jamais les deux.
+ */
+const REORDER_MODE = "reorder";
+
+async function ListDetail({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/lists/[id]">["params"];
+  searchParams: PageProps<"/lists/[id]">["searchParams"];
+}) {
+  const { id } = await params;
+  const reordering = (await searchParams).mode === REORDER_MODE;
+  const { includeAdult, titleLanguage } = await getPreferences();
+  const list = await getList(id, { includeAdult });
+
+  /*
+    `null` couvre « elle n'existe pas » **et** « elle n'est pas à moi », et `getList` les confond
+    exprès : distinguer les deux dirait à qui essaie des identifiants au hasard lesquels ont trouvé
+    quelque chose.
+  */
+  if (!list) notFound();
+
+  /*
+    Le suivi arrive en **une** requête pour toute la page, sur l'index `[userId, mediaId]` — la
+    lecture que `/search` emploie déjà, et dont le docstring prévoyait de servir les listes. Une
+    clé absente veut dire « pas encore suivie », et c'est elle qui décide qu'aucune pastille ne
+    s'affiche.
+  */
+  const entries = reordering
+    ? new Map()
+    : await getLibraryEntriesFor(list.items.map((i) => i.media.id));
+
+  return (
+    <>
+      <div className="flex flex-col gap-4">
+        {/*
+          Le retour est un lien et non un `history.back()` : on arrive ici par un lien partagé ou par
+          l'adresse aussi bien que par la grille, et un bouton « retour » qui ne mène nulle part est
+          pire que pas de bouton.
+        */}
+        <Button asChild className="-ml-2 w-fit" size="sm" variant="ghost">
+          <Link href={routes.lists.root}>
+            <ArrowLeftIcon data-icon="inline-start" />
+            Mes listes
+          </Link>
+        </Button>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="truncate text-2xl">{list.title}</h1>
+            {list.description ? (
+              <p className="text-pretty text-muted-foreground text-sm">
+                {list.description}
+              </p>
+            ) : null}
+            <p className="text-muted-foreground text-xs">
+              {itemLabel(list.itemCount)}
+            </p>
+          </div>
+
+          {/*
+            La barre d'actions : la bascule de mode, puis les gestes sur la liste elle-même.
+
+            **Le basculement est un lien, pas un bouton d'état.** Le mode est dans l'URL, donc
+            l'aller-retour est une navigation ordinaire — partageable, rejouée au retour arrière, et
+            sans une ligne d'état client. `replace` sur le lien de sortie pour ne pas empiler dix
+            entrées d'historique à force d'entrer et de sortir du mode.
+          */}
+          <div className="flex shrink-0 items-center gap-2">
+            {list.items.length > 1 ? (
+              <Button
+                asChild
+                size="sm"
+                variant={reordering ? "default" : "outline"}
+              >
+                <Link
+                  href={
+                    reordering
+                      ? routes.lists.detail(list.id)
+                      : `${routes.lists.detail(list.id)}?mode=${REORDER_MODE}`
+                  }
+                  replace={reordering}
+                >
+                  {reordering ? (
+                    <CheckIcon data-icon="inline-start" />
+                  ) : (
+                    <ArrowUpDownIcon data-icon="inline-start" />
+                  )}
+                  {reordering ? "Terminé" : "Réorganiser"}
+                </Link>
+              </Button>
+            ) : null}
+
+            <ListActionsMenu list={list} />
+          </div>
+        </div>
+
+        <Separator />
+      </div>
+
+      {list.items.length === 0 ? (
+        <ListContentEmpty hiddenByPreference={list.itemCount > 0} />
+      ) : reordering ? (
+        <>
+          {/*
+            Ce que le mode fait, dit avant qu'on essaie. Une aide qui n'apparaît qu'après l'échec du
+            premier geste arrive trop tard, et celle-ci nomme aussi le chemin clavier — sans quoi
+            personne ne devinerait qu'Espace saisit.
+          */}
+          <p className="text-muted-foreground text-sm">
+            Faites glisser une jaquette pour la déplacer. Au clavier : Tab pour
+            l'atteindre, Espace pour la saisir, les flèches pour la déplacer,
+            Espace pour la reposer. Chaque déplacement est enregistré aussitôt.
+          </p>
+
+          <ListReorderGrid
+            items={list.items.map((item) => ({
+              mediaId: item.media.id,
+              cover: item.media.coverImage?.large ?? null,
+              title: mediaTitle(item.media.title, titleLanguage),
+            }))}
+            listId={list.id}
+          />
+        </>
+      ) : (
+        <CatalogueGrid>
+          {list.items.map((item, index) => (
+            <MediaCard
+              action={
+                <EntryQuickEdit
+                  banner={item.banner}
+                  compact
+                  entry={entries.get(item.media.id) ?? null}
+                  mediaId={item.media.id}
+                  title={mediaTitle(item.media.title, titleLanguage)}
+                  total={item.total}
+                  unit={item.unit}
+                />
+              }
+              key={item.media.id}
+              marker={
+                entries.has(item.media.id) ? (
+                  <EntryStatusDot
+                    // biome-ignore lint/style/noNonNullAssertion: `has` vient d'être vérifié.
+                    status={entries.get(item.media.id)!.status}
+                  />
+                ) : undefined
+              }
+              media={item.media}
+              // La première rangée au palier le plus large : elle porte la mesure de LCP.
+              priority={index < WIDEST_COLUMN_COUNT}
+              titleLanguage={titleLanguage}
+            />
+          ))}
+        </CatalogueGrid>
+      )}
+    </>
+  );
+}
+
+/**
+ * Deux vides, et ils ne disent pas la même chose.
+ *
+ * Une liste réellement vide attend sa première œuvre. Une liste dont **toutes** les œuvres sont
+ * masquées par la préférence 18+ n'est pas vide : le décompte, lui, les compte. Confondre les deux
+ * ferait croire à une perte de données.
+ */
+function ListContentEmpty({
+  hiddenByPreference,
+}: {
+  hiddenByPreference: boolean;
+}) {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <LibraryBigIcon />
+        </EmptyMedia>
+        <EmptyTitle>
+          {hiddenByPreference
+            ? "Rien à montrer avec vos préférences"
+            : "Cette liste est vide"}
+        </EmptyTitle>
+        <EmptyDescription>
+          {hiddenByPreference
+            ? "Toutes les œuvres de cette liste sont marquées adultes, et votre préférence les masque. Elles sont toujours là."
+            : "Ouvrez la fiche d'une œuvre et choisissez « Ajouter à une liste » pour la ranger ici."}
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
+
+/** Le squelette : le fil d'Ariane, le titre, puis la grille du catalogue. */
+function ListDetailSkeleton() {
+  return (
+    <>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-28" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <Separator />
+      </div>
+      <CatalogueGridSkeleton />
+    </>
+  );
+}
+
+/** « 18 œuvres », « 1 œuvre », « Aucune œuvre » — la formulation de la carte de `/lists`. */
+function itemLabel(count: number): string {
+  if (count === 0) return "Aucune œuvre";
+  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }

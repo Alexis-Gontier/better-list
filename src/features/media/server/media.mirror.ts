@@ -1,6 +1,9 @@
 import "server-only";
 
-import { compactFromMirror } from "@/features/media/lib/media-format";
+import {
+  compactFromMirror,
+  MIRRORED_MEDIA_SELECT,
+} from "@/features/media/lib/media-format";
 import { isMirrorStale } from "@/features/media/lib/media-freshness";
 import type {
   MediaCompact,
@@ -262,23 +265,6 @@ export type MirrorSearchResult = {
   lost: MirrorSearchLimitation[];
 };
 
-/** Les colonnes que `compactFromMirror` consomme, plus les trois de `MirrorSearchItem`. */
-const MIRROR_CARD_SELECT = {
-  id: true,
-  type: true,
-  format: true,
-  status: true,
-  titleRomaji: true,
-  titleEnglish: true,
-  titleNative: true,
-  coverImage: true,
-  meanScore: true,
-  isAdult: true,
-  bannerImage: true,
-  episodes: true,
-  chapters: true,
-} as const;
-
 /**
  * La recherche servie depuis le **miroir local**, quand AniList ne répond pas.
  *
@@ -364,7 +350,7 @@ export async function searchMediaInMirror({
           : [{ meanScore: "desc" as const }, { id: "asc" as const }],
     skip: (current - 1) * perPage,
     take: perPage,
-    select: MIRROR_CARD_SELECT,
+    select: MIRRORED_MEDIA_SELECT,
   });
 
   const lost: MirrorSearchLimitation[] = [];

@@ -10,12 +10,13 @@ l'intention.
 
 Relevé le **6 septembre 2026**.
 
-> ### En un mot : trois écrans sur onze, et le catalogue est entier.
+> ### En un mot : cinq écrans sur onze, et les listes se manipulent.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> trois routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul), puis
+> cinq routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
-> miroir local quand AniList tombe. Les huit autres routes construites restent des placeholders.
+> miroir local quand AniList tombe —, puis **`/lists` et `/lists/[id]`**. Les six autres routes
+> construites restent des placeholders.
 >
 > **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
 > même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
@@ -28,8 +29,15 @@ Relevé le **6 septembre 2026**.
 > geste, la fenêtre d'édition rapide d'une vignette au bouton. `EntryEvent` se remplit donc à partir
 > d'aujourd'hui, et comme il n'est pas rétroactif, c'est une date qui compte.
 >
-> Ce qui **n'écrit toujours pas** : l'ajout à une liste, le favori, les tomes possédés — leurs
-> écrans n'existent pas.
+> **Les listes aussi, et elles se réordonnent.** `/lists` porte la grille de cartes et sa mosaïque de
+> quatre jaquettes ; `/lists/[id]` réemploie la coquille du catalogue et ajoute un **mode
+> réorganisation** au glisser comme au clavier. Quatre actions de plus — `createList`, `updateList`,
+> `deleteList`, `reorderListItem` —, et `@dnd-kit` comme `rankAfterMove` sont enfin sortis du gel.
+> La suppression d'une liste demande de **recopier son nom** : c'est le seul geste du produit qu'on
+> ne peut pas défaire.
+>
+> Ce qui **n'écrit toujours pas** : l'ajout d'une œuvre à une liste — `addToList` et
+> `removeFromList` attendent la fenêtre de la fiche —, le favori et les tomes possédés.
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
@@ -47,8 +55,8 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
-| `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **vidé** — en refonte |
-| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **vidé** — en refonte |
+| `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
+| `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **vidé** — en refonte |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
@@ -370,7 +378,7 @@ prétend s'y fier.**
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : trois écrans livrés et deux actions écrites, **aucun test de plus** |
+| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : cinq écrans livrés et six actions écrites, **aucun test de plus**. `rankAfterMove` et `generateShareToken` étaient déjà couverts avant d'avoir un appelant |
 | `pnpm lint` | 176 fichiers, aucune correction (174 avant les actions) |
 | `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
 | `pnpm knip` | aucun signalement — **toujours sous gel, mais le gel a maigri**, voir ci-dessous |
@@ -475,10 +483,32 @@ C'est aussi ce qui devrait rallumer le canari d'`architecture.test.ts` : un jour
 précisément un composant de `features/*/components/` exporté, serveur et `async` — celui que le
 pronostic précédent attendait à tort du panneau de suivi.
 
-Ensuite, dans l'ordre où ça se posera : les **états vides** des trois écrans, qui ne sont toujours
-pas dessinés ; le **compteur de résultats** de `/search`, qui doit dire « plus de 5000 » et non
-« 5000 » ; et les champs de suivi que la fiche ne porte pas encore alors que la fenêtre d'une
-vignette les a — dates, notes, relectures.
+**Et juste après, la fenêtre « Ajouter à une liste » de la fiche.** C'est le seul morceau manquant
+des listes : `addToList` et `removeFromList` sont les deux dernières entrées gelées de
+`lists.schema.ts`, et sans elles une liste ne se remplit par aucun écran. La forme est décidée
+(spec du 6 septembre) — une liste de **bascules**, cochée quand l'œuvre est dedans, parce que sans
+elle un ajout par erreur n'aurait aucun chemin de retour. Attention au piège nº 1 : `ensureMediaMirror`
+avant toute écriture qui pointe vers `Media`.
+
+Ensuite, dans l'ordre où ça se posera : les **états vides** de `/search` et `/library`, qui ne sont
+toujours pas dessinés — ceux des deux écrans de listes le sont depuis le 6 septembre ; le **compteur
+de résultats** de `/search`, qui doit dire « plus de 5000 » et non « 5000 » ; et les champs de suivi
+que la fiche ne porte pas encore alors que la fenêtre d'une vignette les a — dates, notes,
+relectures.
+
+### ⚠️ Une liste a disparu de la base le 6 septembre, et la cause n'est pas établie
+
+« Randil recommendation » — vide, créée par Alexis — était en base à 17 h 26 et n'y était plus à
+17 h 48, pendant la séance des listes. Les seules suppressions déclenchées ce jour-là visaient une
+liste de test créée pour l'occasion, et une confirmation ouverte sur « Top 10 anime » puis annulée —
+celle-ci est intacte, ses dix-huit œuvres dans leur ordre d'origine, vérifié après rechargement.
+
+**Rien ne permet de reconstituer le geste**, et c'est le fond du problème : `List` et `ListItem`
+n'ont **aucun journal**, contrairement à `Entry` dont `EntryEvent` aurait tranché en une requête.
+Ce qui a été perdu se limite à un titre et une date de création — la liste était vide.
+
+À décider avant de rouvrir cet écran : soit on établit la cause, soit on donne aux listes de quoi
+répondre à la question « qui a supprimé quoi, et quand ».
 
 ### Le socle visuel est en place — et c'est tout ce qui a été repris
 
@@ -533,8 +563,10 @@ vocabulaire de tous les autres.
    et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
    cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
-4. `/lists`, puis `/lists/[id]`, puis `/l/[token]` — le réordonnancement revient, `@dnd-kit` sort du
-   gel, et le jeton de partage retrouve un écran.
+4. `/lists` et `/lists/[id]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
+   réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.
+   **Reste `/l/[token]`**, et avec lui `generateShareToken` et `shareListSchema`, dernière entrée
+   gelée de `lists.schema.ts` avec `addToListSchema` et `removeFromListSchema`.
 5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 

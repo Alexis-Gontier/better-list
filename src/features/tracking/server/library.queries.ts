@@ -1,7 +1,10 @@
 import "server-only";
 
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
-import { compactFromMirror } from "@/features/media/lib/media-format";
+import {
+  compactFromMirror,
+  MIRRORED_MEDIA_SELECT,
+} from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
@@ -53,34 +56,6 @@ async function currentUserId(): Promise<string> {
 
   return session.user.id;
 }
-
-/**
- * Les colonnes du miroir dont la carte a besoin — la sélection de `compactFromMirror` —, **plus ce
- * que la fenêtre d'édition rapide demande en propre.**
- *
- * `episodes`, `chapters` et `bannerImage` ne sont pas dans `MediaCompact` et n'ont rien à y faire :
- * cette forme décrit une œuvre pour une vignette, et trois colonnes de plus sur toutes les listes
- * du produit pour servir un seul écran serait un mauvais échange. Elles voyagent donc à côté, dans
- * `total` et `banner`.
- *
- * Le plafond n'est pas un confort : un pas de progression sans lui laisse taper « épisode 900 » sur
- * une série de douze.
- */
-const MIRRORED_MEDIA_SELECT = {
-  id: true,
-  type: true,
-  format: true,
-  status: true,
-  titleRomaji: true,
-  titleEnglish: true,
-  titleNative: true,
-  coverImage: true,
-  meanScore: true,
-  isAdult: true,
-  episodes: true,
-  chapters: true,
-  bannerImage: true,
-} as const;
 
 /**
  * Les colonnes qui composent un `EntryState` — **exactement**, ni plus ni moins.
