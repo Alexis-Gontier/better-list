@@ -37,5 +37,25 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     globals: false,
+
+    /*
+     * `src/config/env.ts` **valide à l'import**, et c'est tout son intérêt : un secret manquant
+     * casse au démarrage et non sur une requête. Mais le moindre module qui importe `env` entraîne
+     * donc toute la validation dans le graphe du test — c'est arrivé le 7 septembre 2026, quand la
+     * couche transport AniList a eu besoin de `NEXT_PUBLIC_APP_URL` pour son en-tête `Referer`.
+     *
+     * On donne de **vraies valeurs** plutôt que de poser `SKIP_ENV_VALIDATION` : couper la
+     * validation ferait passer les tests le jour où une variable manque réellement, ce qui est
+     * exactement ce que ce fichier-là est censé empêcher. Elles sont ostensiblement fausses — aucun
+     * test ne s'y connecte, seule leur *forme* compte.
+     */
+    env: {
+      DATABASE_URL: "postgresql://test:test@localhost:5432/test",
+      BETTER_AUTH_SECRET: "test-secret-of-at-least-32-characters",
+      GITHUB_CLIENT_ID: "test-client-id",
+      GITHUB_CLIENT_SECRET: "test-client-secret",
+      CRON_SECRET: "test-cron-secret-of-at-least-32-chars",
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
+    },
   },
 });

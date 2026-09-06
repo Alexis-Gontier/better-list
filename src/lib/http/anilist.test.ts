@@ -69,6 +69,33 @@ describe("anilistQuery", () => {
     });
   });
 
+  /*
+    **Sans `Referer`, AniList répond 403 à tout** — mesuré le 7 septembre 2026 par élimination sur
+    les en-têtes d'un appel navigateur. Ce test existe parce que la panne serait *silencieuse* : le
+    repli sur le miroir rattrape le 403, donc retirer cet en-tête ne casserait aucun écran, ne
+    lèverait aucune erreur, et laisserait simplement le catalogue servi depuis la copie locale pour
+    toujours.
+  */
+  it("envoie un en-tête `Referer` — sans lui AniList répond 403", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ data: { Media: { id: 21 } } }),
+    );
+    const { anilistQuery } = await importAnilist(fetchMock as never);
+
+    await anilistQuery({ query: "query {}", schema });
+
+    const [input, init] = fetchMock.mock.calls[0] as unknown as [
+      RequestInfo,
+      RequestInit | undefined,
+    ];
+    const referer =
+      input instanceof Request
+        ? input.headers.get("referer")
+        : new Headers(init?.headers).get("referer");
+
+    expect(referer).toBeTruthy();
+  });
+
   it("lève une AniListError quand l'erreur GraphQL arrive dans un corps en statut 200", async () => {
     const { anilistQuery, isAniListError } = await importAnilist(
       vi.fn(async () =>
