@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type RankedItem,
   rankAfterMove,
+  rankForAppend,
 } from "@/features/lists/lib/list-reorder";
 
 /**
@@ -78,5 +79,44 @@ describe("rankAfterMove", () => {
 
   it("gère une liste d'un seul élément", () => {
     expect(rankAfterMove([{ id: "a", rank: "a0" }], "a", 0)).toBeNull();
+  });
+});
+
+/**
+ * `rankForAppend` — le rang d'une œuvre ajoutée **en fin de liste**.
+ *
+ * C'est le pendant d'ajout de `rankAfterMove`, et il ne reçoit que le dernier rang : l'action lit
+ * une ligne (`orderBy: { rank: "desc" }, take: 1`) au lieu de rapatrier la liste entière pour en
+ * regarder la fin.
+ */
+describe("rankForAppend", () => {
+  it("donne un rang à la première œuvre d'une liste vide", () => {
+    expect(rankForAppend(null)).toBeTypeOf("string");
+    expect(rankForAppend(null).length).toBeGreaterThan(0);
+  });
+
+  it("place la nouvelle œuvre après la dernière", () => {
+    const dernier = ITEMS.at(-1)?.rank ?? null;
+    expect(rankForAppend(dernier) > (dernier as string)).toBe(true);
+  });
+
+  /*
+    L'assertion qui compte vraiment : **l'ordre d'insertion doit être l'ordre `rank` croissant**,
+    puisque c'est `orderBy: { rank: "asc" }` qui rendra la liste. Une clé qui trierait mal ne se
+    verrait qu'au quatrième ajout, en base, chez Alexis.
+  */
+  it("garde une suite strictement croissante sur des ajouts successifs", () => {
+    const rangs: string[] = [];
+    for (let i = 0; i < 5; i++) rangs.push(rankForAppend(rangs.at(-1) ?? null));
+
+    expect([...rangs].sort()).toEqual(rangs);
+    expect(new Set(rangs).size).toBe(rangs.length);
+  });
+
+  it("reprend la suite après un rang existant sans toucher aux précédents", () => {
+    const ajoute = rankForAppend("a3");
+    const ordre = [...ITEMS.map((item) => item.rank), ajoute];
+
+    expect([...ordre].sort()).toEqual(ordre);
   });
 });

@@ -4,6 +4,7 @@ import { EntryActionBar } from "@/app/(app)/media/[id]/_components/entry-action-
 import { MediaBanner } from "@/app/(app)/media/[id]/_components/media-banner";
 import { MediaFacts } from "@/app/(app)/media/[id]/_components/media-facts";
 import { Separator } from "@/components/ui/separator";
+import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
@@ -20,6 +21,8 @@ type MediaHeroProps = {
    * la lecture serveur et elle.
    */
   entry: EntryState | null;
+  /** Mes listes, et lesquelles contiennent déjà cette œuvre. Même trajet que `entry` : la barre est cliente. */
+  lists: ListMembership[];
 };
 
 /**
@@ -36,7 +39,12 @@ type MediaHeroProps = {
  * que les panneaux —, de sorte qu'une jaquette sombre garde un bord visible là où une bordure
  * peinte à même l'image disparaîtrait.
  */
-export function MediaHero({ media, titleLanguage, entry }: MediaHeroProps) {
+export function MediaHero({
+  media,
+  titleLanguage,
+  entry,
+  lists,
+}: MediaHeroProps) {
   const title = mediaTitle(media.title, titleLanguage);
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
 
@@ -128,6 +136,7 @@ export function MediaHero({ media, titleLanguage, entry }: MediaHeroProps) {
           <EntryActionBar
             banner={media.bannerImage}
             entry={entry}
+            lists={lists}
             mediaId={media.id}
             title={title}
             total={media.type === "ANIME" ? media.episodes : media.chapters}

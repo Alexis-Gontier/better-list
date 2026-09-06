@@ -239,3 +239,50 @@ export async function getList(
     })),
   };
 }
+
+/** Une de mes listes, et si cette œuvre y est déjà. */
+export type ListMembership = {
+  id: string;
+  title: string;
+  contains: boolean;
+};
+
+/**
+ * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà.
+ *
+ * C'est ce que lit la fenêtre « Ajouter à une liste » de la fiche, et c'est pour ça qu'elle affiche
+ * des **bascules** plutôt qu'un simple ajout — on voit où l'œuvre est rangée avant de choisir, et on
+ * peut l'en retirer.
+ *
+ * **Une requête, pas deux.** Le `items` est filtré sur ce `mediaId` seul, donc chaque liste rapporte
+ * zéro ou une ligne et `contains` s'en déduit. Lire toutes mes listes puis toutes leurs
+ * appartenances séparément aurait coûté un aller-retour de plus pour la même information — et un
+ * `take: 1` suffit puisque `@@unique([listId, mediaId])` garantit qu'il n'y en a jamais deux.
+ *
+ * **Aucun filtre 18+ ici**, contrairement à `getLists`. La préférence masque des *jaquettes* ; elle
+ * n'a pas à masquer des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
+ * ne contient que des œuvres adultes — ni l'en retirer.
+ *
+ * L'ordre est celui de `/lists` : la dernière modifiée en tête, donc celle qu'on vient de créer.
+ */
+export async function getListMembership(
+  mediaId: number,
+): Promise<ListMembership[]> {
+  const ownerId = await currentUserId();
+
+  const rows = await prisma.list.findMany({
+    where: { ownerId },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      items: { where: { mediaId }, select: { id: true }, take: 1 },
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    contains: row.items.length > 0,
+  }));
+}

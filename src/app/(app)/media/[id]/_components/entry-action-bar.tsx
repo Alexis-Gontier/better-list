@@ -1,12 +1,13 @@
 "use client";
 
-import { BookmarkPlusIcon, ListPlusIcon } from "lucide-react";
+import { BookmarkPlusIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
-
+import { AddToListDialog } from "@/app/(app)/media/[id]/_components/add-to-list-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
@@ -67,6 +68,15 @@ type EntryActionBarProps = {
   unit: EntryUnit;
   /** Le plafond connu. `null` sur une œuvre en cours, dont AniList ignore le total. */
   total: number | null;
+  /**
+   * Mes listes, et lesquelles contiennent déjà cette œuvre.
+   *
+   * Elles **traversent la barre sans qu'elle les regarde**, comme `entry` traverse le hero : c'est
+   * la fenêtre de rangement qui s'en sert, et elle est cliente, donc elle ne peut pas aller les
+   * chercher elle-même. Un tableau vide est un cas réel — un membre qui n'a encore aucune liste —,
+   * et c'est la fenêtre qui sait quoi en dire.
+   */
+  lists: ListMembership[];
 };
 
 /**
@@ -96,6 +106,7 @@ export function EntryActionBar({
   entry,
   unit,
   total,
+  lists,
 }: EntryActionBarProps) {
   /**
    * Le brouillon est **local et optimiste**, et il le faut.
@@ -259,10 +270,12 @@ export function EntryActionBar({
         </Button>
       )}
 
-      <Button variant="outline">
-        <ListPlusIcon data-icon="inline-start" />
-        Ajouter à une liste
-      </Button>
+      {/*
+        **Ce bouton faisait semblant depuis la refonte.** Il porte maintenant la fenêtre de
+        rangement — une case par liste, cochée quand l'œuvre y est déjà. Il garde son icône et son
+        libellé : c'est le geste qu'il annonçait, il le tient enfin.
+      */}
+      <AddToListDialog lists={lists} mediaId={mediaId} title={title} />
     </div>
   );
 }

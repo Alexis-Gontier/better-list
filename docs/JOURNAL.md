@@ -58,6 +58,12 @@ l'écran, pas au typecheck.
 `package.json`. C'est `knip` qui l'a trouvé. Vérifier `git diff package.json` après toute commande
 de registre qui s'interrompt.
 
+**Le piège du miroir s'est vérifié pour de vrai, et il fallait sortir de ses propres données pour
+ça.** La fenêtre « Ajouter à une liste » a été éprouvée sur *Sousou no Frieren 3rd Season*, atteinte
+depuis `/search` — une saison récente qu'aucun compte n'avait jamais suivie, donc absente du miroir.
+Sans `ensureMediaMirror`, l'insertion échouait sur la clé étrangère de `ListItem.mediaId`. Tester
+sur une œuvre déjà en base n'aurait rien prouvé : c'est précisément le cas qui ne casse pas.
+
 **Une liste d'Alexis a disparu de la base, et on ne sait pas comment.** « Randil recommendation »,
 vide, présente à 17 h 26 et absente à 17 h 48. Les seules suppressions déclenchées visaient une
 liste de test et une confirmation annulée sur une autre liste — intacte. Le récit et ce qui reste à
