@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import {
   compactFromMirror,
   MIRRORED_MEDIA_SELECT,
@@ -12,10 +14,13 @@ import { prisma } from "@/lib/db/prisma";
 /**
  * Les lectures de mes listes (docs/PRODUCT.md §4.4).
  *
- * **Aucun cache, ni `"use cache"` ni `cache` de React**, pour la raison de `library.queries.ts` :
- * ces lectures dépendent du visiteur — elles n'ont donc rien à mémoriser entre deux visiteurs — et
- * chacune n'est appelée qu'une fois par rendu, si bien qu'une déduplication n'aurait rien à
- * dédupliquer.
+ * **Jamais de `"use cache"`**, pour la raison de `library.queries.ts` : ces lectures dépendent du
+ * visiteur, elles n'ont donc rien à mémoriser entre deux visiteurs.
+ *
+ * **`cache` de React sur `getList` seule**, depuis le 7 septembre 2026. Les autres n'en ont pas
+ * besoin — elles ne sont appelées qu'une fois par rendu, et dédupliquer un appel unique ne
+ * dépliquerait rien. `getList`, elle, en a deux depuis que `generateMetadata` nomme l'onglet
+ * d'après la liste : sans déduplication, chaque affichage compterait deux fois la même requête.
  */
 
 /**
@@ -208,7 +213,7 @@ export type ListDetail = {
  * page, et son docstring prévoyait déjà de servir les listes. Le mêler à cette lecture aurait
  * dupliqué une jointure que le catalogue fait déjà.
  */
-export async function getList(
+export const getList = cache(async function getList(
   listId: string,
   { includeAdult }: { includeAdult: boolean },
 ): Promise<ListDetail | null> {
@@ -249,7 +254,7 @@ export async function getList(
       total: media.type === "ANIME" ? media.episodes : media.chapters,
     })),
   };
-}
+});
 
 /** Une de mes listes, et si cette œuvre y est déjà. */
 export type ListMembership = {
