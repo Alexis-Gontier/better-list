@@ -13,17 +13,23 @@ import { site } from "@/config/site";
  *
  * Pas de navigation, et **aucun lien vers l'application** : tout ce qu'elle contient est derrière la
  * garde, donc chaque lien mènerait un visiteur sans compte à un écran de connexion qu'il ne peut pas
- * franchir — l'inscription passe par une liste d'attente. Le nom du site est écrit, pas cliquable :
- * il dit d'où vient la page sans promettre une porte.
+ * franchir — l'inscription passe par une liste d'attente. La marque est donc posée **sans lien** :
+ * elle dit d'où vient la page sans promettre une porte.
+ *
+ * **Le monogramme seul**, comme l'en-tête de l'application depuis le 6 septembre 2026 (décision
+ * d'Alexis, étendue ici le 7) : le nom en toutes lettres doublait une marque qui le dit déjà. Il
+ * reste en `sr-only` — `Logo` porte `aria-hidden`, donc le retirer tout à fait laisserait cet
+ * en-tête sans le moindre contenu annonçable, et un visiteur au lecteur d'écran ne saurait plus d'où
+ * vient la page. C'est la seule chose que cet en-tête a à dire : il ne faut pas la lui prendre.
  */
 export default function ShareLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <header className="border-border/60 border-b">
         <div className="container mx-auto w-full max-w-5xl px-4 py-4 sm:px-6">
-          <span className="flex items-center gap-2 font-semibold text-sm tracking-tight">
-            <Logo className="size-4" />
-            {site.name}
+          <span className="flex items-center">
+            <Logo className="size-5" />
+            <span className="sr-only">{site.name}</span>
           </span>
         </div>
       </header>

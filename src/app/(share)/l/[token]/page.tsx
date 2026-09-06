@@ -6,6 +6,19 @@ import { Separator } from "@/components/ui/separator";
 import { getSharedList } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 
+/**
+ * **Route bloquante, et il le faut.**
+ *
+ * `getSharedList` lit la base hors de tout `"use cache"` — et c'est délibéré : une page mémorisée
+ * par jeton survivrait à sa révocation. Sans cette déclaration, les Cache Components tentent d'en
+ * prérendre la coquille et journalisent une erreur à **chaque visite** de la seule page publique du
+ * produit (« uncached data during prerendering »).
+ *
+ * Elle ne règle pas le statut 200 d'un jeton inconnu, décrit plus bas : `notFound()` reste sans
+ * effet sous ce modèle de rendu. Les deux se ressemblent, ce sont deux problèmes distincts.
+ */
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Liste partagée",
   description: "Une liste ouverte par lien.",
@@ -18,6 +31,10 @@ export const metadata: Metadata = {
    * l'onglet et dans l'historique du navigateur. Le nom de la liste, lui, est dans la page — et
    * dans l'aperçu du lien, que seul un destinataire déjà en possession de l'adresse peut demander
    * (`opengraph-image.tsx`).
+   *
+   * Le gabarit du layout racine préfixe ce titre : l'onglet affiche « Better-List · Liste
+   * partagée », et `og:title` avec lui. C'est voulu — un lien reçu dit alors d'où il vient — et
+   * **ça ne divulgue rien de plus** : le nom de la liste reste hors du titre, ici comme ailleurs.
    */
   robots: { index: false, follow: false },
 };
