@@ -1,11 +1,17 @@
 "use client";
 
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import {
+  MoreHorizontalIcon,
+  PencilIcon,
+  Share2Icon,
+  Trash2Icon,
+} from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { DeleteListDialog } from "@/app/(app)/lists/[id]/_components/delete-list-dialog";
+import { ShareListDialog } from "@/app/(app)/lists/[id]/_components/share-list-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,6 +40,7 @@ import type { ListDetail } from "@/features/lists/server/lists.queries";
  */
 export function ListActionsMenu({ list }: { list: ListDetail }) {
   const [renaming, setRenaming] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const rename = useAction(updateList, {
@@ -71,6 +78,15 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
             <DropdownMenuItem onSelect={() => setRenaming(true)}>
               <PencilIcon />
               Renommer
+            </DropdownMenuItem>
+            {/*
+              Le libellé dit **l'état**, pas seulement le geste : « Gérer le lien » quand la liste
+              est déjà partagée, « Partager » sinon. Sans ça, on rouvre la fenêtre pour savoir si un
+              lien existe — ou pire, on croit en créer un alors qu'on va le remplacer.
+            */}
+            <DropdownMenuItem onSelect={() => setSharing(true)}>
+              <Share2Icon />
+              {list.shareToken ? "Gérer le lien de partage" : "Partager"}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => setDeleting(true)}
@@ -110,6 +126,8 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
         pending={rename.isPending}
         submitLabel="Enregistrer"
       />
+
+      <ShareListDialog list={list} onOpenChange={setSharing} open={sharing} />
 
       <DeleteListDialog
         list={list}
