@@ -9,6 +9,7 @@ import {
   WIDEST_COLUMN_COUNT,
 } from "@/components/shared/catalogue-grid";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
+import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import { routes } from "@/config/routes";
@@ -58,7 +59,10 @@ export default async function SearchPage({
         la fiche.
       */}
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl">Rechercher</h1>
+        <PageHeading
+          description="Tout le catalogue AniList — animes, mangas, webtoons et light novels. Ce qui est déjà dans ma bibliothèque porte sa pastille."
+          title="Rechercher"
+        />
         <Separator />
         <SearchFilterBar yearBounds={yearBounds} />
         <Separator />
@@ -182,6 +186,7 @@ async function SearchResults({
               action={
                 <EntryQuickEdit
                   banner={item.bannerImage}
+                  compact
                   entry={entry}
                   mediaId={item.id}
                   title={mediaTitle(item.title, titleLanguage)}

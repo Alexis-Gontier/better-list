@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import { ENTRY_STATUS_LABELS } from "@/features/tracking/lib/entry-format";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,19 @@ import { cn } from "@/lib/utils";
  * Le composant ne décide de rien : il reçoit une valeur et rend un choix. Les déductions — passer
  * en « En cours » au premier épisode, dater la fin au dernier — vivent dans `entry-transition.ts`,
  * côté serveur, parce qu'elles doivent valoir aussi pour un « +1 » cliqué depuis une vignette.
+ *
+ * **Chaque option porte sa pastille, et le déclencheur aussi** — décision d'Alexis du 6 septembre
+ * 2026. C'est la même couleur que sur une jaquette (`entry-status-dot.tsx`), donc le sélecteur de
+ * la fiche et le marqueur d'une grille disent enfin la même chose de la même façon : on reconnaît
+ * « en cours » à sa teinte avant d'avoir lu le mot.
+ *
+ * La pastille est glissée **dans les enfants de `SelectItem`**, et c'est ce qui la fait paraître
+ * dans le déclencheur sans qu'on ait à la recopier : Radix rend dans `SelectValue` le contenu de
+ * l'`ItemText` de l'option choisie, c'est-à-dire exactement ces enfants-là. La recopier à la main
+ * aurait donné deux endroits à tenir d'accord.
+ *
+ * `labelled` : le libellé est juste à côté, donc la pastille n'a pas à porter son nom en texte
+ * caché — le lire deux fois de suite n'apprend rien.
  */
 
 const STATUS_ORDER: EntryStatus[] = [
@@ -69,6 +83,7 @@ export function EntryStatusSelect({
       <SelectContent>
         {STATUS_ORDER.map((status) => (
           <SelectItem key={status} value={status}>
+            <EntryStatusDot labelled status={status} />
             {ENTRY_STATUS_LABELS[status]}
           </SelectItem>
         ))}

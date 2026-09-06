@@ -28,8 +28,14 @@ import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
  *
  * `search-media.schema.test.ts` tient le lien entre les deux : il casse si l'un change sans
  * l'autre.
+ *
+ * **Les gouttières ont été resserrées le 6 septembre 2026** (décision d'Alexis) : à `gap-x-4
+ * gap-y-6`, vingt et une jaquettes se lisaient comme vingt et un objets posés côte à côte plutôt
+ * que comme une planche. L'écart vertical reste le plus grand des deux, et il le faut — c'est lui
+ * qui sépare le titre d'une carte de la jaquette de la rangée suivante, donc le seul des deux qui
+ * ait un texte à protéger.
  */
-const GRID_COLUMNS = "grid grid-cols-3 gap-x-4 gap-y-6 lg:grid-cols-7";
+const GRID_COLUMNS = "grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-7";
 
 /**
  * Le dernier palier de `GRID_COLUMNS`, donc la taille d'une rangée sur un écran large.

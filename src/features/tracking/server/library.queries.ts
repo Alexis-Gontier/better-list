@@ -110,8 +110,8 @@ const ENTRY_STATE_SELECT = {
  *
  * Elles sont rassemblées en un seul objet et pas empilées au fur et à mesure : `media` est une
  * clé unique du `where`, et deux `media: {…}` écrits à la suite dans un littéral se remplacent
- * silencieusement. C'est exactement comme ça qu'on perd le filtre 18+ en ajoutant un filtre de
- * genre — sans erreur de compilation, et sans que rien ne se voie à la relecture.
+ * silencieusement. C'est exactement comme ça qu'on perd le filtre 18+ en ajoutant une facette de
+ * plus — sans erreur de compilation, et sans que rien ne se voie à la relecture.
  *
  * **`includeAdult` est appliqué dans la requête**, jamais par un masque d'affichage : la règle vaut
  * ici comme sur la fiche et sur la recherche (docs/recherche-filtres.md §2.5). Une ligne écartée à
@@ -128,12 +128,6 @@ function mediaConditions({
 
   if (!includeAdult) media.isAdult = false;
   if (filters.type) media.type = filters.type;
-
-  /*
-    `has` sur une colonne de tableau : un genre inventé dans l'URL ne rend rien plutôt que d'élargir
-    le périmètre. C'est ce qui autorise `genre` à être le seul parseur ouvert du contrat.
-  */
-  if (filters.genre) media.genres = { has: filters.genre };
 
   /*
     Le terme cherche dans les **trois** colonnes de titre du miroir, pas seulement le romaji : on
@@ -224,7 +218,7 @@ export type LibraryStatusCounts = {
  * Un `groupBy` plutôt que six `count` : une passe sur l'index `[userId, status]` au lieu de six
  * allers-retours pour la même information.
  *
- * **Les compteurs honorent le terme, le type et le genre, mais pas le statut** — c'est ce qui les
+ * **Les compteurs honorent le terme et le type, mais pas le statut** — c'est ce qui les
  * rend vrais. Un onglet « Terminé · 159 » posé au-dessus de trois résultats parce qu'on cherche
  * « frieren » est exactement le compteur qui ment dont docs/recherche-filtres.md §3 veut se
  * débarrasser. Ici chaque onglet annonce ce qu'il donnera si on le clique.
@@ -265,41 +259,6 @@ export async function getLibraryStatusCounts({
   }
 
   return { total, byStatus };
-}
-
-/**
- * Les genres présents **dans ma bibliothèque**, et eux seuls.
- *
- * C'est la différence avec la liste de `/search`, qui propose les dix-huit genres d'AniList : ici,
- * offrir un genre dont aucune de mes lignes ne porte la marque, c'est promettre un écran vide. La
- * liste se dérive donc des données, ce qui la fait aussi maigrir toute seule sur une bibliothèque
- * neuve.
- *
- * **Elle ignore volontairement les filtres courants.** Restreindre le vocabulaire à ce que la page
- * affiche ferait disparaître de la liste le genre qu'on vient de choisir — on ne pourrait plus en
- * changer sans d'abord l'effacer. Un sélecteur qui se vide en étant utilisé n'est pas un filtre.
- *
- * **Le dédoublonnage se fait en mémoire, pas en SQL.** `genres` est une colonne de tableau : la
- * distinguer en base demande un `unnest`, donc du SQL brut, donc une requête que le typage ne garde
- * plus. Quelques centaines de lignes de trois mots ne valent pas ce prix — et `includeAdult` reste
- * appliqué dans la requête, là où il compte.
- */
-export async function getLibraryGenres({
-  includeAdult,
-}: {
-  includeAdult: boolean;
-}): Promise<string[]> {
-  const userId = await currentUserId();
-
-  const rows = await prisma.media.findMany({
-    where: {
-      entries: { some: { userId } },
-      ...(includeAdult ? {} : { isAdult: false }),
-    },
-    select: { genres: true },
-  });
-
-  return [...new Set(rows.flatMap((row) => row.genres))].sort();
 }
 
 /**

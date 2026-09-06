@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "@/components/layout/logo";
 import { MainNav } from "@/components/layout/main-nav";
 import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -21,11 +22,20 @@ export function Header({ user }: { user: SessionUser }) {
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <Link
-              href={routes.home}
-              className="font-extrabold text-lg uppercase tracking-tight"
-            >
-              {site.name}
+            {/*
+              **Le monogramme seul** — décision d'Alexis du 6 septembre 2026. Le nom en toutes
+              lettres doublait une marque qui le dit déjà, et il poussait la navigation vers la
+              droite pour rien.
+
+              Mais il ne **disparaît** pas : `Logo` porte `aria-hidden` précisément parce que le nom
+              l'accompagnait, et un lien dont le seul contenu est masqué aux lecteurs d'écran est
+              annoncé vide. Le nom reste donc en `sr-only`, ce qui garde le lien nommé sans le
+              montrer. Un `aria-label` aurait fait la même chose ; du texte réel se lit aussi par
+              les outils qui n'écoutent pas ARIA.
+            */}
+            <Link className="flex items-center" href={routes.home}>
+              <Logo className="size-5" />
+              <span className="sr-only">{site.name}</span>
             </Link>
 
             <MainNav />

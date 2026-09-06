@@ -9,6 +9,7 @@ import {
   WIDEST_COLUMN_COUNT,
 } from "@/components/shared/catalogue-grid";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
+import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
@@ -23,7 +24,6 @@ import {
 } from "@/features/tracking/lib/library-params";
 import {
   getLibrary,
-  getLibraryGenres,
   getLibraryStatusCounts,
 } from "@/features/tracking/server/library.queries";
 
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
  * source. Là-bas AniList et son quota ; ici mes lignes `Entry`, en base, où la pagination se fait.
  *
  * **Deux zones suspendues, et elles ne demandent pas la même chose.** Les contrôles ont besoin des
- * décomptes et du vocabulaire des genres ; la grille, d'une page de résultats. Les séparer laisse
+ * décomptes par statut ; la grille, d'une page de résultats. Les séparer laisse
  * la barre s'afficher pendant que la grille arrive — une frontière par zone, jamais de
  * `loading.tsx` de segment (docs/ARCHITECTURE.md).
  *
@@ -59,7 +59,10 @@ export default function LibraryPage({ searchParams }: PageProps<"/library">) {
         `/search` et sur la fiche.
       */}
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl">Ma bibliothèque</h1>
+        <PageHeading
+          description="Ce que je regarde, ce que je lis, et où j'en suis. Choisir un statut, ou chercher un titre que je suis déjà."
+          title="Ma bibliothèque"
+        />
         <Separator />
 
         <Suspense fallback={<LibraryControlsSkeleton />}>
@@ -92,18 +95,15 @@ async function LibraryControls({
   const filters = await loadLibraryFilters(searchParams);
 
   /*
-    Les deux lectures partent ensemble : elles ne dépendent pas l'une de l'autre, et les enchaîner
-    ferait attendre la barre après le décompte pour rien.
+    Une seule lecture désormais : le vocabulaire des genres partait avec elle, et il n'a plus de
+    sélecteur à remplir depuis que le filtre a quitté la barre (`library-filter-bar.tsx`).
   */
-  const [counts, genres] = await Promise.all([
-    getLibraryStatusCounts({ filters, includeAdult }),
-    getLibraryGenres({ includeAdult }),
-  ]);
+  const counts = await getLibraryStatusCounts({ filters, includeAdult });
 
   return (
     <div className="flex flex-col gap-4">
       <LibraryStatusRow counts={counts} filters={filters} />
-      <LibraryFilterBar genres={genres} />
+      <LibraryFilterBar />
     </div>
   );
 }
@@ -121,7 +121,6 @@ function LibraryControlsSkeleton() {
         <Skeleton className="h-9 w-full sm:max-w-md sm:flex-1" />
         <div className="flex gap-2">
           <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-9 w-48" />
           <Skeleton className="h-9 w-52" />
         </div>
       </div>
@@ -180,6 +179,7 @@ async function LibraryResults({
             action={
               <EntryQuickEdit
                 banner={item.banner}
+                compact
                 entry={item.entry}
                 mediaId={item.media.id}
                 title={mediaTitle(item.media.title, titleLanguage)}

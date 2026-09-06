@@ -2,13 +2,11 @@
 
 import {
   type ActiveFilterChip,
-  type FacetOption,
   FilterBar,
   FilterSearchField,
   FilterSelect,
   labelOf,
 } from "@/components/shared/filter-bar";
-import { formatGenre } from "@/features/media/lib/media-format";
 import {
   LIBRARY_SORT_OPTIONS,
   LIBRARY_TYPE_OPTIONS,
@@ -18,7 +16,7 @@ import {
 import { useUrlFilters } from "@/hooks/use-url-filters";
 
 /**
- * La barre de ma bibliothèque — le terme, le type, le genre, le tri.
+ * La barre de ma bibliothèque — le terme, le type, le tri.
  *
  * Elle compose la même coquille que `/search` (`components/shared/filter-bar.tsx`) et n'écrit,
  * comme elle, que dans l'URL : les parseurs viennent du contrat gelé (`library-params.ts`), donc
@@ -29,13 +27,18 @@ import { useUrlFilters } from "@/hooks/use-url-filters";
  * 1. **Pas d'anti-rebond.** Chaque frappe de `/search` coûte une requête AniList sur les trente que
  *    la minute partage ; ici elle tape en base, sur mes quelques centaines de lignes. Espacer la
  *    saisie ne protégerait rien et rendrait le champ moins vif pour rien.
- * 2. **Pas de bouton « Filtres », donc pas de panneau.** Le contrat de la bibliothèque porte sept
- *    paramètres, et le statut — de loin le plus employé — a déjà sa rangée en tête d'écran. Il ne
- *    resterait que les genres à mettre dans un panneau : trois colonnes et un dépliant pour une
- *    seule facette, c'est du décor. Elle devient donc un quatrième sélecteur de la rangée. Le jour
- *    où ma note, ma progression ou le cœur rejoindront le contrat (docs/recherche-filtres.md
- *    §2.1), le panneau se justifiera — et les primitives de `/search` seront à promouvoir à ce
- *    moment-là, pas avant.
+ * 2. **Pas de bouton « Filtres », donc pas de panneau.** Le statut — de loin le plus employé — a
+ *    déjà sa rangée en tête d'écran, et ce qui reste tient en trois contrôles alignés. Le jour où
+ *    ma note, ma progression ou le cœur rejoindront le contrat (docs/recherche-filtres.md §2.1),
+ *    le panneau se justifiera — et les primitives de `/search` seront à promouvoir à ce moment-là,
+ *    pas avant.
+ *
+ * **Le genre n'est pas de la partie, et c'est une décision d'Alexis du 6 septembre 2026.** Il avait
+ * sa place ici par symétrie avec `/search`, mais les deux écrans ne répondent pas à la même
+ * question : on cherche un genre dans un catalogue de dizaines de milliers d'œuvres, on ne le
+ * cherche pas dans quelques centaines de lignes qu'on a soi-même choisies — le terme et le statut y
+ * arrivent plus vite. Le sélecteur est parti avec son paramètre d'URL et la lecture qui le
+ * remplissait (`getLibraryGenres`), plutôt que de rester branché dans le vide.
  */
 
 /** Les valeurs closes, tirées des listes d'options : c'est l'écran qui décide de ce qu'il propose. */
@@ -48,7 +51,6 @@ type LibraryKind = (typeof LIBRARY_TYPE_OPTIONS)[number]["value"];
 const barParsers = {
   q: libraryFilterParsers.q,
   type: libraryFilterParsers.type,
-  genre: libraryFilterParsers.genre,
   sort: libraryFilterParsers.sort,
   page: libraryFilterParsers.page,
 };
@@ -65,37 +67,16 @@ const barParsers = {
 const RESET_FILTERS = {
   q: "",
   type: null,
-  genre: null,
   sort: "recent" as LibrarySort,
   page: 1,
 };
 
-type LibraryFilterBarProps = {
-  /**
-   * Les genres présents dans ma bibliothèque, calculés en base (`getLibraryGenres`).
-   *
-   * Ils viennent du serveur et non d'une liste écrite en dur : proposer un genre dont aucune de mes
-   * lignes ne porte la marque, c'est promettre un écran vide. C'est la différence avec `/search`,
-   * qui propose les dix-huit genres d'AniList parce que le catalogue, lui, les contient tous.
-   */
-  genres: string[];
-};
-
-export function LibraryFilterBar({ genres }: LibraryFilterBarProps) {
+export function LibraryFilterBar() {
   const [filters, setFilters] = useUrlFilters(barParsers);
 
   /** Toute facette qui change ramène à la première page — sinon on atterrit sur une page vide. */
   const update = (next: Partial<typeof filters>) =>
     setFilters({ ...next, page: 1 });
-
-  /*
-    Les libellés français viennent de `formatGenre`, la même table que `/search` : les genres sont
-    stockés en anglais chez AniList, et les traduire à deux endroits, c'est en avoir un qui vieillit.
-  */
-  const genreOptions: FacetOption[] = genres.map((genre) => ({
-    value: genre,
-    label: formatGenre(genre),
-  }));
 
   /*
     Les facettes posées. Le terme est lisible dans son champ, le tri a toujours une valeur, et le
@@ -108,11 +89,6 @@ export function LibraryFilterBar({ genres }: LibraryFilterBarProps) {
     chips.push({
       label: labelOf(LIBRARY_TYPE_OPTIONS, filters.type),
       onRemove: () => update({ type: null }),
-    });
-  if (filters.genre)
-    chips.push({
-      label: formatGenre(filters.genre),
-      onRemove: () => update({ genre: null }),
     });
 
   /*
@@ -150,16 +126,6 @@ export function LibraryFilterBar({ genres }: LibraryFilterBarProps) {
           onValueChange={(type: LibraryKind | null) => update({ type })}
           options={LIBRARY_TYPE_OPTIONS}
           value={filters.type}
-        />
-
-        <FilterSelect
-          anyLabel="Tous"
-          ariaLabel="Filtrer par genre"
-          className="w-48"
-          label="Genre"
-          onValueChange={(genre) => update({ genre })}
-          options={genreOptions}
-          value={filters.genre}
         />
 
         {/* Pas d'`anyLabel` : le tri a toujours une valeur, donc aucun cas nul à traiter. */}

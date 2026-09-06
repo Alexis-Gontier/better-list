@@ -46,7 +46,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
-| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
+| `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **vidé** — en refonte |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **vidé** — en refonte |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
@@ -173,7 +173,7 @@ note minimale), la rangée de puces actives avec sa croix par facette et son « 
 la grille de vingt et une cartes et sa pagination.
 
 Sur `/library` : la **rangée de statuts** en tête — six statuts plus « Tout », chacun avec son
-compte —, puis une barre plus courte (terme, type, genre, tri), la grille et sa pagination. L'ordre
+compte —, puis une barre plus courte (terme, type, tri), la grille et sa pagination. L'ordre
 n'est pas cosmétique : un catalogue se parcourt par ce qu'on cherche, une bibliothèque par où on en
 est, donc le statut est l'axe de l'écran et non une facette rangée dans un panneau.
 
@@ -188,8 +188,10 @@ Ce qui est **écrit côté serveur** :
   qu'il a perdu** — les tags, qu'on ne stocke pas, et les tris par tendance, popularité ou favoris,
   que le miroir ne copie pas.
 - [`library.queries.ts`](../src/features/tracking/server/library.queries.ts) : `getLibrary`,
-  `getLibraryStatusCounts` et `getLibraryGenres`. Aucun cache, ni `"use cache"` ni `cache` de React,
-  et le fichier dit pourquoi pour chacun des deux.
+  `getLibraryStatusCounts`. Aucun cache, ni `"use cache"` ni `cache` de React, et le fichier dit
+  pourquoi pour chacun des deux. (`getLibraryGenres` a été retirée le 6 septembre 2026 avec le
+  filtre de genre de la bibliothèque — décision d'Alexis : on ne cherche pas par genre dans
+  quelques centaines de lignes qu'on a soi-même choisies.)
 
 **La trouvaille de la séance : `pageInfo.total` d'AniList est plafonné à 5000.** Vérifié en
 interrogeant l'endpoint — `type: ANIME` seul, puis avec la saison, puis avec la plage d'années, puis
@@ -301,7 +303,7 @@ appelaient.
 | Fichier | Rôle |
 | --- | --- |
 | `app/robots.ts` | `disallow: "/"` **total**. `/l/<jeton>` s'ouvre sans session : un lien secret indexé n'est plus un secret, il est cherchable. Le placeholder de `/l/[token]` porte en plus son propre `noindex`. |
-| `app/icon.tsx` | L'icône d'onglet, dessinée par `ImageResponse` — aucun binaire à relire dans `public/`. |
+| `app/icon.tsx` | L'icône d'onglet, dessinée par `ImageResponse` — aucun binaire à relire dans `public/`. Depuis le 6 septembre 2026 elle rend le monogramme et non plus une lettre : le tracé vient de `components/layout/logo.tsx`, seule géométrie du dépôt, partagée avec les trois en-têtes. |
 | `instrumentation.ts` | `onRequestError` : relie le `digest` qu'`error.tsx` affiche au visiteur à une ligne de journal cherchable. |
 
 ---

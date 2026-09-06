@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Logo } from "@/components/layout/logo";
 import { site } from "@/config/site";
 
 /**
@@ -20,7 +21,8 @@ export default function ShareLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-svh flex-col">
       <header className="border-border/60 border-b">
         <div className="container mx-auto w-full max-w-5xl px-4 py-4 sm:px-6">
-          <span className="font-semibold text-sm tracking-tight">
+          <span className="flex items-center gap-2 font-semibold text-sm tracking-tight">
+            <Logo className="size-4" />
             {site.name}
           </span>
         </div>

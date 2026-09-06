@@ -96,6 +96,20 @@ type EntryQuickEditProps = {
   unit: EntryUnit;
   /** Le plafond connu. `null` sur une œuvre en cours, dont AniList ignore le total. */
   total: number | null;
+  /**
+   * Le bouton est-il **posé sur une jaquette** plutôt que dans une rangée de contrôles.
+   *
+   * C'est la seule chose que l'appelant règle ici, et la fenêtre qu'il ouvre est identique des deux
+   * côtés. Sur la fiche, le bouton vit dans une rangée où tout fait 36 px de haut — le sélecteur de
+   * statut, le pas de progression — et il doit garder cette hauteur, sinon il dépasse ou flotte.
+   * Sur une vignette, il n'a aucun voisin à aligner : il se pose dans un coin de jaquette large de
+   * 140 px, où 36 px de bouton mangent un quart de la largeur de l'illustration.
+   *
+   * D'où deux tailles et pas une (décision d'Alexis, 6 septembre 2026) — la propriété `trigger`
+   * retirée le matin même laissait l'appelant redéfinir le bouton entier ; celle-ci ne lui laisse
+   * que le choix qu'il a vraiment à faire.
+   */
+  compact?: boolean;
 };
 
 export function EntryQuickEdit({
@@ -105,6 +119,7 @@ export function EntryQuickEdit({
   entry,
   unit,
   total,
+  compact = false,
 }: EntryQuickEditProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<EntryDraft>(() => entryDraftFrom(entry));
@@ -156,11 +171,9 @@ export function EntryQuickEdit({
     <Dialog onOpenChange={openChange} open={open}>
       <DialogTrigger asChild>
         {/*
-          **Une icône seule, à la taille normale d'un bouton d'icône** — décision d'Alexis du
-          6 septembre 2026. Elle a d'abord été posée plus petite (28 px), puis ramenée à `size-9` :
-          c'est la même taille partout, en coin de jaquette comme dans la rangée de la fiche, et
-          c'est ce qui a permis de retirer la propriété `trigger` qui n'existait que pour rattraper
-          l'écart.
+          **Une icône seule, et deux tailles selon l'endroit** (voir `compact`) : 36 px dans la
+          rangée de la fiche, où elle s'aligne sur ses voisins ; 32 px en coin de jaquette, où elle
+          n'a personne à qui s'aligner et où chaque pixel est pris à l'illustration.
 
           Sur une vignette, elle remplace une barre pleine largeur portant « Modifier », montée
           depuis le bas au survol : celle-ci marchait, mais elle demandait un tiers de la jaquette et
@@ -182,7 +195,7 @@ export function EntryQuickEdit({
               ? `Modifier le suivi de ${title}`
               : `Ajouter ${title} à ma bibliothèque`
           }
-          size="icon"
+          size={compact ? "icon-sm" : "icon"}
           variant="outline"
         >
           {entry ? <PencilIcon /> : <PlusIcon />}
