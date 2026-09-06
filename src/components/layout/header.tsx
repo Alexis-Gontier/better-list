@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
 import { MainNav } from "@/components/layout/main-nav";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -21,7 +22,15 @@ export function Header({ user }: { user: SessionUser }) {
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="container mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex h-14 items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 md:gap-6">
+            {/*
+              Le tiroir est **avant** le monogramme, et il ne paraît que sous `md`. À gauche parce
+              que c'est là qu'on va le chercher, et parce que le mettre à droite l'aurait jeté au
+              milieu des trois boutons de compte — trois gestes de réglage et une porte de
+              navigation ne se rangent pas ensemble.
+            */}
+            <MobileNav />
+
             {/*
               **Le monogramme seul** — décision d'Alexis du 6 septembre 2026. Le nom en toutes
               lettres doublait une marque qui le dit déjà, et il poussait la navigation vers la
