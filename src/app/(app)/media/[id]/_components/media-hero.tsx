@@ -7,10 +7,19 @@ import { Separator } from "@/components/ui/separator";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
+import type { EntryState } from "@/features/tracking/lib/entry-transition";
 
 type MediaHeroProps = {
   media: MediaDetail;
   titleLanguage: TitleLanguage;
+  /**
+   * Mon suivi de cette œuvre, lu en base par la page. `null` quand je ne la suis pas encore.
+   *
+   * Il **traverse le hero sans qu'il le regarde** : c'est la barre qui s'en sert, mais elle est
+   * cliente, donc elle ne peut pas aller le chercher elle-même. Le hero est le seul chemin entre
+   * la lecture serveur et elle.
+   */
+  entry: EntryState | null;
 };
 
 /**
@@ -27,7 +36,7 @@ type MediaHeroProps = {
  * que les panneaux —, de sorte qu'une jaquette sombre garde un bord visible là où une bordure
  * peinte à même l'image disparaîtrait.
  */
-export function MediaHero({ media, titleLanguage }: MediaHeroProps) {
+export function MediaHero({ media, titleLanguage, entry }: MediaHeroProps) {
   const title = mediaTitle(media.title, titleLanguage);
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
 
@@ -117,6 +126,10 @@ export function MediaHero({ media, titleLanguage }: MediaHeroProps) {
           <Separator />
 
           <EntryActionBar
+            banner={media.bannerImage}
+            entry={entry}
+            mediaId={media.id}
+            title={title}
             total={media.type === "ANIME" ? media.episodes : media.chapters}
             unit={media.type === "ANIME" ? "episode" : "chapitre"}
           />

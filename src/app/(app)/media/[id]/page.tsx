@@ -16,6 +16,7 @@ import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import { getMediaDetailFromMirror } from "@/features/media/server/media.mirror";
 import { getMediaById } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { getEntryFor } from "@/features/tracking/server/library.queries";
 import { tryAniList } from "@/lib/http/anilist";
 
 /**
@@ -127,7 +128,17 @@ async function MediaDetailContent({
   if (id === null) notFound();
 
   const { includeAdult, titleLanguage } = await getPreferences();
-  const { media, isPartial } = await loadMediaDetail(id, includeAdult);
+
+  /*
+    Les deux lectures partent ensemble : mon suivi est en base, la fiche chez AniList, et aucune ne
+    dépend de l'autre. Les enchaîner ferait attendre la barre de suivi après une requête réseau qui
+    peut prendre une seconde — ou ne jamais répondre, un jour de coupure, alors que ce que je sais
+    de l'œuvre, lui, est toujours là.
+  */
+  const [{ media, isPartial }, entry] = await Promise.all([
+    loadMediaDetail(id, includeAdult),
+    getEntryFor(id),
+  ]);
 
   // `null` couvre deux cas volontairement confondus : l'id n'existe pas, ou l'œuvre est classée
   // adulte alors que la préférence est éteinte. Dans les deux cas, la page n'existe pas — et
@@ -149,7 +160,7 @@ async function MediaDetailContent({
     <article className="flex flex-col gap-4">
       <ReportAniListStatus down={isPartial} />
 
-      <MediaHero media={media} titleLanguage={titleLanguage} />
+      <MediaHero entry={entry} media={media} titleLanguage={titleLanguage} />
 
       <Separator />
 

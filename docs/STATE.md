@@ -23,10 +23,13 @@ Relevé le **6 septembre 2026**.
 > diffèrent plus que par leur source : AniList et son quota d'un côté, mes lignes `Entry` de
 > l'autre.
 >
-> **Rien n'enregistre encore.** Pas une seule Server Action n'existe dans le dépôt, et la barre de
-> suivi de la fiche reste une coquille : ses contrôles répondent au clic, leur état disparaît au
-> rechargement. C'est écrit dans le fichier, à trois endroits, pour qu'on ne la prenne pas pour
-> fonctionnelle en la relisant. **Le prochain écran écrit pour de bon** (voir le bas de page).
+> **Et le suivi s'enregistre.** `saveEntry` et `removeEntry` sont les **premières Server Actions du
+> dépôt** — il n'en existait aucune depuis la mise à blanc. Les trois écrans écrivent : la fiche au
+> geste, la fenêtre d'édition rapide d'une vignette au bouton. `EntryEvent` se remplit donc à partir
+> d'aujourd'hui, et comme il n'est pas rétroactif, c'est une date qui compte.
+>
+> Ce qui **n'écrit toujours pas** : l'ajout à une liste, le favori, les tomes possédés — leurs
+> écrans n'existent pas.
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
@@ -42,7 +45,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | --- | --- | --- | --- |
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
-| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré** — le reste de la page et tout le suivi restent à écrire |
+| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **vidé** — en refonte |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **vidé** — en refonte |
@@ -216,6 +219,71 @@ n'appellent pas le même message ; le **compteur de résultats** n'est pas affic
 `titleLanguage`. L'inventaire complet est dans [recherche-filtres.md](./recherche-filtres.md) :
 66 lignes, **18 cochées**.
 
+### L'écriture du 6 septembre 2026 — la première Server Action du dépôt
+
+**C'est l'écart le plus visible du chantier qui se referme.** Depuis la mise à blanc, rien
+n'enregistrait : les contrôles répondaient au clic et leur état disparaissait au rechargement.
+
+Deux actions dans
+[`tracking.actions.ts`](../src/features/tracking/server/tracking.actions.ts), et **elles sont
+courtes parce que tout ce qu'elles font avait été écrit et testé avant elles** : `saveEntrySchema`
+valide, `applyEntryChanges` décide de l'état suivant et du journal, `authActionClient` garantit la
+session. L'action ne tranche rien elle-même.
+
+| Ce qui écrit | Où | Comment |
+| --- | --- | --- |
+| `saveEntry` | la barre de la fiche | **au geste** — un contrôle bouge, ce champ-là part |
+| `saveEntry` | la fenêtre d'une vignette (`/library`, `/search`) | **au bouton** — on corrige trois choses, on valide |
+| `removeEntry` | *sans appelant* | écrite et vue fonctionner, sous confirmation ; son menu a été retiré le même jour |
+
+**La barre de la fiche a deux états**, décision d'Alexis du même jour : tant que l'œuvre n'est pas
+suivie, elle ne montre qu'un bouton **« Ajouter à ma bibliothèque »**. Un statut « Prévu », un
+compteur à zéro et cinq étoiles vides ne décrivent rien — ils décrivent une entrée qui n'existe pas,
+et donnent à croire qu'on peut noter une œuvre qu'on ne suit pas. C'est aussi ce qui coche « l'œuvre
+pas encore suivie, distinguée de l'œuvre suivie à zéro » de fiche-media.md §2.7.
+
+**Le menu à trois points a été supprimé le même jour, et la fenêtre d'édition a pris sa place.** Il
+portait deux raccourcis vers ce que les contrôles font déjà, et le retrait ; « Modifier les dates »
+y était désactivé. La fenêtre tient cette promesse-là pour de bon — dates, relectures, notes
+personnelles —, et c'est **exactement la même que celle des vignettes**, son bouton compris.
+
+Ce bouton a hésité : posé à 28 px pour une vignette, il a été ramené à la taille normale d'un bouton
+d'icône, la même partout. Une propriété `trigger` avait été ajoutée entre-temps pour que la fiche
+puisse en fournir un plus grand ; elle a été **retirée aussitôt** — un point d'extension qui
+n'existait que pour rattraper un écart n'a plus lieu d'être quand l'écart disparaît.
+
+Elle n'apparaît **que sur une œuvre suivie**. À côté du bouton d'ajout, elle offrirait un second
+chemin pour le même geste, ce qui défait ce que l'état « non suivie » cherche : une seule chose à
+faire.
+
+`removeEntry` perd donc son dernier appelant et retourne au gel de `knip.jsonc`, nommément, plutôt
+que d'être supprimée. **Plus rien dans l'interface ne retire une œuvre** — c'est un manque assumé,
+le temps de redessiner l'endroit où ce geste doit vivre.
+
+L'écart entre les deux façons d'enregistrer n'est pas une inconséquence : il était **décrit dans
+`entry-draft.ts` avant d'exister**. Sur une fiche on vient poser *un* geste, et un bouton
+« Enregistrer » ajouterait une confirmation à une décision déjà prise ; dans une fenêtre on vient
+corriger plusieurs champs, et une écriture par frappe y serait une écriture par hésitation. Les deux
+partagent l'invariant qui compte : **on n'envoie jamais l'état complet, seulement ce qui a bougé**
+(PRODUCT.md §4.2).
+
+Trois points qui ne se voient pas à l'écran :
+
+- **L'entrée et son journal partent dans la même transaction.** `EntryEvent` est *append-only* et
+  non rétroactif : une entrée mise à jour dont l'événement manquerait serait un trou qu'aucune
+  reprise ne comble.
+- **`ensureMediaMirror` est reposé**, et il était obligatoire, pas optimiste : `Entry.mediaId` porte
+  une clé étrangère vers `Media`, donc suivre depuis `/search` une œuvre que personne n'a jamais
+  croisée échouait au niveau de la base. C'est le garde-fou de PRODUCT.md §4.1, supprimé par la mise
+  à blanc — il ne réécrit rien quand la ligne existe et n'est pas périmée.
+- **Le plafond de progression est relu du miroir, jamais reçu du client.** Le total passé au pas de
+  progression n'est qu'un confort d'affichage.
+
+**Vérifié à l'écran, pas déduit** : ajout depuis `/search` d'une œuvre absente du miroir, statut et
+progression enregistrés, pastille apparue sur le catalogue, valeurs retrouvées sur la fiche après
+rechargement complet, déduction « dernier chapitre → Terminé » appliquée par le serveur, puis retrait
+sous confirmation et retour exact à l'état de départ. Les données d'essai ont été retirées.
+
 ### Le seul route handler restant
 
 Il ne vit pas sous le layout `(app)` et le `matcher` du proxy exclut `api/` : il porte sa propre
@@ -240,8 +308,9 @@ appelaient.
 
 ## Ce qui reste dans `features/`
 
-**36 fichiers, dont 10 de tests.** La couche `server/` reprend forme — cinq fichiers, **huit
-lectures, et toujours aucune action** —, et `tracking` retrouve des composants.
+**38 fichiers, dont 10 de tests.** La couche `server/` a ses deux moitiés pour la première fois
+depuis la mise à blanc : six fichiers, **dix lectures, deux actions**, plus `ensureMediaMirror` —
+qui n'est ni l'une ni l'autre, mais le garde-fou que toute écriture pointant vers `Media` traverse.
 
 **`media` en a un aussi depuis le 6 septembre**, et il y est arrivé par la règle plutôt que par
 anticipation : `MediaCard` a démarré dans le `_components/` de `/search` et a été promue le jour où
@@ -254,8 +323,8 @@ composante : `entry-status-dot`, la pastille de statut, posée dans le slot `mar
 
 | Feature | Ce qu'elle contient |
 | --- | --- |
-| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne, fiche **et** recherche). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
-| **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — les trois lectures de `/library`, sans aucun cache parce que tout y dépend du visiteur. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating` — **l'interface seule, aucun ne persiste quoi que ce soit** — et `entry-status-dot`, la pastille des six statuts. |
+| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne fiche **et** recherche, plus `ensureMediaMirror`). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
+| **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — cinq lectures sans aucun cache, parce que tout y dépend du visiteur — et **`tracking.actions`, les deux premières Server Actions du dépôt**. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating`, `entry-status-dot`, et `entry-quick-edit` — la fenêtre d'édition rapide, promue de `/library` quand `/search` l'a demandée. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
 | **`command`** | `schemas/command.schema` seul — il porte la règle du « +1 ». |
@@ -293,16 +362,16 @@ n'auraient toujours qu'un seul consommateur. Ils restent dans `search/_component
 
 ## Contrôle de santé
 
-Relevé le 6 septembre 2026, après `/search` et `/library`. **À rejouer et à redater dès qu'on
+Relevé le 6 septembre 2026, après les premières Server Actions. **À rejouer et à redater dès qu'on
 prétend s'y fier.**
 
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : deux écrans livrés, **aucun test de plus** |
-| `pnpm lint` | 174 fichiers, aucune correction (161 après la fiche) |
+| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : trois écrans livrés et deux actions écrites, **aucun test de plus** |
+| `pnpm lint` | 176 fichiers, aucune correction (174 avant les actions) |
 | `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
-| `pnpm knip` | aucun signalement — **mais sous gel**, voir ci-dessous |
+| `pnpm knip` | aucun signalement — **toujours sous gel, mais le gel a maigri**, voir ci-dessous |
 
 **Écarts connus :**
 
@@ -317,25 +386,40 @@ prétend s'y fier.**
   importé par personne. Le retirer maintenant ferait échouer le test.
 
   La formulation a donc été corrigée dans le fichier : **le premier module qui _exporte_ un Server
-  Component `async` retire ce `.skip`.** Ce sera un composant de `features/*/components/`, très
-  probablement le panneau de suivi. En attendant, le test voisin ne garde rien.
-- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant **7 fichiers
-  et 8 chemins** d'exports ou de types, plus `ignoreDependencies` pour cinq familles (`@dnd-kit`,
-  `embla`, `cmdk`, `react-hotkeys-hook`, `next-safe-action`). Ce ne sont pas des faux positifs : ce
-  code est réellement sans appelant, parce que l'écran qui l'appellera n'existe pas encore. Le gel
-  est posé **par chemin** et non en `exclude` global, pour que knip continue de signaler le code mort
-  partout ailleurs. Chaque entrée nomme ce qu'elle attend : c'est la liste de reconstruction, et le
-  bloc doit avoir disparu quand les routes sont refaites.
+  Component `async` retire ce `.skip`.**
 
-  **Le bloc a maigri pour la première fois, le 6 septembre.** `media.documents.ts` est passé du gel
-  « fichier » au gel « exports », puis **`search-params.ts` et `library-params.ts` en sont sortis
-  pour de bon** — les deux contrats d'URL sont consommés de bout en bout par leur écran. C'est la
-  mécanique annoncée : chaque branche retire ce que sa route rebranche.
+  **Le pronostic qui figurait ici s'est révélé faux, et il faut le dire.** On annonçait « très
+  probablement le panneau de suivi » : il est arrivé le 6 septembre, et c'est un composant
+  **client** — il porte de l'état de formulaire et appelle une action. `entry-quick-edit`,
+  `entry-status-dot` et `media-card` non plus ne rallument rien : le premier est client, les deux
+  autres sont serveurs mais **synchrones**. Le canari attend donc un composant de
+  `features/*/components/` qui soit à la fois exporté, serveur et `async` — c'est-à-dire qui lise
+  lui-même ses données. Le journal d'une œuvre et la rangée « en cours » de l'accueil en sont les
+  candidats, et aucun n'existe. En attendant, le test voisin ne garde toujours rien.
+- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant **6 fichiers
+  et 9 chemins** d'exports ou de types, plus `ignoreDependencies` pour quatre familles (`@dnd-kit`,
+  `embla`, `cmdk`, `react-hotkeys-hook`). Ce ne sont pas des faux positifs : ce code est réellement
+  sans appelant, parce que l'écran qui l'appellera n'existe pas encore. Le gel est posé **par
+  chemin** et non en `exclude` global, pour que knip continue de signaler le code mort partout
+  ailleurs. Chaque entrée nomme ce qu'elle attend : c'est la liste de reconstruction, et le bloc doit
+  avoir disparu quand les routes sont refaites.
 
-  Restent au gel, et c'est la liste des écrans qui manquent : `calendar-params`, `profile-params`,
-  `command.schema`, `lists.schema`, `use-debounced-value`, `use-reduced-motion`, **`safe-action.ts`
-  — qui attend la première Server Action du dépôt**, et avec lui la dépendance `next-safe-action` et
-  `removeEntrySchema`.
+  **Le bloc maigrit à chaque passe, comme prévu.** `media.documents.ts` est passé du gel « fichier »
+  au gel « exports » ; `search-params.ts` et `library-params.ts` en sont sortis pour de bon avec le
+  catalogue ; et **les Server Actions ont emporté `safe-action.ts`, `tracking.schema.ts` et la
+  dépendance `next-safe-action`** — les trois entrées disaient mot pour mot qu'elles attendaient la
+  première action.
+
+  Restent au gel, et c'est exactement la liste des écrans qui manquent : `calendar-params` et
+  `profile-params` (contrats d'URL de `/calendar` et `/u`), `command.schema` (la palette `⌘K`),
+  `lists.schema` (`/lists`), `use-debounced-value`, `use-reduced-motion`, et des chemins d'exports —
+  les formateurs de `media`, les cinq documents GraphQL sans écran, les bornes du miroir qui
+  attendent le cron, les schémas de `media`, les défauts de `preferences`, et `formatEventTime` qui
+  attend le journal.
+
+  **Une entrée y est revenue le jour même, et c'est la seule fois** : `removeEntry` et
+  `removeEntrySchema`, quand le menu qui les appelait a été retiré. Le gel dit toujours « en
+  attente » et jamais « inutile » — ici il dit en plus « ça marchait, on l'a vu marcher ».
 - Les composants React ne sont couverts par **aucun test de rendu**, et il y en a beaucoup plus
   qu'hier : le hero de la fiche, ses contrôles de suivi, et maintenant les deux écrans du catalogue
   avec leur barre, leur panneau, leur grille et leur pagination. **Deux écrans livrés, zéro test
@@ -348,9 +432,15 @@ prétend s'y fier.**
   différents, dont un qui propose de retirer la facette la plus sélective
   (recherche-filtres.md §5). En attendant, ne rien afficher vaut mieux qu'un message qui se
   tromperait de cas — mais ça se lit comme une panne.
-- **La barre de suivi de la fiche est une coquille.** Ses trois contrôles répondent au clic, leur
-  état vit dans le composant et disparaît au rechargement. Ce n'est pas une régression, c'est l'ordre
-  choisi : la mise en page se valide avant qu'on écrive les Server Actions.
+- **Les Server Actions ne sont couvertes par aucun test.** `applyEntryChanges` l'est — c'est là que
+  vit la logique qui se trompe —, mais ce qui l'entoure (la transaction, le garde-fou du miroir, la
+  conversion des dates à midi UTC, `revalidatePath`) n'a été **vérifié qu'à la main**, une fois, le
+  6 septembre. Le chemin est décrit plus haut ; il n'est pas rejoué automatiquement.
+- **La progression de la fiche n'écrit pas à la frappe**, et c'est délibéré : enregistrer chaque
+  caractère écrirait « 1 », « 12 », « 120 » en tapant « 120 », soit trois lignes dans un journal
+  qu'on ne peut pas défaire. Elle part au cran, ou **à la sortie du champ** — sans ce second
+  déclencheur, un nombre tapé à la main n'aurait jamais été enregistré, ce qui aurait rendu à cette
+  barre le mensonge qu'on venait de lui retirer.
 - Le repli de panne AniList n'est vérifié par **aucun test**, mais il a été **vu fonctionner** le
   6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Il
   est désormais posé sur **deux** des trois écrans réels — la fiche et `/search`, où
@@ -372,17 +462,21 @@ prétend s'y fier.**
 
 ## Le prochain pas
 
-**Écrire pour de bon.** `/search` et `/library` sont livrés, le hero de la fiche aussi : le
-catalogue sait montrer, il ne sait toujours pas enregistrer. **Le prochain pas est la première
-Server Action du dépôt** — le suivi qu'on modifie depuis une vignette, puis depuis la fiche. Tout ce
-qu'il lui faut existe déjà et est testé : `saveEntrySchema`, `applyEntryChanges`, `entryDraftFrom` /
-`entryDraftChanges`, et `authActionClient`. Elle ira dans `features/tracking/server/tracking.actions.ts`,
-à côté de `library.queries.ts`.
+**Le journal.** Le suivi s'enregistre depuis le 6 septembre, et `EntryEvent` se remplit — mais
+**rien ne l'affiche**. C'est le prochain pas, et c'est le plus urgent des trois raisons : la table
+est *append-only* et non rétroactive, donc chaque jour où personne ne la lit est un jour où l'on ne
+sait pas si ce qu'elle enregistre est juste. `describeEntryEvent` et `groupEventsByDay` sont écrits
+et testés (`entry-format.ts`), et `formatEventTime` est la dernière entrée du gel `knip` qui
+l'attend nommément.
 
-C'est aussi ce qui débloque trois choses gelées d'un coup : le bloc `ignoreIssues` perd
-`safe-action.ts` et `removeEntrySchema`, `next-safe-action` sort d'`ignoreDependencies`, et le canari
-de `architecture.test.ts` se rallume au premier Server Component `async` **exporté** que le panneau
-de suivi posera.
+C'est aussi ce qui devrait rallumer le canari d'`architecture.test.ts` : un journal d'œuvre est
+précisément un composant de `features/*/components/` exporté, serveur et `async` — celui que le
+pronostic précédent attendait à tort du panneau de suivi.
+
+Ensuite, dans l'ordre où ça se posera : les **états vides** des trois écrans, qui ne sont toujours
+pas dessinés ; le **compteur de résultats** de `/search`, qui doit dire « plus de 5000 » et non
+« 5000 » ; et les champs de suivi que la fiche ne porte pas encore alors que la fenêtre d'une
+vignette les a — dates, notes, relectures.
 
 ### Le socle visuel est en place — et c'est tout ce qui a été repris
 
@@ -432,10 +526,10 @@ vocabulaire de tous les autres.
    l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
    [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
    des filtres : 66 lignes, **18 cochées**.
-2. `/media/[id]` — **le hero est fait** (6 septembre). Reste le suivi qui écrit vraiment, le journal,
-   les onglets lourds et les chiffres de la communauté. L'inventaire à cocher est dans
-   [fiche-media.md](./fiche-media.md). **C'est ici que la première Server Action se pose**, et elle
-   sert d'abord la vignette du catalogue.
+2. `/media/[id]` — **le hero et le suivi sont faits** (6 septembre) : la barre lit l'`Entry` réelle
+   et écrit par `saveEntry`. Restent le journal, les onglets lourds, les chiffres de la communauté,
+   et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
+   cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
 4. `/lists`, puis `/lists/[id]`, puis `/l/[token]` — le réordonnancement revient, `@dnd-kit` sort du
    gel, et le jeton de partage retrouve un écran.

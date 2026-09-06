@@ -61,7 +61,10 @@
     // plutôt qu'à se rétrograder en gel « exports ».
     "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
-    "src/lib/safe-action.ts": ["files"], // actionClient / authActionClient — attend la 1re action
+    // `safe-action.ts` est **sorti du gel le 6 septembre 2026** : `tracking.actions.ts` consomme
+    // `authActionClient`, et c'est la première Server Action du dépôt. `actionClient`, lui, reste
+    // couvert par `ignoreExportsUsedInFile` — il n'a pas d'appelant direct, il est la base sur
+    // laquelle `authActionClient` est construit dans le même fichier.
 
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
     "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
@@ -78,14 +81,26 @@
     "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
     "src/features/preferences/schemas/preferences.schema.ts": ["exports"], // défauts — attendent /settings
     "src/features/tracking/lib/entry-format.ts": ["exports"], // formatEventTime — attend le journal
-    "src/features/tracking/schemas/tracking.schema.ts": ["exports"] // removeEntrySchema — attend l'action
+    // `removeEntry` **écrit, et a été vu écrire** : le menu de la fiche l'appelait, sous
+    // confirmation `alert-dialog`, et le retrait a été vérifié à l'écran le 6 septembre 2026. C'est
+    // son **appelant** qui a été retiré le même jour — le menu à trois points est redevenu inerte,
+    // décision d'Alexis, le temps de redessiner ce qu'il doit porter.
+    //
+    // Gelé plutôt que supprimé, contrairement à la règle de la mise à blanc : celle-ci visait le
+    // rendu, qu'on savait devoir jeter. Ici c'est une action testée à l'écran dont on sait qu'elle
+    // revient, et la réécrire coûterait plus que de la relire. `removeEntrySchema` la suit, pour la
+    // même raison et sans avoir jamais bougé.
+    "src/features/tracking/server/tracking.actions.ts": ["exports"],
+    "src/features/tracking/schemas/tracking.schema.ts": ["exports"]
   },
 
   // Quatre familles employées uniquement par de la présentation supprimée : `@dnd-kit` par le
   // réordonnancement de `/lists/[id]`, `embla` par les carrousels de l'accueil, `cmdk` et
-  // `react-hotkeys-hook` par la palette `⌘K`. `next-safe-action` suit `lib/safe-action.ts`, gelé
-  // ci-dessus : c'est le passage obligé de toute Server Action (CLAUDE.md), et il n'y en a plus
-  // aucune.
+  // `react-hotkeys-hook` par la palette `⌘K`.
+  //
+  // **`next-safe-action` en est sorti le 6 septembre 2026**, avec `lib/safe-action.ts` : la
+  // première Server Action du dépôt l'importe, et son hook `useAction` est consommé par les deux
+  // écrans d'édition du suivi.
   //
   // Elles restent au `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte
   // les reprendra, et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
@@ -93,7 +108,6 @@
     "@dnd-kit/.*",
     "cmdk",
     "embla-carousel.*",
-    "next-safe-action",
     "react-hotkeys-hook"
   ]
 

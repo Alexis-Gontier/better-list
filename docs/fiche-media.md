@@ -145,27 +145,46 @@ qu'on est tenté de les oublier.
 C'est ici que se joue la différence avec AniList et MyAnimeList : ces données n'existent nulle part
 ailleurs, et ce sont elles qui font le produit (PRODUCT.md §8).
 
-**Aucune case n'est cochée, et c'est exact.** La barre de suivi du hero est posée, mais elle
-**n'écrit rien** : son état vit dans le composant et disparaît au rechargement. Les Server Actions
-viendront quand la mise en page sera validée.
+**La barre de suivi enregistre pour de bon depuis le 6 septembre 2026.** Elle a passé une séance en
+coquille — ses contrôles répondaient au clic et leur état disparaissait au rechargement, le temps que
+la mise en page soit validée. `saveEntry` et `removeEntry` existent
+([`tracking.actions.ts`](../src/features/tracking/server/tracking.actions.ts)), et ce sont les
+premières Server Actions du dépôt.
+
+**Elle enregistre au geste**, là où la fenêtre d'édition enregistre au bouton : sur une fiche on
+vient poser *un* geste, et un bouton « Enregistrer » ajouterait une confirmation à une décision déjà
+prise. Dans les deux cas on n'envoie que **ce qui a changé**, jamais l'état complet (PRODUCT.md
+§4.2).
+
+**Et la fenêtre est là aussi**, depuis le 6 septembre : la barre porte le statut, la progression et
+la note ; le bouton crayon ouvre le reste — les deux dates, les relectures, les notes personnelles.
+C'est **exactement la même fenêtre** que sur une vignette de `/library` ou `/search`, son bouton
+compris. Elle a remplacé le menu à trois points, qui promettait « Modifier les dates » sans le tenir.
 
 ### 2.1 Mon suivi — `Entry` (§4.2)
 
-- [ ] `status` — Prévu, En cours, Terminé, En pause, Abandonné, Relecture *(le sélecteur existe, il n'enregistre pas)*
-- [ ] `progress` — où j'en suis, en épisodes ou en chapitres *(le champ existe, il n'enregistre pas)*
+- [x] `status` — Prévu, En cours, Terminé, En pause, Abandonné, Relecture
+- [x] `progress` — où j'en suis, en épisodes ou en chapitres. Les **déductions de la transition sont vérifiées à l'écran** : atteindre le dernier chapitre bascule le statut en « Terminé » et date la fin, sans que le client ait son mot à dire
 - [ ] `progressVolumes` — où j'en suis en tomes, pour un manga suivi à la fois en chapitres et en volumes
-- [ ] `score` — ma note, stockée sur 0–100, affichée sur cinq étoiles par demies *(les étoiles existent, elles n'enregistrent pas)*
+- [x] `score` — ma note, stockée sur 0–100, affichée sur cinq étoiles par demies. **Effacer une note reste impossible** : `null` (« pas encore noté ») et zéro (« noté zéro », qui est un jugement) sont distincts en base, et les distinguer demande un geste à part qui n'existe pas encore
 - [ ] `favorite` — le cœur
-- [ ] `startedAt` / `finishedAt` — mes dates, **automatiques par défaut et rattrapables à la main**
-- [ ] `repeatCount` — combien de fois je l'ai revue
-- [ ] `notes` — mes notes personnelles sur l'œuvre
+- [x] `startedAt` / `finishedAt` — **automatiques et rattrapables**, comme le §4.2 le demande : la transition date le début au premier épisode et la fin au dernier, et les deux champs de la fenêtre d'édition permettent de les corriger. Une date qu'on ne touche pas n'est pas effacée pour autant — le brouillon n'envoie que les différences
+- [x] `repeatCount` — **compté automatiquement** quand une relecture se termine, et corrigeable à la main dans la fenêtre d'édition, pour rattraper un historique
+- [x] `notes` — mes notes personnelles sur l'œuvre, dans la fenêtre d'édition
 - [ ] `private` — masquer cette entrée aux autres membres du cercle
-- [ ] Le retrait du suivi — action destructive, **doit demander confirmation** (`alert-dialog` est installé)
+- [ ] Le retrait du suivi — **l'action existe et a été vue fonctionner**, sous confirmation `alert-dialog` comme ce document l'exigeait ; c'est son **appelant** qui a été retiré le 6 septembre, avec le menu à trois points (décision d'Alexis, le temps de redessiner ce qu'il doit porter). `removeEntry` est au gel de `knip.jsonc`, nommément
+- [x] **Ajouter à ma bibliothèque** — et tant que l'œuvre n'y est pas, c'est le **seul** contrôle de la barre : un statut « Prévu », un compteur à zéro et cinq étoiles vides décrivent une entrée qui n'existe pas
 
 ### 2.2 Ma mémoire — `EntryEvent` (§4.3)
 
 La table est *append-only*, et **non rétroactive** : ce qui n'est pas journalisé le jour même est
 perdu pour toujours. C'est la raison d'être du produit.
+
+**Elle se remplit depuis le 6 septembre 2026, et c'est la date qui compte.** `saveEntry` insère
+l'entrée et ses événements **dans la même transaction** : une progression enregistrée dont
+l'événement manquerait serait un trou qu'aucune reprise ne comble. Rien de ce qui suit n'est encore
+**affiché** — les cases restent donc décochées — mais la matière, elle, s'accumule à partir
+d'aujourd'hui. Tout ce qui s'est passé avant est définitivement perdu, et l'était déjà.
 
 - [ ] La timeline de cette œuvre : ce qui s'est passé, et quand
 - [ ] Les événements `PROGRESS` — « 15 épisodes le 3 mars », déduit de `to - from`
@@ -205,12 +224,13 @@ récupérer, tout à afficher.
 
 - [x] Le repli sur le miroir local quand AniList ne répond pas. **Son bandeau d'avis n'appartient plus à cette page** : il est rendu par le layout et vaut pour tout le site (`components/layout/anilist-outage-notice.tsx`) ; la fiche ne fait que rapporter par où sa lecture est passée
 - [x] Le squelette de chargement, aux proportions du hero
-- [ ] L'œuvre pas encore suivie, distinguée de l'œuvre suivie à zéro
+- [x] L'œuvre pas encore suivie, distinguée de l'œuvre suivie à zéro — **par la barre entière, pas par une mention**. Non suivie : un bouton d'ajout, rien d'autre. Suivie : les trois contrôles. C'est la distinction la plus lisible possible, puisqu'on ne peut pas confondre deux écrans qui n'ont pas les mêmes objets
 
 ---
 
 ## Ce qui est à l'écran aujourd'hui, en une phrase
 
 Bannière, jaquette, titre et titres secondaires, cinq faits (format, statut, compteur, saison,
-studio ou auteur), une barre de suivi **qui n'enregistre rien**, et le synopsis. Tout le reste de ce
-document attend.
+studio ou auteur), une barre de suivi **qui enregistre pour de bon** — un bouton d'ajout tant que
+l'œuvre n'est pas suivie, puis statut, progression, note et une fenêtre pour le reste —, et le
+synopsis. Tout le reste de ce document attend.
