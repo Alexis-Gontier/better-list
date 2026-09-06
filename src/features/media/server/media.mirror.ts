@@ -1,11 +1,14 @@
 import "server-only";
 
 import { compactFromMirror } from "@/features/media/lib/media-format";
+import { isMirrorStale } from "@/features/media/lib/media-freshness";
 import type {
   MediaCompact,
   MediaDetail,
 } from "@/features/media/schemas/media.schema";
+import { getMediaById } from "@/features/media/server/media.queries";
 import { prisma } from "@/lib/db/prisma";
+import { tryAniList } from "@/lib/http/anilist";
 
 /**
  * La fiche servie depuis le **miroir local**, quand AniList ne répond pas.
@@ -128,6 +131,96 @@ export async function getMediaDetailFromMirror(
 }
 
 /**
+ * Copier l'œuvre dans le miroir **avant toute écriture qui y pointe** — et ne rien faire si elle y
+ * est déjà et n'est pas périmée.
+ *
+ * C'est le garde-fou de PRODUCT.md §4.1, reposé avec la première Server Action. Il est
+ * **obligatoire** et pas optimiste : `Entry.mediaId` porte une clé étrangère vers `Media`, donc
+ * suivre depuis `/search` une œuvre que personne n'a jamais croisée échouerait au niveau de la base.
+ * Le miroir n'est pas un index du catalogue, c'est la mémoire de ce que ce cercle a rencontré : il
+ * se remplit exactement ici, au moment où quelqu'un s'intéresse à une œuvre.
+ *
+ * **Ce qui reste du rafraîchissement paresseux abandonné, c'est ce garde-fou et rien d'autre.** La
+ * lecture ne réécrit plus jamais (§4.1 : une requête `GET` ne doit pas être coûteuse ni non
+ * idempotente) ; ici on est déjà dans une écriture, donc le reproche tombe. Sans le test de
+ * fraîcheur, chaque « +1 » recopierait dix-huit colonnes du catalogue partagé pour incrémenter un
+ * compteur personnel.
+ *
+ * **Une ligne périmée est rafraîchie au passage, mais son échec n'arrête rien** : le suivi de
+ * l'utilisateur ne doit pas dépendre de la disponibilité d'AniList. Une copie un peu vieille vaut
+ * infiniment mieux qu'un « +1 » refusé parce qu'un tiers est en panne — c'est la même règle que
+ * partout ailleurs, la panne se rattrape et ne remonte pas.
+ */
+export async function ensureMediaMirror(mediaId: number): Promise<void> {
+  const existing = await prisma.media.findUnique({
+    where: { id: mediaId },
+    select: { status: true, syncedAt: true },
+  });
+
+  if (existing && !isMirrorStale(existing)) return;
+
+  /*
+    **`includeAdult: true` ici, et ce n'est pas un contournement de la garde.** Ce qu'on écrit est
+    une ligne du catalogue **partagé par les quatre comptes** (§4.1), pas une décision d'affichage.
+    Passer la préférence du visiteur ferait renvoyer `null` sur une œuvre classée adulte, et donc
+    échouer l'écriture — alors que la question « est-ce que je montre cette œuvre à *ce* compte ? »
+    est déjà tranchée en amont, à la lecture, et l'est dans la requête plutôt que par un masque
+    (docs/recherche-filtres.md §2.5). Quelqu'un qui arrive ici a forcément déjà vu la fiche.
+  */
+  const media = await tryAniList(() =>
+    getMediaById(mediaId, { includeAdult: true }),
+  );
+
+  if (!media) {
+    /*
+      AniList ne répond pas, ou ne connaît pas cette œuvre.
+
+      Si on a déjà une copie, elle fera l'affaire — elle est seulement périmée. Sinon il n'y a rien
+      à écrire, et laisser l'appelant continuer ferait échouer sa clé étrangère avec un message que
+      personne ne saurait lire. On le dit ici, où l'on sait pourquoi.
+    */
+    if (existing) return;
+
+    throw new Error(
+      `L'œuvre ${mediaId} est inconnue du miroir et AniList ne répond pas.`,
+    );
+  }
+
+  const row = {
+    type: media.type,
+    format: media.format,
+    status: media.status,
+    countryOfOrigin: media.countryOfOrigin,
+    titleRomaji: media.title.romaji,
+    titleEnglish: media.title.english,
+    titleNative: media.title.native,
+    coverImage: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
+    coverColor: media.coverImage?.color ?? null,
+    bannerImage: media.bannerImage,
+    episodes: media.episodes,
+    chapters: media.chapters,
+    volumes: media.volumes,
+    season: media.season,
+    seasonYear: media.seasonYear,
+    genres: media.genres,
+    meanScore: media.meanScore,
+    isAdult: media.isAdult,
+    /*
+      `syncedAt` avance **même quand rien d'autre ne change**, sinon la ligne resterait périmée pour
+      toujours et chaque passage dépenserait une requête à la redemander en vain. C'est la même
+      règle que pour une œuvre qu'AniList ne renvoie plus (§4.1).
+    */
+    syncedAt: new Date(),
+  };
+
+  await prisma.media.upsert({
+    where: { id: mediaId },
+    create: { id: mediaId, ...row },
+    update: row,
+  });
+}
+
+/**
  * Ce que le miroir **ne sait pas** faire d'une recherche, et qu'il faut donc dire au visiteur.
  *
  * Deux manques, et ils ne sont pas du même ordre. Les **tags** n'existent pas en base : §4.1 a
@@ -141,8 +234,27 @@ export async function getMediaDetailFromMirror(
  */
 export type MirrorSearchLimitation = "tags" | "sort";
 
+/**
+ * Une carte de catalogue servie par le miroir, **et ce qu'il faut en plus pour l'éditer**.
+ *
+ * `MediaCompact` décrit une vignette et rien d'autre ; la fenêtre d'édition rapide veut la bannière
+ * et le plafond de progression. Les trois colonnes voyagent donc à côté plutôt que d'entrer dans
+ * `MediaCompact`, qui sert partout ailleurs — sur la fiche, dans les relations, dans les
+ * recommandations — et n'a aucune raison de s'alourdir pour un écran.
+ *
+ * **Elles sont là pour que le repli reste équivalent.** Le document GraphQL de recherche ramène
+ * déjà ces trois champs (`mediaSchema`) : sans elles, une panne d'AniList ferait discrètement
+ * disparaître la bannière et le plafond de la fenêtre, ce qui est exactement le genre de repli muet
+ * que `lost` existe pour éviter.
+ */
+export type MirrorSearchItem = MediaCompact & {
+  bannerImage: string | null;
+  episodes: number | null;
+  chapters: number | null;
+};
+
 export type MirrorSearchResult = {
-  items: MediaCompact[];
+  items: MirrorSearchItem[];
   total: number;
   page: number;
   pageCount: number;
@@ -150,7 +262,7 @@ export type MirrorSearchResult = {
   lost: MirrorSearchLimitation[];
 };
 
-/** Les colonnes que `compactFromMirror` consomme, et rien de plus. */
+/** Les colonnes que `compactFromMirror` consomme, plus les trois de `MirrorSearchItem`. */
 const MIRROR_CARD_SELECT = {
   id: true,
   type: true,
@@ -162,6 +274,9 @@ const MIRROR_CARD_SELECT = {
   coverImage: true,
   meanScore: true,
   isAdult: true,
+  bannerImage: true,
+  episodes: true,
+  chapters: true,
 } as const;
 
 /**
@@ -259,7 +374,12 @@ export async function searchMediaInMirror({
   }
 
   return {
-    items: rows.map(compactFromMirror),
+    items: rows.map((row) => ({
+      ...compactFromMirror(row),
+      bannerImage: row.bannerImage,
+      episodes: row.episodes,
+      chapters: row.chapters,
+    })),
     total,
     page: current,
     pageCount,

@@ -13,7 +13,9 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import { MediaCard } from "@/features/media/components/media-card";
+import { mediaTitle } from "@/features/media/lib/media-format";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import {
   loadLibraryFilters,
@@ -167,6 +169,24 @@ async function LibraryResults({
       <CatalogueGrid>
         {items.map((item, index) => (
           <MediaCard
+            /*
+              L'action posée sur la jaquette, remplie par l'appelant — même contrat que `marker`
+              juste en dessous. `MediaCard` ne connaît ni `EntryStatus` ni la notion de suivi : elle
+              pose l'emplacement et le geste, et laisse `/library` décider de ce qu'il porte.
+
+              C'est aussi ce qui garde la grille hors du bundle client : seul ce bouton et sa
+              fenêtre y partent, pas les vingt et une cartes qui les entourent.
+            */
+            action={
+              <EntryQuickEdit
+                banner={item.banner}
+                entry={item.entry}
+                mediaId={item.media.id}
+                title={mediaTitle(item.media.title, titleLanguage)}
+                total={item.total}
+                unit={item.unit}
+              />
+            }
             key={item.media.id}
             /*
               La pastille de statut, à gauche du titre. C'est sur l'onglet « Tout » qu'elle paie :
@@ -177,7 +197,7 @@ async function LibraryResults({
               porte son nom en texte caché — une couleur ne se lit ni au lecteur d'écran, ni quand
               on ne distingue pas le vert du rouge.
             */
-            marker={<EntryStatusDot status={item.status} />}
+            marker={<EntryStatusDot status={item.entry.status} />}
             media={item.media}
             // La première rangée au palier le plus large : c'est tout ce qui est au-dessus de la
             // ligne de flottaison, et la première de ces jaquettes porte la mesure de LCP.

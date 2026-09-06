@@ -3,6 +3,8 @@ import "server-only";
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import { compactFromMirror } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type { EntryUnit } from "@/features/tracking/lib/entry-format";
+import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
@@ -52,7 +54,18 @@ async function currentUserId(): Promise<string> {
   return session.user.id;
 }
 
-/** Les colonnes du miroir dont la carte a besoin — la sélection de `compactFromMirror`. */
+/**
+ * Les colonnes du miroir dont la carte a besoin — la sélection de `compactFromMirror` —, **plus ce
+ * que la fenêtre d'édition rapide demande en propre.**
+ *
+ * `episodes`, `chapters` et `bannerImage` ne sont pas dans `MediaCompact` et n'ont rien à y faire :
+ * cette forme décrit une œuvre pour une vignette, et trois colonnes de plus sur toutes les listes
+ * du produit pour servir un seul écran serait un mauvais échange. Elles voyagent donc à côté, dans
+ * `total` et `banner`.
+ *
+ * Le plafond n'est pas un confort : un pas de progression sans lui laisse taper « épisode 900 » sur
+ * une série de douze.
+ */
 const MIRRORED_MEDIA_SELECT = {
   id: true,
   type: true,
@@ -64,6 +77,32 @@ const MIRRORED_MEDIA_SELECT = {
   coverImage: true,
   meanScore: true,
   isAdult: true,
+  episodes: true,
+  chapters: true,
+  bannerImage: true,
+} as const;
+
+/**
+ * Les colonnes qui composent un `EntryState` — **exactement**, ni plus ni moins.
+ *
+ * La forme est celle d'`entry-transition.ts`, et c'est ce qui permet à `entryDraftFrom` de partir
+ * de cette ligne sans adaptateur, puis à `entryDraftChanges` de n'envoyer que ce qui a bougé
+ * (docs/PRODUCT.md §4.2). Ramener moins obligerait la fenêtre à inventer les champs manquants — et
+ * un champ inventé qu'on renvoie au serveur est une modification qu'on n'a pas demandée.
+ *
+ * `private` et `favorite` : seul le second est dans `EntryState`. Le premier ne concerne que la
+ * visibilité auprès du cercle, qui n'a pas d'écran.
+ */
+const ENTRY_STATE_SELECT = {
+  status: true,
+  progress: true,
+  progressVolumes: true,
+  score: true,
+  favorite: true,
+  notes: true,
+  repeatCount: true,
+  startedAt: true,
+  finishedAt: true,
 } as const;
 
 /**
@@ -264,6 +303,71 @@ export async function getLibraryGenres({
 }
 
 /**
+ * Mon suivi d'**une** œuvre — `null` quand je ne la suis pas encore.
+ *
+ * C'est ce que la fiche demande, et elle n'a pas besoin du `in` de sa voisine : `findUnique` tape
+ * droit dans la contrainte d'unicité `(userId, mediaId)`. Passer par `getLibraryEntriesFor([id])`
+ * aurait marché, mais aurait fait lire « parmi ces œuvres » là où la question est « celle-ci ».
+ *
+ * **Le `null` est une réponse, pas une absence de réponse** : c'est lui qui distingue l'œuvre
+ * jamais suivie de l'œuvre suivie à zéro — la case que docs/fiche-media.md §2.7 laisse ouverte —,
+ * et c'est lui qui fait dire « Ajouter » plutôt que « Enregistrer ».
+ */
+export async function getEntryFor(mediaId: number): Promise<EntryState | null> {
+  const userId = await currentUserId();
+
+  return prisma.entry.findUnique({
+    where: { userId_mediaId: { userId, mediaId } },
+    select: ENTRY_STATE_SELECT,
+  });
+}
+
+/**
+ * Parmi ces œuvres, lesquelles sont déjà dans ma bibliothèque — et **où j'en suis avec chacune**.
+ *
+ * **C'est l'issue 1 de docs/recherche-filtres.md §2, « annoter plutôt que filtrer ».** Le document
+ * la recommande comme « la seule qui ne coûte rien et ne mente jamais » : filtrer `/search` sur nos
+ * propres lignes trouerait une page qu'AniList a déjà découpée, et le compteur mentirait. Une
+ * pastille sur la carte répond à la même question — « est-ce que je l'ai déjà ? » — sans toucher à
+ * la pagination.
+ *
+ * **Elle rend l'état complet et pas le seul statut**, parce que la pastille n'est pas le seul
+ * consommateur : la fenêtre d'édition rapide s'ouvre depuis le catalogue comme depuis la
+ * bibliothèque, et elle a besoin de tout `EntryState` pour que `entryDraftFrom` n'ait rien à
+ * inventer. Deux lectures pour la même ligne — une pour la pastille, une pour la fenêtre —
+ * auraient été deux allers-retours et deux occasions de diverger.
+ *
+ * **Une requête pour toute la page, pas une par carte.** Les vingt et un ids partent en un seul
+ * `in`, sur l'index `[userId, mediaId]` que porte la contrainte d'unicité. Interroger carte par
+ * carte ferait vingt et un allers-retours pour une grille.
+ *
+ * Elle ne connaît **aucun filtre** et ne pagine rien : l'appelant lui donne les ids qu'il affiche,
+ * d'où qu'ils viennent. C'est ce qui lui permettra de servir la fiche, les listes ou les
+ * recommandations sans rien changer.
+ *
+ * Un `Map` plutôt qu'un tableau : l'appelant interroge par id, une carte à la fois, et une
+ * recherche linéaire dans un tableau à chaque vignette serait la mauvaise forme pour le seul usage
+ * qui existe. **Une clé absente veut dire « pas encore suivie »** — c'est une information, pas un
+ * trou : c'est elle qui décide qu'aucune pastille ne s'affiche.
+ */
+export async function getLibraryEntriesFor(
+  mediaIds: number[],
+): Promise<Map<number, EntryState>> {
+  // Une page vide ne pose pas la question : `in: []` partirait quand même en base pour rapporter
+  // ce qu'on sait déjà.
+  if (mediaIds.length === 0) return new Map();
+
+  const userId = await currentUserId();
+
+  const rows = await prisma.entry.findMany({
+    where: { userId, mediaId: { in: mediaIds } },
+    select: { mediaId: true, ...ENTRY_STATE_SELECT },
+  });
+
+  return new Map(rows.map(({ mediaId, ...entry }) => [mediaId, entry]));
+}
+
+/**
  * Une ligne de bibliothèque : l'œuvre, et **où j'en suis avec elle**.
  *
  * Le statut voyage à côté du média plutôt que dedans : `MediaCompact` décrit une œuvre, la même
@@ -272,7 +376,39 @@ export async function getLibraryGenres({
  */
 export type LibraryItem = {
   media: MediaCompact;
-  status: EntryStatus;
+  /**
+   * Mon suivi **en entier**, dans la forme d'`entry-transition.ts`.
+   *
+   * Il voyage à côté du média plutôt que dedans : `MediaCompact` décrit une œuvre, la même pour les
+   * quatre comptes, et y greffer des champs propres au visiteur ferait mentir sa forme partout
+   * ailleurs — sur la fiche, dans les recommandations, dans les relations.
+   *
+   * **L'état complet et pas trois champs choisis** : c'est ce qui laisse `entryDraftFrom` ouvrir la
+   * fenêtre d'édition sans rien inventer, et `entryDraftChanges` n'envoyer ensuite que ce qui a
+   * bougé. Une fenêtre qui devrait deviner les dates qu'on ne lui a pas données finirait par les
+   * réécrire.
+   */
+  entry: EntryState;
+  /**
+   * La bannière du miroir — l'en-tête de la fenêtre d'édition rapide.
+   *
+   * `null` sur la plupart des mangas et des webtoons : AniList n'en a pas, et c'est le cas courant,
+   * pas l'exception (docs/fiche-media.md §1.1).
+   */
+  banner: string | null;
+  /**
+   * Ce qu'on compte, et son plafond : des **épisodes** sur un anime, des **chapitres** sur tout le
+   * reste.
+   *
+   * Les deux voyagent ensemble parce qu'ils répondent à la même question, et ils sont décidés ici
+   * plutôt qu'à l'affichage pour que la page n'ait pas à reconnaître le type de l'œuvre une
+   * seconde fois.
+   *
+   * `total` est `null` sur une œuvre en cours de diffusion, dont AniList ignore le nombre
+   * d'épisodes — un cas courant, pas une exception. Le pas de progression l'affiche alors en « ? ».
+   */
+  unit: EntryUnit;
+  total: number | null;
 };
 
 export type LibraryPage = {
@@ -327,13 +463,29 @@ export async function getLibrary({
     orderBy: libraryOrderBy(filters.sort),
     skip: (page - 1) * CATALOGUE_PAGE_SIZE,
     take: CATALOGUE_PAGE_SIZE,
-    select: { status: true, media: { select: MIRRORED_MEDIA_SELECT } },
+    select: {
+      ...ENTRY_STATE_SELECT,
+      media: { select: MIRRORED_MEDIA_SELECT },
+    },
   });
 
   return {
-    items: rows.map((row) => ({
-      media: compactFromMirror(row.media),
-      status: row.status,
+    items: rows.map(({ media, ...entry }) => ({
+      media: compactFromMirror(media),
+      /*
+        L'entrée est reprise telle quelle : la sélection ci-dessus est déjà exactement un
+        `EntryState`, donc la recopier champ par champ n'ajouterait qu'un endroit de plus où en
+        oublier un le jour où le modèle en gagne un.
+      */
+      entry,
+      banner: media.bannerImage,
+      /*
+        L'unité suit le type de l'œuvre, comme partout ailleurs dans le produit : un anime se
+        compte en épisodes, tout le reste en chapitres. La même condition décide des deux — ce
+        qu'on compte et jusqu'où —, donc elle s'écrit une fois.
+      */
+      unit: media.type === "ANIME" ? "episode" : "chapitre",
+      total: media.type === "ANIME" ? media.episodes : media.chapters,
     })),
     total,
     page,

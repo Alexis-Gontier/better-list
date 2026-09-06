@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import { routes } from "@/config/routes";
 import { MediaCard } from "@/features/media/components/media-card";
+import { mediaTitle } from "@/features/media/lib/media-format";
 import {
   loadSearchFilters,
   resolveSort,
@@ -21,6 +22,9 @@ import {
 import { searchMediaInMirror } from "@/features/media/server/media.mirror";
 import { searchMedia } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
+import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
+import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 export const metadata: Metadata = {
   title: "Rechercher",
@@ -125,6 +129,22 @@ async function SearchResults({
 
   if (items.length === 0) return null;
 
+  /*
+    **La pastille de suivi sur les résultats du catalogue — « annoter plutôt que filtrer ».**
+
+    C'est l'issue 1 de docs/recherche-filtres.md §2, celle que le document recommande comme « la
+    seule qui ne coûte rien et ne mente jamais ». Filtrer `/search` sur nos propres lignes trouerait
+    une page qu'AniList a déjà découpée : grille à trous, page 2 qui répète la page 1, compteur
+    faux. La pastille répond à la même question — « est-ce que je l'ai déjà, et où j'en suis ? » —
+    sans toucher à la pagination.
+
+    **Elle part après les résultats et pas en parallèle**, parce qu'elle a besoin de leurs ids : on
+    ne sait pas quoi annoter avant de savoir ce qu'on affiche. Une seule requête pour les vingt et
+    un, en base, sur l'index d'unicité `[userId, mediaId]` — elle ne pèse pas sur le quota AniList,
+    qui est la seule ressource comptée ici.
+  */
+  const entries = await getLibraryEntriesFor(items.map((item) => item.id));
+
   return (
     <div className="flex flex-col gap-8">
       {/*
@@ -144,16 +164,49 @@ async function SearchResults({
       ) : null}
 
       <CatalogueGrid>
-        {items.map((item, index) => (
-          <MediaCard
-            key={item.id}
-            media={item}
-            // La première rangée au palier le plus large : c'est tout ce qui est au-dessus de la
-            // ligne de flottaison, et la première de ces jaquettes porte la mesure de LCP.
-            priority={index < WIDEST_COLUMN_COUNT}
-            titleLanguage={titleLanguage}
-          />
-        ))}
+        {items.map((item, index) => {
+          const entry = entries.get(item.id) ?? null;
+
+          return (
+            <MediaCard
+              key={item.id}
+              /*
+                **La même fenêtre que sur `/library`**, et le catalogue est son deuxième appelant —
+                c'est ce qui l'a fait monter dans `features/tracking/components/`.
+
+                `entry` vaut `null` quand l'œuvre n'est pas encore suivie, et la fenêtre le sait :
+                elle part alors de l'entrée neuve, et son bouton dit « Ajouter » au lieu de
+                « Modifier ». C'est le seul écart entre les deux écrans, et il est dans le
+                vocabulaire, pas dans la mécanique.
+              */
+              action={
+                <EntryQuickEdit
+                  banner={item.bannerImage}
+                  entry={entry}
+                  mediaId={item.id}
+                  title={mediaTitle(item.title, titleLanguage)}
+                  total={item.type === "ANIME" ? item.episodes : item.chapters}
+                  unit={item.type === "ANIME" ? "episode" : "chapitre"}
+                />
+              }
+              /*
+                **Rien du tout quand l'œuvre n'est pas suivie**, et c'est la moitié de
+                l'information. Sur un catalogue, la plupart des résultats ne sont dans aucune
+                bibliothèque : une pastille neutre sur chaque carte ferait du marqueur un ornement,
+                et il faudrait la lire pour apprendre qu'elle ne dit rien. L'absence se remarque
+                justement parce qu'elle est le cas courant.
+              */
+              marker={
+                entry ? <EntryStatusDot status={entry.status} /> : undefined
+              }
+              media={item}
+              // La première rangée au palier le plus large : c'est tout ce qui est au-dessus de la
+              // ligne de flottaison, et la première de ces jaquettes porte la mesure de LCP.
+              priority={index < WIDEST_COLUMN_COUNT}
+              titleLanguage={titleLanguage}
+            />
+          );
+        })}
       </CatalogueGrid>
 
       <CataloguePagination
