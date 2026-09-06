@@ -76,10 +76,12 @@
     // `lists.actions.ts` consomme ses trois entrées de création, modification et suppression. Il se
     // rétrograde en gel « exports », comme `media.documents.ts` avant lui.
     //
-    // Ce qui reste gelé, et ce que ça attend : `addToListSchema` et `removeFromListSchema` attendent
-    // la fenêtre de rangement de la fiche, à la passe suivante de cette même branche.
-    // `reorderListItemSchema` **en est sorti le jour même** — le mode réorganisation le consomme.
-    // Ne reste donc que `shareListSchema`, qui attend `/l/[token]`, hors du périmètre de la branche.
+    // **Il ne reste qu'une entrée gelée sur les sept** : `shareListSchema`, qui attend `/l/[token]`.
+    // `reorderListItemSchema` est sorti avec le mode réorganisation, `addToListSchema` et
+    // `removeFromListSchema` avec la fenêtre de rangement de la fiche — toutes le 6 septembre 2026.
+    //
+    // Le jour où le partage aura son écran, cette entrée part et le fichier quitte le gel pour de
+    // bon, comme `library-params.ts` et `search-params.ts` avant lui.
     "src/features/lists/schemas/lists.schema.ts": ["exports"],
     // `search-params.ts` est **sorti du gel** : la grille de résultats a consommé ses deux derniers
     // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,

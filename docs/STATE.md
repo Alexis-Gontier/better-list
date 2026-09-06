@@ -36,8 +36,11 @@ Relevé le **6 septembre 2026**.
 > La suppression d'une liste demande de **recopier son nom** : c'est le seul geste du produit qu'on
 > ne peut pas défaire.
 >
-> Ce qui **n'écrit toujours pas** : l'ajout d'une œuvre à une liste — `addToList` et
-> `removeFromList` attendent la fenêtre de la fiche —, le favori et les tomes possédés.
+> **Et les listes se remplissent depuis la fiche.** « Ajouter à une liste » ouvre une liste de
+> **bascules** : cochée veut dire que l'œuvre est dedans, décocher l'en retire. C'était la condition
+> pour livrer ce chemin — sans elle, aucun écran n'aurait permis de défaire un ajout.
+>
+> Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
@@ -378,7 +381,7 @@ prétend s'y fier.**
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : cinq écrans livrés et six actions écrites, **aucun test de plus**. `rankAfterMove` et `generateShareToken` étaient déjà couverts avant d'avoir un appelant |
+| `pnpm test` | **203 passés, 1 en pause**, 17 fichiers. Les quatre nouveaux couvrent `rankForAppend`, écrite en TDD : c'est la seule logique **pure et neuve** de la branche. Les huit Server Actions, elles, ne sont toujours couvertes par aucun test |
 | `pnpm lint` | 176 fichiers, aucune correction (174 avant les actions) |
 | `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
 | `pnpm knip` | aucun signalement — **toujours sous gel, mais le gel a maigri**, voir ci-dessous |
@@ -483,13 +486,6 @@ C'est aussi ce qui devrait rallumer le canari d'`architecture.test.ts` : un jour
 précisément un composant de `features/*/components/` exporté, serveur et `async` — celui que le
 pronostic précédent attendait à tort du panneau de suivi.
 
-**Et juste après, la fenêtre « Ajouter à une liste » de la fiche.** C'est le seul morceau manquant
-des listes : `addToList` et `removeFromList` sont les deux dernières entrées gelées de
-`lists.schema.ts`, et sans elles une liste ne se remplit par aucun écran. La forme est décidée
-(spec du 6 septembre) — une liste de **bascules**, cochée quand l'œuvre est dedans, parce que sans
-elle un ajout par erreur n'aurait aucun chemin de retour. Attention au piège nº 1 : `ensureMediaMirror`
-avant toute écriture qui pointe vers `Media`.
-
 Ensuite, dans l'ordre où ça se posera : les **états vides** de `/search` et `/library`, qui ne sont
 toujours pas dessinés — ceux des deux écrans de listes le sont depuis le 6 septembre ; le **compteur
 de résultats** de `/search`, qui doit dire « plus de 5000 » et non « 5000 » ; et les champs de suivi
@@ -565,8 +561,9 @@ vocabulaire de tous les autres.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
 4. `/lists` et `/lists/[id]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
    réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.
-   **Reste `/l/[token]`**, et avec lui `generateShareToken` et `shareListSchema`, dernière entrée
-   gelée de `lists.schema.ts` avec `addToListSchema` et `removeFromListSchema`.
+   La fenêtre « Ajouter à une liste » de la fiche est livrée avec, donc **les listes sont entières
+   pour un usage solitaire**. **Reste `/l/[token]`**, et avec lui `generateShareToken` et
+   `shareListSchema` — désormais **la seule** entrée gelée de `lists.schema.ts` sur sept.
 5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 

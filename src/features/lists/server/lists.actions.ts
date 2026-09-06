@@ -3,13 +3,19 @@
 import { revalidatePath } from "next/cache";
 
 import { routes } from "@/config/routes";
-import { rankAfterMove } from "@/features/lists/lib/list-reorder";
 import {
+  rankAfterMove,
+  rankForAppend,
+} from "@/features/lists/lib/list-reorder";
+import {
+  addToListSchema,
   createListSchema,
   deleteListSchema,
+  removeFromListSchema,
   reorderListItemSchema,
   updateListSchema,
 } from "@/features/lists/schemas/lists.schema";
+import { ensureMediaMirror } from "@/features/media/server/media.mirror";
 import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
@@ -45,14 +51,20 @@ import { authActionClient } from "@/lib/safe-action";
  * C'est le raisonnement de `removeEntry`, et il vaut ici pour la même raison.
  */
 
-/** L'écran que ces trois gestes périment. La fiche s'y ajoutera avec le rangement (passe 3). */
-function revalidateLists() {
-  /*
-    `revalidatePath` et pas `revalidateTag` : ces lectures dépendent du visiteur et n'ont donc aucun
-    `"use cache"` à invalider (`lists.queries.ts`). Ce qu'on purge est le cache **client** du
-    routeur, celui qui garde une page déjà visitée.
-  */
+/**
+ * Les écrans qu'une écriture sur les listes périme.
+ *
+ * `/lists` toujours : sa grille, ses décomptes et sa mosaïque changent au moindre geste. **Et la
+ * fiche quand un `mediaId` est en jeu** — c'est elle qui affiche les cases cochées, et sans cette
+ * purge elle montrerait l'état d'avant au retour en arrière.
+ *
+ * `revalidatePath` et pas `revalidateTag` : ces lectures dépendent du visiteur et n'ont donc aucun
+ * `"use cache"` à invalider (`lists.queries.ts`). Ce qu'on purge est le cache **client** du routeur,
+ * celui qui garde une page déjà visitée.
+ */
+function revalidateLists(mediaId?: number) {
   revalidatePath(routes.lists.root);
+  if (mediaId !== undefined) revalidatePath(routes.media(mediaId));
 }
 
 /**
@@ -192,4 +204,85 @@ export const reorderListItem = authActionClient
     revalidatePath(routes.lists.root);
 
     return { moved: true };
+  });
+
+/**
+ * Ranger une œuvre dans une liste, depuis la fiche.
+ *
+ * **Trois pièges tiennent dans ces trente lignes**, et le brief d'ouverture les avait tous les trois
+ * nommés d'avance :
+ *
+ * 1. **`ensureMediaMirror` avant l'écriture.** `ListItem.mediaId` porte une clé étrangère vers
+ *    `Media` : ranger une œuvre que personne n'a jamais croisée échouerait au niveau de la base.
+ *    C'est exactement le piège que le suivi a rencontré (`tracking.actions.ts`), et il vaut ici pour
+ *    la même raison — on range depuis `/search` des œuvres absentes du miroir.
+ * 2. **La propriété ne peut pas passer par un `where` sur `ListItem`** : celui-ci n'a pas
+ *    d'`ownerId`. D'où la lecture de la liste d'abord — sans elle, un `cuid` deviné laisserait écrire
+ *    dans la liste d'un autre membre.
+ * 3. **`upsert` et non `create`.** `@@unique([listId, mediaId])` fait qu'un double clic, ou deux
+ *    onglets, lèveraient sur la seconde insertion. `update: {}` rend le second geste inoffensif, et
+ *    surtout **ne recalcule pas le rang** : ranger deux fois la même œuvre ne doit pas la déplacer en
+ *    fin de liste.
+ */
+export const addToList = authActionClient
+  .metadata({ actionName: "addToList" })
+  .inputSchema(addToListSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { listId, mediaId } = parsedInput;
+
+    const list = await prisma.list.findFirst({
+      where: { id: listId, ownerId: ctx.user.id },
+      select: { id: true },
+    });
+    if (!list) throw new Error("Liste introuvable.");
+
+    await ensureMediaMirror(mediaId);
+
+    /*
+      Une ligne lue, pas la liste entière : c'est tout ce dont `rankForAppend` a besoin, et c'est la
+      raison d'être de l'index fractionnaire — ajouter à une liste de quarante œuvres coûte un
+      `INSERT`, sans renuméroter quoi que ce soit.
+    */
+    const last = await prisma.listItem.findFirst({
+      where: { listId },
+      orderBy: { rank: "desc" },
+      select: { rank: true },
+    });
+
+    await prisma.listItem.upsert({
+      where: { listId_mediaId: { listId, mediaId } },
+      create: { listId, mediaId, rank: rankForAppend(last?.rank ?? null) },
+      update: {},
+    });
+
+    revalidateLists(mediaId);
+
+    return { added: true };
+  });
+
+/**
+ * Retirer une œuvre d'une liste.
+ *
+ * **Sans confirmation, et c'est une décision.** La case se recoche, l'œuvre garde sa fiche et son
+ * suivi, et rien de ce qui disparaît n'est irremplaçable — seule sa place dans l'ordre l'est, et
+ * elle se refait d'un glisser. La friction est réservée à la suppression d'une liste entière ; posée
+ * partout, elle ne freinerait plus rien.
+ *
+ * **Une requête, et la propriété passe par la relation.** `deleteMany` accepte un filtre sur `list`,
+ * donc la garde tient dans le `where` sans lecture préalable — et sur une liste qui n'est pas la
+ * mienne, elle ne supprime rien plutôt que d'échouer.
+ */
+export const removeFromList = authActionClient
+  .metadata({ actionName: "removeFromList" })
+  .inputSchema(removeFromListSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { listId, mediaId } = parsedInput;
+
+    await prisma.listItem.deleteMany({
+      where: { listId, mediaId, list: { ownerId: ctx.user.id } },
+    });
+
+    revalidateLists(mediaId);
+
+    return { removed: true };
   });

@@ -60,3 +60,18 @@ export function rankAfterMove(
 
   return generateKeyBetween(before, after);
 }
+
+/**
+ * Le rang d'une œuvre ajoutée **en fin de liste**.
+ *
+ * `generateKeyBetween(dernier, null)` : borne haute absente, donc aucune ligne existante n'est
+ * touchée. C'est le pendant d'ajout de `rankAfterMove`, qui, lui, insère entre deux voisins.
+ *
+ * **Elle ne reçoit que le dernier rang**, et pas la liste. C'est tout ce dont le calcul a besoin, et
+ * ça change ce que l'action coûte : une ligne lue (`orderBy: { rank: "desc" }, take: 1`) au lieu de
+ * quarante rapatriées pour en regarder la fin. Sur une liste vide, `null` demande la première clé de
+ * la suite.
+ */
+export function rankForAppend(lastRank: string | null): string {
+  return generateKeyBetween(lastRank, null);
+}
