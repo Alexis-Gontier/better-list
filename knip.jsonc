@@ -55,7 +55,10 @@
     "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
     "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
     "src/features/lists/schemas/lists.schema.ts": ["files"], // forme du domaine — attend /lists
-    "src/features/tracking/lib/library-params.ts": ["files"], // contrat d'URL — attend /library
+    // `library-params.ts` est **sorti du gel le 6 septembre 2026** : `/library` le consomme de bout
+    // en bout — les parseurs et les listes d'options par la barre, `loadLibraryFilters` par la page,
+    // `serializeLibraryFilters` par la rangée de statuts. Première entrée à disparaître pour de bon
+    // plutôt qu'à se rétrograder en gel « exports ».
     "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
     "src/lib/safe-action.ts": ["files"], // actionClient / authActionClient — attend la 1re action

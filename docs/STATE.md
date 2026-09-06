@@ -10,16 +10,23 @@ l'intention.
 
 Relevé le **6 septembre 2026**.
 
-> ### En un mot : la reconstruction a commencé, par la fiche.
+> ### En un mot : trois écrans sur onze, et le catalogue est entier.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> `/media/[id]` a de nouveau un écran réel — son **hero**, et lui seul. Les neuf autres routes
-> construites restent des placeholders.
+> trois routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul), puis
+> **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
+> miroir local quand AniList tombe. Les huit autres routes construites restent des placeholders.
 >
-> **La barre de suivi de la fiche n'enregistre rien.** Elle est dessinée, ses contrôles répondent au
-> clic, et son état disparaît au rechargement : les Server Actions attendent que la mise en page
-> soit validée. C'est écrit dans le fichier, à trois endroits, pour qu'on ne la prenne pas pour
-> fonctionnelle en la relisant.
+> **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
+> même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
+> désormais quatre pièces — la carte, la grille, la coquille de filtres et la pagination — et ne
+> diffèrent plus que par leur source : AniList et son quota d'un côté, mes lignes `Entry` de
+> l'autre.
+>
+> **Rien n'enregistre encore.** Pas une seule Server Action n'existe dans le dépôt, et la barre de
+> suivi de la fiche reste une coquille : ses contrôles répondent au clic, leur état disparaît au
+> rechargement. C'est écrit dans le fichier, à trois endroits, pour qu'on ne la prenne pas pour
+> fonctionnelle en la relisant. **Le prochain écran écrit pour de bon** (voir le bas de page).
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
@@ -34,9 +41,9 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | Route | Rôle | Modèles | État |
 | --- | --- | --- | --- |
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
-| `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **vidé** — en refonte |
+| `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré** — le reste de la page et tout le suivi restent à écrire |
-| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `Entry`, `Media` | **vidé** — en refonte |
+| `/library` (`library`) | Ma bibliothèque, filtrée par statut, type et genre | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **vidé** — en refonte |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **vidé** — en refonte |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
@@ -49,8 +56,10 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
 
 La colonne « Features consommées » avait disparu de ce tableau quand plus aucune route ne consommait
-de feature. Elle reviendra quand plus d'une route en consommera : aujourd'hui, `/media/[id]` est la
-seule, et elle lit `media`, `preferences` et `tracking`.
+de feature. **Trois routes en consomment maintenant**, et elle n'est pas revenue pour autant : les
+trois lisent le même trio — `media`, `preferences` et `tracking` —, donc une colonne qui répéterait
+trois fois la même liste n'apprendrait rien. Elle reviendra le jour où deux routes ne liront pas la
+même chose.
 
 Les tables `ListView`, `ListViewItem`, `Edition` et `OwnedVolume` existent au schéma depuis la
 migration initiale et ne sont employées par aucun écran. C'était déjà vrai avant la mise à blanc, et
@@ -149,6 +158,64 @@ communauté, et l'ajout à une liste.
 composants. Son installation a laissé deux dégâts, tous deux corrigés : un import `from "cn"` que le
 CLI n'a pas réécrit, et un **paquet npm parasite nommé `cn`** que `knip` a attrapé.
 
+### Le catalogue du 6 septembre 2026 — `/search` et `/library`, ensemble
+
+**La séance reprend l'ordre annoncé au bas de cette page**, après le détour par la fiche. Les deux
+écrans ont été dessinés dans la même passe et sur une coquille commune, parce que c'est exactement
+le doublon qu'on refusait de refaire.
+
+Ce qui est **à l'écran**, sur `/search` : la barre — terme borné, type, tri —, le panneau dépliant
+en trois colonnes (format en cases à cocher, statut, pays d'origine, genres, saison, plage d'années,
+note minimale), la rangée de puces actives avec sa croix par facette et son « Tout effacer », puis
+la grille de vingt et une cartes et sa pagination.
+
+Sur `/library` : la **rangée de statuts** en tête — six statuts plus « Tout », chacun avec son
+compte —, puis une barre plus courte (terme, type, genre, tri), la grille et sa pagination. L'ordre
+n'est pas cosmétique : un catalogue se parcourt par ce qu'on cherche, une bibliothèque par où on en
+est, donc le statut est l'axe de l'écran et non une facette rangée dans un panneau.
+
+Ce qui est **écrit côté serveur** :
+
+- [`media.queries.ts`](../src/features/media/server/media.queries.ts) gagne `searchMedia`, et
+  [`media.documents.ts`](../src/features/media/server/media.documents.ts) les trois arguments qui
+  lui manquaient — `startDate_greater` / `_lesser` pour la plage d'années (et **pas** `seasonYear`,
+  que la doc d'AniList donne pour dépendant de `season`), et `averageScore_greater` pour la note.
+- [`media.mirror.ts`](../src/features/media/server/media.mirror.ts) : `searchMediaInMirror` remplace
+  l'échantillon qui tenait lieu de grille. C'est un vrai repli, paginé en base, **et il rapporte ce
+  qu'il a perdu** — les tags, qu'on ne stocke pas, et les tris par tendance, popularité ou favoris,
+  que le miroir ne copie pas.
+- [`library.queries.ts`](../src/features/tracking/server/library.queries.ts) : `getLibrary`,
+  `getLibraryStatusCounts` et `getLibraryGenres`. Aucun cache, ni `"use cache"` ni `cache` de React,
+  et le fichier dit pourquoi pour chacun des deux.
+
+**La trouvaille de la séance : `pageInfo.total` d'AniList est plafonné à 5000.** Vérifié en
+interrogeant l'endpoint — `type: ANIME` seul, puis avec la saison, puis avec la plage d'années, puis
+avec la note : les quatre répondent exactement `5000`. Ce n'est pas un compte, c'est une butée, et
+`lastPage` en hérite. La pagination annonçait **238 pages dont 226 vides**. Elle ne croit plus ce
+compteur : sous le plafond `lastPage` est exact et s'affiche, au plafond on ne suit que
+`hasNextPage`. Les filtres, eux, s'appliquaient bien — c'est le compteur seul qui mentait.
+
+**Quatre pièces sont promues au deuxième appelant**, comme la règle le veut : `MediaCard` →
+`features/media/components/`, la grille et la coquille de filtres → `components/shared/`, et la
+pagination → `components/shared/` à son tour. Le **panneau de facettes n'est pas promu** :
+`/library` n'en a pas, donc `FacetColumn`, `ChipGroup`, `RangeSlider` et `CheckboxList` n'auraient
+toujours qu'un consommateur.
+
+**Six couleurs de statut, et c'est un écart assumé à la spec** (décision d'Alexis). La spec du
+2 septembre autorise l'accent sur « le marqueur de suivi sur une jaquette » ; on passe d'une couleur
+qui dit « suivi » à six qui disent lequel. Trois garde-fous, écrits à côté des tokens dans
+`styles/globals.css` : chroma bas (0,10–0,14 contre 0,20+ pour l'accent), aucune teinte proche de
+l'iris, et **jamais autrement qu'en pastille** — pas de fond, pas de bordure. Un troisième jeu de
+valeurs, `.on-inverted-surface`, existe parce qu'une teinte choisie pour Obsidienne se délave sur
+l'onglet actif de la rangée de statuts, qui s'inverse : mesuré à l'écran sur « En pause ».
+
+Ce qui **manque**, et qui est su : les **états vides** ne sont pas dessinés — les deux écrans
+rendent `null` quand il n'y a rien, alors que « bibliothèque neuve » et « recherche sans résultat »
+n'appellent pas le même message ; le **compteur de résultats** n'est pas affiché, et devrait dire
+« plus de 5000 » plutôt que « 5000 » ; et le tri par titre suit le romaji sur les deux écrans, pas
+`titleLanguage`. L'inventaire complet est dans [recherche-filtres.md](./recherche-filtres.md) :
+66 lignes, **18 cochées**.
+
 ### Le seul route handler restant
 
 Il ne vit pas sous le layout `(app)` et le `matcher` du proxy exclut `api/` : il porte sa propre
@@ -173,8 +240,8 @@ appelaient.
 
 ## Ce qui reste dans `features/`
 
-**34 fichiers, dont 10 de tests.** La couche `server/` reprend forme — trois lectures, toujours
-aucune action —, et `tracking` retrouve des composants.
+**36 fichiers, dont 10 de tests.** La couche `server/` reprend forme — cinq fichiers, **huit
+lectures, et toujours aucune action** —, et `tracking` retrouve des composants.
 
 **`media` en a un aussi depuis le 6 septembre**, et il y est arrivé par la règle plutôt que par
 anticipation : `MediaCard` a démarré dans le `_components/` de `/search` et a été promue le jour où
@@ -182,10 +249,13 @@ anticipation : `MediaCard` a démarré dans le `_components/` de `/search` et a 
 ARCHITECTURE.md le veut — les trois contrôles de suivi, eux, avaient été promus d'avance et en
 connaissance de cause.
 
+`tracking` a gagné son premier `server/` le même jour (`library.queries.ts`), et une quatrième
+composante : `entry-status-dot`, la pastille de statut, posée dans le slot `marker` de la carte.
+
 | Feature | Ce qu'elle contient |
 | --- | --- |
-| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (la fiche, cachée un jour), `media.mirror` (le repli de panne). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
-| **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating` — **l'interface seule, aucun ne persiste quoi que ce soit**. |
+| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne, fiche **et** recherche). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
+| **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — les trois lectures de `/library`, sans aucun cache parce que tout y dépend du visiteur. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating` — **l'interface seule, aucun ne persiste quoi que ce soit** — et `entry-status-dot`, la pastille des six statuts. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
 | **`command`** | `schemas/command.schema` seul — il porte la règle du « +1 ». |
@@ -197,19 +267,22 @@ transport, les documents, et le cache qui les relie.
 
 ### Et `components/shared/` reprend forme, par la même règle
 
-Quatre fichiers. `route-under-construction` et `step-button` restaient de la mise à blanc ; les deux
-autres sont arrivés le 6 septembre avec `/library`, promus de `/search` au deuxième appelant :
+Cinq fichiers. `route-under-construction` et `step-button` restaient de la mise à blanc ; les trois
+autres sont arrivés le 6 septembre, tous promus au deuxième appelant :
 
 | Fichier | Ce qu'il porte |
 | --- | --- |
 | `catalogue-grid` | Les paliers 3 et 7 autour de ses enfants, et le squelette aux mêmes proportions. Il ne regarde pas ce qu'il range. |
 | `filter-bar` | La rangée, le champ borné, les sélecteurs à étiquette visible, le bouton dépliant et la ligne de puces actives. |
+| `catalogue-pagination` | Les crans, en **liens** — chacun est une adresse qu'on peut envoyer. Elle reçoit `hrefFor` et ne sait rien du contrat d'URL qu'il applique. |
 
 Ils sont dans `shared/` et non dans une feature parce qu'ils ne connaissent **aucune** entité : ce
 sont leurs appelants qui posent le vocabulaire. `search-filter-bar` parle de formats et de saisons,
 `library-filter-bar` de statuts de suivi, et les deux se ressemblent parce qu'ils composent les
 mêmes pièces — pas parce que l'un a été recopié sur l'autre. C'est le doublon de la mise à blanc
-qu'on refuse de refaire.
+qu'on refuse de refaire. La pagination pousse le principe le plus loin : chaque écran lui passe
+`serializeSearchFilters` ou `serializeLibraryFilters`, donc l'aller-retour est garanti par les
+modules mêmes qui reliront l'adresse.
 
 **Le panneau de facettes, lui, n'a pas été promu** : `/library` filtre par un contrat plus court et
 n'a pas de panneau du tout, donc `FacetColumn`, `ChipGroup`, `RangeSlider` et `CheckboxList`
@@ -220,15 +293,15 @@ n'auraient toujours qu'un seul consommateur. Ils restent dans `search/_component
 
 ## Contrôle de santé
 
-Relevé le 6 septembre 2026, après le hero de la fiche. **À rejouer et à redater dès qu'on prétend
-s'y fier.**
+Relevé le 6 septembre 2026, après `/search` et `/library`. **À rejouer et à redater dès qu'on
+prétend s'y fier.**
 
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers (191 la veille) |
-| `pnpm lint` | 161 fichiers, aucune correction (143 la veille) |
-| `pnpm build` | 17 pages, un seul route handler ; `/media/[id]` en rendu partiel |
+| `pnpm test` | **199 passés, 1 en pause**, 17 fichiers — inchangé : deux écrans livrés, **aucun test de plus** |
+| `pnpm lint` | 174 fichiers, aucune correction (161 après la fiche) |
+| `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
 | `pnpm knip` | aucun signalement — **mais sous gel**, voir ci-dessous |
 
 **Écarts connus :**
@@ -246,24 +319,44 @@ s'y fier.**
   La formulation a donc été corrigée dans le fichier : **le premier module qui _exporte_ un Server
   Component `async` retire ce `.skip`.** Ce sera un composant de `features/*/components/`, très
   probablement le panneau de suivi. En attendant, le test voisin ne garde rien.
-- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant 9 fichiers
-  et 9 chemins d'exports ou de types, plus `ignoreDependencies` pour cinq familles (`@dnd-kit`, `embla`,
-  `cmdk`, `react-hotkeys-hook`, `next-safe-action`). Ce ne sont pas des faux positifs : ce code est
-  réellement sans appelant, parce qu'aucun écran n'existe. Le gel est posé **par chemin** et non en
-  `exclude` global, pour que knip continue de signaler le code mort partout ailleurs. Chaque entrée
-  nomme ce qu'elle attend : c'est la liste de reconstruction, et le bloc doit avoir disparu quand les
-  routes sont refaites. **Première entrée à bouger, le 6 septembre** : `media.documents.ts` a
-  retrouvé un importateur et passe donc du gel « fichier » au gel « exports » — `MEDIA_BY_ID_QUERY`
-  est consommée, ses cinq sœurs attendent leur écran.
-- Les composants React ne sont couverts par **aucun test de rendu**, et il y en a de nouveau —
-  le hero de la fiche et ses contrôles de suivi. Ils ont été vérifiés à l'écran, pas par un test.
-  Playwright est prévu (PRODUCT.md §7) et pas posé.
+- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant **7 fichiers
+  et 8 chemins** d'exports ou de types, plus `ignoreDependencies` pour cinq familles (`@dnd-kit`,
+  `embla`, `cmdk`, `react-hotkeys-hook`, `next-safe-action`). Ce ne sont pas des faux positifs : ce
+  code est réellement sans appelant, parce que l'écran qui l'appellera n'existe pas encore. Le gel
+  est posé **par chemin** et non en `exclude` global, pour que knip continue de signaler le code mort
+  partout ailleurs. Chaque entrée nomme ce qu'elle attend : c'est la liste de reconstruction, et le
+  bloc doit avoir disparu quand les routes sont refaites.
+
+  **Le bloc a maigri pour la première fois, le 6 septembre.** `media.documents.ts` est passé du gel
+  « fichier » au gel « exports », puis **`search-params.ts` et `library-params.ts` en sont sortis
+  pour de bon** — les deux contrats d'URL sont consommés de bout en bout par leur écran. C'est la
+  mécanique annoncée : chaque branche retire ce que sa route rebranche.
+
+  Restent au gel, et c'est la liste des écrans qui manquent : `calendar-params`, `profile-params`,
+  `command.schema`, `lists.schema`, `use-debounced-value`, `use-reduced-motion`, **`safe-action.ts`
+  — qui attend la première Server Action du dépôt**, et avec lui la dépendance `next-safe-action` et
+  `removeEntrySchema`.
+- Les composants React ne sont couverts par **aucun test de rendu**, et il y en a beaucoup plus
+  qu'hier : le hero de la fiche, ses contrôles de suivi, et maintenant les deux écrans du catalogue
+  avec leur barre, leur panneau, leur grille et leur pagination. **Deux écrans livrés, zéro test
+  ajouté** — ils ont été vérifiés à l'écran en 1440 et en 390, pas par un test. C'est ce qui a
+  attrapé la pagination à 238 pages, mais ça ne se rejoue pas tout seul. Playwright est prévu
+  (PRODUCT.md §7) et toujours pas posé.
+- **Les états vides des deux écrans ne sont pas dessinés.** `/search` et `/library` rendent `null`
+  quand il n'y a rien à montrer. Ce n'est pas tenable : « bibliothèque neuve », « recherche sans
+  résultat, filtres actifs » et « recherche sans résultat, aucun filtre » appellent trois messages
+  différents, dont un qui propose de retirer la facette la plus sélective
+  (recherche-filtres.md §5). En attendant, ne rien afficher vaut mieux qu'un message qui se
+  tromperait de cas — mais ça se lit comme une panne.
 - **La barre de suivi de la fiche est une coquille.** Ses trois contrôles répondent au clic, leur
   état vit dans le composant et disparaît au rechargement. Ce n'est pas une régression, c'est l'ordre
   choisi : la mise en page se valide avant qu'on écrive les Server Actions.
 - Le repli de panne AniList n'est vérifié par **aucun test**, mais il a été **vu fonctionner** le
-  6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Le
-  **repli lui-même** reste à re-poser écran par écran ; son **bandeau d'avis**, lui, est désormais
+  6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Il
+  est désormais posé sur **deux** des trois écrans réels — la fiche et `/search`, où
+  `searchMediaInMirror` sert une vraie recherche paginée en base et **dit ce qu'elle a perdu**
+  (les tags, les tris par tendance ou popularité). `/library` n'en a pas besoin : elle ne lit que
+  Prisma, jamais AniList. Son **bandeau d'avis**, lui, est désormais
   global — rendu par le layout, il apparaît sur toutes les routes, y compris celles qui
   n'interrogent jamais AniList. Il repose sur une variable de module (`isAniListDown`), donc sur la
   mémoire d'une instance de serveur : au pire il manque à quelqu'un pendant une requête, jamais
@@ -279,9 +372,17 @@ s'y fier.**
 
 ## Le prochain pas
 
-**Dessiner `/search`, puis `/library`.** L'ordre ci-dessous a déjà été enfreint une fois, en
-connaissance de cause : `/media/[id]` a été prise avant, à la demande d'Alexis, et son hero est
-livré. La suite reprend l'ordre annoncé.
+**Écrire pour de bon.** `/search` et `/library` sont livrés, le hero de la fiche aussi : le
+catalogue sait montrer, il ne sait toujours pas enregistrer. **Le prochain pas est la première
+Server Action du dépôt** — le suivi qu'on modifie depuis une vignette, puis depuis la fiche. Tout ce
+qu'il lui faut existe déjà et est testé : `saveEntrySchema`, `applyEntryChanges`, `entryDraftFrom` /
+`entryDraftChanges`, et `authActionClient`. Elle ira dans `features/tracking/server/tracking.actions.ts`,
+à côté de `library.queries.ts`.
+
+C'est aussi ce qui débloque trois choses gelées d'un coup : le bloc `ignoreIssues` perd
+`safe-action.ts` et `removeEntrySchema`, `next-safe-action` sort d'`ignoreDependencies`, et le canari
+de `architecture.test.ts` se rallume au premier Server Component `async` **exporté** que le panneau
+de suivi posera.
 
 ### Le socle visuel est en place — et c'est tout ce qui a été repris
 
@@ -323,19 +424,18 @@ plan décrit une intention, seul `git branch` décrit un dépôt.**
 L'ordre est choisi, et l'accueil est volontairement dernier — c'est l'écran qui compose le
 vocabulaire de tous les autres.
 
-1. `/search`, puis `/library` — **ensemble, et sur une coquille commune à écrire.** C'est le premier
-   gain réel de la refonte : ces deux écrans étaient le même, écrit deux fois, et c'est ce doublon
-   qui a motivé toute l'opération. Chaque écran demande sa query (`searchMedia`, `getLibrary`), sa
-   grille et sa barre de filtres — les contrats d'URL, eux, existent déjà et sont gelés
-   (`search-params.ts`, `library-params.ts`). Les trois contrôles de suivi les attendent déjà dans
-   `features/tracking/components/`, promus d'avance pour eux. **L'inventaire des filtres possibles
-   est relevé dans [recherche-filtres.md](./recherche-filtres.md)** : 66 lignes, 15 cochées —
-   c'est la liste à cocher de cette branche, comme fiche-media.md l'est pour la fiche. La barre et
-   son panneau de facettes sont posés et **écrivent dans l'URL sans que rien ne la lise** ; la
-   grille de résultats est le prochain pas.
+1. `/search` et `/library` — **faits** (6 septembre), ensemble et sur une coquille commune, comme
+   annoncé. C'était le premier gain réel de la refonte : ces deux écrans étaient le même, écrit deux
+   fois. Ils partagent maintenant quatre pièces de `shared/` et `features/media/`, et leurs deux
+   contrats d'URL sont sortis du gel de `knip.jsonc`. **Ce qui reste sur ces deux écrans** : les
+   états vides, le compteur de résultats, le tri par titre qui devrait suivre `titleLanguage`, et
+   l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
+   [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
+   des filtres : 66 lignes, **18 cochées**.
 2. `/media/[id]` — **le hero est fait** (6 septembre). Reste le suivi qui écrit vraiment, le journal,
    les onglets lourds et les chiffres de la communauté. L'inventaire à cocher est dans
-   [fiche-media.md](./fiche-media.md).
+   [fiche-media.md](./fiche-media.md). **C'est ici que la première Server Action se pose**, et elle
+   sert d'abord la vignette du catalogue.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
 4. `/lists`, puis `/lists/[id]`, puis `/l/[token]` — le réordonnancement revient, `@dnd-kit` sort du
    gel, et le jeton de partage retrouve un écran.

@@ -9,22 +9,25 @@ Même rôle que [fiche-media.md](./fiche-media.md), sur l'autre écran : celui-c
 **ce par quoi on peut restreindre une liste d'œuvres**. [PRODUCT.md](./PRODUCT.md) dit ce qu'on
 veut construire ; [STATE.md](./STATE.md) dit où en est le dépôt.
 
-Relevé le **5 septembre 2026**.
+Relevé le **6 septembre 2026**.
 
-> **Quinze cases sur soixante-six.** La barre porte le terme, le type et le tri ; le panneau
+> **Dix-huit cases sur soixante-six.** La barre porte le terme, le type et le tri ; le panneau
 > dépliant porte le format, le statut, le pays d'origine, les genres, la saison, la plage d'années
 > et la note minimale. Une rangée de puces dit lesquelles sont posées et permet d'en retirer une
 > sans rouvrir le panneau.
+>
+> **La grille de résultats existe, et elle lit l'adresse.** C'était la réserve du relevé de la
+> veille : une case cochée voulait dire « le contrôle est à l'écran », pas « la requête part ».
+> Elle est levée — les quinze filtres cochés partent réellement chez AniList, et trois lignes
+> passent au vert avec la grille : la pagination, le repli sur le miroir local, et l'anti-rebond
+> de la frappe.
 >
 > Ce qui reste décoché se répartit en trois familles, et c'est la carte du travail restant :
 > les **tags** (plus d'un millier, et seul `MediaTagCollection` les connaît), les **exclusions**
 > (`genre_not_in`, `tag_not_in` — la moitié de l'usage réel d'une liste de genres), et tout le
 > §2, qui demande d'abord qu'on tranche comment filtrer sur nos propres lignes sans trouer la
-> grille.
->
-> **La grille de résultats, elle, n'existe pas encore** : les contrôles écrivent dans l'adresse,
-> rien ne la lit. Tant qu'elle manque, une case cochée veut dire « le contrôle est à l'écran et
-> l'URL le porte », pas « la requête part ».
+> grille. **`/library` en a tranché une part par l'issue 3** le même jour, en emmenant ces
+> facettes sur l'écran qui pagine en base plutôt qu'en les forçant sur celui-ci.
 
 ---
 
@@ -208,6 +211,13 @@ Ce sont aussi celles qui font la différence avec AniList et MyAnimeList (PRODUC
 >
 > **L'issue 1 est la seule qui ne coûte rien et ne mente jamais.** Les cases ci-dessous se lisent
 > avec ça en tête : ce sont des intentions, pas des cases au même prix que celles du §1.
+>
+> **L'issue 3 a été prise le 6 septembre 2026, et elle est livrée.** `/library` lit Prisma, pagine
+> en base et porte le statut de suivi en tête d'écran plutôt qu'au fond d'un panneau : les facettes
+> du §2.1 y sont chez elles, sans grille à trous ni compteur qui ment. Elles restent décochées
+> **ici** parce que ce document ne parle que de `/search` — et parce que l'issue 1, l'annotation de
+> la carte du catalogue, n'est pas faite pour autant : elle demande une lecture de plus, les `Entry`
+> du compte pour les ids affichés.
 
 ### 2.1 Mon suivi — `Entry` (§4.2)
 
@@ -247,7 +257,7 @@ Ces données sont en base dès aujourd'hui : ce sont les `Entry` des trois autre
 
 - [x] Le tri — champ **et** direction, séparés (§1.10) *(contrat : `sort`, `dir`)*
 - [ ] La densité — grille ou liste dense. **N'entre pas dans la clé de cache** *(contrat : `view`)*
-- [ ] La pagination *(contrat : `page`)*
+- [x] La pagination *(contrat : `page`)* — **et elle ne croit pas le compteur d'AniList**, voir §5
 - [ ] ~~Le compte de facettes actives, porté par le bouton « Filtres · 3 »~~ — **posé puis retiré, décision d'Alexis.** La spec du 2 septembre le demandait, mais la rangée de puces le rend inutile : elle dit *lesquelles* sont posées, pas seulement *combien*, et elle reste visible panneau replié. Un compte à côté d'une liste est un doublon qui peut mentir
 - [x] La ligne de puces de filtres actifs, chacune avec sa croix
 - [x] « Tout effacer » — `EMPTY_FILTERS` est déjà écrit et attend son bouton
@@ -283,9 +293,11 @@ lien écrit avant cette passe se relit à l'identique.
 dans l'adresse, donc courtes. Les noms longs restent ceux du schéma, qui parle à AniList et non au
 lecteur.
 
-**La colonne de droite est en partie une intention.** `startDate_greater` / `_lesser` et
-`averageScore_greater` ne sont pas encore dans `SEARCH_MEDIA_QUERY` : c'est la grille de résultats
-qui les y mettra. `format_in`, lui, **y est** — il a été posé avec la multi-sélection.
+**La colonne de droite n'est plus une intention.** `startDate_greater` / `_lesser` et
+`averageScore_greater` étaient annoncés et absents de `SEARCH_MEDIA_QUERY` ; la grille de résultats
+les y a mis le 6 septembre 2026, comme cette ligne le prévoyait. Les quatorze paramètres que
+`searchMedia` sait traduire partent donc réellement — seul `year` reste sans écrivain, et `view`
+n'a jamais eu d'argument en face.
 
 Ce que le schéma accepte **et que l'URL n'expose toujours pas** : `perPage`. Et ce que l'URL porte
 sans qu'aucun contrôle ne l'écrive : `tag` et `dir`.
@@ -298,10 +310,10 @@ sans qu'aucun contrôle ne l'écrive : `tag` et `dir`.
 - [ ] Aucun résultat, filtres actifs — proposer de retirer la facette la plus sélective, pas seulement « rien trouvé »
 - [ ] Aucun résultat, aucun filtre — le cas du terme mal orthographié
 - [x] Le squelette de chargement, aux proportions de la grille
-- [ ] **Le repli sur le miroir local quand AniList tombe.** Vu fonctionner sur la fiche, à reposer ici — mais le miroir ne porte que ses colonnes : il sait filtrer type, statut, genres, saison et année, **il ne sait ni chercher un tag, ni trier par tendance**. Le repli doit donc dire ce qu'il a perdu
+- [x] **Le repli sur le miroir local quand AniList tombe** — `searchMediaInMirror`, paginé en base et filtré par ce que les colonnes du miroir permettent : le terme, le type, le format, le statut, le pays, la saison, les genres, la plage d'années et la note. **Il dit ce qu'il a perdu** : les tags, qu'on ne stocke pas (§4.1), et les tris par tendance, popularité ou favoris, que le miroir ne copie pas. Un repli muet vaut moins qu'une erreur — il laisse croire à un résultat. Rappel à ne pas perdre de vue : le miroir ne contient que ce que ce cercle a déjà croisé, donc une recherche y trouve **beaucoup** moins qu'AniList
 - [ ] Un filtre invalide dans l'URL retombe sur son défaut **sans effacer les autres** — la règle est écrite dans `parseAsBoundedYear`, elle vaut pour chaque parseur ajouté
-- [ ] Le compteur de résultats, qui vient de `pageInfo.total`
-- [ ] L'anti-rebond de la frappe — ici chaque caractère est une requête AniList, contrairement à `/library` qui cherche en base
+- [ ] Le compteur de résultats — **et il ne peut pas venir de `pageInfo.total` tel quel.** AniList le **plafonne à 5000**, vérifié en interrogeant l'endpoint le 6 septembre 2026 : `type: ANIME` seul, puis avec la saison, puis avec la plage d'années, puis avec la note minimale — les quatre répondent exactement `5000`. Ce n'est pas un compte, c'est une butée, et `lastPage` en hérite : la pagination annonçait **238 pages dont 226 vides**. La pagination s'en est affranchie — sous le plafond `lastPage` est exact, au plafond on ne suit plus que `hasNextPage` —, mais un compteur affiché devrait dire « plus de 5000 » et non « 5000 »
+- [x] L'anti-rebond de la frappe — 300 ms, posé **au niveau de l'URL** (`limitUrlUpdates` de nuqs) et non sur la valeur du champ : c'est l'aller-retour serveur qu'il faut espacer. Ici chaque caractère est une requête AniList, contrairement à `/library` qui cherche en base et n'a rien à espacer
 
 ---
 
@@ -312,10 +324,10 @@ multiple), le statut, le pays d'origine, les genres, la saison, la plage d'anné
 minimale, et sous elle une rangée de puces qui dit ce qui filtre, chacune avec sa croix, et qui
 porte le seul « Tout effacer » de l'écran — le panneau n'a pas de pied.
 
-En dessous, **un aperçu de la grille** : vingt-quatre `MediaCard` dans leur version la plus simple
-— jaquette et titre —, servies par le **miroir local** et non par AniList. Elles ignorent tout ce
-qui est dans l'adresse : c'est un échantillon posé pour dessiner la carte sur de vraies jaquettes
-et de vrais titres, pas un résultat de recherche.
+En dessous, **la grille de résultats** : vingt et une `MediaCard` servies par AniList, avec les
+filtres de l'adresse, et sa pagination. Quand AniList ne répond pas, les mêmes cases viennent du
+miroir local, avec un mot qui dit ce que ce détour a perdu.
 
-Tout s'écrit dans l'adresse, **et rien ne la lit encore** : la vraie grille est la prochaine passe,
-et c'est elle qui transformera ces quinze cases en filtres pour de bon.
+Tout s'écrit dans l'adresse, **et tout est lu** : les quinze filtres cochés partent réellement dans
+la requête. Ce qui manque désormais n'est plus le chemin, ce sont les facettes — les tags, les
+exclusions, et l'annotation des cartes par ce qu'on suit déjà (§2, issue 1).
