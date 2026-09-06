@@ -128,54 +128,141 @@ export async function getMediaDetailFromMirror(
 }
 
 /**
- * Un échantillon du miroir, pour **voir des cartes** avant que la recherche n'en serve.
+ * Ce que le miroir **ne sait pas** faire d'une recherche, et qu'il faut donc dire au visiteur.
  *
- * Ce n'est pas la grille de résultats : elle lira AniList par `searchMedia` et honorera les
- * filtres. Celle-ci ne lit que la copie locale et ignore tout ce qui est dans l'URL — son seul
- * rôle est de mettre de vraies jaquettes et de vrais titres sous les yeux pendant qu'on dessine la
- * carte. **Elle disparaît avec la vraie grille**, et c'est le seul appelant qui la garde en vie.
+ * Deux manques, et ils ne sont pas du même ordre. Les **tags** n'existent pas en base : §4.1 a
+ * décidé de ne pas les stocker, donc un filtre par tag n'a rien à quoi s'appliquer et serait
+ * silencieusement ignoré. Les tris par **tendance, popularité et favoris** portent sur des chiffres
+ * qu'AniList recalcule en continu et que le miroir ne copie pas : on retombe sur la note moyenne,
+ * qui est une autre question.
  *
- * De vraies données plutôt que des rectangles gris : c'est la longueur réelle des titres qui casse
- * une carte, pas une maquette où ils font tous deux mots.
+ * La liste est renvoyée à l'appelant plutôt qu'affichée ici : c'est l'écran qui sait où poser un
+ * avis, et un repli muet vaut moins qu'une page d'erreur — il laisse croire à un résultat.
+ */
+export type MirrorSearchLimitation = "tags" | "sort";
+
+export type MirrorSearchResult = {
+  items: MediaCompact[];
+  total: number;
+  page: number;
+  pageCount: number;
+  /** Ce que cette recherche a perdu en passant par la copie locale. Vide si elle n'a rien perdu. */
+  lost: MirrorSearchLimitation[];
+};
+
+/** Les colonnes que `compactFromMirror` consomme, et rien de plus. */
+const MIRROR_CARD_SELECT = {
+  id: true,
+  type: true,
+  format: true,
+  status: true,
+  titleRomaji: true,
+  titleEnglish: true,
+  titleNative: true,
+  coverImage: true,
+  meanScore: true,
+  isAdult: true,
+} as const;
+
+/**
+ * La recherche servie depuis le **miroir local**, quand AniList ne répond pas.
+ *
+ * Elle remplace l'échantillon qui tenait lieu de grille pendant qu'on dessinait la carte : ce n'est
+ * plus un aperçu, c'est un vrai repli, paginé en base et filtré par ce que les colonnes du miroir
+ * permettent — le terme, le type, le format, le statut, le pays, la saison, les genres, la plage
+ * d'années et la note. C'est-à-dire presque tout, parce que §4.1 avait justement retenu de quoi
+ * « afficher une carte et trier ».
+ *
+ * **Le miroir ne contient que ce que quelqu'un a déjà consulté ou suivi.** Une recherche y trouve
+ * donc beaucoup moins qu'AniList, et c'est irréductible : ce n'est pas un index du catalogue, c'est
+ * la mémoire de ce que ce cercle a croisé.
  *
  * `includeAdult` est appliqué **dans la requête**, jamais par un masque d'affichage — la règle vaut
  * ici comme ailleurs (docs/recherche-filtres.md §2.5).
  */
-export async function getMediaSampleFromMirror({
-  take,
+export async function searchMediaInMirror({
+  filters,
   includeAdult,
+  page,
+  perPage,
 }: {
-  take: number;
+  filters: {
+    q: string;
+    type: string | null;
+    format: string[];
+    country: string | null;
+    status: string | null;
+    season: string | null;
+    genre: string[];
+    tag: string[];
+    yearMin: number | null;
+    yearMax: number | null;
+    score: number | null;
+    sort: string;
+  };
   includeAdult: boolean;
-}): Promise<MediaCompact[]> {
+  page: number;
+  perPage: number;
+}): Promise<MirrorSearchResult> {
+  const where: Record<string, unknown> = {};
+
+  if (!includeAdult) where.isAdult = false;
+  if (filters.type) where.type = filters.type;
+  if (filters.status) where.status = filters.status;
+  if (filters.country) where.countryOfOrigin = filters.country;
+  if (filters.season) where.season = filters.season;
+  if (filters.format.length > 0) where.format = { in: filters.format };
+  // `hasEvery` et non `hasSome` : cocher deux genres restreint, il n'élargit pas. C'est aussi ce
+  // que fait `genre_in` chez AniList, donc le repli ne change pas le sens de la question.
+  if (filters.genre.length > 0) where.genres = { hasEvery: filters.genre };
+  if (filters.score !== null) where.meanScore = { gte: filters.score };
+
+  if (filters.yearMin !== null || filters.yearMax !== null) {
+    where.seasonYear = {
+      ...(filters.yearMin !== null ? { gte: filters.yearMin } : {}),
+      ...(filters.yearMax !== null ? { lte: filters.yearMax } : {}),
+    };
+  }
+
+  const term = filters.q.trim();
+  if (term) {
+    where.OR = [
+      { titleRomaji: { contains: term, mode: "insensitive" } },
+      { titleEnglish: { contains: term, mode: "insensitive" } },
+      { titleNative: { contains: term, mode: "insensitive" } },
+    ];
+  }
+
+  const total = await prisma.media.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / perPage));
+  const current = Math.min(Math.max(page, 1), pageCount);
+
   const rows = await prisma.media.findMany({
-    take,
-    where: includeAdult ? {} : { isAdult: false },
-    // Les mieux notées d'abord : un échantillon pris au hasard tombe sur des œuvres sans jaquette
-    // et sans titre anglais, ce qui donne une idée fausse de la carte.
-    orderBy: [{ meanScore: "desc" }, { id: "asc" }],
-    select: {
-      id: true,
-      type: true,
-      format: true,
-      status: true,
-      countryOfOrigin: true,
-      titleRomaji: true,
-      titleEnglish: true,
-      titleNative: true,
-      coverImage: true,
-      coverColor: true,
-      bannerImage: true,
-      episodes: true,
-      chapters: true,
-      volumes: true,
-      season: true,
-      seasonYear: true,
-      genres: true,
-      meanScore: true,
-      isAdult: true,
-    },
+    where,
+    // La note moyenne fait l'ordre par défaut, et `id` le départage : sans second critère, deux
+    // œuvres de même note changeraient de place entre deux pages et l'une d'elles disparaîtrait.
+    orderBy:
+      filters.sort === "TITLE_ROMAJI"
+        ? [{ titleRomaji: "asc" as const }, { id: "asc" as const }]
+        : filters.sort === "START_DATE"
+          ? [{ seasonYear: "desc" as const }, { id: "asc" as const }]
+          : [{ meanScore: "desc" as const }, { id: "asc" as const }],
+    skip: (current - 1) * perPage,
+    take: perPage,
+    select: MIRROR_CARD_SELECT,
   });
 
-  return rows.map(compactFromMirror);
+  const lost: MirrorSearchLimitation[] = [];
+  if (filters.tag.length > 0) lost.push("tags");
+  if (!["TITLE_ROMAJI", "START_DATE", "SCORE"].includes(filters.sort)) {
+    lost.push("sort");
+  }
+
+  return {
+    items: rows.map(compactFromMirror),
+    total,
+    page: current,
+    pageCount,
+    lost,
+  };
 }

@@ -63,6 +63,17 @@ const ANY_VALUE = "__any__";
 export type FacetOption<Value extends string = string> = {
   value: Value;
   label: string;
+  /**
+   * Une option proposée mais **pas choisissable en l'état**.
+   *
+   * Elle reste dans la liste plutôt que d'en disparaître : un tri qui s'absente selon ce qu'on a
+   * tapé donne une liste dont la longueur change sous l'œil, et on cherche l'option qu'on a vue la
+   * fois d'avant. Grisée, elle dit qu'elle existe et qu'elle n'est pas disponible **maintenant** —
+   * à condition d'être accompagnée d'un `hint`, sans quoi le grisé est une énigme.
+   */
+  disabled?: boolean;
+  /** La raison, en trois mots, affichée en atténué à côté du libellé. */
+  hint?: string;
 };
 
 /**
@@ -206,8 +217,17 @@ export function FilterSelect<Value extends string>(
             <SelectItem value={ANY_VALUE}>{anyLabel}</SelectItem>
           ) : null}
           {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem
+              disabled={option.disabled}
+              key={option.value}
+              value={option.value}
+            >
               {option.label}
+              {option.hint ? (
+                <span className="text-muted-foreground text-xs">
+                  {option.hint}
+                </span>
+              ) : null}
             </SelectItem>
           ))}
         </SelectGroup>
@@ -236,6 +256,16 @@ type FilterBarProps = {
   panel?: React.ReactNode;
   /** Les facettes posées, une entrée par puce à retirer. */
   chips: ActiveFilterChip[];
+  /**
+   * L'écran s'écarte-t-il de son état par défaut **par autre chose qu'une puce**.
+   *
+   * Les puces ne disent pas tout : le terme est lisible dans son champ, le tri a toujours une
+   * valeur, la page ne s'affiche que dans la pagination — aucun des trois n'a de puce, et à eux
+   * trois ils suffisent à se retrouver sur une page 8 triée par titre sans aucun moyen visible de
+   * revenir. La rangée s'affiche donc dès qu'il y a **quelque chose à défaire**, puces ou non, et
+   * « Tout effacer » redevient le seul geste à connaître.
+   */
+  canClear?: boolean;
   onClearAll: () => void;
 };
 
@@ -243,6 +273,7 @@ export function FilterBar({
   children,
   panel,
   chips,
+  canClear = false,
   onClearAll,
 }: FilterBarProps) {
   return (
@@ -297,9 +328,11 @@ export function FilterBar({
         puces disent **lesquelles**, et permettent d'en retirer une sans rouvrir le panneau ni
         chercher dans quelle colonne elle se trouvait.
 
-        Chaque croix ne retire que sa facette ; « Tout effacer » les emporte toutes.
+        Chaque croix ne retire que sa facette ; **« Tout effacer » va plus loin qu'elles** — il
+        emporte aussi ce qu'aucune puce ne montre : le terme saisi, le tri, sa direction, et la
+        page où l'on se trouve. C'est le seul geste qui ramène l'écran à son état d'arrivée.
       */}
-      {chips.length > 0 ? (
+      {chips.length > 0 || canClear ? (
         <div className="flex flex-wrap items-center gap-2">
           {chips.map((chip) => (
             <button

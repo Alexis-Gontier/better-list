@@ -296,6 +296,15 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
     $tags: [String]
     $season: MediaSeason
     $seasonYear: Int
+    # La plage d'années passe par la **date de début**, pas par \`seasonYear\` : la doc officielle
+    # d'AniList dit que celui-ci « requires season argument », donc une année seule n'est pas
+    # garantie. \`startDate_greater\` / \`_lesser\` n'ont pas cette dépendance et acceptent un
+    # intervalle — ce qu'un curseur à deux poignées demande. Le type est \`FuzzyDateInt\` : un entier
+    # de huit chiffres \`AAAAMMJJ\`, dont les parties inconnues valent 0.
+    $startDateGreater: FuzzyDateInt
+    $startDateLesser: FuzzyDateInt
+    # La note moyenne de la communauté, **sur 100** comme partout dans ce dépôt.
+    $averageScoreGreater: Int
     $page: Int = 1
     $perPage: Int = 20
     $sort: [MediaSort]
@@ -319,6 +328,9 @@ export const SEARCH_MEDIA_QUERY = /* GraphQL */ `
         tag_in: $tags
         season: $season
         seasonYear: $seasonYear
+        startDate_greater: $startDateGreater
+        startDate_lesser: $startDateLesser
+        averageScore_greater: $averageScoreGreater
         sort: $sort
         isAdult: $isAdult
       ) {

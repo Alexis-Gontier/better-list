@@ -1,16 +1,19 @@
 "use client";
 
+import { ArrowDownWideNarrowIcon, ArrowUpNarrowWideIcon } from "lucide-react";
 import { debounce } from "nuqs";
 
 import { SearchFilterPanel } from "@/app/(app)/search/_components/search-filter-panel";
 import type { YearBounds } from "@/app/(app)/search/_lib/year-bounds";
 import {
   type ActiveFilterChip,
+  type FacetOption,
   FilterBar,
   FilterSearchField,
   FilterSelect,
   labelOf,
 } from "@/components/shared/filter-bar";
+import { Button } from "@/components/ui/button";
 import { formatGenre } from "@/features/media/lib/media-format";
 import {
   COUNTRY_OPTIONS,
@@ -23,20 +26,21 @@ import {
   searchFilterParsers,
   TYPE_OPTIONS,
 } from "@/features/media/lib/search-params";
-import type { SortField } from "@/features/media/schemas/search-media.schema";
+import {
+  type SortDirection,
+  type SortField,
+  sortFieldHasDirection,
+} from "@/features/media/schemas/search-media.schema";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 
 /**
  * La barre de la recherche — le terme, le type, le tri, et le panneau de facettes qu'elle déplie.
  *
- * **Elle écrit dans l'URL, et c'est tout ce qu'elle fait.** Aucune requête AniList n'est déclenchée
- * ici : la grille de résultats n'existe pas encore. Ce n'est pas de la logique posée d'avance —
- * l'URL *est* le contrat, gelé par la mise à blanc (`features/media/lib/search-params.ts`), et il
- * vaut mieux le brancher tout de suite que dessiner des contrôles morts.
- *
- * Les parseurs viennent de ce contrat plutôt que d'être redéclarés ici : c'est le même module que
- * lira le composant de résultats côté serveur, donc ce que la barre écrit est exactement ce que la
- * grille relira.
+ * **Elle écrit dans l'URL, et c'est tout ce qu'elle fait.** Aucune requête n'est déclenchée ici :
+ * c'est la page qui relit l'adresse et interroge AniList. L'URL *est* le contrat
+ * (`features/media/lib/search-params.ts`), et les parseurs viennent de lui plutôt que d'être
+ * redéclarés — c'est le même module que lit le composant de résultats côté serveur, donc ce que la
+ * barre écrit est exactement ce que la grille relira.
  *
  * **La mise en page, elle, n'est plus ici** : la rangée, le champ, les sélecteurs étiquetés, le
  * bouton dépliant et les puces actives vivent dans `components/shared/filter-bar.tsx` depuis que
@@ -53,7 +57,11 @@ import { useUrlFilters } from "@/hooks/use-url-filters";
 type MediaKind = (typeof TYPE_OPTIONS)[number]["value"];
 
 /**
- * Ce que la barre et son panneau pilotent. `tag`, `dir` et `view` attendent leur contrôle.
+ * Ce que la barre et son panneau pilotent. Seul `view` attend encore son contrôle.
+ *
+ * `tag` y figure sans être piloté par rien : aucun contrôle ne l'écrit — il attend
+ * `MediaTagCollection` —, mais une adresse peut le porter, et « Tout effacer » doit pouvoir
+ * l'emporter. Un paramètre qu'on sait poser et qu'on ne sait pas retirer est un piège.
  *
  * Un seul `useQueryStates` pour les deux : le panneau est un enfant, pas un écran. Lui donner son
  * propre branchement sur l'URL ferait deux écritures concurrentes sur la même adresse, et la
@@ -71,6 +79,9 @@ const barParsers = {
   yearMax: searchFilterParsers.yearMax,
   score: searchFilterParsers.score,
   sort: searchFilterParsers.sort,
+  /** La direction du tri — le contrat la portait déjà, aucun contrôle ne l'écrivait. */
+  dir: searchFilterParsers.dir,
+  tag: searchFilterParsers.tag,
   page: searchFilterParsers.page,
 };
 
@@ -98,6 +109,8 @@ const RESET_FILTERS = {
   yearMax: EMPTY_FILTERS.yearMax,
   score: EMPTY_FILTERS.score,
   sort: EMPTY_FILTERS.sort,
+  dir: EMPTY_FILTERS.dir,
+  tag: EMPTY_FILTERS.tag,
   page: EMPTY_FILTERS.page,
 };
 
@@ -139,6 +152,49 @@ export function SearchFilterBar({ yearBounds }: SearchFilterBarProps) {
    */
   const update = (next: Partial<typeof filters>) =>
     setFilters({ ...next, page: 1 });
+
+  /** Le tri **effectif** : celui de l'URL, sauf quand `resolveSort` le remplace faute de terme. */
+  const sort = resolveSort({ q: filters.q, sort: filters.sort });
+
+  /**
+   * « Pertinence » est **grisée tant qu'aucun terme n'est saisi**, et c'est un correctif, pas une
+   * précaution.
+   *
+   * Sans terme, `SEARCH_MATCH` n'a rien à comparer : `resolveSort` bascule sur les tendances, et
+   * comme c'est aussi la valeur par défaut du parseur, nuqs la retire de l'adresse au moment même
+   * où on la choisit. L'option se laissait donc cliquer et **revenait aussitôt à « Tendances »**,
+   * sans que rien n'explique pourquoi. Un contrôle qui annule le geste de l'utilisateur en silence
+   * est pire qu'un contrôle absent.
+   *
+   * Grisée plutôt que retirée : une liste dont la longueur change selon ce qu'on a tapé oblige à
+   * chercher l'option qu'on y avait vue. Et la mention dit la condition, sans laquelle le grisé
+   * serait une énigme.
+   */
+  const hasTerm = filters.q.trim().length > 0;
+  const sortOptions: FacetOption<SortField>[] = SORT_OPTIONS.map((option) =>
+    option.value === "SEARCH_MATCH" && !hasTerm
+      ? { ...option, disabled: true, hint: "— avec un terme" }
+      : option,
+  );
+
+  /**
+   * Y a-t-il quelque chose à défaire que les puces ne montrent pas.
+   *
+   * Le terme, le tri, sa direction et la page n'ont pas de puce — le premier est lisible dans son
+   * champ, les deux suivants ont toujours une valeur, la dernière ne vit que dans la pagination. À
+   * eux quatre ils suffisent pourtant à se retrouver page 8, trié par titre, sans aucun moyen
+   * visible de revenir : c'est exactement le cas que « Tout effacer » doit couvrir, et il ne
+   * s'affichait pas.
+   *
+   * Comparé à `EMPTY_FILTERS` plutôt qu'à des littéraux : c'est déjà lui qui définit l'état
+   * d'arrivée, et deux définitions du mot « défaut » finissent par diverger.
+   */
+  const canClear =
+    filters.q !== EMPTY_FILTERS.q ||
+    filters.sort !== EMPTY_FILTERS.sort ||
+    filters.dir !== EMPTY_FILTERS.dir ||
+    filters.page !== EMPTY_FILTERS.page ||
+    filters.tag.length > 0;
 
   /*
     Les facettes posées, **une entrée par puce à retirer**.
@@ -201,6 +257,7 @@ export function SearchFilterBar({ yearBounds }: SearchFilterBarProps) {
 
   return (
     <FilterBar
+      canClear={canClear}
       chips={chips}
       onClearAll={() => setFilters(RESET_FILTERS)}
       panel={
@@ -238,13 +295,68 @@ export function SearchFilterBar({ yearBounds }: SearchFilterBarProps) {
         */}
         <FilterSelect
           ariaLabel="Trier par"
-          className="w-52"
+          className="w-56"
           label="Tri"
-          onValueChange={(sort: SortField) => update({ sort })}
-          options={SORT_OPTIONS}
-          value={resolveSort({ q: filters.q, sort: filters.sort })}
+          onValueChange={(next: SortField) => update({ sort: next })}
+          options={sortOptions}
+          value={sort}
+        />
+
+        <SortDirectionButton
+          available={sortFieldHasDirection(sort)}
+          direction={filters.dir}
+          onToggle={(dir) => update({ dir })}
         />
       </div>
     </FilterBar>
+  );
+}
+
+/**
+ * Le sens du tri, **croissant ou décroissant** — le paramètre `dir` du contrat, qui n'avait
+ * jusqu'ici aucun contrôle pour l'écrire.
+ *
+ * Un bouton plutôt qu'un troisième sélecteur : il n'y a que deux valeurs, et une liste déroulante
+ * de deux items coûte deux clics là où une bascule en demande un. L'icône dit l'état courant — la
+ * flèche descendante pour « du plus grand au plus petit » —, et le nom accessible dit ce que le
+ * clic fera, parce qu'une flèche seule ne distingue pas l'état de l'action.
+ *
+ * **Il vit dans ce fichier et pas dans `components/shared/`** : `/library` trie aussi, mais son
+ * contrat n'a pas de direction — ses quatre tris portent déjà leur sens (« Activité récente » n'a
+ * pas de version croissante qu'on demanderait). Un seul appelant, donc pas de promotion : la règle
+ * d'ARCHITECTURE.md vaut aussi pour les petits composants, et surtout pour eux.
+ */
+function SortDirectionButton({
+  direction,
+  available,
+  onToggle,
+}: {
+  direction: SortDirection;
+  /**
+   * `SEARCH_MATCH` n'a pas de pendant ascendant — demander « les moins pertinents d'abord » n'a
+   * pas de sens, et `sortFieldHasDirection` le sait déjà pour toute la chaîne. Le bouton reste
+   * **affiché mais éteint** plutôt que de disparaître : une rangée dont un contrôle s'absente
+   * selon le tri choisi se réorganise sous l'œil à chaque changement.
+   */
+  available: boolean;
+  onToggle: (direction: SortDirection) => void;
+}) {
+  const descending = direction === "DESC";
+  const Icon = descending ? ArrowDownWideNarrowIcon : ArrowUpNarrowWideIcon;
+
+  return (
+    <Button
+      aria-label={
+        descending ? "Trier par ordre croissant" : "Trier par ordre décroissant"
+      }
+      disabled={!available}
+      onClick={() => onToggle(descending ? "ASC" : "DESC")}
+      size="icon"
+      title={descending ? "Décroissant" : "Croissant"}
+      type="button"
+      variant="outline"
+    >
+      <Icon />
+    </Button>
   );
 }

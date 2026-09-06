@@ -67,13 +67,10 @@
     // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
     "src/features/media/server/media.documents.ts": ["exports"],
     "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
-    // Le contrat d'URL a retrouvé un importateur avec la barre du 5 septembre, puis son panneau :
-    // il sort du gel « files » pour le gel « exports ». La barre consomme les parseurs, les listes
-    // d'options, `resolveSort` et `EMPTY_FILTERS` ; le panneau consomme les helpers de saison. Ne
-    // restent gelés que **`loadSearchFilters` et `serializeSearchFilters`** — la lecture serveur
-    // des filtres et la construction des liens de pagination, c'est-à-dire précisément ce que la
-    // grille de résultats apportera. Cette entrée part avec elle.
-    "src/features/media/lib/search-params.ts": ["exports"],
+    // `search-params.ts` est **sorti du gel** : la grille de résultats a consommé ses deux derniers
+    // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
+    // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que
+    // l'entrée précédente disait attendre, et elle part avec, comme `library-params.ts` avant elle.
     "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types
     "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
     "src/features/preferences/schemas/preferences.schema.ts": ["exports"], // défauts — attendent /settings

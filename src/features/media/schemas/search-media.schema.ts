@@ -125,6 +125,34 @@ export const searchMediaInputSchema = z.object({
     .min(MIN_MEDIA_YEAR)
     .max(MAX_MEDIA_YEAR)
     .optional(),
+  /**
+   * La plage d'années, **et non `seasonYear`** — c'est ce que le curseur du panneau écrit.
+   *
+   * Deux années pleines et pas des `FuzzyDateInt` de huit chiffres : le schéma parle la langue de
+   * l'écran, et la conversion vers `startDate_greater` / `_lesser` se fait à la frontière, une
+   * fois, dans `searchMedia`. Un schéma qui accepterait `20160000` obligerait chaque appelant à
+   * connaître le format d'AniList pour poser un filtre qui n'est qu'une année.
+   */
+  yearMin: z.coerce
+    .number()
+    .int()
+    .min(MIN_MEDIA_YEAR)
+    .max(MAX_MEDIA_YEAR)
+    .optional(),
+  yearMax: z.coerce
+    .number()
+    .int()
+    .min(MIN_MEDIA_YEAR)
+    .max(MAX_MEDIA_YEAR)
+    .optional(),
+  /**
+   * La note minimale de la communauté, **sur 100** (`averageScore_greater`).
+   *
+   * L'écran la montre sur dix parce qu'une note sur dix se lit mieux, mais tout le dépôt la compte
+   * sur cent — `mediaSchema.averageScore` comme `Entry.score`. La conversion est un détail
+   * d'affichage, et elle reste à l'affichage.
+   */
+  minimumScore: z.coerce.number().int().min(0).max(100).optional(),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   /**
    * Le défaut vient de la grille, pas d'AniList : `CATALOGUE_PAGE_SIZE` est le nombre qui remplit
