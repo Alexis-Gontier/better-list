@@ -27,6 +27,96 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 7 septembre 2026 — l'audit, et la navigation qui manquait sur mobile
+
+Séance de **relecture** plutôt que de construction : passer tout le site au navigateur, écran par
+écran, en 1440 et en 390, et voir ce que le typecheck ne voit pas. Huit trouvailles — une qui rendait
+le produit inutilisable sur téléphone, une qui le privait de tout son catalogue, et **deux
+diagnostics que j'avais d'abord écrits faux**.
+
+**La navigation mobile n'existait pas.** `MainNav` porte `hidden md:flex` depuis toujours, et rien
+ne la remplaçait en dessous : l'en-tête mobile n'offrait que le monogramme, qui mène à un accueil en
+placeholder. Ni `/search`, ni `/library`, ni `/lists` n'étaient atteignables depuis un téléphone. Ça
+ne se voyait dans aucun test parce qu'aucun test ne regarde une largeur. Un tiroir latéral (choix
+d'Alexis contre une barre basse, pour garder les descriptions de `config/navigation.ts`), et
+`sheet.tsx` écrit à la main plutôt qu'installé — voir plus bas.
+
+**Le paquet `cn` est revenu, et par le même chemin qu'en août.** `pnpm dlx shadcn add sheet` a
+ajouté une dépendance npm parasite nommée `cn` à `package.json` avant même d'écrire un fichier, puis
+s'est arrêté sur une invite « écraser `button.tsx` ? » — à laquelle il ne fallait surtout pas
+répondre oui, nos variants y vivent. `--yes` ne couvre pas cette invite-là. Bilan : rien d'installé,
+`package.json` sali. **Le composant a donc été écrit à la main**, sur `radix-ui` déjà présent. C'est
+la deuxième fois que ce CLI laisse ce même déchet ; la leçon est de relire `git diff package.json`
+après chaque `shadcn add`, ou de s'en passer.
+
+**Les états vides se lisaient comme une panne.** `/search` et `/library` faisaient `return null` :
+une page blanche sous la barre, sans un mot. Trois messages sur le catalogue, deux sur la
+bibliothèque, et surtout un **geste** — `mostSelectiveFacet` désigne la facette active la plus
+étroite et propose de la retirer, en un lien qui ne défait qu'elle. L'ordre de sélectivité est un
+**jugement assumé, pas une mesure** : le mesurer coûterait une requête AniList par facette sur un
+quota de trente par minute.
+
+**`/l/[token]` journalisait une erreur à chaque visite.** « Uncached data during prerendering » : la
+seule page publique du produit n'avait pas `export const instant = false`, alors que le layout
+`(app)` l'a. Une ligne. **Elle ne règle pas** le 200-au-lieu-de-404 sur un jeton inconnu, décrit dans
+le fichier depuis le 6 septembre — vérifié, les deux se ressemblent et n'ont rien à voir.
+
+**Le bandeau de panne AniList ne se mettait à jour que depuis la fiche.** `ReportAniListStatus`
+n'était rendu que par `/media/[id]`, alors que `/search` est l'autre écran qui interroge l'API.
+Arriver sur `/search` depuis une fiche saine — qui vient de rapporter « tout va bien » — laissait le
+bandeau masqué en pleine panne. Il est maintenant rendu sur les deux branches de `/search`, y compris
+celle du vide : une panne qui ne ramène rien est justement le moment où il doit paraître.
+
+**Et des chaînes anglaises dans une interface française**, toutes pour lecteurs d'écran donc
+invisibles à la relecture : `Close` dans `dialog.tsx` (dans *toutes* les fenêtres), `More pages` dans
+la pagination, et surtout ses `aria-label="Go to previous page"` — qui sont le **seul** nom
+accessible de ces boutons sous `sm`, où le texte est masqué.
+
+### AniList n'avait rien coupé : il manquait un `Referer`
+
+Le symptôme : depuis Node, toute requête — même `{Media(id:1){id}}` — revenait en **403 « The AniList
+API has been temporarily disabled »**, pendant que la **même** depuis le navigateur revenait en
+**200 avec les données**.
+
+**La première conclusion était fausse, et l'erreur est instructive.** J'avais testé `User-Agent`,
+`Origin` et `Accept` **un par un**, constaté qu'aucun ne changeait rien, et conclu à une empreinte
+TLS filtrée à la périphérie. C'était une faute de méthode : tester les en-têtes un par un ne pouvait
+rien trouver, puisque c'est **l'ensemble complet** qui passe. La bonne manœuvre est le
+**laissé-de-côté** — rejouer l'appel navigateur entier, puis retirer les en-têtes un par un. Un seul
+fait basculer la réponse : `Referer`. `content-type` + `Referer` suffisent, et **n'importe quelle
+valeur passe, `x` compris**.
+
+Ce n'est donc ni une coupure ni une empreinte TLS : c'est un filtre anti-robot grossier, et **le
+message d'erreur ment**. Le 403 du 15 août mériterait d'être relu à cette lumière.
+
+Correctif d'une ligne, avec notre vraie URL plutôt qu'un `https://anilist.co` qui aurait marché en
+mentant. Un **test le garde**, vu échouer sans l'en-tête — parce que la panne serait *silencieuse* :
+le repli sur le miroir rattrape le 403, donc retirer cette ligne ne casserait aucun écran et
+laisserait le catalogue servi depuis la copie locale pour toujours.
+
+**La leçon de méthode, qui vaut au-delà d'AniList** : pour trouver quel en-tête débloque une
+requête, on part de ce qui marche et on enlève — jamais de ce qui ne marche pas et on ajoute. Les
+deux ne coûtent pas le même nombre d'essais et surtout, la seconde échoue en silence quand le
+déclencheur est une conjonction.
+
+### `/icon` n'était pas cassé — le serveur de dev l'était
+
+`ERR_EMPTY_RESPONSE` sur toutes les pages, et l'`opengraph-image` du partage identiquement. Le tracé
+rendait pourtant **561 octets de PNG valide en Node nu**. La sonde décisive a été de demander une
+`ImageResponse` depuis une route neuve : **le serveur `next dev` en est mort** — port fermé,
+processus disparu.
+
+Redémarré à froid, tout marche, et `/icon` rend **exactement les 561 octets prédits**. L'image
+d'aperçu du partage aussi, vérifiée à l'œil : 1200×630, monogramme, titre, auteur, cinq jaquettes.
+
+Ce serveur tournait depuis avant les modifications de la séance. **C'est le deuxième incident du même
+genre en deux jours**, après les deux écritures inexpliquées du 6 septembre — la règle d'hygiène qui
+en était sortie est donc confirmée, et elle vaut plus cher qu'il n'y paraissait : une heure passée à
+chercher un bug dans du code correct, et un diagnostic écrit noir sur blanc dans STATE.md qu'il a
+fallu retirer. **Ne pas laisser un `next dev` traverser une séance entière de modifications.**
+
+---
+
 ## 6 septembre 2026 — les listes, et une liste qui a disparu
 
 **Le `take` imbriqué de Prisma n'est pas un `LIMIT`.** La mosaïque de quatre jaquettes de `/lists`

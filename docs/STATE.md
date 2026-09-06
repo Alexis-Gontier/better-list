@@ -8,7 +8,7 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **6 septembre 2026**.
+Relevé le **7 septembre 2026**.
 
 > ### En un mot : six écrans sur onze, et les listes sont entières.
 >
@@ -45,6 +45,14 @@ Relevé le **6 septembre 2026**.
 > lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
 >
 > Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
+>
+> **Et depuis le 7 septembre, le site se navigue au téléphone — et AniList répond de nouveau.** Une
+> séance d'audit au navigateur a trouvé que `MainNav` était en `hidden md:flex` sans remplaçant :
+> sous 768 px, aucun des six écrans livrés n'était atteignable. Elle a dessiné les **états vides** de
+> `/search` et `/library`, qui rendaient une page blanche. Et surtout elle a trouvé que le 403 « API
+> temporarily disabled » qui forçait tout le produit sur le miroir depuis des jours venait d'un
+> **en-tête `Referer` manquant** dans nos propres requêtes : l'API n'avait jamais été coupée. Le
+> détail est plus bas.
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
@@ -172,9 +180,15 @@ Ce qui **manque** est inventorié case par case dans [fiche-media.md](./fiche-me
 les onglets lourds (personnages, équipe, œuvres liées, recommandations), les chiffres de la
 communauté, et l'ajout à une liste.
 
-`button-group` a été installé au passage (le registre shadcn), ce qui porte l'inventaire à 31
-composants. Son installation a laissé deux dégâts, tous deux corrigés : un import `from "cn"` que le
-CLI n'a pas réécrit, et un **paquet npm parasite nommé `cn`** que `knip` a attrapé.
+`button-group` a été installé au passage (le registre shadcn), ce qui portait alors l'inventaire à 31
+composants — **35 depuis le 7 septembre**, avec `sheet`. Son installation a laissé deux dégâts, tous
+deux corrigés : un import `from "cn"` que le CLI n'a pas réécrit, et un **paquet npm parasite nommé
+`cn`** que `knip` a attrapé.
+
+⚠️ **Le paquet `cn` est revenu le 7 septembre, par le même CLI**, à l'ajout de `sheet` — et cette
+fois avant même qu'un fichier soit écrit, la commande s'étant arrêtée sur une invite « écraser
+`button.tsx` ? » que `--yes` ne couvre pas. `sheet.tsx` a donc été **écrit à la main** sur
+`radix-ui`, déjà présent. Relire `git diff package.json` après chaque `shadcn add`.
 
 ### Le catalogue du 6 septembre 2026 — `/search` et `/library`, ensemble
 
@@ -229,12 +243,11 @@ l'iris, et **jamais autrement qu'en pastille** — pas de fond, pas de bordure. 
 valeurs, `.on-inverted-surface`, existe parce qu'une teinte choisie pour Obsidienne se délave sur
 l'onglet actif de la rangée de statuts, qui s'inverse : mesuré à l'écran sur « En pause ».
 
-Ce qui **manque**, et qui est su : les **états vides** ne sont pas dessinés — les deux écrans
-rendent `null` quand il n'y a rien, alors que « bibliothèque neuve » et « recherche sans résultat »
-n'appellent pas le même message ; le **compteur de résultats** n'est pas affiché, et devrait dire
-« plus de 5000 » plutôt que « 5000 » ; et le tri par titre suit le romaji sur les deux écrans, pas
+Ce qui **manquait** : les **états vides**, dessinés depuis le 7 septembre 2026 (voir l'audit plus
+bas). Ce qui **manque encore** : le **compteur de résultats**, qui devrait dire « plus de 5000 »
+plutôt que « 5000 » ; et le tri par titre, qui suit le romaji sur les deux écrans et non
 `titleLanguage`. L'inventaire complet est dans [recherche-filtres.md](./recherche-filtres.md) :
-66 lignes, **18 cochées**.
+66 lignes, **21 cochées**.
 
 ### L'écriture du 6 septembre 2026 — la première Server Action du dépôt
 
@@ -379,14 +392,14 @@ n'auraient toujours qu'un seul consommateur. Ils restent dans `search/_component
 
 ## Contrôle de santé
 
-Relevé le 6 septembre 2026, après les premières Server Actions. **À rejouer et à redater dès qu'on
+Relevé le **7 septembre 2026**, après la séance d'audit. **À rejouer et à redater dès qu'on
 prétend s'y fier.**
 
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **203 passés, 1 en pause**, 17 fichiers. Les quatre nouveaux couvrent `rankForAppend`, écrite en TDD : c'est la seule logique **pure et neuve** de la branche. Les huit Server Actions, elles, ne sont toujours couvertes par aucun test |
-| `pnpm lint` | 176 fichiers, aucune correction (174 avant les actions) |
+| `pnpm test` | **210 passés, 1 en pause**, 17 fichiers. Les sept nouveaux couvrent `mostSelectiveFacet`, écrite en TDD comme `rankForAppend` avant elle. Les huit Server Actions ne sont toujours couvertes par aucun test |
+| `pnpm lint` | 193 fichiers, aucune correction (176 avant l'audit) |
 | `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
 | `pnpm knip` | aucun signalement — **toujours sous gel, mais le gel a maigri**, voir ci-dessous |
 
@@ -443,12 +456,11 @@ prétend s'y fier.**
   ajouté** — ils ont été vérifiés à l'écran en 1440 et en 390, pas par un test. C'est ce qui a
   attrapé la pagination à 238 pages, mais ça ne se rejoue pas tout seul. Playwright est prévu
   (PRODUCT.md §7) et toujours pas posé.
-- **Les états vides des deux écrans ne sont pas dessinés.** `/search` et `/library` rendent `null`
-  quand il n'y a rien à montrer. Ce n'est pas tenable : « bibliothèque neuve », « recherche sans
-  résultat, filtres actifs » et « recherche sans résultat, aucun filtre » appellent trois messages
-  différents, dont un qui propose de retirer la facette la plus sélective
-  (recherche-filtres.md §5). En attendant, ne rien afficher vaut mieux qu'un message qui se
-  tromperait de cas — mais ça se lit comme une panne.
+- ~~**Les états vides des deux écrans ne sont pas dessinés.**~~ **Fait le 7 septembre 2026.**
+  `/search` porte ses trois messages et `/library` ses deux, et le catalogue propose un **geste** :
+  `mostSelectiveFacet` (testée) désigne la facette active la plus étroite, et un lien ne retire
+  qu'elle en remettant la page à 1. L'ordre de sélectivité est un jugement assumé — le mesurer
+  coûterait une requête AniList par facette.
 - **Les Server Actions ne sont couvertes par aucun test.** `applyEntryChanges` l'est — c'est là que
   vit la logique qui se trompe —, mais ce qui l'entoure (la transaction, le garde-fou du miroir, la
   conversion des dates à midi UTC, `revalidatePath`) n'a été **vérifié qu'à la main**, une fois, le
@@ -459,21 +471,111 @@ prétend s'y fier.**
   déclencheur, un nombre tapé à la main n'aurait jamais été enregistré, ce qui aurait rendu à cette
   barre le mensonge qu'on venait de lui retirer.
 - Le repli de panne AniList n'est vérifié par **aucun test**, mais il a été **vu fonctionner** le
-  6 septembre : AniList était réellement coupée ce jour-là, et la fiche s'est servie du miroir. Il
+  6 septembre, puis de nouveau le 7 — ce jour-là non pas à cause d'une coupure, mais du `Referer`
+  manquant qui faisait répondre 403 (voir l'audit) : le repli a donc tenu plusieurs jours sans que
+  personne s'aperçoive que la panne venait de chez nous. C'est sa qualité et son danger. Il
   est désormais posé sur **deux** des trois écrans réels — la fiche et `/search`, où
   `searchMediaInMirror` sert une vraie recherche paginée en base et **dit ce qu'elle a perdu**
   (les tags, les tris par tendance ou popularité). `/library` n'en a pas besoin : elle ne lit que
   Prisma, jamais AniList. Son **bandeau d'avis**, lui, est désormais
   global — rendu par le layout, il apparaît sur toutes les routes, y compris celles qui
-  n'interrogent jamais AniList. Il repose sur une variable de module (`isAniListDown`), donc sur la
+  n'interrogent jamais AniList. **Et les deux écrans qui interrogent l'API le rapportent
+  maintenant** : `ReportAniListStatus` n'était rendu que par la fiche jusqu'au 7 septembre 2026, si
+  bien qu'arriver sur `/search` depuis une fiche saine masquait le bandeau en pleine panne. Il repose sur une variable de module (`isAniListDown`), donc sur la
   mémoire d'une instance de serveur : au pire il manque à quelqu'un pendant une requête, jamais
   l'inverse. Le raisonnement est dans `lib/http/anilist.ts`.
-- « Retirer de ma bibliothèque » figure au menu de la fiche **sans confirmation**. Sans conséquence
-  aujourd'hui — l'entrée ne fait rien —, mais c'est une action destructive : elle doit passer par
-  `alert-dialog`, déjà installé, le jour où elle écrira.
+- **Rien dans l'interface ne retire une œuvre de la bibliothèque.** Le menu à trois points de la
+  fiche est parti le 6 septembre avec la fenêtre d'édition rapide, et `removeEntry` est retournée au
+  gel de `knip.jsonc` faute d'appelant. Le geste devra revenir sous `alert-dialog`, déjà installé.
 - Le miroir `Media` n'est plus rafraîchi : le cron est supprimé (voir plus haut).
 - `/collection` est déclarée dans `routes.ts` sans écran derrière, comme avant la mise à blanc.
   `routes.ts` le dit lui-même dans son commentaire.
+
+### L'audit du 7 septembre 2026 — ce que le typecheck ne voyait pas
+
+Séance de **relecture au navigateur**, écran par écran, en 1440 et en 390. Le contrôle de santé
+était vert avant comme après : aucune des six trouvailles n'était visible autrement qu'à l'écran.
+
+| Trouvé | État |
+| --- | --- |
+| **Aucune navigation sous `md`** — `MainNav` est en `hidden md:flex` et rien ne la remplaçait : depuis un téléphone, ni `/search`, ni `/library`, ni `/lists` n'étaient atteignables | **corrigé** — `MobileNav`, un tiroir latéral |
+| Les **états vides** de `/search` et `/library` rendaient `null` : page blanche, lue comme une panne | **corrigé** — trois messages ici, deux là, et un lien qui retire la facette la plus étroite |
+| `/l/[token]` journalisait « uncached data during prerendering » **à chaque visite** | **corrigé** — `export const instant = false` |
+| Le bandeau de panne ne se mettait à jour que depuis la fiche | **corrigé** — `/search` rapporte aussi |
+| `/signup` sortait avec un `<title>` **vide**, et `/lists/[id]` affichait « Liste » pour toutes les listes | **corrigé** — `generateMetadata` sur la liste, et un gabarit à la racine |
+| Les onglets ne disaient pas de quel site ils venaient | **corrigé** (demande d'Alexis) — « Better-List · Rechercher », le nom d'abord |
+| `/login`, `/signup` et `/waitlist` — les seules pages qui répondent sans session — n'avaient **aucune** balise `robots` | **corrigé** — `noindex, nofollow` sur le layout `(auth)`, pour les trois d'un coup |
+| Chaînes anglaises pour lecteurs d'écran : `Close`, `More pages`, et les `aria-label` de la pagination — seul nom accessible de ces boutons sous `sm` | **corrigé** |
+| **AniList répondait 403 à toute requête du serveur** — il manquait un en-tête `Referer` | **corrigé**, et couvert par un test |
+| `/icon` et l'`opengraph-image` du partage répondaient `ERR_EMPTY_RESPONSE` | **ce n'était pas le code** — le serveur de dev était mort |
+| L'en-tête de `/l/[token]` portait encore le nom du site en toutes lettres, que l'en-tête de l'app avait perdu le 6 septembre | **corrigé** — monogramme seul, nom gardé en `sr-only` |
+
+**`sheet.tsx` est écrit à la main**, et c'est une décision : `pnpm dlx shadcn add sheet` a réintroduit
+le **paquet npm parasite `cn`** dans `package.json` — le même qu'en août — avant de s'arrêter sur une
+invite « écraser `button.tsx` ? », que `--yes` ne couvre pas. Relire `git diff package.json` après
+chaque `shadcn add`.
+
+`mostSelectiveFacet` est la seule logique **pure et neuve** de la séance, écrite en TDD : sept tests.
+Son ordre de sélectivité est un **jugement assumé et non une mesure** — mesurer coûterait une requête
+AniList par facette sur un quota de trente par minute.
+
+#### 🔑 « AniList a coupé son API » était faux : il manquait un `Referer`
+
+**La trouvaille de la séance, et elle rend son catalogue au produit.**
+
+Le symptôme : depuis Node, **toute** requête revenait en 403 « The AniList API has been temporarily
+disabled due to severe stability issues » — même `{Media(id:1){id}}` — pendant que la **même**
+requête depuis le navigateur revenait en 200 avec les données. Une première passe a testé
+`User-Agent`, `Origin` et `Accept` un par un, sans effet, et a conclu à tort à une empreinte TLS
+filtrée à la périphérie.
+
+**C'était une erreur de méthode** : tester les en-têtes un par un ne pouvait rien trouver, puisque
+l'ensemble complet fonctionne. En rejouant l'appel navigateur **entier**, puis en retirant les
+en-têtes **un par un** (méthode du laissé-de-côté), un seul fait basculer la réponse :
+
+| | |
+| --- | --- |
+| jeu complet d'en-têtes navigateur | **200, données** |
+| sans `accept`, `accept-language`, `origin`, `user-agent`, `sec-ch-ua*`, `sec-fetch-*` | **200, données** |
+| **sans `Referer`** | **403** |
+| `content-type` + `Referer` seuls | **200, données** |
+
+N'importe quelle valeur passe, `x` compris : ce n'est pas une autorisation, c'est un filtre anti-robot
+grossier posé devant l'API. **Le message d'erreur ment donc** — l'API n'a jamais été coupée, et le
+403 du 15 août mériterait d'être relu à cette lumière.
+
+Le correctif tient en une ligne dans `lib/http/anilist.ts` : `Referer: env.NEXT_PUBLIC_APP_URL`, la
+valeur vraie plutôt qu'un `https://anilist.co` qui aurait marché en mentant. **Vérifié à l'écran** :
+`/search?q=frieren` sert neuf résultats AniList au lieu des cinq du miroir, la fiche retrouve son
+synopsis et son cinquième fait (studio), et les deux avis de repli ont disparu.
+
+Un **test le garde** (`anilist.test.ts`), et il a été vu échouer sans l'en-tête : sans lui la panne
+serait silencieuse, puisque le repli sur le miroir rattrape le 403 — retirer cette ligne ne
+casserait aucun écran et laisserait simplement le catalogue servi depuis la copie locale pour
+toujours.
+
+Conséquence secondaire : importer `env` dans la couche transport a entraîné la validation
+d'environnement dans le graphe des tests. `vitest.config.mts` fournit désormais de vraies valeurs de
+test plutôt que de poser `SKIP_ENV_VALIDATION` — couper la validation ferait passer les tests le jour
+où une variable manque réellement.
+
+#### `/icon` n'était pas cassé : le serveur de dev l'était
+
+**Diagnostic corrigé en fin de séance.** `/icon` répondait `ERR_EMPTY_RESPONSE` sur toutes les pages,
+et l'`opengraph-image` du partage identiquement. La sonde a été de demander une `ImageResponse`
+depuis une route neuve : **le serveur `next dev` en est mort**, port 3000 fermé, processus disparu.
+
+Redémarré à froid, tout fonctionne : `/icon` rend ses 561 octets — **exactement la taille prédite
+par le rendu en Node nu**, ce qui confirme que le code n'a jamais été en cause — et l'image d'aperçu
+du partage rend ses 1200×630, monogramme, titre, auteur et cinq jaquettes, vérifiée à l'œil.
+
+Ce serveur tournait depuis avant les modifications de la séance. **C'est le deuxième incident du même
+genre en deux jours** — après les deux écritures inexpliquées du 6 septembre, plus bas — et la règle
+d'hygiène qui en était sortie est donc confirmée plutôt qu'infirmée : **ne pas laisser un `next dev`
+traverser une séance entière de modifications.** Elle mérite d'être lue comme un vrai risque de
+diagnostic : une heure a été passée à chercher un bug dans du code correct.
+
+Il ne reste donc **aucune erreur de console** sur le site.
 
 ---
 
@@ -490,11 +592,13 @@ C'est aussi ce qui devrait rallumer le canari d'`architecture.test.ts` : un jour
 précisément un composant de `features/*/components/` exporté, serveur et `async` — celui que le
 pronostic précédent attendait à tort du panneau de suivi.
 
-Ensuite, dans l'ordre où ça se posera : les **états vides** de `/search` et `/library`, qui ne sont
-toujours pas dessinés — ceux des deux écrans de listes le sont depuis le 6 septembre ; le **compteur
-de résultats** de `/search`, qui doit dire « plus de 5000 » et non « 5000 » ; et les champs de suivi
-que la fiche ne porte pas encore alors que la fenêtre d'une vignette les a — dates, notes,
-relectures.
+Ensuite, dans l'ordre où ça se posera : le **compteur de résultats** de `/search`, qui doit dire
+« plus de 5000 » et non « 5000 » ; les champs de suivi que la fiche ne porte pas encore alors que la
+fenêtre d'une vignette les a — dates, notes, relectures ; et **le retour du cron de
+rafraîchissement**, qui reste dû — le miroir n'est plus alimenté depuis la mise à blanc, même si
+AniList répond de nouveau depuis le 7 septembre.
+
+Les **états vides** ne sont plus dans cette liste : ils ont été dessinés le 7 septembre.
 
 ### ⚠️ Deux écritures inexpliquées le 6 septembre — et un serveur de dev qui les explique probablement
 
@@ -566,11 +670,11 @@ vocabulaire de tous les autres.
 1. `/search` et `/library` — **faits** (6 septembre), ensemble et sur une coquille commune, comme
    annoncé. C'était le premier gain réel de la refonte : ces deux écrans étaient le même, écrit deux
    fois. Ils partagent maintenant quatre pièces de `shared/` et `features/media/`, et leurs deux
-   contrats d'URL sont sortis du gel de `knip.jsonc`. **Ce qui reste sur ces deux écrans** : les
-   états vides, le compteur de résultats, le tri par titre qui devrait suivre `titleLanguage`, et
+   contrats d'URL sont sortis du gel de `knip.jsonc`. **Ce qui reste sur ces deux écrans** : le
+   compteur de résultats, le tri par titre qui devrait suivre `titleLanguage`, et
    l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
    [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
-   des filtres : 66 lignes, **18 cochées**.
+   des filtres : 66 lignes, **21 cochées**.
 2. `/media/[id]` — **le hero et le suivi sont faits** (6 septembre) : la barre lit l'`Entry` réelle
    et écrit par `saveEntry`. Restent le journal, les onglets lourds, les chiffres de la communauté,
    et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
