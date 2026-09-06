@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { routes } from "@/config/routes";
 import {
+  EMPTY_FILTERS,
   EMPTY_QUERY_SORT,
   loadSearchFilters,
+  mostSelectiveFacet,
   parseSeasonSlotValue,
   resolveSort,
   seasonSlotOptions,
@@ -114,5 +116,81 @@ describe("l'aller-retour saison dans l'URL", () => {
 
     expect(filters.year).toBeNull();
     expect(filters.type).toBe("ANIME");
+  });
+});
+
+describe("mostSelectiveFacet", () => {
+  /*
+    Le terme, le tri, la direction et la page ne sont pas passés : `SearchFacets` ne les porte pas,
+    donc c'est le typage qui garantit qu'ils ne pèsent pas dans le choix, et non un test qui aurait
+    pu les oublier.
+  */
+  it("ne propose rien quand aucune facette n'est posée", () => {
+    expect(mostSelectiveFacet(EMPTY_FILTERS)).toBeNull();
+  });
+
+  it("désigne la facette posée quand il n'y en a qu'une", () => {
+    expect(mostSelectiveFacet({ ...EMPTY_FILTERS, type: "ANIME" })).toEqual({
+      keys: ["type"],
+      label: "le type",
+    });
+  });
+
+  it("préfère le tag à tout le reste — c'est la facette la plus étroite", () => {
+    expect(
+      mostSelectiveFacet({
+        ...EMPTY_FILTERS,
+        tag: ["Time Loop"],
+        genre: ["Action"],
+        type: "ANIME",
+      }),
+    ).toEqual({ keys: ["tag"], label: "le tag « Time Loop »" });
+  });
+
+  it("traite la saison et son année comme une seule facette", () => {
+    expect(
+      mostSelectiveFacet({
+        ...EMPTY_FILTERS,
+        season: "WINTER",
+        year: 2024,
+        genre: ["Action"],
+      }),
+    ).toEqual({ keys: ["season", "year"], label: "la saison" });
+  });
+
+  it("traite les deux bornes d'années comme une seule facette", () => {
+    expect(
+      mostSelectiveFacet({
+        ...EMPTY_FILTERS,
+        yearMin: 2010,
+        yearMax: 2012,
+        status: "FINISHED",
+      }),
+    ).toEqual({ keys: ["yearMin", "yearMax"], label: "la plage d'années" });
+  });
+
+  it("préfère la note au genre, et le genre au format", () => {
+    expect(
+      mostSelectiveFacet({
+        ...EMPTY_FILTERS,
+        score: 80,
+        genre: ["Action"],
+        format: ["TV"],
+      }),
+    ).toEqual({ keys: ["score"], label: "la note minimale" });
+
+    expect(
+      mostSelectiveFacet({
+        ...EMPTY_FILTERS,
+        genre: ["Action"],
+        format: ["TV"],
+      }),
+    ).toEqual({ keys: ["genre"], label: "le genre « Action »" });
+  });
+
+  it("compte plusieurs valeurs d'une même facette sans les nommer une à une", () => {
+    expect(
+      mostSelectiveFacet({ ...EMPTY_FILTERS, genre: ["Action", "Comédie"] }),
+    ).toEqual({ keys: ["genre"], label: "les 2 genres" });
   });
 });

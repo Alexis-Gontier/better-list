@@ -1,6 +1,7 @@
 import { isResponseError } from "up-fetch";
 import * as z from "zod";
 
+import { env } from "@/config/env";
 import { upfetch } from "@/lib/http/fetch";
 
 /**
@@ -57,10 +58,16 @@ const ANILIST_OUTAGE_ERROR = "AniListOutageError";
 /**
  * La panne, par statut.
  *
- * Le 403 n'est pas ici par excès de prudence : AniList coupe son endpoint en le renvoyant, avec
- * pour message « The AniList API has been temporarily disabled due to severe stability issues. »
- * (constaté le 15 août 2026). Aucune requête ne passe alors, quelle qu'elle soit — c'est une panne
- * générale, à traiter comme un 5xx et non comme un refus d'accès à une ressource.
+ * Le 403 n'est pas ici par excès de prudence : AniList le renvoie avec pour message « The AniList
+ * API has been temporarily disabled due to severe stability issues. », et aucune requête ne passe
+ * alors, quelle qu'elle soit — c'est une panne générale, à traiter comme un 5xx et non comme un
+ * refus d'accès à une ressource.
+ *
+ * ⚠️ **Ce message ment au moins une fois sur deux.** Le 7 septembre 2026, il s'est avéré que ce même
+ * 403 tombe sur *toute* requête dépourvue d'en-tête `Referer` — voir `anilistQuery`. L'API
+ * fonctionnait parfaitement ; c'est sa périphérie qui écartait l'appelant. Devant un 403 inexpliqué,
+ * **vérifier d'abord nos propres en-têtes** avant de conclure à une coupure : le message ne permet
+ * pas de distinguer les deux, et il a déjà coûté une heure de recherche dans du code correct.
  *
  * Le 429 rejoint le lot côté affichage — un catalogue absent est un catalogue absent — tout en
  * gardant son propre prédicat pour qui doit distinguer les deux.
@@ -196,6 +203,23 @@ export async function anilistQuery<TSchema extends z.ZodType>({
     envelope = await upfetch(ANILIST_ENDPOINT, {
       method: "POST",
       body: { query, variables },
+      /*
+        **Sans `Referer`, AniList répond 403 à toute requête** — mesuré le 7 septembre 2026 par
+        élimination : en retirant les en-têtes d'un appel navigateur un par un, celui-ci est le seul
+        dont l'absence rebascule la réponse en « The AniList API has been temporarily disabled ».
+        Le message ment donc : l'API fonctionne, c'est sa périphérie qui écarte ce qu'elle prend
+        pour un robot. N'importe quelle valeur passe, y compris `x` — ce n'est pas une
+        autorisation, juste une case à cocher.
+
+        On y met **notre propre URL**, qui est la vérité : la requête vient bien de cette
+        application. Mettre `https://anilist.co` aurait marché aussi et aurait été un mensonge — et
+        un mensonge que personne ne pourrait débusquer le jour où le filtre changerait de forme.
+
+        Dans un navigateur, `Referer` est un en-tête interdit : `fetch` l'ignore silencieusement et
+        pose le sien. Cette ligne est donc sans effet côté client, ce qui laisse le fichier
+        isomorphe comme il l'annonce plus haut.
+      */
+      headers: { Referer: env.NEXT_PUBLIC_APP_URL },
       schema: anilistEnvelopeSchema,
       retry: {
         attempts: 2,

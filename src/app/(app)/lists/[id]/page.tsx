@@ -34,13 +34,32 @@ import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit"
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
-export const metadata: Metadata = {
-  title: "Liste",
-  description: "Une liste d'œuvres.",
-  // Une liste est privée par défaut (docs/PRODUCT.md §4.4), et l'app est derrière une garde : rien
-  // à indexer.
-  robots: { index: false, follow: false },
-};
+/**
+ * L'onglet porte le **nom de la liste**, et non le mot « Liste » qu'il affichait jusqu'au
+ * 7 septembre 2026 : on en ouvre plusieurs côte à côte, et trois onglets nommés pareil ne se
+ * distinguent plus.
+ *
+ * La lecture ne coûte pas une requête de plus : `getList` est déduplicée par `cache` de React, donc
+ * l'appel d'ici et celui du rendu n'en font qu'une (`lists.queries.ts`).
+ *
+ * Le repli sur « Liste » couvre l'identifiant inconnu — la page rendra son 404, mais les métadonnées
+ * sont calculées avant et ne peuvent pas s'en remettre à lui.
+ */
+export async function generateMetadata({
+  params,
+}: PageProps<"/lists/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const { includeAdult } = await getPreferences();
+  const list = await getList(id, { includeAdult });
+
+  return {
+    title: list?.title ?? "Liste",
+    description: "Une liste d'œuvres.",
+    // Une liste est privée par défaut (docs/PRODUCT.md §4.4), et l'app est derrière une garde :
+    // rien à indexer.
+    robots: { index: false, follow: false },
+  };
+}
 
 /**
  * Une liste et son contenu.

@@ -422,3 +422,115 @@ export const EMPTY_FILTERS: {
   dir: "DESC",
   page: 1,
 };
+
+/**
+ * Les filtres du catalogue tels que la page les reçoit.
+ *
+ * Dérivé du **loader** et non de `EMPTY_FILTERS`, dont les valeurs par défaut sont annotées `null`
+ * littéral : ce type-là dirait qu'un type d'œuvre ne peut jamais valoir `"ANIME"`.
+ */
+export type SearchFilters = Awaited<ReturnType<typeof loadSearchFilters>>;
+
+/**
+ * Les seules clés qui **filtrent** le catalogue.
+ *
+ * Énumérées plutôt que soustraites de `SearchFilters` : `q` est la question posée, `sort`, `dir`,
+ * `page` et `view` la façon de la présenter, et une clé de présentation ajoutée demain se
+ * retrouverait sinon comptée comme une facette sans que rien ne le signale.
+ */
+export type SearchFacets = Pick<
+  SearchFilters,
+  | "type"
+  | "status"
+  | "format"
+  | "country"
+  | "genre"
+  | "tag"
+  | "season"
+  | "year"
+  | "yearMin"
+  | "yearMax"
+  | "score"
+>;
+
+export type FacetKey = keyof SearchFacets;
+
+export type SelectiveFacet = {
+  /** Les clés à remettre à leur défaut pour retirer la facette. */
+  keys: FacetKey[];
+  /** Comment la nommer dans une phrase : « Essayez sans **le tag « Time Loop »** ». */
+  label: string;
+};
+
+/**
+ * La facette active la plus étroite, ou `null` s'il n'y en a aucune.
+ *
+ * Elle sert l'état « aucun résultat, filtres actifs » de docs/recherche-filtres.md §5, qui demande
+ * de **proposer un geste** plutôt que d'annoncer « rien trouvé ». Proposer de tout effacer ferait
+ * perdre un panneau qu'on vient de remplir ; proposer la facette la plus étroite retire d'abord
+ * celle qui a le plus de chances d'être seule responsable du vide.
+ *
+ * **L'ordre est un jugement, pas une mesure** — on ne compte rien côté serveur pour l'établir, ce
+ * qui coûterait une requête AniList par facette sur un quota de trente par minute. Il va du plus
+ * étroit au plus large : un tag ne couvre qu'une poignée d'œuvres, une saison trois mois, un type
+ * la moitié du catalogue. Le terme de recherche, lui, n'en fait pas partie : il n'est pas une
+ * facette mais la question posée, et l'effacer changerait de recherche au lieu de l'élargir.
+ *
+ * `season` et `year` d'un côté, `yearMin` et `yearMax` de l'autre, sont **groupées** : ce sont deux
+ * moitiés d'un même réglage, et n'en retirer qu'une laisserait un filtre à moitié posé.
+ */
+export function mostSelectiveFacet(
+  filters: SearchFacets,
+): SelectiveFacet | null {
+  const plural = (values: string[], one: string, many: string) =>
+    values.length === 1 && values[0]
+      ? `${one} « ${values[0]} »`
+      : `les ${values.length} ${many}`;
+
+  if (filters.tag.length > 0) {
+    return { keys: ["tag"], label: plural(filters.tag, "le tag", "tags") };
+  }
+
+  if (filters.season !== null || filters.year !== null) {
+    return { keys: ["season", "year"], label: "la saison" };
+  }
+
+  if (filters.yearMin !== null || filters.yearMax !== null) {
+    return { keys: ["yearMin", "yearMax"], label: "la plage d'années" };
+  }
+
+  if (filters.score !== null) {
+    return { keys: ["score"], label: "la note minimale" };
+  }
+
+  if (filters.genre.length > 0) {
+    return {
+      keys: ["genre"],
+      label: plural(filters.genre, "le genre", "genres"),
+    };
+  }
+
+  if (filters.country !== null) {
+    return { keys: ["country"], label: "le pays d'origine" };
+  }
+
+  if (filters.format.length > 0) {
+    return {
+      keys: ["format"],
+      label:
+        filters.format.length === 1
+          ? "le format"
+          : `les ${filters.format.length} formats`,
+    };
+  }
+
+  if (filters.status !== null) {
+    return { keys: ["status"], label: "le statut" };
+  }
+
+  if (filters.type !== null) {
+    return { keys: ["type"], label: "le type" };
+  }
+
+  return null;
+}

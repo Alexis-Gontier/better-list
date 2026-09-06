@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { LibraryFilterBar } from "@/app/(app)/library/_components/library-filter-bar";
@@ -10,6 +11,13 @@ import {
 } from "@/components/shared/catalogue-grid";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
 import { PageHeading } from "@/components/shared/page-heading";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
@@ -155,13 +163,67 @@ async function LibraryResults({
   });
 
   /*
-    Deux vides à ne pas confondre, et l'écran ne sait pour l'instant en dire qu'un seul : une
-    bibliothèque neuve n'a rien à montrer, une recherche sans résultat a quelque chose à proposer —
-    retirer la facette la plus sélective (docs/recherche-filtres.md §5). Les deux messages se
-    dessinent à la passe des états vides ; en attendant, ne rien afficher vaut mieux qu'un message
-    qui se tromperait de cas.
+    **Les deux vides sont maintenant distingués** (7 septembre 2026), et l'écran ne rend plus `null`
+    — une page blanche sous la barre se lisait comme une panne.
+
+    Ils se séparent sans requête de plus : si aucun filtre n'est posé et qu'il n'y a rien, c'est que
+    la bibliothèque est neuve ; sinon c'est cette question-là qui n'a pas de réponse, et le geste à
+    proposer est de la desserrer. Compter les lignes pour trancher aurait coûté une seconde lecture
+    à chaque affichage pour n'apprendre que ce que l'adresse dit déjà.
+
+    Le terme compte comme un filtre : chercher « frieren » dans une bibliothèque qui n'en contient
+    pas est un vide de recherche, pas une bibliothèque neuve.
   */
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    const term = filters.q.trim();
+    const filtered =
+      term !== "" || filters.status !== null || filters.type !== null;
+
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>
+            {filtered
+              ? term
+                ? `Rien pour « ${term} »`
+                : "Rien sous ce filtre"
+              : "Votre bibliothèque est vide"}
+          </EmptyTitle>
+
+          <EmptyDescription>
+            {filtered
+              ? "Aucune œuvre suivie ne correspond. Élargissez le filtre, ou cherchez dans le catalogue."
+              : "Suivez une première œuvre depuis le catalogue : elle apparaîtra ici avec sa progression."}
+          </EmptyDescription>
+        </EmptyHeader>
+
+        {/*
+          Deux sorties différentes pour deux vides différents. Sur une bibliothèque neuve, il n'y a
+          rien à desserrer : le seul geste utile est d'aller au catalogue. Sur un filtre trop
+          étroit, `serializeLibraryFilters` omet les défauts, donc repartir d'un objet vide rend
+          exactement `/library`.
+        */}
+        <Button asChild variant="outline">
+          <Link
+            href={
+              filtered
+                ? serializeLibraryFilters(routes.library, {
+                    q: "",
+                    status: null,
+                    type: null,
+                    sort: filters.sort,
+                    view: filters.view,
+                    page: 1,
+                  })
+                : routes.search
+            }
+          >
+            {filtered ? "Voir toute ma bibliothèque" : "Parcourir le catalogue"}
+          </Link>
+        </Button>
+      </Empty>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">

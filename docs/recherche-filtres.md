@@ -306,9 +306,9 @@ sans qu'aucun contrôle ne l'écrive : `tag` et `dir`.
 
 ## 5. États de l'écran
 
-- [ ] Aucun terme saisi — `resolveSort` bascule déjà sur les tendances, l'écran doit le dire
-- [ ] Aucun résultat, filtres actifs — proposer de retirer la facette la plus sélective, pas seulement « rien trouvé »
-- [ ] Aucun résultat, aucun filtre — le cas du terme mal orthographié
+- [x] Aucun terme saisi — `resolveSort` bascule sur les tendances, et la grille est donc pleine ; le message « Rien à montrer » ne sert que si le miroir est muet lui aussi (7 septembre 2026)
+- [x] Aucun résultat, filtres actifs — `mostSelectiveFacet` désigne la facette active la plus étroite et un lien ne retire qu'elle, page remise à 1. L'ordre est un **jugement**, pas une mesure : mesurer coûterait une requête AniList par facette (7 septembre 2026)
+- [x] Aucun résultat, aucun filtre — « Vérifiez l'orthographe, ou cherchez le titre original » (7 septembre 2026)
 - [x] Le squelette de chargement, aux proportions de la grille
 - [x] **Le repli sur le miroir local quand AniList tombe** — `searchMediaInMirror`, paginé en base et filtré par ce que les colonnes du miroir permettent : le terme, le type, le format, le statut, le pays, la saison, les genres, la plage d'années et la note. **Il dit ce qu'il a perdu** : les tags, qu'on ne stocke pas (§4.1), et les tris par tendance, popularité ou favoris, que le miroir ne copie pas. Un repli muet vaut moins qu'une erreur — il laisse croire à un résultat. Rappel à ne pas perdre de vue : le miroir ne contient que ce que ce cercle a déjà croisé, donc une recherche y trouve **beaucoup** moins qu'AniList
 - [ ] Un filtre invalide dans l'URL retombe sur son défaut **sans effacer les autres** — la règle est écrite dans `parseAsBoundedYear`, elle vaut pour chaque parseur ajouté

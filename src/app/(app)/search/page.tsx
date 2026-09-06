@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { SearchFilterBar } from "@/app/(app)/search/_components/search-filter-bar";
 import { getYearBounds } from "@/app/(app)/search/_lib/year-bounds";
+import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import {
   CatalogueGrid,
   CatalogueGridSkeleton,
@@ -10,13 +12,22 @@ import {
 } from "@/components/shared/catalogue-grid";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
 import { PageHeading } from "@/components/shared/page-heading";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import { routes } from "@/config/routes";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import {
+  EMPTY_FILTERS,
   loadSearchFilters,
+  mostSelectiveFacet,
   resolveSort,
   serializeSearchFilters,
 } from "@/features/media/lib/search-params";
@@ -131,7 +142,73 @@ async function SearchResults({
 
   const { items, page, pageCount } = result ?? fallback ?? EMPTY_RESULT;
 
-  if (items.length === 0) return null;
+  /*
+    **Trois vides, trois messages** (docs/recherche-filtres.md §5). Rendre `null`, ce que cet écran
+    faisait jusqu'au 7 septembre 2026, laissait une page blanche sous la barre — et une page blanche
+    se lit comme une panne, pas comme une recherche sans réponse.
+
+    Le cas « aucun terme, aucune facette » n'est pas ici : sans terme, `resolveSort` bascule sur les
+    tendances et la grille est pleine. S'il n'y a malgré tout rien à montrer, c'est qu'AniList et le
+    miroir sont muets tous les deux — le troisième message le dit, sans prétendre que la question
+    était mauvaise.
+  */
+  if (items.length === 0) {
+    const facet = mostSelectiveFacet(filters);
+    const term = filters.q.trim();
+
+    return (
+      /*
+        Le rapport est ici **aussi**, et pas seulement sur la branche pleine : une panne qui ne
+        ramène rien est précisément le moment où le bandeau doit apparaître. L'oublier ici l'aurait
+        réservé aux recherches qui trouvent quelque chose.
+      */
+      <>
+        <ReportAniListStatus down={fallback !== null} />
+
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>
+              {term ? `Rien pour « ${term} »` : "Rien à montrer"}
+            </EmptyTitle>
+
+            <EmptyDescription>
+              {facet
+                ? `Aucune œuvre ne réunit tout ce qui est demandé. Essayez sans ${facet.label}.`
+                : term
+                  ? "Aucune œuvre ne porte ce titre. Vérifiez l'orthographe, ou cherchez le titre original."
+                  : "Le catalogue n'a rien renvoyé. Réessayez dans un moment."}
+            </EmptyDescription>
+          </EmptyHeader>
+
+          {/*
+          Un lien et non un bouton : retirer une facette est une adresse, comme chaque cran de la
+          pagination. Il se copie, il s'ouvre dans un onglet, et il traverse le rechargement.
+
+          `next/link` et non `<a>`, pour la raison écrite dans `ui/pagination.tsx` : l'ancre nue
+          rejouerait la coquille entière là où seule la grille change.
+
+          `page: 1` parce qu'on élargit : rester à la page 4 d'une recherche qu'on vient de changer
+          rendrait un second vide, et donnerait à croire que le geste n'a rien fait.
+        */}
+          {facet ? (
+            <Button asChild variant="outline">
+              <Link
+                href={serializeSearchFilters(routes.search, {
+                  ...filters,
+                  ...Object.fromEntries(
+                    facet.keys.map((key) => [key, EMPTY_FILTERS[key]]),
+                  ),
+                  page: 1,
+                })}
+              >
+                Retirer {facet.label}
+              </Link>
+            </Button>
+          ) : null}
+        </Empty>
+      </>
+    );
+  }
 
   /*
     **La pastille de suivi sur les résultats du catalogue — « annoter plutôt que filtrer ».**
@@ -151,6 +228,20 @@ async function SearchResults({
 
   return (
     <div className="flex flex-col gap-8">
+      {/*
+        **Ce que cette recherche vient d'apprendre de la santé d'AniList.**
+
+        Le layout ne lit `isAniListDown()` qu'au rendu **serveur** : une navigation client ne le
+        rejoue pas. Sans ce rapport, `/media/[id]` était le seul écran à tenir le bandeau à jour —
+        arriver ici depuis une fiche saine, qui vient de rapporter « tout va bien », laissait donc
+        le bandeau masqué en pleine panne. Et `/search` est justement l'autre écran qui interroge
+        AniList : il a de quoi répondre.
+
+        Il se pose **dans les deux sens**, comme la fiche : `fallback` non nul veut dire qu'on a
+        constaté la panne, `null` qu'AniList a répondu — et fait disparaître le bandeau.
+      */}
+      <ReportAniListStatus down={fallback !== null} />
+
       {/*
         Le bandeau de panne, lui, est global et vient du layout : ce mot-ci dit ce que **cette
         recherche** a perdu, ce que le bandeau ne peut pas savoir. Les deux ne font pas doublon —
