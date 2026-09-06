@@ -22,6 +22,8 @@ quatre comptes** — pas de découverte sociale, pas de modération, pas d'ouver
 | Quoi et pourquoi : périmètre, modèle de domaine, roadmap | [docs/PRODUCT.md](docs/PRODUCT.md) |
 | Comment : où poser un fichier, frontière server/client | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Ce qu'on a appris en chemin | [docs/JOURNAL.md](docs/JOURNAL.md) |
+| Ce qu'on peut afficher sur la fiche d'une œuvre, et ce qui y est déjà | [docs/fiche-media.md](docs/fiche-media.md) |
+| Ce par quoi on peut filtrer le catalogue, et ce qui est branché | [docs/recherche-filtres.md](docs/recherche-filtres.md) |
 
 **Lire STATE.md avant de proposer quoi faire ensuite. Le mettre à jour dans le commit qui le
 périme**, et compléter JOURNAL.md en fin de séance — quelques lignes suffisent.

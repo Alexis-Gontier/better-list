@@ -9,13 +9,21 @@ import {
 } from "nuqs/server";
 
 import { DEFAULT_VIEW_MODE, VIEW_MODES } from "@/config/catalogue";
-import { formatSeason } from "@/features/media/lib/media-format";
+import {
+  formatCountry,
+  formatGenre,
+  formatMediaFormat,
+  formatSeason,
+} from "@/features/media/lib/media-format";
 import {
   recentSeasons,
   type SeasonSlot,
 } from "@/features/media/lib/media-season";
 import {
+  type MediaFormat,
   type MediaSeason,
+  mediaCountrySchema,
+  mediaFormatSchema,
   mediaSeasonSchema,
 } from "@/features/media/schemas/media.schema";
 import {
@@ -57,6 +65,17 @@ export const TYPE_OPTIONS = [
   { value: "MANGA", label: "Mangas" },
 ] as const;
 
+/**
+ * L'échelle de la note, **sur 100, comme AniList** — et son pas.
+ *
+ * `MAX_SCORE` est le plafond d'`averageScore` ; `SCORE_STEP` vaut un demi-point sur l'échelle
+ * affichée. Les deux vivent ici plutôt que dans le composant parce que le parseur d'URL et le
+ * curseur doivent s'accorder : un pas différent des deux côtés produit une valeur que l'adresse
+ * accepte et que le contrôle ne sait pas représenter.
+ */
+export const MAX_SCORE = 100;
+export const SCORE_STEP = 5;
+
 export const STATUS_OPTIONS = [
   { value: "RELEASING", label: "En cours" },
   { value: "FINISHED", label: "Terminé" },
@@ -64,6 +83,72 @@ export const STATUS_OPTIONS = [
   { value: "HIATUS", label: "En pause" },
   { value: "CANCELLED", label: "Annulé" },
 ] as const;
+
+/**
+ * Les formats et les pays, **dérivés du schéma et étiquetés par les tables existantes**.
+ *
+ * Contrairement à `STATUS_OPTIONS`, qui est écrit à la main pour choisir son ordre, ces deux
+ * listes n'ont pas d'ordre à défendre : elles reprennent celui de l'énumération. Les recopier
+ * aurait créé une troisième liste de formats dans le dépôt — après le schéma Zod et la table de
+ * libellés de `media-format.ts` — et c'est la troisième qui aurait été oubliée.
+ *
+ * Le repli `?? value` ne se déclenche jamais : les deux formateurs couvrent l'énumération entière.
+ * Il est là parce qu'ils rendent `string | null` pour accepter une valeur absente, et une
+ * assertion aurait fait taire le compilateur sans rien garantir de plus.
+ */
+export const FORMAT_OPTIONS = mediaFormatSchema.options.map((value) => ({
+  value,
+  label: formatMediaFormat(value) ?? value,
+}));
+
+export const COUNTRY_OPTIONS = mediaCountrySchema.options.map((value) => ({
+  value,
+  label: formatCountry(value) ?? value,
+}));
+
+/**
+ * Les genres proposés en filtre — **la liste d'AniList moins `Hentai`**.
+ *
+ * Les valeurs sont celles d'AniList, telles qu'elles partent dans `genre_in` ; seuls les libellés
+ * sont traduits (`formatGenre`). L'ordre est alphabétique en français, donc celui dans lequel on
+ * les balaie du regard, et non celui de l'API.
+ *
+ * `Hentai` est retiré de la **liste de filtres**, pas de la table de libellés : proposer une puce
+ * qui ne rend rien tant que la préférence 18+ est éteinte serait un piège, et le filtre `isAdult`
+ * se dérive du compte côté serveur, jamais de l'URL (docs/recherche-filtres.md §1.2). Une fiche
+ * classée `Hentai` continue, elle, de s'afficher avec son genre traduit.
+ */
+export const GENRE_OPTIONS = [
+  "Action",
+  "Adventure",
+  "Comedy",
+  "Drama",
+  "Ecchi",
+  "Fantasy",
+  "Horror",
+  "Mahou Shoujo",
+  "Mecha",
+  "Music",
+  "Mystery",
+  "Psychological",
+  "Romance",
+  "Sci-Fi",
+  "Slice of Life",
+  "Sports",
+  "Supernatural",
+  "Thriller",
+].map((value) => ({ value, label: formatGenre(value) }));
+
+/**
+ * Les quatre saisons, **seules** — l'année se règle en plage, plus en trimestre.
+ *
+ * `formatSeason(season, null)` rend le nom sans millésime : la table de libellés reste chez
+ * `media-format.ts`, avec les autres, et n'a pas à être exposée pour ce seul usage.
+ */
+export const SEASON_OPTIONS = mediaSeasonSchema.options.map((value) => ({
+  value,
+  label: formatSeason(value, null) ?? value,
+}));
 
 /**
  * Les saisons, telles que l'URL les écrit. Reprises du schéma AniList plutôt que recopiées : une
@@ -145,6 +230,25 @@ const parseAsBoundedYear = createParser({
   serialize: (value: number) => String(value),
 });
 
+/**
+ * La note minimale, bornée à l'échelle d'AniList et alignée sur le pas du curseur.
+ *
+ * Même rôle que `parseAsBoundedYear` : une valeur absurde retombe à `null` au lieu de faire
+ * échouer la validation et d'emporter les autres filtres. Le `% SCORE_STEP` en plus refuse une
+ * valeur hors du pas — sans lui, `?score=73` forgée à la main créerait une clé de cache que
+ * l'interface est incapable de reproduire, donc jamais réutilisée.
+ */
+const parseAsBoundedScore = createParser({
+  parse: (value: string) => {
+    const score = parseAsInteger.parse(value);
+    if (score === null) return null;
+
+    const inRange = score >= SCORE_STEP && score <= MAX_SCORE;
+    return inRange && score % SCORE_STEP === 0 ? score : null;
+  },
+  serialize: (value: number) => String(value),
+});
+
 const SORT_VALUES = SORT_OPTIONS.map((option) => option.value) as [
   SortField,
   ...SortField[],
@@ -155,6 +259,8 @@ const DIRECTION_VALUES = ["ASC", "DESC"] as const satisfies readonly [
 ];
 const TYPE_VALUES = TYPE_OPTIONS.map((option) => option.value);
 const STATUS_VALUES = STATUS_OPTIONS.map((option) => option.value);
+const FORMAT_VALUES = FORMAT_OPTIONS.map((option) => option.value);
+const COUNTRY_VALUES = COUNTRY_OPTIONS.map((option) => option.value);
 
 /**
  * Le tri servi quand aucun terme n'est saisi.
@@ -190,6 +296,55 @@ export const searchFilterParsers = {
   q: parseAsString.withDefault(""),
   type: parseAsStringLiteral(TYPE_VALUES),
   status: parseAsStringLiteral(STATUS_VALUES),
+  /**
+   * Le format et le pays d'origine — **le schéma les acceptait déjà, l'URL ne les portait pas**.
+   *
+   * `searchMediaInputSchema` déclare `format` et `countryOfOrigin` depuis toujours, et
+   * `SEARCH_MEDIA_QUERY` les passe à AniList : il ne manquait qu'un parseur pour qu'une adresse
+   * puisse les exprimer. Les ajouter n'invalide aucun lien existant, un paramètre absent restant
+   * un filtre absent.
+   *
+   * `country` et non `countryOfOrigin` : les clés sont visibles dans l'adresse, donc courtes. Le
+   * nom long reste celui du schéma, qui parle à AniList et non à l'utilisateur.
+   *
+   * **`format` est une liste, `country` non**, et l'écart est voulu : « film ou spécial » est une
+   * question qu'on se pose, « japonais ou coréen » beaucoup moins — c'est même l'inverse de ce
+   * qu'on cherche quand on veut un webtoon. Les deux seraient possibles côté AniList (`format_in`,
+   * `countryOfOrigin_in`) ; seul le premier est ouvert, et il l'est de bout en bout — le document
+   * envoie `format_in`, le schéma d'entrée déclare `formats`.
+   *
+   * `type` restera au singulier quoi qu'il arrive : `Page.media` n'a pas de `type_in`.
+   */
+  format: parseAsArrayOf(parseAsStringLiteral(FORMAT_VALUES)).withDefault([]),
+  country: parseAsStringLiteral(COUNTRY_VALUES),
+  /**
+   * La plage d'années, **et non `seasonYear`**.
+   *
+   * C'est la sortie du piège documenté plus haut : la doc d'AniList dit que `seasonYear` « requires
+   * season argument », donc une année seule n'est pas garantie. `startDate_greater` /
+   * `startDate_lesser` n'ont pas cette dépendance, acceptent un intervalle — ce qu'un curseur à
+   * deux poignées demande — et laissent `season` filtrer le trimestre de son côté, sans millésime.
+   *
+   * Deux paramètres et non un intervalle encodé : `?yearMin=2020&yearMax=2026` se lit dans une
+   * adresse, se corrige à la main, et évite d'inventer une syntaxe que les deux bords devraient
+   * décoder.
+   *
+   * Bornés comme `year`, et pour la même raison : hors bornes, une valeur retombe à `null` sans
+   * emporter les filtres saisis à côté d'elle.
+   */
+  yearMin: parseAsBoundedYear,
+  yearMax: parseAsBoundedYear,
+  /**
+   * La note minimale de la communauté, **sur 100 comme chez AniList** (`averageScore_greater`).
+   *
+   * L'écran affiche « 7,0 » parce qu'une note sur dix se lit mieux, mais l'URL porte `70` : tout le
+   * dépôt compte les notes sur 100 (`mediaSchema.averageScore`, `Entry.score`), et convertir à la
+   * frontière plutôt que dans l'adresse évite qu'un paramètre ait une échelle à lui.
+   *
+   * Le pas est de 5 — soit un demi-point à l'écran. C'est le compromis du « prix d'un filtre » :
+   * au point près, cette seule facette multiplierait par cent les clés de cache de la recherche.
+   */
+  score: parseAsBoundedScore,
   /** Listes séparées par des virgules : `?genre=Action,Comedy` reste lisible. */
   genre: parseAsArrayOf(parseAsString).withDefault([]),
   tag: parseAsArrayOf(parseAsString).withDefault([]),
@@ -238,10 +393,15 @@ export const EMPTY_FILTERS: {
   q: string;
   type: null;
   status: null;
+  format: MediaFormat[];
+  country: null;
   genre: string[];
   tag: string[];
   season: null;
   year: null;
+  yearMin: null;
+  yearMax: null;
+  score: null;
   sort: SortField;
   dir: SortDirection;
   page: number;
@@ -249,10 +409,15 @@ export const EMPTY_FILTERS: {
   q: "",
   type: null,
   status: null,
+  format: [],
+  country: null,
   genre: [],
   tag: [],
   season: null,
   year: null,
+  yearMin: null,
+  yearMax: null,
+  score: null,
   sort: "SEARCH_MATCH",
   dir: "DESC",
   page: 1,

@@ -42,6 +42,15 @@
   --color-overlay: var(--overlay);
   --color-surface-raised: var(--surface-raised);
   --color-ring-accent: var(--ring-accent);
+
+  /* Les six statuts de suivi — voir le bloc `:root` pour l'écart assumé à la spec. */
+  --color-status-current: var(--status-current);
+  --color-status-planning: var(--status-planning);
+  --color-status-completed: var(--status-completed);
+  --color-status-paused: var(--status-paused);
+  --color-status-repeating: var(--status-repeating);
+  --color-status-dropped: var(--status-dropped);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -88,6 +97,36 @@
   --sidebar-accent-foreground: oklch(0.1448 0.0032 285.82);
   --sidebar-border: oklch(0.92 0.0039 286.32);
   --sidebar-ring: oklch(0.5106 0.2301 276.97);
+
+  /*
+    Les six statuts de suivi — **un écart assumé au principe directeur**, décidé par Alexis le
+    6 septembre 2026.
+
+    La spec du 2 septembre dit « la jaquette est la seule chose colorée de l'écran » et n'autorise
+    l'accent qu'à quatre endroits. Le quatrième est justement « le marqueur de suivi sur une
+    jaquette », qu'elle appelle la seule fonction nouvelle de la refonte : voir d'un coup d'œil, dans
+    une grille, ce qu'on suit déjà. Ce que ces tokens ajoutent, c'est de passer d'**une** couleur qui
+    dit « suivi » à **six** qui disent lequel — sur une bibliothèque de plusieurs centaines de
+    lignes, « en cours » et « abandonné » ne se distinguent autrement qu'en lisant.
+
+    Trois garde-fous pour que l'écart reste tenable, et ils sont la raison des valeurs ci-dessous :
+
+    1. **Chroma bas** (0,10 à 0,14 là où l'accent est à 0,20+). Ce sont des teintes qui identifient,
+       pas qui attirent : posées à côté d'une jaquette, elles doivent perdre.
+    2. **Aucune ne s'approche de l'iris** (teinte 277). L'accent garde son monopole sur « l'action
+       en cours » ; une pastille violette la lui disputerait.
+    3. **Elles ne servent qu'en pastille**, jamais en fond ni en bordure d'un bloc. Une surface
+       colorée, c'est ce que le principe directeur interdit vraiment.
+
+    En thème clair, les mêmes teintes descendent en luminosité : à 0,72 sur du blanc, une pastille
+    de 8 px ne se voit plus.
+  */
+  --status-current: oklch(0.58 0.13 155);
+  --status-planning: oklch(0.56 0.12 245);
+  --status-completed: oklch(0.55 0.1 300);
+  --status-paused: oklch(0.62 0.13 80);
+  --status-repeating: oklch(0.58 0.1 200);
+  --status-dropped: oklch(0.55 0.14 20);
 }
 
 /* « Obsidienne » — quasi-noir neutre, accent iris. Le mode canon. */
@@ -136,6 +175,42 @@
   --sidebar-accent-foreground: oklch(0.9851 0 0);
   --sidebar-border: oklch(0.2603 0.0055 286.03);
   --sidebar-ring: oklch(0.5854 0.2041 277.12);
+
+  /*
+    Les mêmes six teintes, remontées en luminosité pour le fond quasi-noir : à 0,55 sur Obsidienne,
+    une pastille de 8 px devient une tache sombre sur du sombre — le même piège que les puces de
+    filtre du panneau, mesuré le 5 septembre. Le chroma, lui, ne bouge pas : c'est lui qui décide
+    de la place que la couleur prend à côté d'une jaquette, et cette place doit rester la même dans
+    les deux thèmes.
+  */
+  --status-current: oklch(0.75 0.13 155);
+  --status-planning: oklch(0.72 0.12 245);
+  --status-completed: oklch(0.7 0.1 300);
+  --status-paused: oklch(0.79 0.13 80);
+  --status-repeating: oklch(0.76 0.1 200);
+  --status-dropped: oklch(0.68 0.14 20);
+}
+
+/*
+  Une surface **claire posée dans le thème sombre** — aujourd'hui l'onglet actif de la rangée de
+  statuts, qui s'inverse pour se distinguer (les gris d'Obsidienne se touchent, voir le panneau de
+  filtres).
+
+  Les six teintes de statut y retrouvent leurs valeurs de thème clair. Sans ça, une couleur choisie
+  pour un fond quasi-noir se retrouve sur du presque-blanc et se délave : mesuré à l'écran le
+  6 septembre 2026 sur « En pause », dont l'ambre à 0,79 de luminosité devenait un rond beige à
+  peine visible à côté de ses voisines restées sur fond sombre.
+
+  C'est une redéclaration de variables et non une nouvelle famille de tokens : le thème clair a
+  déjà calculé ces valeurs, en inventer six autres reviendrait à les maintenir deux fois.
+*/
+.on-inverted-surface {
+  --status-current: oklch(0.58 0.13 155);
+  --status-planning: oklch(0.56 0.12 245);
+  --status-completed: oklch(0.55 0.1 300);
+  --status-paused: oklch(0.62 0.13 80);
+  --status-repeating: oklch(0.58 0.1 200);
+  --status-dropped: oklch(0.55 0.14 20);
 }
 
 @layer base {

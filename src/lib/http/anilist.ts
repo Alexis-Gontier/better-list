@@ -123,11 +123,48 @@ export function isAniListOutage(error: unknown): boolean {
  */
 export async function tryAniList<T>(read: () => Promise<T>): Promise<T | null> {
   try {
-    return await read();
+    const result = await read();
+    lastOutageAt = null;
+    return result;
   } catch (error) {
-    if (isAniListOutage(error)) return null;
+    if (isAniListOutage(error)) {
+      lastOutageAt = Date.now();
+      return null;
+    }
     throw error;
   }
+}
+
+/**
+ * Combien de temps une panne constatée reste vraie sans nouvelle preuve.
+ *
+ * Assez long pour couvrir une navigation entière — sinon le bandeau clignoterait d'une page à
+ * l'autre —, assez court pour que le retour du service se voie sans avoir à vider quoi que ce
+ * soit. Le premier appel réussi l'efface de toute façon : ce délai ne sert que lorsque **plus
+ * personne n'interroge AniList**, faute d'écran qui le fasse.
+ */
+const OUTAGE_MEMORY_MS = 5 * 60 * 1000;
+
+let lastOutageAt: number | null = null;
+
+/**
+ * AniList est-elle tombée récemment — **la seule mémoire qu'on ait de l'incident**.
+ *
+ * Elle existe parce que l'avis de panne doit être global (docs/ARCHITECTURE.md) alors que la panne
+ * ne se constate qu'en interrogeant AniList : `/settings` ou `/lists` n'appellent jamais l'API et
+ * ne peuvent donc rien savoir par eux-mêmes. Sonder l'API depuis le layout pour le leur dire
+ * coûterait une requête par affichage de n'importe quelle page — sur un quota de trente par minute
+ * partagé par tout le monde, c'est la panne qu'on prétend signaler.
+ *
+ * **Trois limites, assumées.** C'est une variable de module : elle vit dans une instance de
+ * serveur, disparaît au redémarrage, et une autre instance qui n'a pas encore vu d'échec ne sait
+ * rien. Aucune de ces trois n'est grave — au pire le bandeau manque à quelqu'un pendant une
+ * requête, jamais l'inverse, et un faux négatif sur un avis d'incident est le bon sens de
+ * l'erreur. Le prix d'une mémoire partagée (base, cache distribué) serait sans commune mesure avec
+ * ce qu'elle apporterait pour un cercle de quatre comptes.
+ */
+export function isAniListDown(): boolean {
+  return lastOutageAt !== null && Date.now() - lastOutageAt < OUTAGE_MEMORY_MS;
 }
 
 type AniListQueryOptions<TSchema extends z.ZodType> = {
