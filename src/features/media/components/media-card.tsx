@@ -40,9 +40,26 @@ type MediaCardProps = {
    * à ne rien prioriser, et fait concurrencer la première image par vingt autres.
    */
   priority?: boolean;
+  /**
+   * Un marqueur posé **à gauche du titre** — aujourd'hui la pastille de statut de suivi.
+   *
+   * C'est un emplacement, pas un statut, et l'écart est délibéré. `MediaCard` vit dans
+   * `features/media/` ; lui passer un `EntryStatus` ferait dépendre le domaine du catalogue de
+   * celui du suivi pour un rond de huit pixels. Le dépôt refuse déjà ce couplage ailleurs pour
+   * moins que ça — `entry-format.ts` réécrit six libellés plutôt que d'importer ceux de `media`.
+   *
+   * L'appelant fournit donc son propre marqueur : `/library` y met un `EntryStatusDot`, et un autre
+   * écran pourra y mettre autre chose sans que cette carte ait à le savoir.
+   */
+  marker?: React.ReactNode;
 };
 
-export function MediaCard({ media, titleLanguage, priority }: MediaCardProps) {
+export function MediaCard({
+  media,
+  titleLanguage,
+  priority,
+  marker,
+}: MediaCardProps) {
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
   const title = mediaTitle(media.title, titleLanguage);
 
@@ -107,9 +124,18 @@ export function MediaCard({ media, titleLanguage, priority }: MediaCardProps) {
         `alt=""` sur l'image, à dessein : le titre est juste là, en texte. Le répéter ferait lire
         deux fois la même chose à un lecteur d'écran.
       */}
-      <p className="truncate text-xs" title={title}>
-        {title}
-      </p>
+      {/*
+        Le marqueur est **hors du texte tronqué**, pas dedans : `truncate` coupe le contenu de son
+        propre élément, donc une pastille placée à l'intérieur disparaîtrait sur les titres longs —
+        c'est-à-dire précisément ceux où l'on a besoin d'un repère. Le titre garde donc son `min-w-0`
+        et sa troncature ; la pastille garde sa place, quoi qu'il arrive.
+      */}
+      <div className="flex items-center gap-1.5">
+        {marker}
+        <p className="min-w-0 truncate text-sm" title={title}>
+          {title}
+        </p>
+      </div>
     </Link>
   );
 }
