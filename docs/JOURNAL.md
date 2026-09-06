@@ -58,6 +58,28 @@ l'écran, pas au typecheck.
 `package.json`. C'est `knip` qui l'a trouvé. Vérifier `git diff package.json` après toute commande
 de registre qui s'interrompt.
 
+**`ImageResponse` fonctionne au build et pas à la requête, sur cette machine.** `app/icon.tsx` est
+prérendu au build : `.next/server/app/icon.body` est un PNG valide de 561 octets, et la route rend
+200 en production. Le même composant demandé *à la requête* — en dev, ou l'`opengraph-image` d'une
+liste partagée, qui dépend du jeton — se termine en « failed to pipe response » puis en socket
+fermé. Un serveur de dev redémarré à froid n'y change rien : ce n'est pas du rechargement à chaud.
+Conséquence : **l'aperçu OG du partage est livré sans avoir été vu**, et c'est la seule chose de la
+séance dans ce cas.
+
+**Un `notFound()` ne pose pas de 404 sous les Cache Components.** Sur `/l/[token]`, un jeton inventé
+rend bien la page « introuvable » — corps vérifié, aucun titre de liste dedans — mais avec un statut
+**200**. La coquille part avant que la base ait répondu, donc le code est déjà écrit quand on veut
+le changer. `connection()` a été essayé pour forcer un rendu dynamique : sans effet, et retiré
+plutôt que gardé avec un commentaire qui aurait menti. Mesuré sur le build, pas seulement en dev.
+
+**Une écriture inexpliquée, puis une seconde, puis une expérience de contrôle.** Le récit est dans
+[STATE.md](./STATE.md) ; ce qui appartient au journal est la méthode : quand deux anomalies ne se
+recoupent pas, le point commun était l'outil, pas le code. Un `next dev` qui traverse une séance
+entière de modifications recharge à chaud à travers des compilations incompatibles, et les Server
+Actions sont identifiées par un identifiant généré à la compilation. **Redémarrer `next dev` après
+un refactor qui touche des Server Actions** — et se méfier d'un journal de dev qui s'est mis à
+cracher des erreurs en continu.
+
 **Le piège du miroir s'est vérifié pour de vrai, et il fallait sortir de ses propres données pour
 ça.** La fenêtre « Ajouter à une liste » a été éprouvée sur *Sousou no Frieren 3rd Season*, atteinte
 depuis `/search` — une saison récente qu'aucun compte n'avait jamais suivie, donc absente du miroir.

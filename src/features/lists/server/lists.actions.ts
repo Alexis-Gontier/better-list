@@ -7,12 +7,14 @@ import {
   rankAfterMove,
   rankForAppend,
 } from "@/features/lists/lib/list-reorder";
+import { generateShareToken } from "@/features/lists/lib/share-token";
 import {
   addToListSchema,
   createListSchema,
   deleteListSchema,
   removeFromListSchema,
   reorderListItemSchema,
+  shareListSchema,
   updateListSchema,
 } from "@/features/lists/schemas/lists.schema";
 import { ensureMediaMirror } from "@/features/media/server/media.mirror";
@@ -31,9 +33,9 @@ import { authActionClient } from "@/lib/safe-action";
  * next-safe-action est en **v8** : `.metadata()` puis `.inputSchema()`. `.schema()` est l'API v7 et
  * n'existe plus (CLAUDE.md).
  *
- * **Le partage n'est pas ici**, et ce n'est pas un oubli : `shareListSchema` attend `/l/[token]`,
- * qui n'est pas de cette branche. Publier une liste et la renommer n'ont ni la même portée ni le
- * même défaire, et `lists.schema.ts` dit pourquoi ils ne partagent pas de formulaire.
+ * **Le partage a ses propres actions**, et ne se mêle pas au renommage : publier une liste et
+ * corriger son libellé n'ont ni la même portée ni le même défaire. Les mêler dans un formulaire
+ * ferait d'« Enregistrer » un bouton dont on ne mesure plus les conséquences (`lists.schema.ts`).
  */
 
 /**
@@ -285,4 +287,68 @@ export const removeFromList = authActionClient
     revalidateLists(mediaId);
 
     return { removed: true };
+  });
+
+/**
+ * Partager une liste par lien non listé — **le jeton est fabriqué ici**.
+ *
+ * `shareListSchema` ne prend que l'identifiant, et son docstring dit pourquoi : ne pas accepter le
+ * jeton en entrée est ce qui empêche quiconque de **se choisir une adresse** — ou d'écrire celle
+ * d'une liste voisine. Il est tiré de `randomBytes` (`share-token.ts`), jamais de `Math.random()`,
+ * parce qu'il est le seul secret qui protège une page répondant sans session.
+ *
+ * **Re-partager génère un autre jeton et tue l'ancien lien.** C'est une conséquence directe du
+ * modèle à une seule colonne (§4.4) et non un effet de bord : il n'y a pas d'historique de jetons,
+ * donc l'adresse précédente ne mène plus nulle part. Appeler cette action sur une liste déjà
+ * partagée est donc une **rotation**, pas un no-op — l'appelant doit le dire à l'écran.
+ *
+ * Pas de gestion de collision : `shareToken` est unique en base, et produire deux fois le même sur
+ * 144 bits est hors de portée du raisonnement. Si l'insertion échouait malgré tout, l'erreur remonte
+ * plutôt que d'être réessayée en silence.
+ */
+export const shareList = authActionClient
+  .metadata({ actionName: "shareList" })
+  .inputSchema(shareListSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const shareToken = generateShareToken();
+
+    /*
+      `updateMany` porte la garde de propriété dans son `where`, comme les autres écritures — et son
+      compte dit si la liste était bien la mienne. Zéro ligne veut dire « pas ta liste » ou « elle
+      n'existe plus » : on ne rend surtout pas le jeton qu'on vient de fabriquer.
+    */
+    const { count } = await prisma.list.updateMany({
+      where: { id: parsedInput.listId, ownerId: ctx.user.id },
+      data: { shareToken },
+    });
+
+    if (count === 0) throw new Error("Liste introuvable.");
+
+    revalidateLists();
+
+    return { shareToken };
+  });
+
+/**
+ * Cesser de partager — **le lien meurt, et rien ne le ressuscite**.
+ *
+ * Mettre `shareToken` à `null` suffit : `getSharedList` ne trouve plus rien et la page rend un 404.
+ * Il n'y a pas d'historique à purger, et pas de cache non plus — la page partagée n'a aucun
+ * `"use cache"`, précisément pour que la révocation soit immédiate.
+ *
+ * `@unique` sur une colonne nullable n'empêche pas les `NULL` multiples chez PostgreSQL : toutes les
+ * listes non partagées cohabitent sans se disputer la contrainte.
+ */
+export const unshareList = authActionClient
+  .metadata({ actionName: "unshareList" })
+  .inputSchema(shareListSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    await prisma.list.updateMany({
+      where: { id: parsedInput.listId, ownerId: ctx.user.id },
+      data: { shareToken: null },
+    });
+
+    revalidateLists();
+
+    return { revoked: true };
   });

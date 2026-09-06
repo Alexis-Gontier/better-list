@@ -72,17 +72,10 @@
     // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
     "src/features/media/server/media.documents.ts": ["exports"],
     "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
-    // `lists.schema.ts` **quitte le gel « files » le 6 septembre 2026** : `/lists` l'importe, et
-    // `lists.actions.ts` consomme ses trois entrées de création, modification et suppression. Il se
-    // rétrograde en gel « exports », comme `media.documents.ts` avant lui.
-    //
-    // **Il ne reste qu'une entrée gelée sur les sept** : `shareListSchema`, qui attend `/l/[token]`.
-    // `reorderListItemSchema` est sorti avec le mode réorganisation, `addToListSchema` et
-    // `removeFromListSchema` avec la fenêtre de rangement de la fiche — toutes le 6 septembre 2026.
-    //
-    // Le jour où le partage aura son écran, cette entrée part et le fichier quitte le gel pour de
-    // bon, comme `library-params.ts` et `search-params.ts` avant lui.
-    "src/features/lists/schemas/lists.schema.ts": ["exports"],
+    // `lists.schema.ts` **est sorti du gel pour de bon le 6 septembre 2026** : ses sept entrées ont
+    // toutes trouvé leur appelant, la dernière étant `shareListSchema` avec `/l/[token]`. Troisième
+    // entrée à disparaître entièrement plutôt qu'à se rétrograder, après `library-params.ts` et
+    // `search-params.ts`.
     // `search-params.ts` est **sorti du gel** : la grille de résultats a consommé ses deux derniers
     // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
     // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que

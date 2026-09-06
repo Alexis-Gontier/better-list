@@ -10,13 +10,13 @@ l'intention.
 
 Relevé le **6 septembre 2026**.
 
-> ### En un mot : cinq écrans sur onze, et les listes se manipulent.
+> ### En un mot : six écrans sur onze, et les listes sont entières.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> cinq routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
+> six routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
-> miroir local quand AniList tombe —, puis **`/lists` et `/lists/[id]`**. Les six autres routes
-> construites restent des placeholders.
+> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**. Les cinq
+> autres routes construites restent des placeholders.
 >
 > **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
 > même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
@@ -40,6 +40,10 @@ Relevé le **6 septembre 2026**.
 > **bascules** : cochée veut dire que l'œuvre est dedans, décocher l'en retire. C'était la condition
 > pour livrer ce chemin — sans elle, aucun écran n'aurait permis de défaire un ajout.
 >
+> **Et une liste se partage.** `/l/[token]` répond **sans session** : le jeton de 144 bits est la
+> garde, et c'est la seule page du produit dans ce cas. Révoquer met la colonne à `null`, donc le
+> lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
+>
 > Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
 >
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
@@ -61,7 +65,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
-| `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **vidé** — en refonte |
+| `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
 | `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **vidé** — en refonte |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **vidé** — en refonte |
@@ -492,19 +496,32 @@ de résultats** de `/search`, qui doit dire « plus de 5000 » et non « 5000 »
 que la fiche ne porte pas encore alors que la fenêtre d'une vignette les a — dates, notes,
 relectures.
 
-### ⚠️ Une liste a disparu de la base le 6 septembre, et la cause n'est pas établie
+### ⚠️ Deux écritures inexpliquées le 6 septembre — et un serveur de dev qui les explique probablement
 
-« Randil recommendation » — vide, créée par Alexis — était en base à 17 h 26 et n'y était plus à
-17 h 48, pendant la séance des listes. Les seules suppressions déclenchées ce jour-là visaient une
-liste de test créée pour l'occasion, et une confirmation ouverte sur « Top 10 anime » puis annulée —
-celle-ci est intacte, ses dix-huit œuvres dans leur ordre d'origine, vérifié après rechargement.
+**Ce qui s'est passé.** « Randil recommendation » — une liste vide d'Alexis — était en base à 17 h 26
+et n'y était plus à 17 h 48. Plus tard, un jeton de partage est apparu sur « A voir (anime) » alors
+qu'aucun geste ne l'avait visée. Dans les deux cas, les seules actions déclenchées visaient une autre
+liste, et cette autre liste était intacte.
 
-**Rien ne permet de reconstituer le geste**, et c'est le fond du problème : `List` et `ListItem`
-n'ont **aucun journal**, contrairement à `Entry` dont `EntryEvent` aurait tranché en une requête.
-Ce qui a été perdu se limite à un titre et une date de création — la liste était vide.
+**Ce qui les relie, et qui est mesuré.** Le serveur de `next dev` tournait depuis avant les
+modifications de la séance et avait rechargé à chaud à travers des dizaines de compilations
+incompatibles ; son journal montre des erreurs continues à partir de la 17ᵉ minute. Une Server Action
+est identifiée par un identifiant **généré à la compilation** : un bundle client périmé peut donc en
+appeler une autre que celle qu'on croit.
 
-À décider avant de rouvrir cet écran : soit on établit la cause, soit on donne aux listes de quoi
-répondre à la question « qui a supprimé quoi, et quand ».
+**L'expérience de contrôle.** Serveur redémarré à froid, `.next/dev` supprimé, puis le scénario
+rejoué : révoquer un jeton l'a mis à `null` sur la bonne liste et sur elle seule ; créer un lien l'a
+posé sur la liste visée et sur aucune autre ; les quatre décomptes d'items sont restés intacts.
+**Rien ne s'est reproduit.**
+
+**Ce que ça ne prouve pas.** L'absence de reproduction n'est pas une démonstration, et le geste
+d'origine reste introuvable. Ce qui a été perdu se limite à un titre et une date de création — la
+liste était vide.
+
+**La leçon, elle, tient quel que soit le coupable : `List` et `ListItem` n'ont aucun journal**, là où
+`EntryEvent` aurait répondu en une requête. Et une règle d'hygiène en sort : **ne pas laisser un
+`next dev` traverser une séance entière de modifications** — le redémarrer après un refactor qui
+touche des Server Actions.
 
 ### Le socle visuel est en place — et c'est tout ce qui a été repris
 
@@ -559,11 +576,11 @@ vocabulaire de tous les autres.
    et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
    cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
-4. `/lists` et `/lists/[id]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
+4. `/lists`, `/lists/[id]` et `/l/[token]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
    réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.
-   La fenêtre « Ajouter à une liste » de la fiche est livrée avec, donc **les listes sont entières
-   pour un usage solitaire**. **Reste `/l/[token]`**, et avec lui `generateShareToken` et
-   `shareListSchema` — désormais **la seule** entrée gelée de `lists.schema.ts` sur sept.
+   La fenêtre « Ajouter à une liste » de la fiche et le partage par jeton sont livrés avec : **le
+   domaine des listes est entier**, et `lists.schema.ts` a quitté `knip.jsonc` pour de bon — ses
+   sept entrées ont toutes un appelant.
 5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 

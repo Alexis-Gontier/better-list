@@ -175,6 +175,15 @@ export type ListDetail = {
   description: string | null;
   /** Le nombre d'œuvres **réel**, avant le filtre 18+ : c'est ce que la suppression emporterait. */
   itemCount: number;
+  /**
+   * Le jeton de partage, ou `null` si la liste n'est pas partagée — **la seule source de vérité du
+   * partage** (§4.4).
+   *
+   * Il descend jusqu'au navigateur, et c'est nécessaire : le propriétaire doit pouvoir **copier son
+   * propre lien**. Ce n'est pas une fuite — cette lecture est gardée par `ownerId`, donc le jeton
+   * n'atteint que celui qui l'a fait fabriquer.
+   */
+  shareToken: string | null;
   items: ListDetailItem[];
 };
 
@@ -211,6 +220,7 @@ export async function getList(
       id: true,
       title: true,
       description: true,
+      shareToken: true,
       _count: { select: { items: true } },
       items: {
         orderBy: { rank: "asc" },
@@ -227,6 +237,7 @@ export async function getList(
     title: list.title,
     description: list.description,
     itemCount: list._count.items,
+    shareToken: list.shareToken,
     items: list.items.map(({ media }) => ({
       media: compactFromMirror(media),
       banner: media.bannerImage,
@@ -285,4 +296,66 @@ export async function getListMembership(
     title: row.title,
     contains: row.items.length > 0,
   }));
+}
+
+export type SharedList = {
+  title: string;
+  description: string | null;
+  /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
+  ownerName: string;
+  items: ListDetailItem[];
+};
+
+/**
+ * Une liste ouverte **par son jeton**, sans session (docs/PRODUCT.md §4.4).
+ *
+ * **C'est la seule lecture du dépôt qui ne demande à personne qui il est**, et c'est délibéré :
+ * `/l/[token]` vit hors du groupe `(app)`, donc `requireApprovedUser()` ne la couvre pas. La garde,
+ * ici, **est le jeton** — 144 bits tirés du générateur cryptographique de Node
+ * (`share-token.ts`), qu'aucune énumération n'atteint.
+ *
+ * D'où trois conséquences qu'il ne faut pas défaire :
+ *
+ * 1. **`shareToken` est cherché tel quel**, jamais combiné à un `ownerId` : on ne sait pas qui
+ *    regarde, et c'est le principe même d'un lien non listé.
+ * 2. **`null` quand le jeton ne correspond à rien** — jeton faux, ou lien révoqué depuis. Les deux
+ *    se confondent, et l'appelant rend un 404 : distinguer « ce jeton n'existe pas » de « ce jeton
+ *    a été révoqué » confirmerait à qui essaie qu'un lien a existé.
+ * 3. **Révoquer, c'est mettre la colonne à `null`**, donc ce `findFirst` ne trouve plus rien. Le
+ *    lien meurt de lui-même, sans purge de cache à faire — la page n'a aucun `"use cache"`, et elle
+ *    ne doit jamais en avoir : une page mémorisée par jeton survivrait à sa révocation.
+ *
+ * **Aucun filtre 18+**, contrairement à `getLists` et `getList` — décision d'Alexis du 6 septembre
+ * 2026. La préférence appartient à un compte, et il n'y en a pas ici ; surtout, la page doit montrer
+ * la liste **telle qu'elle a été partagée**. Masquer ferait diverger ce que voit le destinataire de
+ * ce que croit envoyer celui qui partage, et le décompte mentirait.
+ */
+export async function getSharedList(token: string): Promise<SharedList | null> {
+  const list = await prisma.list.findFirst({
+    where: { shareToken: token },
+    select: {
+      title: true,
+      description: true,
+      owner: { select: { name: true, username: true } },
+      items: {
+        orderBy: { rank: "asc" },
+        select: { media: { select: MIRRORED_MEDIA_SELECT } },
+      },
+    },
+  });
+
+  if (!list) return null;
+
+  return {
+    title: list.title,
+    description: list.description,
+    // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
+    ownerName: list.owner.name || list.owner.username || "un membre",
+    items: list.items.map(({ media }) => ({
+      media: compactFromMirror(media),
+      banner: media.bannerImage,
+      unit: media.type === "ANIME" ? "episode" : "chapitre",
+      total: media.type === "ANIME" ? media.episodes : media.chapters,
+    })),
+  };
 }

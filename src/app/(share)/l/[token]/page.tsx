@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { notFound } from "next/navigation";
 
-import { RouteUnderConstruction } from "@/components/shared/route-under-construction";
+import { Separator } from "@/components/ui/separator";
+import { getSharedList } from "@/features/lists/server/lists.queries";
+import { mediaTitle } from "@/features/media/lib/media-format";
 
 export const metadata: Metadata = {
   title: "Liste partagée",
@@ -8,25 +12,129 @@ export const metadata: Metadata = {
   /*
    * **Ne pas retirer.** C'est la seule route de l'app qui s'ouvre sans session : un lien secret
    * indexé n'est plus un secret, il est cherchable. `app/robots.ts` ferme déjà tout le site par un
-   * `disallow: "/"` total, et cette balise le double au niveau de la page — la mise à blanc n'a pas
-   * touché cette propriété, et la reconstruction ne le doit pas non plus.
+   * `disallow: "/"` total, et cette balise le double au niveau de la page.
+   *
+   * Le titre et la description restent **génériques à dessein** : ce sont eux qui partent dans
+   * l'onglet et dans l'historique du navigateur. Le nom de la liste, lui, est dans la page — et
+   * dans l'aperçu du lien, que seul un destinataire déjà en possession de l'adresse peut demander
+   * (`opengraph-image.tsx`).
    */
   robots: { index: false, follow: false },
 };
 
 /**
- * Une liste partagée par jeton — vidée par la mise à blanc totale du 5 septembre 2026.
+ * Une liste ouverte par lien non listé (docs/PRODUCT.md §4.4).
  *
- * Le jeton lui-même est intact : `features/lists/lib/share-token.ts` et ses quatre tests n'ont pas
- * bougé, et le partage continue de passer par lui plutôt que par l'`id`. Ce qui a disparu, c'est la
- * lecture `getSharedList` et le rendu de la grille — plus l'`opengraph-image.tsx`, qui dessinait
- * l'aperçu du lien à partir de cette lecture et n'avait donc plus rien à décrire.
+ * **La seule page du produit qui répond sans session, et sa garde est le jeton.** Elle vit hors du
+ * groupe `(app)`, donc `requireApprovedUser()` ne la couvre pas — ce n'est pas un contournement de
+ * la règle « une seule garde », c'est la raison d'être du groupe `(share)`.
+ *
+ * **Aucun cache, et jamais de `"use cache"` ici.** Une page mémorisée par jeton survivrait à sa
+ * révocation, ce qui viderait de son sens le seul moyen de reprendre un lien.
+ *
+ * ⚠️ **Un jeton inconnu rend la page « introuvable » mais avec un statut 200, pas 404.** Mesuré sur
+ * le build, pas seulement en dev : avec les Cache Components, la coquille part avant que la base ait
+ * répondu, donc `notFound()` ne peut plus poser le code. `connection()` a été essayé le 6 septembre
+ * 2026 pour forcer un rendu dynamique — sans effet, le build continue d'annoncer cette route en
+ * rendu partiel.
+ *
+ * **Rien ne fuit pour autant, et c'est ce qui a été vérifié** : le corps servi pour un jeton inventé
+ * comme pour un lien révoqué ne contient **aucun titre de liste**. Ce qui reste faux est le statut,
+ * et il ne renseigne personne — il vaut 200 dans les trois cas, donc il ne distingue pas un lien
+ * vivant d'un lien mort. À reprendre le jour où l'on saura poser un 404 sous ce modèle de rendu.
+ *
+ * **En lecture seule, et sans aucune trace de suivi.** Pas de `MediaCard` : elle mène à
+ * `/media/[id]`, qui est derrière la garde — un visiteur sans compte n'y arriverait que sur un
+ * écran de connexion qu'il ne peut pas franchir, puisque l'inscription passe par une liste
+ * d'attente. Même raison que l'absence de navigation dans le layout `(share)`. Les jaquettes ne sont
+ * donc pas cliquables, et c'est délibéré plutôt que faute de temps.
+ *
+ * **Rien n'est masqué.** Contrairement à `/lists` et `/lists/[id]`, aucun filtre 18+ : la
+ * préférence appartient à un compte, et il n'y en a pas ici. La page montre la liste **telle qu'elle
+ * a été partagée** (décision d'Alexis, 6 septembre 2026).
  */
-export default function SharedListPage() {
+export default async function SharedListPage({
+  params,
+}: PageProps<"/l/[token]">) {
+  const { token } = await params;
+  const list = await getSharedList(token);
+
+  /*
+    Jeton inconnu **et** lien révoqué rendent le même 404, et `getSharedList` les confond
+    volontairement : répondre différemment confirmerait à qui essaie qu'un lien a existé ici.
+  */
+  if (!list) notFound();
+
   return (
-    <RouteUnderConstruction
-      description="Une liste ouverte par lien."
-      title="Liste partagée"
-    />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl">{list.title}</h1>
+          {list.description ? (
+            <p className="text-pretty text-muted-foreground text-sm">
+              {list.description}
+            </p>
+          ) : null}
+          {/*
+            De qui vient la liste — décision d'Alexis du 6 septembre 2026. Ça donne le contexte à qui
+            reçoit le lien sans rien révéler qu'il ne sache déjà : c'est cette personne qui le lui a
+            envoyé.
+          */}
+          <p className="text-muted-foreground text-xs">
+            Une liste de {list.ownerName} · {itemLabel(list.items.length)}
+          </p>
+        </div>
+        <Separator />
+      </div>
+
+      {list.items.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Cette liste est vide pour l'instant.
+        </p>
+      ) : (
+        /*
+          La grille du catalogue, aux mêmes paliers — mais écrite ici plutôt qu'empruntée à
+          `CatalogueGrid` : celle-ci pose ses colonnes pour une page de vingt et un résultats dans
+          une largeur de `max-w-6xl`, quand le layout `(share)` tient dans `max-w-5xl`. Deux
+          contextes, deux densités ; les partager aurait fait dépendre l'un du réglage de l'autre.
+        */
+        <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">
+          {list.items.map((item) => {
+            /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le repli de
+               `mediaTitle` sur le romaji est exactement ce qu'on veut afficher. */
+            const title = mediaTitle(item.media.title, "ROMAJI");
+            const cover =
+              item.media.coverImage?.extraLarge ??
+              item.media.coverImage?.large ??
+              null;
+
+            return (
+              <li className="flex flex-col gap-2" key={item.media.id}>
+                <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+                  {cover ? (
+                    <Image
+                      alt=""
+                      className="object-cover"
+                      fill
+                      sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
+                      src={cover}
+                    />
+                  ) : null}
+                </div>
+                <p className="min-w-0 truncate text-sm" title={title}>
+                  {title}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
+}
+
+/** « 18 œuvres », « 1 œuvre », « Aucune œuvre » — la formulation des deux écrans de listes. */
+function itemLabel(count: number): string {
+  if (count === 0) return "Aucune œuvre";
+  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }
