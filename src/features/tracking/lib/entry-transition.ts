@@ -54,7 +54,8 @@ export type EntryEventDraft = {
   progressTo?: number;
   statusFrom?: EntryStatus;
   statusTo?: EntryStatus;
-  score?: number;
+  /** `null` sur un `SCORED` : la note a été retirée, ce qui est un geste et non une absence. */
+  score?: number | null;
   note?: string;
 };
 
@@ -212,7 +213,13 @@ function diffEvents(
     events.push({ type: "REPEAT_STARTED" });
   }
 
-  if (next.score !== base.score && next.score !== null) {
+  /*
+    **L'effacement compte comme un événement** (7 septembre 2026). `Entry.score` est écrasé, donc
+    sans cette ligne retirer une note ne laisserait aucune trace nulle part — c'était tolérable tant
+    que le geste était un cas de bord de la fiche, ça ne l'est plus depuis que la tier list en fait
+    un dépôt dans la réserve. `EntryEvent.score` est déjà nullable en base : rien à migrer.
+  */
+  if (next.score !== base.score) {
     events.push({ type: "SCORED", score: next.score });
   }
 

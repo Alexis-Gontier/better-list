@@ -203,7 +203,13 @@ describe("dates et relectures rattrapables", () => {
 });
 
 describe("note et journal", () => {
-  it("journalise une note chiffrée, pas son effacement", () => {
+  /**
+   * **L'effacement se journalise aussi** (7 septembre 2026). Il était muet tant que retirer une
+   * note était un cas de bord de la fiche ; la tier list en fait un geste ordinaire — glisser une
+   * carte dans la réserve —, et un journal qui garde les notes posées mais pas celles retirées ne
+   * raconte plus l'histoire d'une note.
+   */
+  it("journalise une note comme son effacement", () => {
     const scored = apply(state({ status: "CURRENT", score: null }), {
       score: 85,
     });
@@ -212,8 +218,15 @@ describe("note et journal", () => {
     const cleared = apply(state({ status: "CURRENT", score: 85 }), {
       score: null,
     });
-    expect(cleared.events).toEqual([]);
+    expect(cleared.events).toEqual([{ type: "SCORED", score: null }]);
     expect(cleared.next.score).toBeNull();
+  });
+
+  /** Une entrée qui naît sans note n'a rien effacé : pas d'événement pour un `null` qui ne bouge pas. */
+  it("ne journalise pas une note absente qui le reste", () => {
+    const { events } = apply(null, { status: "CURRENT" });
+
+    expect(events.some((event) => event.type === "SCORED")).toBe(false);
   });
 
   it("ne journalise rien quand rien ne change", () => {

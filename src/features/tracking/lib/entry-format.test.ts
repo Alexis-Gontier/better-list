@@ -108,6 +108,13 @@ describe("note", () => {
       describeEntryEvent(event({ type: "SCORED", score: 70 }), "episode"),
     ).toEqual({ label: "Noté 3,5/5", detail: null });
   });
+
+  /** Depuis le 7 septembre 2026, retirer une note produit un `SCORED` sans note. */
+  it("dit qu'une note a été retirée", () => {
+    expect(
+      describeEntryEvent(event({ type: "SCORED", score: null }), "episode"),
+    ).toEqual({ label: "Note retirée", detail: null });
+  });
 });
 
 /**

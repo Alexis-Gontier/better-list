@@ -382,7 +382,8 @@ export function describeEntryEvent(
     }
 
     case "SCORED": {
-      if (event.score === null) return { label: "Note modifiée", detail: null };
+      /* Une note retirée, depuis la réserve de la tier list ou depuis la fiche. */
+      if (event.score === null) return { label: "Note retirée", detail: null };
 
       return {
         label: `Noté ${formatScore(event.score)}`,
