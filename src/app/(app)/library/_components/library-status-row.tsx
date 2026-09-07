@@ -48,7 +48,11 @@ export function LibraryStatusRow({ counts, filters }: LibraryStatusRowProps) {
    * elle est ici aussi parce que ces liens ne passent pas par elle.
    */
   const hrefFor = (status: LibraryFilterValues["status"]) =>
-    serializeLibraryFilters(routes.library, { ...filters, status, page: 1 });
+    serializeLibraryFilters(routes.library.root, {
+      ...filters,
+      status,
+      page: 1,
+    });
 
   return (
     /*

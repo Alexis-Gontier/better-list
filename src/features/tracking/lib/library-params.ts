@@ -94,6 +94,27 @@ export const loadLibraryFilters = createLoader(libraryFilterParsers);
  */
 export const serializeLibraryFilters = createSerializer(libraryFilterParsers);
 
+/**
+ * Les paramètres de la tier list — **le type, et lui seul**.
+ *
+ * Un jeu à part et pas `libraryFilterParsers` amputé : le plateau n'a ni page, ni tri, ni
+ * disposition — ses lignes *sont* le tri, et il montre tout d'un coup. Réutiliser les parseurs de la
+ * bibliothèque y ferait traîner un `?page=3` que rien ne lit, et qu'un aller-retour entre les deux
+ * écrans recopierait.
+ *
+ * Le type reste, parce que comparer un manga à un anime ne dit pas la même chose que comparer deux
+ * animes entre eux — c'est la seule coupe que le plateau doit savoir faire.
+ */
+export const tierFilterParsers = {
+  type: parseAsStringLiteral(TYPE_VALUES),
+};
+
+export const loadTierFilters = createLoader(tierFilterParsers);
+export const serializeTierFilters = createSerializer(tierFilterParsers);
+
+/** Ce que `loadTierFilters` renvoie — le type demandé, ou rien. */
+export type TierFilterValues = Awaited<ReturnType<typeof loadTierFilters>>;
+
 /** Ce que `loadLibraryFilters` renvoie — les filtres décodés d'une URL. */
 export type LibraryFilterValues = Awaited<
   ReturnType<typeof loadLibraryFilters>

@@ -58,9 +58,14 @@ async function ceilingFor(mediaId: number): Promise<number | null> {
 /**
  * Les écrans que ce geste périme.
  *
- * Les trois affichent le suivi : la fiche le montre en entier, `/library` par sa pastille et ses
- * décomptes, `/search` par la pastille de ses résultats. Un « +1 » qui ne rafraîchirait que la page
- * courante laisserait les deux autres mentir jusqu'au prochain rechargement complet.
+ * Les quatre affichent le suivi : la fiche le montre en entier, `/library` par sa pastille et ses
+ * décomptes, `/search` par la pastille de ses résultats, et la tier list par le palier où se trouve
+ * l'œuvre. Un « +1 » qui ne rafraîchirait que la page courante laisserait les autres mentir jusqu'au
+ * prochain rechargement complet.
+ *
+ * La tier list est purgée pour **toute** modification et pas seulement pour une note : c'est le
+ * chemin inverse qui compte — noter depuis la fiche doit déplacer la carte quand on revient sur le
+ * plateau, et une entrée créée ailleurs doit y apparaître.
  *
  * `revalidatePath` et pas `revalidateTag` : ces lectures ne sont pas mémorisées — elles dépendent
  * du visiteur et n'ont donc aucun `"use cache"` à invalider (`library.queries.ts`). Ce qu'on purge
@@ -71,7 +76,8 @@ async function ceilingFor(mediaId: number): Promise<number | null> {
  */
 function revalidateTracking(mediaId: number) {
   revalidatePath(routes.media(mediaId));
-  revalidatePath(routes.library);
+  revalidatePath(routes.library.root);
+  revalidatePath(routes.library.tiers);
   revalidatePath(routes.search);
 }
 

@@ -207,7 +207,7 @@ async function LibraryResults({
           <Link
             href={
               filtered
-                ? serializeLibraryFilters(routes.library, {
+                ? serializeLibraryFilters(routes.library.root, {
                     q: "",
                     status: null,
                     type: null,
@@ -276,7 +276,10 @@ async function LibraryResults({
       */}
       <CataloguePagination
         hrefFor={(target) =>
-          serializeLibraryFilters(routes.library, { ...filters, page: target })
+          serializeLibraryFilters(routes.library.root, {
+            ...filters,
+            page: target,
+          })
         }
         page={page}
         pageCount={pageCount}

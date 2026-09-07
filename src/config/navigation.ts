@@ -51,18 +51,23 @@ export const mainNav: NavSection[] = [
     ],
   },
   {
-    href: routes.library,
+    href: routes.library.root,
     label: "Ma bibliothèque",
     links: [
       {
-        href: routes.library,
+        href: routes.library.root,
         label: "Suivi",
         description: "En cours, à reprendre, terminés, prévus.",
       },
       {
+        href: routes.library.tiers,
+        label: "Tier list",
+        description: "Recaler mes notes en comparant les œuvres entre elles.",
+      },
+      {
         href: routes.lists.root,
         label: "Mes listes",
-        description: "Classements, tier lists, sélections en tout genre.",
+        description: "Classements, sélections en tout genre.",
       },
     ],
   },

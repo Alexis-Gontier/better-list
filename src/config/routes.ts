@@ -29,8 +29,18 @@ export const routes = {
    */
   media: (id: number) => `/media/${id}` as const,
 
-  /** Ma bibliothèque. Le statut et le type sont des `searchParams`, pas des segments. */
-  library: "/library",
+  library: {
+    /** Ma bibliothèque. Le statut et le type sont des `searchParams`, pas des segments. */
+    root: "/library",
+    /**
+     * La tier list de mes notes : un palier par cran, et déposer une œuvre écrit sa note.
+     *
+     * Sous `/library` et non à la racine parce que c'est **la même collection**, rangée autrement —
+     * mes lignes `Entry`, pas une liste ni un classement à part. Elle n'a donc ni id ni contenu
+     * propre, et rien à partager : c'est une vue, et son adresse le dit.
+     */
+    tiers: "/library/tiers",
+  },
 
   lists: {
     root: "/lists",

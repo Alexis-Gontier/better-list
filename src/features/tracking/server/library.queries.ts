@@ -4,13 +4,16 @@ import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
 import {
   compactFromMirror,
   MIRRORED_MEDIA_SELECT,
+  mediaTitle,
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
+  type TierFilterValues,
 } from "@/features/tracking/lib/library-params";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { getSession } from "@/lib/auth/session";
@@ -96,7 +99,18 @@ function mediaConditions({
   filters,
   includeAdult,
 }: {
-  filters: LibraryFilterValues;
+  /*
+    La forme minimale plutôt que `LibraryFilterValues` : la tier list applique les mêmes conditions
+    d'œuvre sans avoir ni page, ni tri, ni terme. Exiger les filtres complets l'obligerait à en
+    inventer, et un filtre inventé finit par être lu.
+
+    Les champs sont **dérivés** et non retapés : l'union des types vient de `LIBRARY_TYPE_OPTIONS`,
+    et une copie à la main cesserait de suivre le jour où un troisième type apparaît.
+  */
+  filters: {
+    q?: LibraryFilterValues["q"];
+    type?: LibraryFilterValues["type"];
+  };
   includeAdult: boolean;
 }) {
   const media: Record<string, unknown> = {};
@@ -112,7 +126,7 @@ function mediaConditions({
     Il ne part jamais chez AniList : c'est ce qui rend la saisie à la volée acceptable ici alors
     qu'elle est anti-rebondie sur le catalogue.
   */
-  const term = filters.q.trim();
+  const term = filters.q?.trim() ?? "";
   if (term) {
     media.OR = [
       { titleRomaji: { contains: term, mode: "insensitive" } },
@@ -425,4 +439,81 @@ export async function getLibrary({
     page,
     pageCount,
   };
+}
+
+/** Une œuvre telle que le plateau la manipule — une jaquette, un titre, une note. */
+export type TierEntry = {
+  mediaId: number;
+  title: string;
+  cover: string | null;
+  /** `null` : dans la réserve, pas encore jugée. */
+  score: number | null;
+};
+
+/**
+ * Tout ce que la tier list a le droit de montrer, **en une fois et sans pagination**.
+ *
+ * Le plateau n'a pas de pages, et c'est le sujet : on recale des notes les unes par rapport aux
+ * autres, donc masquer la moitié des œuvres derrière un cran de pagination reviendrait à comparer
+ * ce qu'on ne voit pas. La bibliothèque d'un cercle de quatre comptes tient dans une lecture ; le
+ * jour où elle n'y tiendra plus, c'est le filtre par type qui la coupera, pas une page 2.
+ *
+ * **Les œuvres `PLANNING` n'y sont pas du tout** — décision d'Alexis, 7 septembre 2026. On ne juge
+ * pas ce qu'on n'a pas ouvert, et sans cette exclusion la réserve se remplissait de la liste
+ * d'envies, c'est-à-dire de tout sauf de ce qu'on venait noter.
+ *
+ * L'exclusion est **franche** : une œuvre prévue et malgré tout notée disparaît elle aussi du
+ * plateau. C'est la conséquence assumée d'une règle simple plutôt que d'un « prévu sauf si noté »
+ * qui aurait fait réapparaître, au milieu du plateau, exactement ce qu'on venait d'en sortir. Cette
+ * note-là reste modifiable depuis la fiche de l'œuvre, qui ne filtre rien.
+ *
+ * Le titre est résolu ici, dans la langue préférée du compte : le plateau est un composant client,
+ * et lui envoyer trois colonnes de titre plus la préférence pour qu'il refasse le calcul ferait
+ * traverser la frontière à une règle qui vit très bien côté serveur.
+ */
+export async function getScoredLibrary({
+  filters,
+  includeAdult,
+  titleLanguage,
+}: {
+  filters: TierFilterValues;
+  includeAdult: boolean;
+  titleLanguage: TitleLanguage;
+}): Promise<TierEntry[]> {
+  const userId = await currentUserId();
+
+  const rows = await prisma.entry.findMany({
+    where: {
+      userId,
+      status: { not: "PLANNING" },
+      ...mediaConditions({ filters, includeAdult }),
+    },
+    select: {
+      score: true,
+      media: {
+        select: {
+          id: true,
+          titleRomaji: true,
+          titleEnglish: true,
+          titleNative: true,
+          coverImage: true,
+        },
+      },
+    },
+  });
+
+  return rows.map(({ score, media }) => ({
+    mediaId: media.id,
+    title: mediaTitle(
+      {
+        romaji: media.titleRomaji,
+        english: media.titleEnglish,
+        native: media.titleNative,
+        userPreferred: null,
+      },
+      titleLanguage,
+    ),
+    cover: media.coverImage,
+    score,
+  }));
 }
