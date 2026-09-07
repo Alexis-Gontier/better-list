@@ -27,6 +27,65 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 7 septembre 2026 — le cron du miroir, ou ce que le gel avait vraiment gardé
+
+Séance de reconstruction pure, et la plus courte du chantier : trois fichiers, dont un de neuf
+lignes de JSON. Ce qu'elle apprend n'est pas dans le code écrit mais dans le code qu'on **n'a pas eu
+à écrire**.
+
+**Le gel a tenu sa promesse, et c'est vérifiable.** `knip.jsonc` portait « bornes du miroir —
+attendent le cron » depuis le 5 septembre. Deux jours plus tard, la fonction est arrivée et l'entrée
+est partie : `mirrorStaleCutoffs`, `MIRROR_BATCH_SIZE`, `MIRROR_MAX_BATCHES_PER_RUN` et les deux
+listes de statuts ont toutes trouvé leur appelant du premier coup, sans qu'une ligne de
+`media-freshness.ts` ait à bouger. La leçon générale : un commentaire de gel qui **nomme la fonction
+attendue** — le docstring de `MEDIA_MIRROR_QUERY` disait `refreshStaleMirror`, au mot près — vaut
+infiniment mieux qu'un « à voir plus tard ». Il transforme une dette en rendez-vous.
+
+**Un helper pur rend une décision d'architecture, pas seulement du code testable.**
+`mirrorStaleCutoffs` renvoie des *bornes* et non un prédicat `isStale(row)`. La différence paraît
+cosmétique et ne l'est pas du tout : un prédicat oblige à charger la table pour la filtrer en
+mémoire, des bornes se traduisent en `syncedAt < …` et se font servir par l'index. Le choix avait été
+fait avant qu'aucun appelant n'existe, et il a dicté la forme de la requête sans discussion. À
+retenir : quand on isole une logique « en attendant son appelant », la forme qu'on lui donne décide
+déjà de ce que l'appelant pourra faire.
+
+**Le piège de la séance est du SQL, pas du TypeScript.** `status IN (…)` est faux quand la colonne
+vaut `NULL` — et `status NOT IN (…)` l'est aussi. Une ligne sans statut échappe donc aux **deux**
+conditions et n'aurait jamais été rafraîchie, alors que `mirrorTtlMs` la classe volatile exprès pour
+qu'on découvre son vrai statut. Rien ne l'aurait signalé : pas le typecheck, pas les tests de
+`media-freshness.ts` qui portent sur la logique pure, pas une passe en production qui aurait rendu un
+compte rendu vert. D'où une branche `OR` dédiée, et un test qui la garde. À retenir dès qu'une
+colonne nullable entre dans un `where`.
+
+**Ce qu'on fait d'une œuvre disparue tenait en deux moitiés, et la seconde est la moins évidente.**
+Garder la copie va de soi (la supprimer ferait tomber en cascade les `Entry`, `ListItem` et
+`OwnedVolume` qui y pointent). Avancer quand même son `syncedAt` va beaucoup moins de soi — mais sans
+ça la ligne reste périmée pour toujours, remonte en tête du tri « les plus anciennes d'abord » à
+chaque passe, et occupe indéfiniment une place de lot. Une poignée de fiches supprimées suffirait à
+monopoliser la passe. **On horodate la tentative, pas la réponse.** C'est un motif général pour toute
+file traitée par ancienneté : ce qui échoue doit quand même avancer, sinon il bloque la file.
+
+**Un seuil plus court que la cadence n'est pas une incohérence.** 12 h de péremption pour une passe
+quotidienne, ça se lit comme un bug et c'en serait un dans l'autre sens. Un seuil de 24 h ferait
+qu'une ligne rafraîchie à 4 h 02 ne serait pas encore périmée à 4 h 00 le lendemain, et attendrait
+48 h. Un seuil plus court ne déclenche jamais rien de lui-même : il garantit seulement que la passe
+trouve du travail. La règle était déjà écrite dans `media-freshness.ts` et dans PRODUCT.md §4.1 ; la
+relire avant de choisir l'expression cron a évité de « corriger » l'un des deux.
+
+**Les tests ont été vus échouer.** Trois mutations volontaires — retirer la branche `status: null`,
+retirer l'`orderBy` — font tomber exactement les tests écrits pour elles. Un test qu'on n'a pas vu
+rouge ne garde rien, et c'est particulièrement vrai ici où tout est doublé : Prisma et AniList sont
+des `vi.fn()`, donc un test mal branché passerait au vert en n'observant rien.
+
+**Et la route a été appelée.** 401 sans en-tête, 401 sur un jeton faux, 200 et
+`{"stale":94,"refreshed":94,"vanished":0,"batches":2}` sur le bon — 94 lignes en deux requêtes, puis
+`stale: 0` au second appel. Le compte rendu JSON n'est pas décoratif : c'est la seule chose qu'on
+verra du cron une fois en production, et il dit d'un coup d'œil si la cadence suffit (`stale` collé
+au plafond) ou si le miroir est à jour (`stale: 0` sur plusieurs passes).
+
+Reste ouvert : la passe n'est vérifiée de bout en bout par aucun test contre une vraie base. Elle
+l'a été à la main, une fois.
+
 ## 7 septembre 2026 — l'audit, et la navigation qui manquait sur mobile
 
 Séance de **relecture** plutôt que de construction : passer tout le site au navigateur, écran par

@@ -68,10 +68,15 @@
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
     "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
     // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
-    // pour le gel « exports ». `MEDIA_BY_ID_QUERY` est consommée ; les cinq autres — miroir,
-    // catalogue, planning, recherche, vocabulaire de filtres — attendent leur écran.
+    // pour le gel « exports ». `MEDIA_BY_ID_QUERY` et `SEARCH_MEDIA_QUERY` sont consommées, et
+    // **`MEDIA_MIRROR_QUERY` l'est depuis le 7 septembre 2026** — le cron l'envoie par lots de
+    // cinquante. Restent trois documents sans écran : catalogue, planning, vocabulaire de filtres.
     "src/features/media/server/media.documents.ts": ["exports"],
-    "src/features/media/lib/media-freshness.ts": ["exports"], // bornes du miroir — attendent le cron
+    // `media-freshness.ts` est **sorti du gel le 7 septembre 2026**, avec le cron de
+    // rafraîchissement : `refreshStaleMirror` consomme `mirrorStaleCutoffs`, les deux listes de
+    // statuts et les deux plafonds, et `MEDIA_MIRROR_QUERY` est la requête qu'il envoie. L'entrée
+    // disait mot pour mot ce qu'elle attendait — « les bornes du miroir attendent le cron » — et
+    // elle part avec, comme `library-params.ts` et `search-params.ts` avant elle.
     // `lists.schema.ts` **est sorti du gel pour de bon le 6 septembre 2026** : ses sept entrées ont
     // toutes trouvé leur appelant, la dernière étant `shareListSchema` avec `/l/[token]`. Troisième
     // entrée à disparaître entièrement plutôt qu'à se rétrograder, après `library-params.ts` et
