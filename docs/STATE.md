@@ -10,13 +10,13 @@ l'intention.
 
 Relevé le **7 septembre 2026**.
 
-> ### En un mot : six écrans sur onze, et les listes sont entières.
+> ### En un mot : sept écrans sur douze, et les notes se recalent.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> six routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
+> sept routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
-> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**. Les cinq
-> autres routes construites restent des placeholders.
+> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, et depuis le
+> 7 septembre **`/library/tiers`**. Les cinq autres routes construites restent des placeholders.
 >
 > **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
 > même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
@@ -45,6 +45,27 @@ Relevé le **7 septembre 2026**.
 > lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
 >
 > Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
+>
+> **Et la note se pose désormais en comparant.** `/library/tiers` range la bibliothèque sur onze
+> bandes colorées — les crans de la note, 5 à 0 par demies, au style de TierMaker — plus une réserve
+> « Non notées », **détachée du plateau et affichée en entier** ; déposer une jaquette sur une bande
+> **écrit sa note** par `saveEntry`, au doigt, à
+> la souris ou au clavier. Un **menu au clic droit** fait la même chose sans traverser l'écran, et
+> ouvre la fiche. Les œuvres `PLANNING` n'y figurent pas du tout.
+> Aucune table n'a été ajoutée : `Entry.score` porte tout, et l'ordre à l'intérieur d'un palier se
+> déduit de la note exacte plutôt que d'être stocké. Ce n'est pas la vue `TIERS` d'une liste
+> (PRODUCT.md §4.4), qui reste à faire et dont les paliers sont libres.
+>
+> **Un audit du plateau, le 7 septembre au soir, a réglé quatre choses** que les quatre commandes
+> vertes n'avaient pas vues : la carte glissée était **rognée** par l'`overflow-clip` du plateau —
+> donc invisible pendant tout le trajet depuis la réserve, réglé par un `DragOverlay` ; le message
+> d'un cran vide se collait en haut de sa ligne ; deux dépôts rapprochés se **défaisaient** l'un
+> l'autre, la revalidation du premier écrasant l'optimiste du second — réglé par une table des
+> écritures en vol (`pending-scores.ts`, module pur, 7 tests) ; et **retirer une note laisse
+> désormais une trace au journal**, ce qui renverse une règle antérieure. Reste ouvert : au doigt,
+> une jaquette ne réagit à rien — le menu contextuel est réservé au pointeur fin, donc « Ouvrir la
+> fiche » est injoignable depuis le plateau sur téléphone. Le geste tactile à retenir est une
+> décision de produit, pas une correction.
 >
 > **Et depuis le 7 septembre, le site se navigue au téléphone — et AniList répond de nouveau.** Une
 > séance d'audit au navigateur a trouvé que `MainNav` était en `hidden md:flex` sans remplaçant :
@@ -76,6 +97,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
+| `/library/tiers` (`library.tiers`) | Tier list de mes notes, un palier par cran | `Entry`, `Media` | **livré, audité** — onze bandes colorées plus la réserve, dépôt au doigt / souris / clavier avec aperçu, menu au clic droit, filtre par type ; `PLANNING` exclu. Reste : aucun geste tactile n'ouvre le menu |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |

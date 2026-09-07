@@ -159,6 +159,14 @@ Les demi-étoiles sont ce qui rend l'abandon des dix points acceptable : cinq cr
 l'aller-retour ; une note qui tombe entre deux crans — 85, importée — s'affiche arrondie **et**
 suivie de sa valeur exacte.
 
+**La note se pose aussi en comparant, et c'est ce que fait `/library/tiers`.** Sur la fiche, on juge
+une œuvre seule, sans rien à côté : un 4 posé en 2019 ne veut plus dire ce qu'un 4 posé aujourd'hui
+veut dire, et le stock de notes dérive sans qu'aucun écran ne le montre. La tier list met les œuvres
+les unes à côté des autres, un palier par cran, et **déposer une jaquette écrit sa note**. Elle n'a
+donc rien à stocker de plus — pas de table, pas de rang à l'intérieur d'un palier, que `Entry.score`
+—, et elle ne se confond pas avec la vue `TIERS` d'une liste (§4.4), dont les paliers sont nommés
+par celui qui range et ne signifient rien hors de cette liste.
+
 ### 4.3 `EntryEvent` — la mémoire
 
 Table **append-only** : on y insère, on n'y modifie jamais rien.
@@ -273,8 +281,9 @@ jour est dans [STATE.md](./STATE.md).
 | `/search` | Recherche du catalogue (filtres en URL via nuqs) ; sans terme, les tendances | V0 |
 | `/media/[id]` | Fiche d'une œuvre + actions de suivi | V0 |
 | `/library` | Ma bibliothèque, filtrée par statut / type / genre | V1 |
+| `/library/tiers` | Tier list de mes notes : un palier par cran, déposer écrit la note (§4.2) | V1 |
 | `/lists` · `/lists/[id]` | Mes listes, et une liste | V1 |
-| `/lists/[id]/[viewId]` | Une vue (classement, tier list) | V1.5 |
+| `/lists/[id]/[viewId]` | Une vue posée sur une liste : classement, tier list à paliers libres | V1.5 |
 | `/collection` | Mon étagère : séries possédées, tomes manquants | V1.5 |
 | `/collection/[mediaId]` | Une série : tomes possédés, plages, prêts | V1.5 |
 | `/l/[token]` | Une liste partagée, **hors de l'application authentifiée** | V1.5 |

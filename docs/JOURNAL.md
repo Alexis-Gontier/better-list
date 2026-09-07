@@ -27,6 +27,139 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 7 septembre 2026 — la tier list, et le clavier qui n'avançait pas
+
+Alexis voulait « noter correctement » : ses notes sont incohérentes entre elles, un 4 de 2019 ne vaut
+plus un 4 d'aujourd'hui. Deux pistes ont été posées — comparaisons par paires, ou tier list — et
+c'est la tier list qui a été retenue, à une condition qui a tout décidé : **les paliers sont les
+crans de la note**, pas des lettres. Du coup rien à stocker (`Entry.score` suffit), rien à nommer, et
+l'écran a coûté un module pur, une lecture et un îlot client.
+
+Trois choses trouvées à l'écran, qu'aucun test n'aurait données :
+
+- **Le clavier n'avançait pas.** `sortableKeyboardCoordinates` — celui du mode réorganisation des
+  listes — déplace la carte de quelques pixels puis reprend la zone de dépôt la plus proche. Quand
+  les zones sont des jaquettes, un appui vaut une voisine ; quand ce sont des **lignes**, et surtout
+  la réserve « Non notées », plus haute que le pas, la carte reste dans sa propre ligne. Deux flèches
+  sans quitter le palier, et rien dans la console. Remplacé par un `coordinateGetter` qui vise le
+  palier **voisin dans le tableau** et renvoie le centre de sa ligne : une touche, un cran.
+- **La réserve écrasait le plateau.** 196 œuvres commencées et jamais notées, étalées, repoussaient
+  les onze crans hors de l'écran. Bornée d'abord à deux rangées qui défilaient — puis **détachée**,
+  sur demande d'Alexis : elle est un bloc à part, séparé par un vrai écart, et elle montre toutes ses
+  jaquettes. Piocher dans deux rangées sur seize revenait à choisir parmi ce que le hasard de l'ordre
+  avait mis en haut. C'est l'écart qui la distingue du plateau, plus une hauteur maximale — et son
+  étiquette est devenue **collante**, sinon on arrivait sur deux mille pixels de vignettes sans rien
+  qui dise ce que c'était. Au passage : `overflow-hidden` sur la liste tuait ce `sticky`, il a fallu
+  `overflow-clip`, qui découpe les coins sans créer de conteneur de défilement.
+- **Deux jaquettes par ligne sur 390 px.** Comparer suppose de voir ensemble ; un palier qu'on
+  feuillette ne se compare plus. Cartes en `w-14 sm:w-20`, et l'étiquette du palier passée en tête de
+  ligne — centrée, elle se retrouvait au milieu de nulle part sur un palier de six rangées.
+
+**Puis le style de TierMaker, en seconde passe.** Bandes colorées pleine hauteur à gauche, jaquettes
+collées les unes aux autres, lignes sans écart : onze cartes séparées se lisaient comme onze listes,
+le bloc d'un seul tenant se lit comme une répartition — ce qu'on vient y chercher. Le titre sous
+chaque jaquette est parti avec : il coûtait un tiers de la hauteur du plateau pour ce que l'image dit
+déjà, et c'est la hauteur qui décide si l'on voit deux paliers ensemble. Il passe en `opacity-0` et
+non en `hidden` — masqué à l'œil, toujours là pour nommer la carte à un lecteur d'écran.
+
+**Et les œuvres prévues sont sorties du plateau.** La règle était « prévu sauf si déjà noté » ; elle
+est devenue « prévu, jamais ». Le contrôle sur la base d'Alexis a montré que le changement ne
+déplaçait **aucune** ligne — il n'avait aucune œuvre `PLANNING` notée. Les 196 œuvres de la réserve
+ne sont pas des envies : ce sont des séries commencées, finies ou abandonnées, jamais notées.
+
+**Enfin le clic droit**, troisième passe. `context-menu` est le premier composant shadcn ajouté
+depuis la mise à blanc ; il porte le titre de l'œuvre, « Ouvrir la fiche », et les douze crans en
+**groupe radio** — donc la note courante est cochée, et « Retirer la note » est simplement la case
+« Non notées » du plateau, pas une action de plus. Glisser et menu passent par la **même** fonction
+`moveToTier` : deux gestes, une seule règle d'écriture et un seul retour en arrière.
+
+Il n'est armé **qu'à la souris** (`use-fine-pointer.ts`, `any-pointer: fine`). Au doigt, Radix ouvre
+son menu sur un appui long — exactement le geste que le `TouchSensor` de dnd-kit réserve au glisser
+depuis 200 ms : les deux se seraient disputé le doigt, et le menu serait apparu par-dessus une carte
+déjà saisie. Un clic droit, lui, ne se dispute rien.
+
+Deux détails de finition trouvés au passage : le lint refuse un `aria-label` sur le `div` de la
+carte (il ne voit pas le `role` que dnd-kit étale dans `attributes`, et le rajouter à la main
+déclenche deux autres règles) — le nom accessible vient donc du texte à l'intérieur, ce qui est de
+toute façon la bonne façon de nommer un bouton. Et Next avertissait que la jaquette du LCP se
+chargeait en différé : seule la première ligne charge désormais ses douze premières vignettes sans
+attendre.
+
+**Deux bugs signalés par Alexis en fin de séance, et ils avaient la même racine : l'état client.**
+
+1. **Les onglets Animes / Mangas ne changeaient rien.** Les liens écrivaient pourtant la bonne URL et
+   le serveur renvoyait les bonnes lignes — mais le plateau garde ses œuvres dans un `useState`, et
+   une navigation rend le **même** composant avec de nouvelles props : `useState` ne relit jamais sa
+   valeur initiale. Corrigé par le motif « ajuster l'état pendant le rendu » (comparer les props à
+   celles d'avant, se remettre à jour tout de suite), et non par un effet, qui aurait affiché une
+   image périmée le temps d'une frame. Bénéfice de bord : une note posée depuis un autre onglet se
+   rattrape maintenant à la revalidation.
+2. **Un désaccord d'hydratation sur chaque carte.** dnd-kit fabrique le `aria-describedby` avec un
+   compteur de **module** (`useUniqueId`) : le serveur repart de zéro, le client continue le sien, et
+   React comparait un `DndDescribedBy-0` à un `DndDescribedBy-28`. Le prop `id` de `DndContext`
+   court-circuite ce compteur — c'est exactement ce pour quoi il existe. Une leçon qui vaut au-delà
+   d'ici : **toute bibliothèque qui génère des identifiants doit se voir passer une graine** dès
+   qu'elle est rendue côté serveur.
+
+Le premier ne se voyait qu'en cliquant, le second qu'en ouvrant la console. Ni le typecheck, ni le
+lint, ni les 242 tests ne pouvaient les attraper — c'est la troisième fois de la journée.
+
+La vérification a coûté **six écritures réelles** : la même œuvre de la réserve montée au palier 1
+puis redescendue — au clavier, puis par le menu, puis une troisième fois après le correctif d'état,
+qui périmait la preuve précédente. Chaque aller a été relu après rechargement, et les notes sont
+revenues à l'identique. Mais `EntryEvent` est *append-only* : six lignes `SCORED` restent au journal
+du 7 septembre. C'est le prix d'une preuve de bout en bout sur une base de production, et il valait
+mieux le dire que de livrer sans preuve.
+
+### L'audit du plateau, dans la foulée — et la quatrième fois de la journée
+
+Alexis a demandé une relecture de l'écran fini. Les quatre commandes étaient vertes, la console
+muette, les 242 tests au vert : **l'audit a quand même trouvé deux bugs visuels, et il a fallu le
+navigateur pour les voir.** C'est le même constat que le reste de la journée, mais il est cette fois
+arrivé *après* qu'on ait cru l'écran terminé.
+
+**La carte glissée était rognée par le plateau, et personne ne l'avait remarqué.** Les deux blocs
+portent `overflow-clip` — posé le matin même pour que le `sticky` de l'étiquette survive —, mais une
+carte que dnd-kit déplace par `transform` reste un descendant de ce bloc : elle disparaît dès
+qu'elle en sort. Piocher dans la réserve pour remonter au cran 5, c'est-à-dire **le geste central de
+l'écran**, se faisait donc à l'aveugle sur tout le trajet. Prouvé par `elementFromPoint` au centre
+de la carte translatée : il rendait la jaquette d'en dessous.
+
+La réponse est un `DragOverlay`, qui rend la carte en `position: fixed` — dont le bloc conteneur est
+la fenêtre, donc hors d'atteinte de tout `overflow` d'ancêtre. **Deux règles CSS posées à trois
+heures d'intervalle pour deux bonnes raisons peuvent se combiner en un bug qu'aucune des deux
+n'annonce.** Et : `dropAnimation={null}`, parce que l'animation par défaut ramène l'aperçu vers la
+carte d'origine alors que le dépôt vient de l'envoyer ailleurs — elle montrerait le contraire de ce
+qui vient de se passer.
+
+**`m-auto` ne centre rien dans un `flex-wrap` en `content-start`.** Le message d'un cran vide se
+collait à 1 px du haut de sa ligne de 97 px, et se lisait donc comme le pied du palier au-dessus.
+La cause n'est pas une faute de frappe : `align-content: flex-start` réduit la ligne flex à la
+hauteur de son contenu, et les marges auto n'ont alors plus rien à répartir. L'alignement dépend
+désormais du contenu — `items-center` quand la ligne est vide, `content-start` sinon.
+
+**Le rendu optimiste et `revalidatePath` se disputaient l'état.** Chaque dépôt revalide, donc les
+lignes fraîches du premier arrivaient alors que le second n'y était pas encore : sa carte remontait
+à son ancien cran, puis se recorrigeait. Sur un écran fait pour *enchaîner* les dépôts, le défaut
+était structurel, pas anecdotique. La réponse n'est pas un verrou mais une **table des écritures en
+vol** (`pending-scores.ts`), qui recouvre ce que renvoie le serveur tant qu'une écriture n'a pas
+répondu. Elle porte aussi la note d'avant la **première** écriture en vol : l'ancien code la gardait
+par œuvre et la supprimait à la première réponse, donc deux déplacements de la même carte se
+volaient leur retour en arrière.
+
+Le module est **pur**, et c'est une contrainte du dépôt plus qu'une élégance : Vitest tourne en
+environnement `node` et n'inclut que `*.test.ts`, donc aucun composant React n'est testable ici. Ce
+qu'on veut couvrir doit sortir du composant. Sept tests.
+
+**Retirer une note laisse enfin une trace.** `applyEntryChanges` n'émettait `SCORED` que pour une
+note chiffrée — tolérable tant qu'effacer était un cas de bord de la fiche, plus depuis que la tier
+list en fait un dépôt dans la réserve. `EntryEvent.score` était déjà nullable : rien à migrer, un
+libellé à changer. C'est une règle qu'on retourne, pas un oubli qu'on répare.
+
+Coût de la preuve, encore : **deux écritures réelles** sur *Akame ga Kill!* — montée au cran 4,5
+puis redescendue à 4, à 549 ms d'écart pour que les deux allers-retours se chevauchent vraiment. La
+note est revenue à 80, les deux lignes `SCORED` restent.
+
 ## 7 septembre 2026 — le cron du miroir, ou ce que le gel avait vraiment gardé
 
 Séance de reconstruction pure, et la plus courte du chantier : trois fichiers, dont un de neuf
