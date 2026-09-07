@@ -19,7 +19,10 @@ pre-push:
   parallel: true
   jobs:
     - name: typecheck
-      run: pnpm exec tsc --noEmit
+      # Passe par le script et non par `tsc` nu : lui seul lance le `next typegen` dont
+      # dépendent les globales PageProps et LayoutProps. Un tsc nu ne passait qu'à la faveur
+      # d'un .next/ laissé par un `pnpm dev` — et laissait donc filer ce que la CI voyait.
+      run: pnpm typecheck
 
     - name: test
       run: pnpm exec vitest run
