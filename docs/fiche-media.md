@@ -9,7 +9,7 @@ Il répond à une question qu'on se pose à chaque séance de refonte — *qu'es
 — et évite d'y répondre de mémoire. [PRODUCT.md](./PRODUCT.md) dit ce qu'on veut construire ;
 [STATE.md](./STATE.md) dit où en est le dépôt ; celui-ci ne parle que d'un écran.
 
-Relevé le **6 septembre 2026**.
+Relevé le **6 septembre 2026**, mis à jour le **7 septembre 2026**.
 
 ---
 
@@ -44,65 +44,65 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 - [x] Les titres secondaires, ceux qu'on n'a pas retenus en tête
 - [ ] `synonyms` — titres officieux et traductions ; contient **parfois** un titre français, jamais de façon fiable
 - [ ] `id` / `idMal` — les identifiants AniList et MyAnimeList
-- [ ] `siteUrl` — le lien vers la fiche AniList (attribution attendue par leurs CGU, §9)
+- [x] `siteUrl` — le lien vers la fiche AniList (attribution attendue par leurs CGU, §9)
 
 **Nature de l'œuvre**
 
 - [x] `format` — Série TV, Film, OVA, Manga, Light novel…
 - [x] `status` — En cours, Terminé, Annoncé, En pause, Annulé
-- [ ] `countryOfOrigin` — ce qui distingue manga (JP), manhwa (KR) et manhua (CN)
-- [ ] `source` — l'œuvre d'origine : manga, light novel, jeu vidéo, original…
-- [ ] `genres` — la liste courte et officielle, à ne pas confondre avec les `tags`
+- [x] `countryOfOrigin` — ce qui distingue manga (JP), manhwa (KR) et manhua (CN)
+- [x] `source` — l'œuvre d'origine : manga, light novel, jeu vidéo, original…
+- [x] `genres` — la liste courte et officielle, à ne pas confondre avec les `tags`
 - [ ] `isAdult` — sert déjà de **filtre** côté serveur ; reste à décider s'il se signale à l'écran
 
 **Volume et durée**
 
 - [x] `episodes` / `chapters` — le total, affiché comme dénominateur du suivi
-- [ ] `volumes` — le nombre de tomes, et **seulement sur les séries terminées**
-- [ ] `duration` — la durée d'un épisode, en minutes
+- [x] `volumes` — le nombre de tomes, et **seulement sur les séries terminées**
+- [x] `duration` — la durée d'un épisode, en minutes
 
 **Temps**
 
 - [x] `season` + `seasonYear` — « Printemps 2009 »
-- [ ] `startDate` / `endDate` — dates floues : l'un des trois champs peut manquer
-- [ ] `nextAiringEpisode` — quel épisode, à quelle heure, dans combien de temps
+- [x] `startDate` / `endDate` — dates floues : l'un des trois champs peut manquer
+- [x] `nextAiringEpisode` — quel épisode, à quelle heure, dans combien de temps
 
 **Images**
 
 - [x] `coverImage` — quatre tailles, plus `color`, la couleur dominante
 - [x] `bannerImage` — **nulle sur la plupart des mangas et webtoons**, le cas est déjà traité
 - [ ] `coverImage.color` — la couleur dominante, aujourd'hui stockée mais jamais employée
-- [ ] `trailer` — `id`, `site` (YouTube ou Dailymotion), `thumbnail` ; les deux hôtes sont déjà autorisés dans `next.config.ts`
+- [x] `trailer` — `id`, `site` (YouTube ou Dailymotion), `thumbnail` ; les deux hôtes sont déjà autorisés dans `next.config.ts`
 
 **Chiffres de la communauté**
 
-- [ ] `averageScore` / `meanScore` — deux moyennes distinctes, toutes deux sur 100
-- [ ] `popularity` — le nombre de comptes qui ont l'œuvre en liste
-- [ ] `favourites` — le nombre de comptes qui l'ont mise en favori
+- [x] `averageScore` / `meanScore` — deux moyennes distinctes, toutes deux sur 100
+- [x] `popularity` — le nombre de comptes qui ont l'œuvre en liste
+- [x] `favourites` — le nombre de comptes qui l'ont mise en favori
 - [ ] `stats.scoreDistribution` — l'histogramme des notes, par paliers de 10
 - [ ] `stats.statusDistribution` — combien la regardent, l'ont finie, l'ont abandonnée
-- [ ] `rankings` — « #1 des mieux notés de l'automne 2024 » ; `formatRanking` sait déjà les traduire
+- [x] `rankings` — « #1 des mieux notés de l'automne 2024 » ; `formatRanking` sait déjà les traduire
 
 **Classification**
 
-- [ ] `tags` — bien plus fins que les genres, avec un `rank` de pertinence, et **des marqueurs de spoiler à respecter** (`isMediaSpoiler`, `isGeneralSpoiler`)
+- [x] `tags` — bien plus fins que les genres, avec un `rank` de pertinence, et **des marqueurs de spoiler à respecter** (`isMediaSpoiler`, `isGeneralSpoiler`)
 
 **Les gens**
 
 - [x] `studios` — le studio principal, en cinquième colonne de la ligne de faits, **sur les animes**
 - [x] `staff` — l'auteur (« Story & Art »), même colonne, **sur les mangas** ; AniList n'a aucun éditeur (§9)
-- [ ] `characters` — 12 demandés : rôle, nom, portrait
-- [ ] `characters.voiceActors` — les doubleurs japonais, déjà demandés
-- [ ] `staff` en entier — les 8 demandés, avec leur rôle
+- [x] `characters` — 12 demandés : rôle, nom, portrait
+- [x] `characters.voiceActors` — les doubleurs japonais, déjà demandés
+- [x] `staff` en entier — les 8 demandés, avec leur rôle
 
 **Les liens vers d'autres œuvres**
 
-- [ ] `relations` — suite, préquelle, adaptation, spin-off, film récap. **C'est la matière de l'ordre de visionnage d'une franchise** (PRODUCT.md §8, meilleur rapport valeur/effort du projet)
-- [ ] `recommendations` — 12 œuvres proches, avec leur score de recommandation
+- [x] `relations` — suite, préquelle, adaptation, spin-off, film récap. **C'est la matière de l'ordre de visionnage d'une franchise** (PRODUCT.md §8, meilleur rapport valeur/effort du projet)
+- [x] `recommendations` — 12 œuvres proches, avec leur score de recommandation
 
 **Ailleurs**
 
-- [ ] `externalLinks` — les plateformes de streaming et les sites officiels, avec `color` et `icon`. **Communautaire et régional** : une indication, pas une garantie
+- [x] `externalLinks` — les plateformes de streaming et les sites officiels, avec `color` et `icon`. **Communautaire et régional** : une indication, pas une garantie
 - [ ] `streamingEpisodes` — les épisodes chez les diffuseurs, avec vignette et lien
 - [x] `description` — le synopsis. **En anglais uniquement**, AniList n'en a pas de français (§9)
 
@@ -230,7 +230,23 @@ récupérer, tout à afficher.
 
 ## Ce qui est à l'écran aujourd'hui, en une phrase
 
-Bannière, jaquette, titre et titres secondaires, cinq faits (format, statut, compteur, saison,
-studio ou auteur), une barre de suivi **qui enregistre pour de bon** — un bouton d'ajout tant que
-l'œuvre n'est pas suivie, puis statut, progression, note et une fenêtre pour le reste —, et le
-synopsis. Tout le reste de ce document attend.
+**Le haut n'a pas bougé** : bannière, jaquette, titre et titres secondaires, cinq faits (format,
+statut, compteur, saison, studio ou auteur), une barre de suivi qui enregistre pour de bon.
+
+**Sous le séparateur, deux colonnes depuis le 7 septembre 2026.** À gauche, des onglets — Aperçu
+(synopsis, genres, thèmes avec les spoilers repliés, bande-annonce), Personnages (les douze, avec
+leur doubleur, puis l'équipe), Œuvres liées (les relations en cartes couchées, portant la nature du
+lien, puis les recommandations) et Journal. À droite, un panneau **collant** qui reste à l'écran
+quel que soit l'onglet : prochain épisode, fiche technique, chiffres de la communauté, où
+regarder — ou lire.
+
+**Un onglet n'existe que s'il a du contenu** : un manga sans relations n'a pas d'onglet « Œuvres
+liées », et l'intitulé suit ce qu'il y a derrière (« Équipe » quand aucun personnage n'est
+renseigné).
+
+**Et tout ça n'a coûté aucune requête** : la sélection de `MEDIA_BY_ID_QUERY` ramenait déjà tout
+depuis le début. Il n'y avait rien à aller chercher, il y avait à afficher.
+
+Ce qui attend encore : les distributions de notes et de statuts, `streamingEpisodes`, `synonyms`, la
+couleur dominante de la jaquette, le favori, les listes qui contiennent l'œuvre, l'étagère, et tout
+le §2.5 — ce que les autres membres du cercle en pensent.

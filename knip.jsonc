@@ -66,7 +66,14 @@
     // laquelle `authActionClient` est construit dans le même fichier.
 
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
-    "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
+    // **Le gel de `media-format.ts` s'est réduit à deux entrées le 7 septembre 2026**, avec le bas
+    // de la fiche : les onglets et le panneau de référence ont consommé `formatSource`,
+    // `formatCountry`, `formatDuration`, `formatRanking`, `formatFuzzyDate`, `formatDateRange`,
+    // `formatCountdown` et `formatAiringDate` — soit huit des neuf formateurs que l'entrée
+    // précédente disait « attendre leurs écrans ». Restent `formatListStatus`, qui attend la
+    // distribution des statuts de la communauté (docs/fiche-media.md §1.1), et `mirroredTitle`, qui
+    // attend un écran lisant les titres du miroir local.
+    "src/features/media/lib/media-format.ts": ["exports"],
     // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
     // pour le gel « exports ». `MEDIA_BY_ID_QUERY` et `SEARCH_MEDIA_QUERY` sont consommées, et
     // **`MEDIA_MIRROR_QUERY` l'est depuis le 7 septembre 2026** — le cron l'envoie par lots de
@@ -87,8 +94,6 @@
     // l'entrée précédente disait attendre, et elle part avec, comme `library-params.ts` avant elle.
     "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types
     "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
-    "src/features/preferences/schemas/preferences.schema.ts": ["exports"], // défauts — attendent /settings
-    "src/features/tracking/lib/entry-format.ts": ["exports"], // formatEventTime — attend le journal
     // `removeEntry` **écrit, et a été vu écrire** : le menu de la fiche l'appelait, sous
     // confirmation `alert-dialog`, et le retrait a été vérifié à l'écran le 6 septembre 2026. C'est
     // son **appelant** qui a été retiré le même jour — le menu à trois points est redevenu inerte,

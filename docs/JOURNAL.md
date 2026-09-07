@@ -27,6 +27,53 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 7 septembre 2026 — le bas de la fiche, et deux mises en page corrigées à l'écran
+
+La fiche d'une œuvre n'avait que son hero. Le reste de ce qu'AniList renvoie — personnages, staff,
+relations, recommandations, tags, classements, plateformes — dormait dans l'objet depuis le premier
+jour : `MEDIA_BY_ID_QUERY` le ramenait, personne ne l'affichait. Une séance sans une requête réseau
+de plus, donc, et ce qu'elle apprend n'est pas dans la donnée mais dans la mise en page.
+
+**La coupure retenue n'est pas « le principal et le reste », c'est « ce qu'on lit » contre « ce
+qu'on consulte ».** À gauche, des onglets qui se parcourent ; à droite, un panneau collant de quatre
+blocs courts qu'on vient vérifier d'un regard. C'est ce qui justifie qu'il soit collant : mettre le
+prochain épisode ou la note de la communauté dans un onglet reviendrait à les cacher derrière un
+clic à chaque fois qu'on en a besoin.
+
+**Un onglet ne doit exister que s'il a du contenu, et ça se décide côté serveur.** On ne sonde pas
+un rendu pour savoir s'il rend quelque chose : le tri des œuvres liées est donc sorti du composant
+vers `_lib/media-related.ts`, la page appelle une fois, décide des onglets, et passe le résultat.
+L'intitulé suit le contenu au passage — « Équipe » quand aucun personnage n'est renseigné, ce qui
+est le cas de la moitié des mangas.
+
+**Le filtre adulte se réapplique sur ce que la fiche cite.** L'œuvre demandée passe par `isAdult`
+dans la requête ; ses relations et ses recommandations, non. Un anime tout public peut pointer vers
+une adaptation classée adulte, et AniList la renvoie sans se demander qui regarde — le réglage
+serait resté sans effet précisément là où il compte. Même chose pour les tags marqués `isAdult`.
+
+**Deux défauts que seule la capture a montrés**, et c'est la troisième séance de suite où c'est le
+cas :
+
+1. **Les classements se répétaient.** Triés par rang, les trois meilleurs de Frieren étaient trois
+   fois « #1 des mieux notés » — tous les temps, 2023, automne 2023 : trois lignes pour un seul
+   fait, et deux clés React identiques par-dessus. On garde maintenant **le meilleur classement par
+   nature**, « tous les temps » l'emportant sur une saison.
+2. **Les œuvres liées groupées faisaient une colonne creuse.** Un titre de section par nature de
+   lien, et une franchise donne cinq groupes d'une seule œuvre : cinq titres pour cinq vignettes.
+   Les cartes sont passées **couchées**, chacune portant la nature du lien en surtitre — l'ordre des
+   groupes survit dans l'ordre des cartes, et le titre gagne deux lignes au lieu d'être coupé à
+   quinze caractères, ce qui comptait : « Frieren: Beyond Jo… » deux fois de suite ne distingue pas
+   une suite de son manga.
+
+**Et un faux positif à connaître.** Une capture pleine page à 390 px montrait toute la colonne
+coupée à droite — en réalité `scrollWidth` (375) est plus petit que `clientWidth` (390) à cause du
+`overflow-x-clip` du layout, et la capture pleine page se cale sur le premier. **Mesurer avant de
+corriger** : `document.documentElement.scrollWidth` et la liste des éléments qui dépassent
+répondent en une évaluation. Le seul vrai dépassement était de cinq pixels, sur la barre d'onglets
+tirée aux bords par des marges négatives — retirées.
+
+---
+
 ## 7 septembre 2026 — les réglages, et une largeur qu'on a choisie en la regardant
 
 `/settings` était annoncé comme l'un des deux plus petits écrans, et il l'a été. Ce qu'il apprend

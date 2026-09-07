@@ -3,9 +3,25 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as z from "zod";
 
+import {
+  EntryJournal,
+  EntryJournalSkeleton,
+} from "@/app/(app)/media/[id]/_components/entry-journal";
+import { MediaAside } from "@/app/(app)/media/[id]/_components/media-aside";
+import { MediaCharacters } from "@/app/(app)/media/[id]/_components/media-characters";
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
+import { MediaRecommendations } from "@/app/(app)/media/[id]/_components/media-recommendations";
+import { MediaRelations } from "@/app/(app)/media/[id]/_components/media-relations";
+import { MediaStaff } from "@/app/(app)/media/[id]/_components/media-staff";
 import { MediaSynopsis } from "@/app/(app)/media/[id]/_components/media-synopsis";
+import {
+  type MediaTab,
+  MediaTabs,
+} from "@/app/(app)/media/[id]/_components/media-tabs";
+import { MediaTags } from "@/app/(app)/media/[id]/_components/media-tags";
+import { MediaTrailer } from "@/app/(app)/media/[id]/_components/media-trailer";
+import { relatedMedia } from "@/app/(app)/media/[id]/_lib/media-related";
 import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import { Separator } from "@/components/ui/separator";
 import { getListMembership } from "@/features/lists/server/lists.queries";
@@ -108,9 +124,10 @@ export async function generateMetadata({
  * l'accès sous un `<Suspense>` la coquille part immédiatement et le contenu arrive en flux
  * (docs/ARCHITECTURE.md — une frontière par zone, jamais de `loading.tsx` de segment).
  *
- * Ce qui n'est pas encore là : le synopsis, les onglets lourds (personnages, équipe, œuvres liées,
- * recommandations) et le journal. La barre de suivi, elle, est posée mais **n'écrit rien** — sa
- * mécanique attend que la mise en page soit validée.
+ * **Ce qui n'est pas encore là** : le journal des autres membres du cercle, les tomes possédés, et
+ * les épisodes chez les diffuseurs (`streamingEpisodes`). Le reste de ce qu'AniList renvoie est à
+ * l'écran depuis le 7 septembre 2026 — et sans une requête de plus, puisque tout arrivait déjà dans
+ * le même objet (docs/fiche-media.md §1.1).
  */
 export default function MediaPage({ params }: PageProps<"/media/[id]">) {
   return (
@@ -154,6 +171,98 @@ async function MediaDetailContent({
   // on n'a rien à en dire.
   if (!media) notFound();
 
+  /*
+    **Tout ce qui suit est un tri, pas une lecture.** `relatedMedia` groupe et filtre ce que la
+    fiche cite ; les trois booléens décident quels onglets existent. Aucune requête n'est en jeu :
+    personnages, équipe, relations et recommandations sont arrivés avec le reste de la fiche, dans
+    la même réponse.
+
+    Le calcul est fait **ici** et pas dans les composants parce qu'un onglet ne doit exister que
+    s'il a quelque chose à montrer, et qu'on ne sonde pas un rendu pour le savoir. Un intitulé qui
+    ouvre sur le vide apprend au visiteur que l'écran est cassé — la leçon du menu à trois points de
+    cette même fiche.
+  */
+  const related = relatedMedia(media, includeAdult);
+  const hasCharacters = media.characters.edges.length > 0;
+  const hasCast = hasCharacters || media.staff.edges.length > 0;
+  const hasRelated =
+    related.groups.length > 0 || related.recommendations.length > 0;
+
+  const tabs: MediaTab[] = [
+    {
+      value: "apercu",
+      label: "Aperçu",
+      content: (
+        <div className="flex flex-col gap-8">
+          <MediaSynopsis description={media.description} />
+          <MediaTags includeAdult={includeAdult} media={media} />
+          <MediaTrailer trailer={media.trailer} />
+        </div>
+      ),
+    },
+    /*
+      **L'intitulé suit ce qu'il y a derrière.** Une fiche de manga n'a souvent que son auteur au
+      staff et aucun personnage renseigné : l'appeler « Personnages » serait promettre des visages
+      qui n'existent pas.
+    */
+    ...(hasCast
+      ? [
+          {
+            value: "distribution",
+            label: hasCharacters ? "Personnages" : "Équipe",
+            content: (
+              <div className="flex flex-col gap-8">
+                <MediaCharacters media={media} />
+                <MediaStaff media={media} />
+              </div>
+            ),
+          },
+        ]
+      : []),
+    ...(hasRelated
+      ? [
+          {
+            value: "liees",
+            label:
+              related.groups.length > 0 ? "Œuvres liées" : "Recommandations",
+            content: (
+              <div className="flex flex-col gap-8">
+                <MediaRelations
+                  groups={related.groups}
+                  titleLanguage={titleLanguage}
+                />
+                <MediaRecommendations
+                  items={related.recommendations}
+                  titleLanguage={titleLanguage}
+                />
+              </div>
+            ),
+          },
+        ]
+      : []),
+    {
+      value: "journal",
+      label: "Journal",
+      /*
+        **Le journal a sa propre frontière, et l'onglet fermé ne la retarde pas.** Le contenu des
+        panneaux est rendu côté serveur avant que l'onglet actif soit connu — un `<Suspense>` posé
+        ici laisse donc partir la fiche pendant que la seconde lecture en base se fait, au lieu de
+        la faire attendre derrière AniList *puis* derrière Postgres.
+
+        L'unité vient de l'œuvre et non de l'événement : `EntryEvent` ne la porte pas, et il a
+        raison — un média ne change pas de type entre deux lignes de son journal.
+      */
+      content: (
+        <Suspense fallback={<EntryJournalSkeleton />}>
+          <EntryJournal
+            mediaId={id}
+            unit={media.type === "ANIME" ? "episode" : "chapitre"}
+          />
+        </Suspense>
+      ),
+    },
+  ];
+
   return (
     /*
       Un seul écart, porté par la colonne et non par les éléments : une marge posée sur le
@@ -176,7 +285,21 @@ async function MediaDetailContent({
 
       <Separator />
 
-      <MediaSynopsis description={media.description} />
+      {/*
+        **Deux colonnes, et la coupure n'est pas « le principal et le reste ».** Elle sépare ce
+        qu'on lit de ce qu'on consulte : à gauche du contenu qui se parcourt et se déplie, à droite
+        quatre réponses courtes qui restent à l'écran quel que soit l'onglet ouvert
+        (`media-aside.tsx`). C'est ce que la spec du 2 septembre appelait le panneau collant.
+
+        `minmax(0,1fr)` et non `1fr` : sans le minimum à zéro, une grille de jaquettes ou une ligne
+        de titre trop longue pousserait la colonne au-delà de sa part et emporterait le panneau hors
+        de l'écran. Le seuil est `lg` — en dessous, 288 px de panneau ne laisseraient plus de place
+        à une grille de vignettes.
+      */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10">
+        <MediaTabs tabs={tabs} />
+        <MediaAside media={media} />
+      </div>
     </article>
   );
 }
