@@ -10,13 +10,13 @@ l'intention.
 
 Relevé le **7 septembre 2026**.
 
-> ### En un mot : six écrans sur onze, et les listes sont entières.
+> ### En un mot : sept écrans sur onze, et les préférences s'appliquent enfin.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> six routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
+> sept routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
-> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**. Les cinq
-> autres routes construites restent des placeholders.
+> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, et depuis le
+> 7 septembre **`/settings`**. Les quatre autres routes construites restent des placeholders.
 >
 > **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
 > même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
@@ -45,6 +45,21 @@ Relevé le **7 septembre 2026**.
 > lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
 >
 > Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
+>
+> **Et les réglages se règlent.** `/settings` porte deux sections : un bloc « Compte » en lecture
+> seule — tout y vient de GitHub, et le `username` est verrouillé après l'inscription — et les deux
+> seules préférences qui existent, la langue des titres et le contenu adulte. `updatePreferences`
+> est la **septième Server Action du dépôt**, et la première hors de `tracking` et `lists` ; c'est
+> aussi la première ligne écrite dans `UserPreferences`, une table que le schéma portait depuis la
+> migration initiale sans qu'aucun écran l'alimente. Chaque contrôle enregistre seul, sans bouton :
+> deux réglages indépendants ne forment pas un formulaire. La revalidation est un
+> `revalidatePath(routes.home, "layout")` — `titleLanguage` décide du nom d'une œuvre *partout*, et
+> une liste de routes à tenir à jour est une liste qu'on oublie de compléter au prochain écran.
+>
+> **Ce qui n'y est pas, et pour cause** : l'échelle de notation (cinq étoiles pour tout le monde,
+> §4.2) et la langue de l'interface (français uniquement, §7) — deux sélecteurs à un seul choix ne
+> seraient pas des choix. Le thème et la déconnexion non plus : l'en-tête et le menu du compte les
+> portent déjà.
 >
 > **Et depuis le 7 septembre, le site se navigue au téléphone — et AniList répond de nouveau.** Une
 > séance d'audit au navigateur a trouvé que `MainNav` était en `hidden md:flex` sans remplaçant :
@@ -82,16 +97,18 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
 | `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **vidé** — en refonte |
-| `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **vidé** — en refonte |
+| `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
 | `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | `Edition`, `OwnedVolume` | **déclaré, non construit** |
 | `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
 
 La colonne « Features consommées » avait disparu de ce tableau quand plus aucune route ne consommait
-de feature. **Trois routes en consomment maintenant**, et elle n'est pas revenue pour autant : les
-trois lisent le même trio — `media`, `preferences` et `tracking` —, donc une colonne qui répéterait
-trois fois la même liste n'apprendrait rien. Elle reviendra le jour où deux routes ne liront pas la
-même chose.
+de feature. Elle n'était pas revenue tant que les routes livrées lisaient toutes le même trio —
+`media`, `preferences` et `tracking` —, une colonne qui répète trois fois la même liste
+n'apprenant rien. **`/settings` est la première à ne pas lire ça** : elle ne connaît que
+`preferences`, et rien du catalogue. La condition posée ici est donc remplie, et la colonne
+reviendra à la prochaine passe qui touche ce tableau — la remettre aujourd'hui demanderait de
+relire les onze lignes pour une seule qui change.
 
 Les tables `ListView`, `ListViewItem`, `Edition` et `OwnedVolume` existent au schéma depuis la
 migration initiale et ne sont employées par aucun écran. C'était déjà vrai avant la mise à blanc, et
@@ -745,7 +762,10 @@ vocabulaire de tous les autres.
    La fenêtre « Ajouter à une liste » de la fiche et le partage par jeton sont livrés avec : **le
    domaine des listes est entier**, et `lists.schema.ts` a quitté `knip.jsonc` pour de bon — ses
    sept entrées ont toutes un appelant.
-5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
+5. `/settings` — **fait** (7 septembre), et il a tenu la promesse d'être petit : cinq fichiers, dont
+   un promu depuis l'en-tête (`user-avatar.tsx`). La relecture des préférences annoncée ici s'est
+   réduite à constater que le schéma Zod disait déjà tout — deux réglages, et les deux écartés le
+   sont pour de bonnes raisons. Reste `/u/[username]`, l'autre petit.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 
 Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Le cron de

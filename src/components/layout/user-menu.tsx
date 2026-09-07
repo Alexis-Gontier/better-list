@@ -3,7 +3,7 @@
 import { LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,15 +31,6 @@ type UserMenuProps = {
   image?: string;
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 export function UserMenu({ name, email, username, image }: UserMenuProps) {
   const { signOut, isPending } = useSignOut();
 
@@ -49,10 +40,7 @@ export function UserMenu({ name, email, username, image }: UserMenuProps) {
         aria-label="Menu du compte"
         className="rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <Avatar>
-          <AvatarImage src={image} alt={name} />
-          <AvatarFallback>{getInitials(name)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar image={image} name={name} />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
