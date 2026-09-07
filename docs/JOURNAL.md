@@ -27,6 +27,41 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 7 septembre 2026 — les réglages, et une largeur qu'on a choisie en la regardant
+
+`/settings` était annoncé comme l'un des deux plus petits écrans, et il l'a été. Ce qu'il apprend
+tient en trois choses, dont deux ne sont pas dans le code.
+
+**La maquette a tranché deux fois contre le raisonnement.** L'écran a d'abord été posé dans une
+colonne de 672 px, avec un argument qui se tenait : ce sont des lignes de texte et des contrôles,
+pas une grille de jaquettes, et sur toute la largeur le libellé d'un réglage se retrouve à 900 px
+de son interrupteur. La capture a dit le contraire — **un écran qui s'arrête à mi-chemin quand les
+six autres vont au bout se lit comme un écran inachevé**, et la cohérence de la coquille pèse plus
+que le trajet de l'œil. Même chose pour la hiérarchie : « Affichage » en `font-medium` à la taille
+du texte courant avait exactement le poids de « Langue des titres » juste en dessous, deux niveaux
+qui se lisaient comme un seul. Aucune des deux ne se voyait sur plan ; les deux se voyaient à
+l'écran en une seconde. C'est l'argument de la boucle visuelle, et il vaut d'être redit : on ne
+règle pas une hiérarchie typographique en la raisonnant.
+
+**`upsert` et non `update`, et ce n'est pas une précaution.** Aucun compte du cercle n'a de ligne
+`UserPreferences` avant son premier réglage — `getPreferences` s'appuie précisément là-dessus pour
+rendre les défauts du schéma Zod. Un `update` aurait donc échoué au **tout premier clic de chaque
+compte**, c'est-à-dire au seul moment où l'écran est certain d'être utilisé. Le cas limite était le
+cas nominal. Et la création part de `DEFAULT_PREFERENCES` plutôt que des défauts de Prisma : les
+deux disent la même chose aujourd'hui, mais c'est le schéma Zod que le reste du code lit.
+
+**La revalidation ne se liste pas, elle se prend en entier.** `titleLanguage` décide du nom sous
+lequel une œuvre s'affiche partout, et `includeAdult` entre dans la *requête* de ces mêmes écrans.
+Purger route par route obligerait à tenir une liste à jour et à l'oublier au prochain écran livré —
+exactement l'omission qui laisse un titre en romaji sur une page qu'on n'a pas pensé à citer. D'où
+un `revalidatePath(routes.home, "layout")` unique, assumé large : on ne change pas de langue de
+titres deux fois par jour, donc son coût ne se paie jamais dans un parcours normal.
+
+Vérifié en basculant les deux réglages sur session réelle : la ligne s'est créée, `/library` est
+passée en titres anglais avec les œuvres 18+ visibles, puis les valeurs d'origine ont été remises.
+L'écriture, la revalidation et les requêtes qui lisent ces préférences sont donc branchées
+ensemble, et pas seulement d'accord au type.
+
 ## 7 septembre 2026 — le cron du miroir, ou ce que le gel avait vraiment gardé
 
 Séance de reconstruction pure, et la plus courte du chantier : trois fichiers, dont un de neuf
