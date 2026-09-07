@@ -20,6 +20,18 @@ updates:
     # cassée soit retirée. Même intention que `minimumReleaseAge` côté pnpm.
     cooldown:
       default-days: 5
+    ignore:
+      # Ces deux majeures ne se décident pas toutes seules : chacune est arrimée à autre chose
+      # que sa propre version, et Dependabot ne voit pas cet arrimage.
+      #
+      # @types/node doit suivre .nvmrc, pas le dernier Node publié. Proposer la 26 quand on tourne
+      # en 24 ferait typer des API absentes à l'exécution : ça compile, puis ça casse.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 compile ce dépôt sans une erreur — vérifié en CI le 7 septembre 2026. Ce qui
+      # manque est ailleurs : que l'éditeur compile avec le même binaire que la CI.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       # Le tout-venant en une PR. Les majors en sortent : elles se lisent une par une.
       dependencies:
