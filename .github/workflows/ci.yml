@@ -20,6 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # `pnpm install` déclenche le postinstall `prisma generate`, qui charge prisma.config.ts et
+    # y résout `env("DATABASE_URL")` immédiatement. Sans cette variable, l'installation échoue et
+    # la CI meurt avant le premier contrôle — ce qu'elle a fait en silence pendant trois merges.
+    #
+    # L'URL n'est jamais ouverte : `generate` ne fait que lire prisma/schema.prisma. Elle est au
+    # niveau du job, et non d'une étape, parce que `install` et `build` en ont besoin tous les deux.
+    # À remplacer par une vraie branche Neon éphémère le jour où la CI devra migrer ou requêter.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
+
     steps:
       - uses: actions/checkout@v5
 
