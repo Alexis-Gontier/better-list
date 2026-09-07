@@ -44,13 +44,13 @@ jobs:
       GITHUB_CLIENT_SECRET: ci-placeholder
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # Doit précéder setup-node : c'est lui qui rend `cache: pnpm` possible. La version de pnpm
       # vient du champ `packageManager` de package.json, pas d'un numéro dupliqué ici.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
