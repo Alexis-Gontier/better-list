@@ -46,16 +46,6 @@ Relevé le **7 septembre 2026**.
 >
 > Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
 >
-> **Et la fiche d'une œuvre est entière.** Le 7 septembre lui a donné son bas de page : quatre
-> onglets à gauche — aperçu (synopsis, genres, thèmes à spoiler repliés dans un `<details>` natif,
-> bande-annonce en vignette plutôt qu'en `iframe`), personnages et équipe, œuvres liées et
-> recommandations, journal — et à droite un panneau **collant** qui ne bouge pas d'un onglet à
-> l'autre : prochain épisode, fiche technique, chiffres de la communauté, où regarder. **Un onglet
-> qui n'a rien à montrer n'existe pas**, et son intitulé suit son contenu. Le tout **sans une seule
-> requête AniList de plus** : `MEDIA_BY_ID_QUERY` ramenait déjà personnages, staff, relations et
-> recommandations depuis le premier jour — il n'y avait rien à aller chercher, il y avait à
-> afficher. L'inventaire de [fiche-media.md](./fiche-media.md) passe de 23 à 43 cases cochées.
->
 > **Et les réglages se règlent.** `/settings` porte deux sections : un bloc « Compte » en lecture
 > seule — tout y vient de GitHub, et le `username` est verrouillé après l'inscription — et les deux
 > seules préférences qui existent, la langue des titres et le contenu adulte. `updatePreferences`
@@ -99,7 +89,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | --- | --- | --- | --- |
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
-| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **livré** — hero, suivi, onglets (aperçu, personnages, œuvres liées, journal) et panneau de référence collant |
+| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
@@ -762,13 +752,10 @@ vocabulaire de tous les autres.
    l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
    [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
    des filtres : 66 lignes, **21 cochées**.
-2. `/media/[id]` — **faite** (7 septembre). Le hero et le suivi dataient du 6 ; le bas de la page
-   est arrivé le 7 : quatre onglets (aperçu, personnages, œuvres liées, journal) et une colonne de
-   référence collante (prochain épisode, fiche technique, chiffres de la communauté, où regarder).
-   **Sans une requête AniList de plus** — tout arrivait déjà dans `MEDIA_BY_ID_QUERY`. Restent les
-   deux distributions, `streamingEpisodes`, le favori, les tomes possédés et le §2.5 (ce que le
-   cercle en pense). L'inventaire à cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes,
-   **43 cochées**.
+2. `/media/[id]` — **le hero et le suivi sont faits** (6 septembre) : la barre lit l'`Entry` réelle
+   et écrit par `saveEntry`. Restent le journal, les onglets lourds, les chiffres de la communauté,
+   et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
+   cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
 3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
 4. `/lists`, `/lists/[id]` et `/l/[token]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
    réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.

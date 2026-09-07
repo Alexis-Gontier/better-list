@@ -90,82 +90,6 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 /**
- * Nature du lien entre deux œuvres — `MediaRelation` chez AniList.
- *
- * Même choix que `SOURCE_LABELS` : un `Record<string, string>` et non un `Record` exhaustif, parce
- * que le champ arrive en `string` du schéma. Une valeur inconnue retombe sur le brut plutôt que de
- * disparaître, sans quoi une relation nouvelle rendrait un groupe sans titre.
- *
- * `ADAPTATION` est le lien qu'on lit le plus : c'est celui qui mène du manga à l'anime, et
- * réciproquement.
- */
-const RELATION_LABELS: Record<string, string> = {
-  ADAPTATION: "Adaptation",
-  PREQUEL: "Préquelle",
-  SEQUEL: "Suite",
-  PARENT: "Œuvre parente",
-  SIDE_STORY: "Histoire parallèle",
-  CHARACTER: "Personnage commun",
-  SUMMARY: "Résumé",
-  ALTERNATIVE: "Version alternative",
-  SPIN_OFF: "Spin-off",
-  OTHER: "Autre",
-  SOURCE: "Œuvre d'origine",
-  COMPILATION: "Compilation",
-  CONTAINS: "Contient",
-};
-
-/**
- * Rôle d'un personnage dans l'œuvre. Trois valeurs seulement, et l'énumération d'AniList
- * (`CharacterRole`) n'a pas bougé depuis des années — mais le champ arrive en `string`, d'où le
- * repli.
- */
-const CHARACTER_ROLE_LABELS: Record<string, string> = {
-  MAIN: "Principal",
-  SUPPORTING: "Secondaire",
-  BACKGROUND: "Figuration",
-};
-
-/**
- * Rôles du staff — **une chaîne libre, pas une énumération.** AniList y accepte n'importe quoi
- * (« Director », « Original Creator », mais aussi « Theme Song Performance (ED) »), donc cette
- * table ne peut pas être exhaustive et n'essaie pas de l'être : elle traduit les rôles qu'on
- * rencontre sur une fiche d'anime ou de manga, et laisse le reste en anglais plutôt que d'inventer.
- */
-const STAFF_ROLE_LABELS: Record<string, string> = {
-  Director: "Réalisation",
-  "Original Creator": "Œuvre originale",
-  "Original Story": "Histoire originale",
-  "Character Design": "Character design",
-  "Series Composition": "Composition de la série",
-  Music: "Musique",
-  Story: "Scénario",
-  Art: "Dessin",
-  "Story & Art": "Scénario et dessin",
-  "Chief Animation Director": "Direction de l'animation en chef",
-  "Animation Director": "Direction de l'animation",
-  "Action Director": "Direction de l'action",
-  "Assistant Director": "Assistanat à la réalisation",
-  "Original Character Design": "Character design original",
-  "Original Work Assistance": "Assistanat sur l'œuvre originale",
-  "Art Director": "Direction artistique",
-  "Director of Photography": "Direction de la photographie",
-  "Color Design": "Conception des couleurs",
-  "Key Animation": "Animation clé",
-  "Background Art": "Décors",
-  Producer: "Production",
-  "Chief Producer": "Production exécutive",
-  Storyboard: "Storyboard",
-  "Sound Director": "Direction du son",
-  "Sound Effects": "Bruitage",
-  "Script Writer": "Scénario",
-  "Episode Director": "Réalisation d'épisode",
-  Editing: "Montage",
-  Translator: "Traduction",
-  Lettering: "Lettrage",
-};
-
-/**
  * Genres AniList, en français.
  *
  * **Cette table n'est pas un doublon du vocabulaire d'AniList, c'est sa traduction.** `GenreCollection`
@@ -227,21 +151,6 @@ export function formatSource(source: string | null): string | null {
 
 export function formatListStatus(status: StatusDistribution["status"]): string {
   return LIST_STATUS_LABELS[status];
-}
-
-export function formatRelationType(relation: string | null): string | null {
-  if (!relation) return null;
-  return RELATION_LABELS[relation] ?? relation;
-}
-
-export function formatCharacterRole(role: string | null): string | null {
-  if (!role) return null;
-  return CHARACTER_ROLE_LABELS[role] ?? role;
-}
-
-export function formatStaffRole(role: string | null): string | null {
-  if (!role) return null;
-  return STAFF_ROLE_LABELS[role] ?? role;
 }
 
 /**

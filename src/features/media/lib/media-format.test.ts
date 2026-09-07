@@ -2,15 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   cleanDescription,
-  formatCharacterRole,
   formatCountdown,
   formatDateRange,
   formatDuration,
   formatFuzzyDate,
-  formatRelationType,
   formatSeason,
   formatSource,
-  formatStaffRole,
   mediaTitle,
 } from "@/features/media/lib/media-format";
 
@@ -141,43 +138,6 @@ describe("formatSource", () => {
   it("retombe sur la valeur brute quand elle est inconnue", () => {
     expect(formatSource("BOARD_GAME")).toBe("BOARD_GAME");
     expect(formatSource(null)).toBeNull();
-  });
-});
-
-describe("formatRelationType", () => {
-  it("traduit les liens qu'on lit le plus", () => {
-    expect(formatRelationType("ADAPTATION")).toBe("Adaptation");
-    expect(formatRelationType("SIDE_STORY")).toBe("Histoire parallèle");
-  });
-
-  /** Un lien inconnu doit garder son groupe : sans titre, la section entière disparaîtrait. */
-  it("retombe sur la valeur brute, et ignore l'absence", () => {
-    expect(formatRelationType("PROLOGUE")).toBe("PROLOGUE");
-    expect(formatRelationType(null)).toBeNull();
-  });
-});
-
-describe("formatCharacterRole", () => {
-  it("traduit les trois rôles d'AniList", () => {
-    expect(formatCharacterRole("MAIN")).toBe("Principal");
-    expect(formatCharacterRole("BACKGROUND")).toBe("Figuration");
-    expect(formatCharacterRole(null)).toBeNull();
-  });
-});
-
-describe("formatStaffRole", () => {
-  it("traduit les rôles courants", () => {
-    expect(formatStaffRole("Original Creator")).toBe("Œuvre originale");
-  });
-
-  /**
-   * Le rôle est une **chaîne libre** chez AniList, pas une énumération : la table ne peut pas être
-   * exhaustive, et l'anglais vaut mieux qu'une invention.
-   */
-  it("laisse en anglais ce qu'elle ne connaît pas", () => {
-    expect(formatStaffRole("Theme Song Performance (ED)")).toBe(
-      "Theme Song Performance (ED)",
-    );
   });
 });
 
