@@ -4,14 +4,24 @@ import {
   compactFromMirror,
   MIRRORED_MEDIA_SELECT,
 } from "@/features/media/lib/media-format";
-import { isMirrorStale } from "@/features/media/lib/media-freshness";
-import type {
-  MediaCompact,
-  MediaDetail,
+import {
+  isMirrorStale,
+  MIRROR_BATCH_SIZE,
+  MIRROR_MAX_BATCHES_PER_RUN,
+  mirrorStaleCutoffs,
+  SETTLED_STATUSES,
+  VOLATILE_STATUSES,
+} from "@/features/media/lib/media-freshness";
+import {
+  type MediaCompact,
+  type MediaDetail,
+  type MediaMirror,
+  mediaMirrorDataSchema,
 } from "@/features/media/schemas/media.schema";
+import { MEDIA_MIRROR_QUERY } from "@/features/media/server/media.documents";
 import { getMediaById } from "@/features/media/server/media.queries";
 import { prisma } from "@/lib/db/prisma";
-import { tryAniList } from "@/lib/http/anilist";
+import { anilistQuery, tryAniList } from "@/lib/http/anilist";
 
 /**
  * La fiche servie depuis le **miroir local**, quand AniList ne répond pas.
@@ -134,6 +144,51 @@ export async function getMediaDetailFromMirror(
 }
 
 /**
+ * Les dix-huit colonnes de `Media`, telles qu'AniList les rend.
+ *
+ * **Une seule fonction pour les deux écrivains du miroir**, et c'est ce que `mediaMirrorSchema`
+ * annonçait : `MediaDetail` satisfait structurellement `MediaMirror`, donc le garde-fou du premier
+ * suivi — qui part de la fiche déjà chargée — et le cron — qui lit cinquante fiches d'un coup —
+ * recopient par le même chemin. Deux mappings jumeaux dans le même fichier auraient divergé à la
+ * première colonne ajoutée au schéma.
+ *
+ * `syncedAt` est un **paramètre** et non un `new Date()` enfoui : une passe de cron horodate toutes
+ * ses lignes du même instant, celui sur lequel elle a calculé ses bornes de péremption. Les prendre
+ * une par une ferait porter à la table l'heure de fin de passe plutôt que celle de son début.
+ */
+function toMirrorRow(media: MediaMirror, syncedAt: Date) {
+  return {
+    type: media.type,
+    format: media.format,
+    status: media.status,
+    countryOfOrigin: media.countryOfOrigin,
+    titleRomaji: media.title.romaji,
+    titleEnglish: media.title.english,
+    titleNative: media.title.native,
+    coverImage: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
+    // `coverColor` est un `@db.VarChar(9)` : une valeur plus longue ferait échouer toute la
+    // transaction du lot pour une couleur de dégradé. AniList rend `#rrggbb`, mais rien ne nous le
+    // garantit, et un lot de cinquante n'est pas l'endroit où le découvrir.
+    coverColor: media.coverImage?.color?.slice(0, 9) ?? null,
+    bannerImage: media.bannerImage,
+    episodes: media.episodes,
+    chapters: media.chapters,
+    volumes: media.volumes,
+    season: media.season,
+    seasonYear: media.seasonYear,
+    genres: media.genres,
+    meanScore: media.meanScore,
+    isAdult: media.isAdult,
+    /*
+      `syncedAt` avance **même quand rien d'autre ne change**, sinon la ligne resterait périmée pour
+      toujours et chaque passage dépenserait une requête à la redemander en vain. C'est la même
+      règle que pour une œuvre qu'AniList ne renvoie plus (§4.1).
+    */
+    syncedAt,
+  };
+}
+
+/**
  * Copier l'œuvre dans le miroir **avant toute écriture qui y pointe** — et ne rien faire si elle y
  * est déjà et n'est pas périmée.
  *
@@ -189,38 +244,167 @@ export async function ensureMediaMirror(mediaId: number): Promise<void> {
     );
   }
 
-  const row = {
-    type: media.type,
-    format: media.format,
-    status: media.status,
-    countryOfOrigin: media.countryOfOrigin,
-    titleRomaji: media.title.romaji,
-    titleEnglish: media.title.english,
-    titleNative: media.title.native,
-    coverImage: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
-    coverColor: media.coverImage?.color ?? null,
-    bannerImage: media.bannerImage,
-    episodes: media.episodes,
-    chapters: media.chapters,
-    volumes: media.volumes,
-    season: media.season,
-    seasonYear: media.seasonYear,
-    genres: media.genres,
-    meanScore: media.meanScore,
-    isAdult: media.isAdult,
-    /*
-      `syncedAt` avance **même quand rien d'autre ne change**, sinon la ligne resterait périmée pour
-      toujours et chaque passage dépenserait une requête à la redemander en vain. C'est la même
-      règle que pour une œuvre qu'AniList ne renvoie plus (§4.1).
-    */
-    syncedAt: new Date(),
-  };
+  const row = toMirrorRow(media, new Date());
 
   await prisma.media.upsert({
     where: { id: mediaId },
     create: { id: mediaId, ...row },
     update: row,
   });
+}
+
+/**
+ * Lit un lot d'œuvres chez AniList, **sans cache**.
+ *
+ * L'absence de `"use cache"` est une décision et pas un oubli : mémoriser la lecture qui *remplit*
+ * le miroir reviendrait à rafraîchir une copie avec une copie. La contrainte de quota est tenue
+ * autrement — cinquante fiches par requête (`id_in`), et un plafond de lots côté appelant.
+ *
+ * Un id absent de la réponse n'est pas une erreur, c'est l'information utile : voir
+ * `refreshStaleMirror`.
+ */
+async function fetchMediaForMirror(ids: number[]): Promise<MediaMirror[]> {
+  if (ids.length === 0) return [];
+
+  const { Page } = await anilistQuery({
+    query: MEDIA_MIRROR_QUERY,
+    variables: { ids, perPage: ids.length },
+    schema: mediaMirrorDataSchema,
+  });
+
+  return Page.media;
+}
+
+/** Ce qu'une passe de cron a fait, tel que les journaux Vercel le montreront. */
+export type MirrorRefreshSummary = {
+  /** Lignes périmées retenues par cette passe — plafond compris. */
+  stale: number;
+  /** Lignes effectivement réécrites depuis AniList. */
+  refreshed: number;
+  /** Ids qu'AniList ne connaît plus : horodatés quand même, pour ne pas les redemander sans fin. */
+  vanished: number;
+  /** Requêtes AniList consommées. Un lot = une requête. */
+  batches: number;
+};
+
+/**
+ * Rafraîchit les lignes périmées du miroir. **C'est le corps du cron** (docs/PRODUCT.md §4.1).
+ *
+ * Quatre points portent la correction de cette fonction.
+ *
+ * 1. **La péremption est demandée à PostgreSQL, pas calculée en mémoire.** Les deux bornes de
+ *    `mirrorStaleCutoffs` deviennent des `syncedAt < …` servis par l'index `[status, syncedAt]`.
+ *    C'est exactement pourquoi `media-freshness.ts` rend des bornes plutôt qu'un prédicat : charger
+ *    la table pour la filtrer ensuite marcherait aujourd'hui, et plus dans deux ans.
+ * 2. **Le statut nul a sa propre branche.** En SQL, `status IN (…)` comme `status NOT IN (…)` sont
+ *    tous deux faux quand la colonne vaut `NULL` — une ligne sans statut échapperait donc aux deux
+ *    conditions et ne serait *jamais* rafraîchie. Le piège est classique, silencieux, et il vise
+ *    précisément les fiches que `mirrorTtlMs` range du côté volatile par prudence.
+ * 3. **Les plus anciennes d'abord.** Le plafond laisse forcément du reste sur un gros miroir ;
+ *    l'ordre garantit que ce reste passe en tête à la passe suivante, et donc qu'aucune ligne ne
+ *    peut être indéfiniment sautée. Sans `orderBy`, PostgreSQL est libre de rendre les mêmes
+ *    cinquante lignes à chaque fois.
+ * 4. **Les deux plafonds protègent le quota, et eux seuls.** `MIRROR_BATCH_SIZE` fiches par
+ *    requête, `MIRROR_MAX_BATCHES_PER_RUN` requêtes par passe : au pire vingt crédits sur les
+ *    trente que la minute partage avec les visiteurs. C'est la raison d'être de ces deux
+ *    constantes, et celle pour laquelle la passe préfère laisser du travail derrière elle plutôt
+ *    que de finir.
+ *
+ * Une écriture **par lot, dans une transaction** : les cinquante `update` partent en une fois, là
+ * où cinquante allers-retours séquentiels dépasseraient le délai d'exécution de la fonction
+ * serverless bien avant d'épuiser le quota AniList. Chaque lot étant committé séparément, une passe
+ * coupée en route ne laisse rien d'incohérent — seulement du travail pour la suivante.
+ *
+ * **La panne n'est pas rattrapée ici, et c'est voulu** : `tryAniList` sert un écran qui doit rester
+ * debout, or il n'y a pas d'écran ici. Une passe qui échoue doit apparaître **en échec** dans les
+ * journaux Vercel plutôt que de rendre un compte rendu vert et vide ; le cron repassera demain, et
+ * l'ordre du point 3 fait que rien n'aura été perdu entre-temps.
+ *
+ * `now` et `maxBatches` sont des paramètres pour que la fonction soit testable sans horloge ni base
+ * de mille lignes — le handler n'en passe aucun.
+ */
+export async function refreshStaleMirror({
+  now = new Date(),
+  maxBatches = MIRROR_MAX_BATCHES_PER_RUN,
+}: {
+  now?: Date;
+  maxBatches?: number;
+} = {}): Promise<MirrorRefreshSummary> {
+  const { volatileBefore, settledBefore } = mirrorStaleCutoffs(now);
+
+  const stale = await prisma.media.findMany({
+    where: {
+      OR: [
+        { status: { in: VOLATILE_STATUSES }, syncedAt: { lt: volatileBefore } },
+        // Voir le point 2 : sans cette branche, une ligne sans statut n'est jamais reprise.
+        { status: null, syncedAt: { lt: volatileBefore } },
+        { status: { in: SETTLED_STATUSES }, syncedAt: { lt: settledBefore } },
+      ],
+    },
+    orderBy: { syncedAt: "asc" },
+    take: maxBatches * MIRROR_BATCH_SIZE,
+    select: { id: true },
+  });
+
+  const summary: MirrorRefreshSummary = {
+    stale: stale.length,
+    refreshed: 0,
+    vanished: 0,
+    batches: 0,
+  };
+
+  for (let start = 0; start < stale.length; start += MIRROR_BATCH_SIZE) {
+    const ids = stale
+      .slice(start, start + MIRROR_BATCH_SIZE)
+      .map((row) => row.id);
+
+    const media = await fetchMediaForMirror(ids);
+    summary.batches += 1;
+
+    const returned = new Set(media.map((item) => item.id));
+    const missing = ids.filter((id) => !returned.has(id));
+
+    await prisma.$transaction([
+      ...media.map((item) =>
+        prisma.media.update({
+          where: { id: item.id },
+          data: toMirrorRow(item, now),
+        }),
+      ),
+      /*
+        **Une œuvre qu'AniList ne renvoie plus garde sa copie, et son `syncedAt` avance quand même.**
+
+        Garder la copie est la durabilité promise par §4.1 : une fiche supprimée ou fusionnée chez
+        AniList reste suivie, listée, parfois possédée en volumes chez nous. La supprimer ferait
+        tomber les `Entry`, les `ListItem` et les `OwnedVolume` qui y pointent — `onDelete: Cascade`
+        —, c'est-à-dire effacer le travail de quelqu'un parce qu'un tiers a réorganisé son
+        catalogue. C'est exactement la panne contre laquelle le miroir a été construit.
+
+        Avancer `syncedAt` est l'autre moitié, et elle est moins évidente : sans ça la ligne reste
+        périmée pour toujours, remonte en tête du tri « les plus anciennes d'abord » à **chaque**
+        passe, et occupe une place de lot à se faire redemander en vain — une poignée de fiches
+        disparues suffirait à monopoliser la passe et à laisser le reste du miroir sans
+        rafraîchissement. On horodate donc la tentative, pas la réponse.
+
+        Ce qu'on ne fait pas : marquer la ligne d'un quelconque `deletedAt`. Rien ici ne distingue
+        une œuvre supprimée d'une œuvre temporairement absente de la réponse, et une colonne qu'on
+        ne saurait pas remplir juste vaut moins que pas de colonne du tout.
+      */
+      ...(missing.length > 0
+        ? [
+            prisma.media.updateMany({
+              where: { id: { in: missing } },
+              data: { syncedAt: now },
+            }),
+          ]
+        : []),
+    ]);
+
+    summary.refreshed += media.length;
+    summary.vanished += missing.length;
+  }
+
+  return summary;
 }
 
 /**

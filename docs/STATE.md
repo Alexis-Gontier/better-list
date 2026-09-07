@@ -54,6 +54,12 @@ Relevé le **7 septembre 2026**.
 > **en-tête `Referer` manquant** dans nos propres requêtes : l'API n'avait jamais été coupée. Le
 > détail est plus bas.
 >
+> **Et le miroir se rafraîchit de nouveau.** Le cron supprimé le 5 septembre est revenu le 7 : une
+> passe par jour à 4 h UTC, par lots de cinquante, plafonnée à vingt requêtes. C'est le premier des
+> deux route handlers supprimés à revenir, et il a coûté trois fichiers — tout le raisonnement avait
+> survécu au gel. Sans lui, une série en cours de diffusion gardait pour toujours le nombre
+> d'épisodes qu'elle avait à sa dernière écriture.
+>
 > **Ne pas lire ce fichier comme un constat de panne.** Rien n'est cassé : c'est un chantier, et
 > l'ordre de reconstruction est au bas de la page.
 
@@ -136,9 +142,10 @@ c'est se promettre de le relire une fois de trop.
 
 #### Ce que ça a coûté, sans arrondi
 
-- **`api/cron/refresh-media` et `vercel.json` sont supprimés.** Le miroir `Media` n'est donc plus
-  rafraîchi quotidiennement en production. `CRON_SECRET` reste déclaré dans `config/env.ts`, sans
-  emploi, avec un commentaire qui le dit — le cron revient à la reconstruction.
+- ~~**`api/cron/refresh-media` et `vercel.json` sont supprimés.**~~ **Remis le 7 septembre 2026**,
+  deux jours plus tard : le miroir `Media` est de nouveau rafraîchi une fois par jour, et
+  `CRON_SECRET` a retrouvé son unique lecteur. C'est le premier des deux handlers supprimés à
+  revenir ; `api/command` attend toujours sa palette.
 - **`api/command` est supprimé** avec la palette `⌘K` qu'il servait. Son schéma survit : il porte la
   règle du « +1 », dont `command.queries.ts` était le seul autre dépositaire.
 - **Le canari de `architecture.test.ts` est en `.skip`.** Voir les écarts connus — c'est le point le
@@ -314,17 +321,65 @@ progression enregistrés, pastille apparue sur le catalogue, valeurs retrouvées
 rechargement complet, déduction « dernier chapitre → Terminé » appliquée par le serveur, puis retrait
 sous confirmation et retour exact à l'état de départ. Les données d'essai ont été retirées.
 
-### Le seul route handler restant
+### Le cron du 7 septembre 2026 — le miroir se rafraîchit de nouveau
 
-Il ne vit pas sous le layout `(app)` et le `matcher` du proxy exclut `api/` : il porte sa propre
-garde.
+**Séance courte, et presque entièrement de la relecture** : tout le raisonnement avait été fait
+avant la mise à blanc, et il avait survécu. `media-freshness.ts` et ses 12 tests, `MEDIA_MIRROR_QUERY`
+et son `id_in`, l'index `@@index([status, syncedAt])`, `CRON_SECRET` — les quatre pièces attendaient
+au gel. Il manquait le corps de la passe et sa porte.
+
+Ce qui a été écrit : `refreshStaleMirror` dans `media.mirror.ts`, le handler
+`api/cron/refresh-media`, et `vercel.json`. Trois fichiers, dont un de neuf lignes de JSON.
+
+Quatre décisions portent la correction de la passe, et elles sont écrites là où elles s'appliquent :
+
+- **La péremption est demandée à PostgreSQL.** `mirrorStaleCutoffs` rendait déjà des *bornes* et non
+  un prédicat, précisément pour ça : deux `syncedAt < …` servis par l'index, au lieu d'une table
+  chargée puis filtrée en mémoire.
+- **Le statut nul a sa propre branche `OR`.** En SQL, `status IN (…)` **et** `status NOT IN (…)` sont
+  tous deux faux quand la colonne vaut `NULL` : sans branche dédiée, une fiche sans statut
+  n'aurait *jamais* été rafraîchie — alors que `mirrorTtlMs` la range du côté volatile pour qu'on
+  découvre son vrai statut. C'est le piège de la séance, et il est silencieux.
+- **Les plus anciennes d'abord.** Le plafond de 20 lots laisse forcément du reste sur un gros
+  miroir ; l'ordre garantit que ce reste passe en tête à la passe suivante.
+- **Une œuvre qu'AniList ne renvoie plus garde sa copie, et son `syncedAt` avance quand même.** La
+  garder est la durabilité de §4.1 — la supprimer ferait tomber en cascade les `Entry`, `ListItem`
+  et `OwnedVolume` qui y pointent. Avancer l'horodatage est l'autre moitié, moins évidente : sans
+  ça, la ligne remonte en tête du tri à *chaque* passe et occupe indéfiniment une place de lot.
+
+**Deux plafonds, et ils ne protègent qu'une chose** : le quota AniList de 30 requêtes/minute,
+partagé avec les visiteurs. 50 fiches par requête, 20 requêtes par passe — au pire vingt crédits.
+
+**La cadence est `0 4 * * *`**, une passe par jour, parce que le plan Vercel est **Hobby**. Le seuil
+volatile de 12 h reste délibérément **plus court** que cette cadence : il garantit qu'une ligne en
+cours de diffusion est *toujours* périmée quand la passe arrive. L'aligner sur 24 h ferait qu'une
+ligne rafraîchie à 4 h 02 attendrait le surlendemain.
+
+**Vérifié en appelant la route, pas en la lisant** : sans en-tête → 401 ; jeton faux → 401 ; jeton
+valide → 200 et `{"stale":94,"refreshed":94,"vanished":0,"batches":2}`. Les 94 lignes du miroir de
+développement ont donc été reprises en **deux** requêtes AniList (50 + 44). Un second appel
+immédiat rend `{"stale":0,…}` et ne dépense **rien** : la passe est idempotente, et `syncedAt` a bien
+avancé.
+
+**Ce qui est couvert par des tests** : la garde du handler (6 tests — en-tête absent, jeton faux,
+jeton *de la bonne longueur* mais faux, absence de préfixe `Bearer`, jeton valide, et le refus qui
+ne révèle rien) et la sélection des lots (14 tests, sur doubles de Prisma et d'AniList). Les trois
+plus importants ont été **vus échouer** sur une mutation volontaire du code.
+
+**Ce qui ne l'est pas** : la passe de bout en bout contre une vraie base. Elle a été appelée une
+fois, à la main, et ce fichier est le seul endroit où ça reste écrit.
+
+### Les deux route handlers
+
+Aucun ne vit sous le layout `(app)`, et le `matcher` du proxy exclut `api/` **en entier** : chacun
+porte donc sa propre garde, et c'est la seule qu'il ait.
 
 | Handler | Rôle | Sa garde |
 | --- | --- | --- |
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
+| `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** |
 
-`api/command` et `api/cron/refresh-media` ont été supprimés par la mise à blanc, avec le code qu'ils
-appelaient.
+`api/command` reste supprimé, avec la palette `⌘K` qu'il servait.
 
 ### Et trois conventions de fichier
 
@@ -353,7 +408,8 @@ composante : `entry-status-dot`, la pastille de statut, posée dans le slot `mar
 
 | Feature | Ce qu'elle contient |
 | --- | --- |
-| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne fiche **et** recherche, plus `ensureMediaMirror`). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
+| **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne fiche **et** recherche, `ensureMediaMirror`, et
+**`refreshStaleMirror` — le corps du cron** depuis le 7 septembre). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
 | **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — cinq lectures sans aucun cache, parce que tout y dépend du visiteur — et **`tracking.actions`, les deux premières Server Actions du dépôt**. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating`, `entry-status-dot`, et `entry-quick-edit` — la fenêtre d'édition rapide, promue de `/library` quand `/search` l'a demandée. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
@@ -398,9 +454,9 @@ prétend s'y fier.**
 | Commande | Résultat |
 | --- | --- |
 | `pnpm typecheck` | propre — `noUncheckedIndexedAccess` et `verbatimModuleSyntax` actifs |
-| `pnpm test` | **210 passés, 1 en pause**, 17 fichiers. Les sept nouveaux couvrent `mostSelectiveFacet`, écrite en TDD comme `rankForAppend` avant elle. Les huit Server Actions ne sont toujours couvertes par aucun test |
-| `pnpm lint` | 193 fichiers, aucune correction (176 avant l'audit) |
-| `pnpm build` | 17 pages, un seul route handler ; `/search`, `/library` et `/media/[id]` en rendu partiel |
+| `pnpm test` | **232 passés, 1 en pause**, 19 fichiers. Les 20 nouveaux sont ceux du cron : 6 pour la garde du handler, 14 pour la sélection des lots. Les huit Server Actions ne sont toujours couvertes par aucun test |
+| `pnpm lint` | 197 fichiers, aucune correction (193 avant le cron, 176 avant l'audit) |
+| `pnpm build` | **deux** route handlers depuis le cron ; `/search`, `/library` et `/media/[id]` en rendu partiel |
 | `pnpm knip` | aucun signalement — **toujours sous gel, mais le gel a maigri**, voir ci-dessous |
 
 **Écarts connus :**
@@ -426,9 +482,9 @@ prétend s'y fier.**
   `features/*/components/` qui soit à la fois exporté, serveur et `async` — c'est-à-dire qui lise
   lui-même ses données. Le journal d'une œuvre et la rangée « en cours » de l'accueil en sont les
   candidats, et aucun n'existe. En attendant, le test voisin ne garde toujours rien.
-- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant **6 fichiers
-  et 9 chemins** d'exports ou de types, plus `ignoreDependencies` pour quatre familles (`@dnd-kit`,
-  `embla`, `cmdk`, `react-hotkeys-hook`). Ce ne sont pas des faux positifs : ce code est réellement
+- **`pnpm knip` est vert sous gel.** `knip.jsonc` porte un bloc `ignoreIssues` couvrant **5 chemins
+  de fichiers et 8 chemins** d'exports ou de types, plus `ignoreDependencies` pour trois familles
+  (`embla`, `cmdk`, `react-hotkeys-hook` — `@dnd-kit` en est sorti le 6 septembre). Ce ne sont pas des faux positifs : ce code est réellement
   sans appelant, parce que l'écran qui l'appellera n'existe pas encore. Le gel est posé **par
   chemin** et non en `exclude` global, pour que knip continue de signaler le code mort partout
   ailleurs. Chaque entrée nomme ce qu'elle attend : c'est la liste de reconstruction, et le bloc doit
@@ -436,16 +492,17 @@ prétend s'y fier.**
 
   **Le bloc maigrit à chaque passe, comme prévu.** `media.documents.ts` est passé du gel « fichier »
   au gel « exports » ; `search-params.ts` et `library-params.ts` en sont sortis pour de bon avec le
-  catalogue ; et **les Server Actions ont emporté `safe-action.ts`, `tracking.schema.ts` et la
-  dépendance `next-safe-action`** — les trois entrées disaient mot pour mot qu'elles attendaient la
-  première action.
+  catalogue ; les Server Actions ont emporté `safe-action.ts`, `tracking.schema.ts` et la dépendance
+  `next-safe-action` ; et **le cron du 7 septembre a emporté `media-freshness.ts`**, dont l'entrée
+  disait mot pour mot ce qu'elle attendait — « les bornes du miroir attendent le cron ». Toutes ces
+  entrées annonçaient leur propre péremption, et c'est ce qui rend le bloc lisible.
 
   Restent au gel, et c'est exactement la liste des écrans qui manquent : `calendar-params` et
   `profile-params` (contrats d'URL de `/calendar` et `/u`), `command.schema` (la palette `⌘K`),
-  `lists.schema` (`/lists`), `use-debounced-value`, `use-reduced-motion`, et des chemins d'exports —
-  les formateurs de `media`, les cinq documents GraphQL sans écran, les bornes du miroir qui
-  attendent le cron, les schémas de `media`, les défauts de `preferences`, et `formatEventTime` qui
-  attend le journal.
+  `use-debounced-value`, `use-reduced-motion`, et des chemins d'exports — les formateurs de `media`,
+  les **trois** documents GraphQL encore sans écran (catalogue, planning, vocabulaire de filtres),
+  les schémas de `media`, les défauts de `preferences`, `formatEventTime` qui attend le journal, et
+  `removeEntry` qui attend son geste.
 
   **Une entrée y est revenue le jour même, et c'est la seule fois** : `removeEntry` et
   `removeEntrySchema`, quand le menu qui les appelait a été retiré. Le gel dit toujours « en
@@ -487,7 +544,10 @@ prétend s'y fier.**
 - **Rien dans l'interface ne retire une œuvre de la bibliothèque.** Le menu à trois points de la
   fiche est parti le 6 septembre avec la fenêtre d'édition rapide, et `removeEntry` est retournée au
   gel de `knip.jsonc` faute d'appelant. Le geste devra revenir sous `alert-dialog`, déjà installé.
-- Le miroir `Media` n'est plus rafraîchi : le cron est supprimé (voir plus haut).
+- ~~Le miroir `Media` n'est plus rafraîchi : le cron est supprimé.~~ **Fait le 7 septembre 2026**
+  — voir plus bas. Ce qui reste dû à sa place est plus étroit : la passe n'est **vérifiée par aucun
+  test de bout en bout**, seulement par des doubles. Elle a en revanche été **appelée pour de vrai**
+  (94 lignes reprises en 2 requêtes), et la sélection des lots est couverte, elle, par 14 tests.
 - `/collection` est déclarée dans `routes.ts` sans écran derrière, comme avant la mise à blanc.
   `routes.ts` le dit lui-même dans son commentaire.
 
@@ -593,10 +653,10 @@ précisément un composant de `features/*/components/` exporté, serveur et `asy
 pronostic précédent attendait à tort du panneau de suivi.
 
 Ensuite, dans l'ordre où ça se posera : le **compteur de résultats** de `/search`, qui doit dire
-« plus de 5000 » et non « 5000 » ; les champs de suivi que la fiche ne porte pas encore alors que la
-fenêtre d'une vignette les a — dates, notes, relectures ; et **le retour du cron de
-rafraîchissement**, qui reste dû — le miroir n'est plus alimenté depuis la mise à blanc, même si
-AniList répond de nouveau depuis le 7 septembre.
+« plus de 5000 » et non « 5000 » ; et les champs de suivi que la fiche ne porte pas encore alors que
+la fenêtre d'une vignette les a — dates, notes, relectures.
+
+Le **retour du cron de rafraîchissement**, qui figurait ici, est fait depuis le 7 septembre 2026.
 
 Les **états vides** ne sont plus dans cette liste : ils ont été dessinés le 7 septembre.
 
@@ -688,8 +748,9 @@ vocabulaire de tous les autres.
 5. `/settings` et `/u/[username]` — les deux plus petits, une fois les préférences relues.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 
-Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`, et le cron de
-rafraîchissement du miroir avec son `vercel.json`.
+Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Le cron de
+rafraîchissement du miroir figurait ici aussi ; il a été repris le 7 septembre 2026, hors de l'ordre
+des écrans puisqu'il n'en est pas un.
 
 Chaque branche retire du bloc `ignoreIssues` de `knip.jsonc` les entrées que sa route rebranche.
 Quand la dernière part, le bloc entier part avec elle.

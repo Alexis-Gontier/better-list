@@ -31,11 +31,10 @@ export const env = createEnv({
      * garde de `(app)/layout.tsx` ne les couvre pas. Longueur minimale imposée pour qu'un secret
      * bricolé à la main ne passe pas la validation du build.
      *
-     * **Sans emploi depuis la mise à blanc du 5 septembre 2026** : `api/cron/refresh-media` a été
-     * supprimé avec `media.mirror.ts` qu'il appelait, et l'entrée `crons` de `vercel.json` avec lui.
-     * La variable est conservée plutôt que retirée — le rafraîchissement du miroir revient à la
-     * reconstruction, et faire disparaître puis réapparaître un secret validé coûte plus qu'un
-     * commentaire. Si la reconstruction s'en passe finalement, c'est ici qu'il faut la retirer.
+     * **De nouveau employé depuis le 7 septembre 2026** : `api/cron/refresh-media` est reconstruit,
+     * et l'entrée `crons` de `vercel.json` avec lui. Le handler compare l'en-tête `Authorization`
+     * à `Bearer ${CRON_SECRET}` **en temps constant** — la variable avait passé deux jours déclarée
+     * et sans lecteur, ce qui aura été le seul intérêt de l'avoir gardée plutôt que retirée.
      */
     CRON_SECRET: z.string().min(32),
   },
