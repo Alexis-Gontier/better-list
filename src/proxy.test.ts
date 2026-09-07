@@ -137,4 +137,14 @@ describe("config.matcher", () => {
       expect(matcher.test(pathname)).toBe(false);
     }
   });
+
+  /*
+    Constaté en production le 7 septembre 2026, invisible en local : `/icon` est une route de
+    métadonnées Next, donc **sans extension** — la liste des extensions d'images ne la couvrait pas,
+    et le proxy renvoyait l'icône d'onglet vers `/login`. Elle manquait donc à tout visiteur
+    déconnecté, y compris sur `/l/<jeton>`, la seule page prévue pour eux.
+  */
+  it("laisse passer l'icône d'onglet, qui n'a pas d'extension", () => {
+    expect(matcher.test("/icon")).toBe(false);
+  });
 });

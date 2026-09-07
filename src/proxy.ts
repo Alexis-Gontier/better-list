@@ -77,8 +77,15 @@ export const config = {
    *
    * Les images et polices sont exclues volontairement — les faire passer par le proxy coûterait
    * une exécution par requête pour aucun contrôle utile.
+   *
+   * **`icon` est nommée à part, et il a fallu la production pour s'en apercevoir.** C'est une route
+   * de métadonnées Next : elle rend un PNG mais s'adresse **sans extension**, donc la liste des
+   * extensions ci-dessous ne l'attrapait pas. Le proxy renvoyait l'icône d'onglet vers `/login`, et
+   * elle manquait à tout visiteur déconnecté — sur les écrans d'authentification comme sur
+   * `/l/<jeton>`, la seule page prévue pour des gens sans compte. Rien à protéger ici : c'est un
+   * carré de 32 pixels que le dépôt montre à tout le monde.
    */
   matcher: [
-    "/((?!api/|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?)$).*)",
+    "/((?!api/|_next/static|_next/image|icon|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?)$).*)",
   ],
 };
