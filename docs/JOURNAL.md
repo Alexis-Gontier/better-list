@@ -27,6 +27,57 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 8 septembre 2026 — une CI rouge que personne ne pouvait voir
+
+Séance partie sur de l'hygiène de dépôt, arrivée sur une panne vieille de trois merges.
+
+**Une CI qui ne barre rien n'est pas une CI.** Le workflow échouait depuis le 7 septembre à 01h34,
+et les trois merges suivants sont passés sur du rouge sans que rien ne le signale. La cause est
+structurelle, pas technique : le dépôt n'a **jamais** eu de pull request — on travaille en branche
+puis on fusionne en local. Un run en échec n'avait donc aucun chemin à bloquer. Il a fallu que
+Dependabot ouvre les quatre premières PR de l'histoire du dépôt pour que quelqu'un regarde.
+
+**Trois causes empilées, chacune cachant la suivante.** On ne peut rien conclure de la première
+erreur sur l'ampleur de la panne — il a fallu trois allers-retours pour atteindre le fond :
+
+1. Le `postinstall` lance `prisma generate`, qui charge `prisma.config.ts` et y résout
+   `env("DATABASE_URL")` sans attendre. `pnpm install` sortait en erreur, donc l'échec tombait
+   **avant le premier contrôle**.
+2. `PageProps` et `LayoutProps` sont des globales que Next *génère* — pendant `next dev`,
+   `next build` ou `next typegen` — et que le dépôt ne versionne pas. Un `tsc` sur checkout froid
+   ne les voyait nulle part.
+3. `SKIP_ENV_VALIDATION` désarmait le schéma **sans fournir la moindre valeur**. Le build
+   franchissait la porte pour aller mourir dix lignes plus loin sur `new URL(undefined)`, dans le
+   `metadataBase` de `app/layout.tsx`.
+
+**La leçon est dans la troisième : l'échappatoire posée pour laisser passer le build était ce qui
+l'empêchait de passer.** Sauter une validation ne remplit rien. La CI porte désormais six valeurs
+factices mais valides, et vérifie donc aussi le schéma de `config/env.ts` — ce qu'elle ne faisait
+pas quand elle le contournait. Aucun vrai secret n'a été ajouté au dépôt, et c'est délibéré : la CI
+n'ouvre aucune connexion et ne signe aucune session, lui confier de vraies clés l'exposerait pour
+rien.
+
+**Le vrai coupable, lui, est la deuxième — et il tenait à une divergence d'une ligne.** Le hook
+`pre-push` lançait `pnpm exec tsc --noEmit`, quand la CI lançait `pnpm typecheck`. Deux définitions
+du même contrôle, donc deux résultats. Et le local était vert pour **deux mauvaises raisons
+cumulées** : un `.next/` que `pnpm dev` laisse toujours traîner, et `tsconfig.tsbuildinfo` —
+gitignoré, donc absent en CI — qui faisait sauter la vérification au titre de l'incrémental. En
+supprimant les deux, l'échec se reproduit à l'identique, seize erreurs comprises. Le hook passe
+maintenant par le script : **un contrôle ne doit avoir qu'une définition, sinon il ne garde que la
+machine qui l'exécute.**
+
+**Dependabot : certaines majeures sont arrimées ailleurs qu'à leur propre version.** Il proposait
+`@types/node` 26 quand `.nvmrc` épingle Node 24 — et la CI était verte, forcément : les API de Node
+26 se typent parfaitement, elles n'existent simplement pas à l'exécution. Une CI verte ne dit rien
+d'un décalage entre des types et un runtime. Même famille pour TypeScript 7, qui compile ce dépôt
+sans une erreur mais attend que l'éditeur compile avec le même binaire. Les deux sont passées en
+`ignore` : ce sont des décisions, pas des mises à jour.
+
+**Et la fiche a reculé.** `/media/[id]` est revenue à son hero : le merge du 7 septembre — onglets,
+colonne de référence, journal daté — a été annulé par `revert` et non par réécriture d'historique,
+`main` étant déjà poussée et protégée. `d5b1a05` reste atteignable, un revert du revert ramènerait
+tout.
+
 ## 7 septembre 2026 — les réglages, et une largeur qu'on a choisie en la regardant
 
 `/settings` était annoncé comme l'un des deux plus petits écrans, et il l'a été. Ce qu'il apprend
