@@ -27,11 +27,21 @@ jobs:
     # L'URL n'est jamais ouverte : `generate` ne fait que lire prisma/schema.prisma. Elle est au
     # niveau du job, et non d'une étape, parce que `install` et `build` en ont besoin tous les deux.
     # À remplacer par une vraie branche Neon éphémère le jour où la CI devra migrer ou requêter.
-    # `pnpm typecheck` lance `next typegen`, et le build charge next.config.ts : tous deux
-    # importent `@/config/env`, qui exige des variables que la CI n'a pas.
+    # Des valeurs factices, mais valides au regard de src/config/env.ts, plutôt que le
+    # SKIP_ENV_VALIDATION qu'on posait avant. Sauter la validation ne fournissait aucune valeur :
+    # le build passait la porte pour aller mourir plus loin sur `new URL(undefined)` dans
+    # app/layout.tsx. En les déclarant pour de bon, la CI vérifie aussi le schéma lui-même.
+    #
+    # Rien ici n'est un secret : aucune connexion n'est ouverte, aucune session n'est signée.
+    # Les longueurs ne sont là que pour satisfaire les `min(32)` de BETTER_AUTH_SECRET et
+    # CRON_SECRET. À remplacer par une branche Neon éphémère le jour où la CI devra requêter.
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
-      SKIP_ENV_VALIDATION: "1"
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ci-placeholder-not-a-real-secret-000000
+      CRON_SECRET: ci-placeholder-not-a-real-secret-111111
+      GITHUB_CLIENT_ID: ci-placeholder
+      GITHUB_CLIENT_SECRET: ci-placeholder
 
     steps:
       - uses: actions/checkout@v5
