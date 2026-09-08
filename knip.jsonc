@@ -51,7 +51,13 @@
   // ─────────────────────────────────────────────────────────────────────────────────────────────
   "ignoreIssues": {
     // ── Fichiers sans importateur ───────────────────────────────────────────────────────────────
-    "src/app/(app)/calendar/_lib/calendar-params.ts": ["files"], // contrat d'URL — attend /calendar
+    // `calendar-params.ts` est **sorti du gel le 8 septembre 2026**, avec `/calendar` : la page
+    // consomme `loadCalendarParams` pour lire le décalage, et la navigation de semaine
+    // `serializeCalendarParams` pour bâtir ses deux liens. Le contrat d'URL qu'il fixait — la
+    // semaine en décalage entier, jamais en date — a été respecté tel quel, ce qui est bien la
+    // raison pour laquelle il avait été épargné. Quatrième entrée à disparaître entièrement plutôt
+    // qu'à se rétrograder en gel « exports », après `library-params.ts`, `search-params.ts` et
+    // `lists.schema.ts`.
     "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
     "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
     // `library-params.ts` est **sorti du gel le 6 septembre 2026** : `/library` le consomme de bout
@@ -70,7 +76,10 @@
     // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
     // pour le gel « exports ». `MEDIA_BY_ID_QUERY` et `SEARCH_MEDIA_QUERY` sont consommées, et
     // **`MEDIA_MIRROR_QUERY` l'est depuis le 7 septembre 2026** — le cron l'envoie par lots de
-    // cinquante. Restent trois documents sans écran : catalogue, planning, vocabulaire de filtres.
+    // cinquante —, et **`AIRING_SCHEDULE_QUERY` depuis le 8 septembre 2026**, avec `/calendar` :
+    // ses 488 lignes de GraphQL avaient été gelées en pariant qu'un écran finirait par les
+    // demander, et celle-là n'en avait jamais eu. Restent deux documents sans écran : le catalogue
+    // de l'accueil et le vocabulaire de filtres.
     "src/features/media/server/media.documents.ts": ["exports"],
     // `media-freshness.ts` est **sorti du gel le 7 septembre 2026**, avec le cron de
     // rafraîchissement : `refreshStaleMirror` consomme `mirrorStaleCutoffs`, les deux listes de

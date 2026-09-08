@@ -27,6 +27,128 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 8 septembre 2026 — la limite qui n'existait pas
+
+Le planning venait d'être livré en liste. Alexis a demandé l'inverse : une grille par semaine,
+colonnes verticales, et **tout afficher, pas seulement ce qu'on suit** — ou mieux, un bouton pour
+choisir. La grille est un simple changement de disposition. Le reste se heurtait à un mur écrit.
+
+**PRODUCT.md §9 interdisait exactement ça, en termes catégoriques** : « une semaine de diffusion,
+toutes œuvres confondues, compte **cinq mille entrées** chez AniList — mesuré, pas estimé », donc
+cent requêtes sur les trente de la minute, donc « un planning "tout AniList" n'est pas finançable,
+et le proposer un jour supposerait une seconde source ou un miroir des grilles horaires, **pas un
+réglage** ». Le bouton demandé était nommément écarté.
+
+**Le vrai chiffre est 248.** Compté sur les cases réellement rendues par `?portee=tout` pour la
+semaine du 7 au 13 septembre : 248 diffusions, dont 240 hors bibliothèque, sans atteindre le
+plafond de pages que l'écran s'impose. **Cinq requêtes, pas cent.** Un facteur vingt.
+
+**Et l'erreur était déjà documentée ailleurs dans le dépôt.** Les cinq mille venaient de
+`pageInfo.total`, qu'AniList plafonne à 5000 quelle que soit la requête — c'est mot pour mot ce que
+`ANILIST_TOTAL_CAP` explique dans `media.queries.ts` depuis le 6 septembre, chiffre à l'appui. §9
+avait même senti le piège, puisqu'il écrivait « le compteur y est plafonné donc c'est un plancher »
+— et il en a tiré la conclusion inverse de la bonne : au lieu de traiter 5000 comme une valeur
+inconnue à mesurer, il l'a traitée comme un minimum garanti. **Une butée de compteur avait été lue
+comme un volume de données, et une fonctionnalité a été interdite pendant trois jours sur cette
+lecture.**
+
+La leçon n'est pas « vérifier les chiffres » mais plus précise : **une limite produit qui cite un
+nombre doit dire comment il a été obtenu**. §9 disait « mesuré, pas estimé », ce qui était vrai et
+trompeur à la fois — la mesure portait sur un compteur, pas sur les données. §9 est corrigé, daté,
+et porte désormais la méthode avec le chiffre.
+
+**Deux tentatives de mesure ont échoué avant celle-là**, parce qu'AniList répondait
+`403 — temporarily disabled due to severe stability issues`, par intermittence toute la séance.
+C'est ce qui a fait écrire d'abord un plafond de pages « faute de pouvoir mesurer ». **Le plafond
+reste**, mais pour la bonne raison maintenant : non pas parce qu'on ignore le volume, mais parce
+qu'une semaine de rentrée de saison peut dépasser 248 sans prévenir. Effet de bord utile : la panne
+a permis de voir `ScheduleUnavailable` en conditions réelles, et l'écran dégrade proprement.
+
+**Ce que la grille coûte, et c'est le relevé d'hier qui le disait.** Une colonne fait 150 px : le
+retard n'y tient plus en toutes lettres et devient « +16 », avec la phrase entière en `title` et en
+texte accessible. C'était l'argument qui avait fait écarter la grille ; il reste vrai, il est
+simplement payé sciemment. `airing-day-list.tsx` a été supprimé plutôt que gelé — il vit dans
+`8079ef1` si la liste revient un jour.
+
+---
+
+## 8 septembre 2026 — le planning, et douze sites qui avaient déjà répondu
+
+Séance partie sur « grille ou liste ? », arrivée sur « la question n'est pas celle-là ».
+
+**On allait trancher au goût une question déjà tranchée par tout le monde.** Deux dispositions
+avaient été maquettées et soumises — une grille de sept colonnes, une liste verticale groupée par
+jour — avec des arguments honnêtes de part et d'autre. Puis Alexis a demandé de regarder ce qui
+existe. **Douze plannings de diffusion relevés, douze listes verticales, zéro grille** : LiveChart
+(`/schedule` *et* `/timetable`), AnimeSchedule, MyAnimeList, Trakt, et surtout les cinq références
+francophones — Nautiljon, Icotaku, Myutaku, Animesphere, aniSearch.fr. Le seul à proposer une grille,
+AniChart, l'a ajoutée *à côté* de sa vue d'origine, qui reste la vue par défaut.
+
+**Et l'axe qu'ils règlent n'est pas celui qu'on croyait.** Aucun n'offre « grille ou liste ». Ils
+offrent des **densités** : aniSearch en propose six (Couvertures, Présentation, Galerie, Miniatures,
+Liste, Tableau), LiveChart trois, Nautiljon un affichage « hybride » par défaut dont sa propre note
+de version explique qu'il masque des champs sur les affichages étroits *faute de place*. Sur le
+forum de Trakt, la demande de « calendrier compact » est motivée par « an endless scrolling list »
+et « overloaded with images » — jamais par la forme. **Ce qu'on croit demander à la grille, on le
+demande en réalité à la densité.** Trois produits sur douze laissent d'ailleurs régler la *portée*
+(Aujourd'hui / Semaine / Mois), contre un seul la disposition : si un réglage arrive un jour ici,
+c'est celui-là.
+
+**Le dépôt avait déjà tranché, contre son propre vocabulaire.** `airing-week.ts` dit « colonne »
+dans presque chaque docstring — « sa colonne », « les sept colonnes de la semaine ». Son auteur
+imaginait une grille. Mais ce qu'il *rend* dit l'inverse : `AiringDay.label` vaut « Lundi 3 août »,
+jour et mois en toutes lettres, capitalisés par une fonction écrite exprès. C'est un intitulé de
+section ; un en-tête de colonne de 142 px voudrait « Lun 7 ». La structure de données avait choisi
+la liste, et seuls les commentaires étaient restés à la grille.
+
+**Ce que l'écran a de plus que les calendriers publics, c'est le retard — et c'est le seul relevé
+qui compte.** Icotaku, Nautiljon, Myutaku et Crunchyroll disent ce qui sort ; ils ne savent pas où
+l'on en est. Seuls Trakt et Sonarr affichent une progression, et ce sont les deux seuls *suivis* du
+relevé. C'est la ligne de partage entre un calendrier et un suivi. La grille aurait comprimé « 11
+épisodes de retard » en « +11 » : elle sacrifiait précisément ce qu'on a de plus.
+
+**Le piège du CLI shadcn s'est déclenché, en pire que ce qu'on en savait.** On savait qu'il câble
+`from "cn"` au lieu de `@/lib/utils`. Ce qu'on ne savait pas : `pnpm dlx shadcn add @shadcn/calendar`
+**installe réellement un paquet npm nommé `cn`** (0.2.6, sans aucun rapport), plus `date-fns` —
+puis s'arrête sur une demande d'écraser `button.tsx`, et n'écrit jamais `calendar.tsx`. Résultat
+net : deux dépendances parasites, zéro composant. Le fichier a été écrit à la main depuis la source
+du registre, et seul `react-day-picker` reste au `package.json` — `date-fns` y est de toute façon
+transitive, et ses fonctions ignorent le fuseau de Paris que tout `airing-week.ts` protège.
+
+**Deux pièges de bibliothèque, pour mémoire.** Chez react-day-picker, `{ before, after }` en un seul
+objet est un `DateInterval` qui désigne l'**intérieur** de l'intervalle — l'inverse de ce qu'on veut
+désarmer ; il faut un tableau de matchers, qui s'entend comme une union. Et `filter(v => v !== undefined)`
+ne rétrécit pas le type sans prédicat explicite : `typecheck` l'a attrapé, pas la relecture.
+
+**Le relecteur de conventions a trouvé ce que la relecture humaine n'aurait pas trouvé.** Le
+`cacheLife` de la grille horaire avait été posé à `"hours"`, avec un raisonnement de quota écrit
+noir sur blanc — sauf que la skill `anilist-read` réserve `"minutes"` au planning de diffusion, dans
+une table écrite **d'avance pour cette requête précise**, qui n'avait jamais eu d'écran. Ce n'était
+donc pas une table périmée mais une décision pré-enregistrée, et l'argument du quota ne tenait pas à
+l'examen : quatre comptes, une clé par jeu d'ids suivis, soit quelques revalidations par minute
+contre un plafond de trente. **La leçon est en amont** : CLAUDE.md dit de passer par la skill
+`anilist-read` pour toucher à l'API, et elle n'a été ouverte qu'*après* coup, sur signalement.
+
+**Et une dette qui n'est de personne en particulier : il n'y a aucun `cacheTag` dans le dépôt.**
+`grep -rn "cacheTag\|CACHE_TAG" src/` ne renvoie rien, `MEDIA_CACHE_TAG` n'existe pas, et ni
+`fetchMediaById` ni `fetchSearchMedia` n'en portent — alors que la checklist de la skill l'exige.
+La nouvelle lecture a suivi les deux qui la précèdent plutôt que d'inventer un tag pour elle seule,
+ce qui l'aurait rendue incohérente avec ses voisines. À trancher globalement : créer
+`MEDIA_CACHE_TAG` et le poser sur les trois, ou retirer la ligne de la checklist. Le tenir à trois
+endroits sur trois est plus facile qu'à dix.
+
+**Une fausse piste, et la leçon est la méthode.** La console annonçait « Could not validate `instant` »
+sur `/calendar`, ce qui ressemblait beaucoup à une faute de structure — `await searchParams` au
+sommet d'une page. La page a été restructurée sur le modèle de `/library`… et l'erreur est restée.
+Elle apparaît en réalité sur **les quatre routes déjà livrées** : elle vient de
+`app/(app)/layout.tsx`, qui pose `instant = false` en connaissance de cause, avec sa justification
+écrite. Vérifier le message sur une route livrée avant de l'attribuer au code du jour aurait coûté
+trente secondes. La restructuration, elle, était juste pour d'autres raisons — l'en-tête part
+maintenant sans attendre la première lecture — et a été gardée, avec un commentaire qui dit
+désormais la vérité sur ce qu'elle corrige et ce qu'elle ne corrige pas.
+
+---
+
 ## 8 septembre 2026 — une CI rouge que personne ne pouvait voir
 
 Séance partie sur de l'hygiène de dépôt, arrivée sur une panne vieille de trois merges.
