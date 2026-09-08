@@ -19,7 +19,13 @@ Relevé le **8 septembre 2026**.
 > 7 septembre **`/settings`**, et le 8 septembre **`/calendar`**. Les trois autres routes
 > construites restent des placeholders.
 >
-> **`/calendar` est le premier écran dont la forme a été choisie sur pièces.** Douze plannings de
+> **`/calendar` a fait tomber une limite produit qui n'existait pas.** PRODUCT.md §9 interdisait le
+> planning global sur un calcul faux — cinq mille diffusions par semaine, cent requêtes — tiré du
+> `pageInfo.total` plafonné d'AniList, ce même plafond que le dépôt documentait déjà sous
+> `ANILIST_TOTAL_CAP`. **La semaine en compte 248**, soit cinq requêtes. L'écran propose donc les
+> deux portées, et §9 est corrigé.
+>
+> **C'est aussi le premier écran dont la forme a été choisie sur pièces.** Douze plannings de
 > diffusion en service ont été relevés avant d'écrire une ligne, les cinq références francophones
 > comprises : **douze rendent une liste verticale groupée par jour, aucun une grille de sept
 > colonnes** (docs/JOURNAL.md). Et le relevé a désigné ce que l'écran a de plus qu'eux — Icotaku,
@@ -105,7 +111,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
-| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — liste par jour, navigation de semaine, retard par épisode |
+| `/calendar` (`calendar`) | Planning de diffusion, tout ou filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — grille 7 colonnes, navigation de semaine, portée réglable, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
 | `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | `Edition`, `OwnedVolume` | **déclaré, non construit** |

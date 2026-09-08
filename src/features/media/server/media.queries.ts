@@ -243,6 +243,33 @@ const MAX_AIRING_PAGES = 4;
 const AIRING_PAGE_SIZE = 50;
 
 /**
+ * Le plafond du mode « tout », et **c'est un garde-fou de quota, pas une pagination**.
+ *
+ * `docs/PRODUCT.md` §9 écartait le planning global sur un calcul qui s'est révélé faux : il annonçait
+ * cinq mille entrées par semaine, soit cent requêtes sur les trente que la minute partage. **La
+ * mesure du 8 septembre 2026 donne 248 diffusions**, soit cinq requêtes — le chiffre de §9 venait de
+ * `pageInfo.total`, qu'AniList plafonne à 5000 (voir `ANILIST_TOTAL_CAP` plus haut dans ce fichier).
+ * Un plafond de compteur avait été pris pour un volume. §9 a été corrigé.
+ *
+ * Six pages restent malgré tout la borne, et pas parce qu'on douterait de la mesure : une semaine
+ * chargée — une rentrée de saison, un rattrapage massif — peut dépasser 248 sans prévenir, et ce
+ * plafond garantit qu'aucune semaine, même anormale, ne coûtera plus de six requêtes pour remplir
+ * une entrée de cache.
+ *
+ * **Conséquence assumée et visible à l'écran** : au-delà de trois cents diffusions, la semaine est
+ * tronquée. `getAiringSchedule` le signale à l'appelant plutôt que de le taire — une liste
+ * silencieusement incomplète est pire qu'une liste qui dit l'être.
+ */
+const MAX_GLOBAL_AIRING_PAGES = 6;
+
+/** Ce qu'une lecture de grille horaire rend : les diffusions, et si on a dû s'arrêter avant la fin. */
+export type AiringScheduleResult = {
+  schedules: AiringSchedule[];
+  /** `true` quand le plafond de pages a coupé la semaine — l'écran doit le dire, pas le taire. */
+  truncated: boolean;
+};
+
+/**
  * La grille horaire d'une semaine, pour un ensemble d'œuvres donné.
  *
  * **Les ids sont dans la clé du cache, et c'est assumé** — contrairement à `fetchMediaById`, où
@@ -269,20 +296,26 @@ async function fetchAiringSchedule({
   from,
   to,
 }: {
-  mediaIds: number[];
+  /** `null` = **toute la grille**, sans filtre — le mode « tout », borné par son propre plafond. */
+  mediaIds: number[] | null;
   from: number;
   to: number;
-}): Promise<AiringSchedule[]> {
+}): Promise<AiringScheduleResult> {
   "use cache";
   cacheLife("minutes");
 
+  const maxPages =
+    mediaIds === null ? MAX_GLOBAL_AIRING_PAGES : MAX_AIRING_PAGES;
   const schedules: AiringSchedule[] = [];
+  let truncated = false;
 
-  for (let page = 1; page <= MAX_AIRING_PAGES; page++) {
+  for (let page = 1; page <= maxPages; page++) {
     const { Page } = await anilistQuery({
       query: AIRING_SCHEDULE_QUERY,
       variables: {
-        mediaIds,
+        // `undefined` et non `null` : une variable absente laisse AniList ignorer le filtre, là où
+        // `mediaId_in: null` est une comparaison à rien, qui ne rend rien.
+        mediaIds: mediaIds ?? undefined,
         /*
           **Les deux bornes d'AniList sont strictes**, et `airingWeek` rend un intervalle
           semi-ouvert `[from, to[`. `airingAt_greater: from - 1` rattrape le premier côté — sans
@@ -301,9 +334,11 @@ async function fetchAiringSchedule({
     schedules.push(...Page.airingSchedules);
 
     if (!Page.pageInfo.hasNextPage) break;
+    // Dernier tour autorisé, et AniList annonce encore une suite : on s'arrête, et on le dit.
+    if (page === maxPages) truncated = true;
   }
 
-  return schedules;
+  return { schedules, truncated };
 }
 
 /**
@@ -323,17 +358,21 @@ export async function getAiringSchedule({
   from,
   to,
 }: {
-  mediaIds: number[];
+  /** La liste des œuvres suivies, ou `null` pour toute la grille. */
+  mediaIds: number[] | null;
   from: number;
   to: number;
-}): Promise<AiringSchedule[] | null> {
+}): Promise<AiringScheduleResult | null> {
   // Rien de suivi, rien à demander : `mediaId_in: []` partirait chez AniList pour rapporter le vide
-  // qu'on connaît déjà, et dépenserait un crédit de quota pour ça.
-  if (mediaIds.length === 0) return [];
+  // qu'on connaît déjà, et dépenserait un crédit de quota pour ça. Le mode « tout » (`null`) n'est
+  // évidemment pas concerné — c'est justement l'absence de liste qui le définit.
+  if (mediaIds !== null && mediaIds.length === 0) {
+    return { schedules: [], truncated: false };
+  }
 
   return tryAniList(() =>
     fetchAiringSchedule({
-      mediaIds: [...mediaIds].sort((a, b) => a - b),
+      mediaIds: mediaIds === null ? null : [...mediaIds].sort((a, b) => a - b),
       from,
       to,
     }),

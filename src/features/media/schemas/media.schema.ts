@@ -334,11 +334,31 @@ export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
  * n'existe chez AniList que si ces quatre valeurs existent. Une diffusion sans date n'est pas une
  * diffusion.
  */
+/**
+ * L'œuvre telle qu'une case de planning en a besoin.
+ *
+ * `mediaCompactSchema` étendu plutôt que recopié (skill `anilist-read`) : c'est la même forme que
+ * partout ailleurs, plus le plafond d'épisodes — dont la carte de planning a besoin pour écrire
+ * « vu 10 / 12 », et que `MediaCompact` ne porte pas parce qu'une vignette de catalogue s'en passe.
+ */
+export const airingMediaSchema = mediaCompactSchema.extend({
+  episodes: z.number().int().nullable(),
+});
+export type AiringMedia = z.infer<typeof airingMediaSchema>;
+
 export const airingScheduleSchema = z.object({
   id: z.number().int(),
   mediaId: z.number().int(),
   episode: z.number().int(),
   airingAt: z.number().int(),
+  /**
+   * L'œuvre diffusée, **jointe par AniList depuis le 8 septembre 2026**.
+   *
+   * `nullable()` comme presque tout chez AniList : une grille horaire dont l'œuvre a été supprimée
+   * entre-temps rend `null` plutôt que de disparaître. Une diffusion sans œuvre n'est pas affichable
+   * — l'écran la laisse tomber plutôt que de rendre une case anonyme.
+   */
+  media: airingMediaSchema.nullable(),
 });
 export type AiringSchedule = z.infer<typeof airingScheduleSchema>;
 

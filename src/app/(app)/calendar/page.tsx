@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { AiringScopeToggle } from "@/app/(app)/calendar/_components/airing-scope-toggle";
 import {
-  AiringDayList,
-  type AiringRow,
-} from "@/app/(app)/calendar/_components/airing-day-list";
+  type AiringCell,
+  AiringWeekGrid,
+} from "@/app/(app)/calendar/_components/airing-week-grid";
 import { AiringWeekNav } from "@/app/(app)/calendar/_components/airing-week-nav";
 import {
   airingWeek,
   clampWeekOffset,
 } from "@/app/(app)/calendar/_lib/airing-week";
-import { loadCalendarParams } from "@/app/(app)/calendar/_lib/calendar-params";
+import {
+  type CalendarScope,
+  loadCalendarParams,
+} from "@/app/(app)/calendar/_lib/calendar-params";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +33,7 @@ import { getAiringWatchlist } from "@/features/tracking/server/library.queries";
 
 export const metadata: Metadata = {
   title: "Planning",
-  description: "Les épisodes à venir de ce que vous suivez.",
+  description: "Les épisodes de la semaine, et où vous en êtes.",
 };
 
 /**
@@ -58,7 +62,13 @@ export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
         <PageHeading
-          description="Les épisodes à venir de ce que vous suivez, et de combien vous êtes en retard sur chacun."
+          /*
+            Formulée pour valoir dans les **deux** portées : en « Tout », la semaine ne se limite
+            plus à ce qu'on suit, et une description qui l'affirmerait encore serait fausse une fois
+            sur deux. Elle vit dans la coquille statique, hors de la zone qui connaît la portée —
+            la faire varier coûterait une frontière de plus pour une demi-phrase.
+          */
+          description="Les épisodes de la semaine, et de combien vous êtes en retard sur ceux que vous suivez."
           title="Planning"
         />
         <Separator />
@@ -96,9 +106,14 @@ async function AiringWeekBar({
 }: {
   searchParams: PageProps<"/calendar">["searchParams"];
 }) {
-  const week = await resolveWeek(searchParams);
+  const { week, scope } = await resolveWeek(searchParams);
 
-  return <AiringWeekNav label={week.label} offset={week.offset} />;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <AiringWeekNav label={week.label} offset={week.offset} />
+      <AiringScopeToggle scope={scope} week={week.offset} />
+    </div>
+  );
 }
 
 /**
@@ -109,33 +124,44 @@ async function AiringWeekBar({
  */
 async function resolveWeek(
   searchParams: PageProps<"/calendar">["searchParams"],
-) {
-  const { week } = await loadCalendarParams(searchParams);
+): Promise<{ week: ReturnType<typeof airingWeek>; scope: CalendarScope }> {
+  const { week, portee } = await loadCalendarParams(searchParams);
 
-  return airingWeek(new Date(), clampWeekOffset(week));
+  return {
+    week: airingWeek(new Date(), clampWeekOffset(week)),
+    scope: portee,
+  };
 }
 
 /**
- * La semaine réelle : ce que je suis, ce qui passe, et la jonction des deux.
+ * La semaine réelle : ce qui passe, et ce que j'en suis.
  *
- * L'ordre des deux lectures n'est pas parallélisable et ce n'est pas un oubli : la seconde a besoin
- * des ids que rend la première. Les lancer ensemble supposerait de demander à AniList la grille de
- * tout le catalogue pour n'en garder que vingt lignes.
+ * **Deux portées, deux coûts très différents.** En « suivis », on demande à AniList la grille des
+ * seuls ids qu'on suit : une requête, une clé de cache par jeu d'ids. En « tout », on demande la
+ * grille entière — ce que `docs/PRODUCT.md` §9 écarte explicitement, et que le plafond de pages de
+ * `media.queries.ts` borne faute de pouvoir mesurer le vrai volume (AniList répondait 403 le jour
+ * où on a essayé).
+ *
+ * **La lecture du suivi est faite dans les deux cas**, et ce n'est pas du gâchis : en « tout », elle
+ * sert à savoir lesquelles des séries affichées sont suivies, donc lesquelles portent un retard.
+ * C'est une requête Prisma sur un index, pas un appel réseau.
  */
 async function AiringWeekContent({
   searchParams,
 }: {
   searchParams: PageProps<"/calendar">["searchParams"];
 }) {
-  const week = await resolveWeek(searchParams);
+  const { week, scope } = await resolveWeek(searchParams);
 
   const { includeAdult, titleLanguage } = await getPreferences();
   const watching = await getAiringWatchlist({ includeAdult });
 
-  if (watching.length === 0) return <NothingFollowed />;
+  // En « suivis » seulement : ne rien suivre n'est pas une semaine vide, c'est un écran sans objet.
+  // En « tout », la grille a tout à montrer même sans une seule ligne `Entry`.
+  if (scope === "suivis" && watching.length === 0) return <NothingFollowed />;
 
-  const schedules = await getAiringSchedule({
-    mediaIds: watching.map((item) => item.media.id),
+  const result = await getAiringSchedule({
+    mediaIds: scope === "tout" ? null : watching.map((item) => item.media.id),
     from: week.from,
     to: week.to,
   });
@@ -148,40 +174,67 @@ async function AiringWeekContent({
     Il n'y a pas de repli sur le miroir local ici, contrairement à `/search` : le miroir stocke des
     fiches, pas des grilles horaires. Il n'y a rien à servir à la place.
   */
-  if (schedules === null) return <ScheduleUnavailable />;
+  if (result === null) return <ScheduleUnavailable />;
 
   /*
-    La jonction. Un `Map` plutôt qu'un `find` par diffusion : AniList peut rendre une centaine de
-    lignes, et une recherche linéaire par ligne dans la liste des séries suivies serait quadratique
-    pour une question que l'index d'un `Map` répond en une fois.
-
-    Une diffusion sans série correspondante est ignorée plutôt que rendue de force : elle ne devrait
-    pas exister — on n'a demandé que nos propres ids —, et si elle arrive quand même, une ligne sans
-    titre ni progression n'apprendrait rien.
+    Le suivi, indexé par œuvre. Un `Map` plutôt qu'un `find` par diffusion : en « tout », AniList
+    peut rendre trois cents lignes, et une recherche linéaire dans la liste des séries suivies pour
+    chacune serait quadratique pour une question que l'index d'un `Map` répond en une fois.
   */
   const byMediaId = new Map(watching.map((item) => [item.media.id, item]));
 
-  const rows = schedules.flatMap<AiringRow>((schedule) => {
+  const cells = result.schedules.flatMap<AiringCell>((schedule) => {
+    /*
+      Une diffusion sans œuvre est laissée tomber : AniList rend `media: null` quand la fiche a été
+      supprimée entre-temps, et une case sans titre ni jaquette n'apprendrait rien.
+    */
+    if (!schedule.media) return [];
+
+    /*
+      **Le filtre 18+ est appliqué ici, hors du cache** — sur des données déjà en mémoire, comme
+      `getMediaById` le fait pour la fiche. C'est ce qui permet aux quatre comptes de partager une
+      seule entrée de cache par semaine : mettre la préférence dans la clé doublerait les requêtes
+      pour une question dont le document GraphQL ne change pas.
+    */
+    if (schedule.media.isAdult && !includeAdult) return [];
+
     const watch = byMediaId.get(schedule.mediaId);
-    if (!watch) return [];
 
     return [
       {
         id: schedule.id,
         airingAt: schedule.airingAt,
         episode: schedule.episode,
-        watch,
+        media: schedule.media,
+        // `null` sur une série non suivie : c'est le cas courant en « tout », et c'est ce qui décide
+        // qu'aucun retard n'est calculé ni affiché.
+        entry: watch?.entry ?? null,
+        banner: watch?.banner ?? null,
       },
     ];
   });
 
   return (
-    <AiringDayList
-      now={new Date()}
-      rows={rows}
-      titleLanguage={titleLanguage}
-      week={week}
-    />
+    <div className="flex flex-col gap-3">
+      {/*
+        **La troncature se dit, elle ne se tait pas.** Une grille silencieusement incomplète est
+        pire qu'une grille qui annonce l'être : on croirait que la semaine est calme.
+      */}
+      {result.truncated ? (
+        <p className="text-muted-foreground text-xs">
+          Semaine tronquée : AniList annonce plus de diffusions que le plafond
+          que l'on s'impose pour ne pas épuiser son quota. Repassez sur « Ce que
+          je suis » pour une semaine complète.
+        </p>
+      ) : null}
+
+      <AiringWeekGrid
+        cells={cells}
+        now={new Date()}
+        titleLanguage={titleLanguage}
+        week={week}
+      />
+    </div>
   );
 }
 
@@ -236,21 +289,17 @@ function ScheduleUnavailable() {
  */
 function AiringWeekSkeleton() {
   return (
-    <div className="flex flex-col gap-5">
-      {SKELETON_DAYS.map((day) => (
-        <div className="flex flex-col gap-2" key={day}>
-          <Skeleton className="h-4 w-40" />
-          <Separator />
-          <div className="flex items-center gap-4 py-2">
-            <Skeleton className="h-4 w-10" />
-            <Skeleton className="h-14 w-10 rounded-sm" />
-            <div className="flex flex-1 flex-col gap-1.5">
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-3 w-32" />
-            </div>
+    <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="grid min-w-[52rem] grid-cols-7 gap-px overflow-hidden rounded-md border bg-border">
+        {SKELETON_DAYS.map((day) => (
+          <div className="flex flex-col gap-2 bg-background p-2" key={day}>
+            <Skeleton className="h-7 w-full" />
+            <Skeleton className="aspect-2/3 w-full rounded-sm" />
+            <Skeleton className="h-3 w-10" />
+            <Skeleton className="h-3 w-full" />
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

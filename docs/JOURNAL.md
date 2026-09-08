@@ -27,6 +27,51 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 8 septembre 2026 — la limite qui n'existait pas
+
+Le planning venait d'être livré en liste. Alexis a demandé l'inverse : une grille par semaine,
+colonnes verticales, et **tout afficher, pas seulement ce qu'on suit** — ou mieux, un bouton pour
+choisir. La grille est un simple changement de disposition. Le reste se heurtait à un mur écrit.
+
+**PRODUCT.md §9 interdisait exactement ça, en termes catégoriques** : « une semaine de diffusion,
+toutes œuvres confondues, compte **cinq mille entrées** chez AniList — mesuré, pas estimé », donc
+cent requêtes sur les trente de la minute, donc « un planning "tout AniList" n'est pas finançable,
+et le proposer un jour supposerait une seconde source ou un miroir des grilles horaires, **pas un
+réglage** ». Le bouton demandé était nommément écarté.
+
+**Le vrai chiffre est 248.** Compté sur les cases réellement rendues par `?portee=tout` pour la
+semaine du 7 au 13 septembre : 248 diffusions, dont 240 hors bibliothèque, sans atteindre le
+plafond de pages que l'écran s'impose. **Cinq requêtes, pas cent.** Un facteur vingt.
+
+**Et l'erreur était déjà documentée ailleurs dans le dépôt.** Les cinq mille venaient de
+`pageInfo.total`, qu'AniList plafonne à 5000 quelle que soit la requête — c'est mot pour mot ce que
+`ANILIST_TOTAL_CAP` explique dans `media.queries.ts` depuis le 6 septembre, chiffre à l'appui. §9
+avait même senti le piège, puisqu'il écrivait « le compteur y est plafonné donc c'est un plancher »
+— et il en a tiré la conclusion inverse de la bonne : au lieu de traiter 5000 comme une valeur
+inconnue à mesurer, il l'a traitée comme un minimum garanti. **Une butée de compteur avait été lue
+comme un volume de données, et une fonctionnalité a été interdite pendant trois jours sur cette
+lecture.**
+
+La leçon n'est pas « vérifier les chiffres » mais plus précise : **une limite produit qui cite un
+nombre doit dire comment il a été obtenu**. §9 disait « mesuré, pas estimé », ce qui était vrai et
+trompeur à la fois — la mesure portait sur un compteur, pas sur les données. §9 est corrigé, daté,
+et porte désormais la méthode avec le chiffre.
+
+**Deux tentatives de mesure ont échoué avant celle-là**, parce qu'AniList répondait
+`403 — temporarily disabled due to severe stability issues`, par intermittence toute la séance.
+C'est ce qui a fait écrire d'abord un plafond de pages « faute de pouvoir mesurer ». **Le plafond
+reste**, mais pour la bonne raison maintenant : non pas parce qu'on ignore le volume, mais parce
+qu'une semaine de rentrée de saison peut dépasser 248 sans prévenir. Effet de bord utile : la panne
+a permis de voir `ScheduleUnavailable` en conditions réelles, et l'écran dégrade proprement.
+
+**Ce que la grille coûte, et c'est le relevé d'hier qui le disait.** Une colonne fait 150 px : le
+retard n'y tient plus en toutes lettres et devient « +16 », avec la phrase entière en `title` et en
+texte accessible. C'était l'argument qui avait fait écarter la grille ; il reste vrai, il est
+simplement payé sciemment. `airing-day-list.tsx` a été supprimé plutôt que gelé — il vit dans
+`8079ef1` si la liste revient un jour.
+
+---
+
 ## 8 septembre 2026 — le planning, et douze sites qui avaient déjà répondu
 
 Séance partie sur « grille ou liste ? », arrivée sur « la question n'est pas celle-là ».

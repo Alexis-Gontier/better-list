@@ -280,6 +280,35 @@ export const AIRING_SCHEDULE_QUERY = /* GraphQL */ `
         mediaId
         episode
         airingAt
+        # L'œuvre voyage avec sa diffusion depuis le 8 septembre 2026, et c'est le mode « tout »
+        # qui l'exige : sur ce qu'on suit, le miroir local fournissait déjà titre et jaquette, mais
+        # une série qu'on ne suit pas n'est **pas** au miroir — sans ces champs, la grille afficherait
+        # des lignes anonymes.
+        #
+        # Le strict nécessaire d'une case de grille, et rien de plus (skill anilist-read) : pas de
+        # description, pas de relations, pas de genres. isAdult n'est pas décoratif — c'est lui qui
+        # permet d'appliquer la préférence de contenu hors du cache, sur des données déjà en mémoire.
+        media {
+          id
+          type
+          format
+          status
+          episodes
+          averageScore
+          isAdult
+          title {
+            romaji
+            english
+            native
+            userPreferred
+          }
+          coverImage {
+            extraLarge
+            large
+            medium
+            color
+          }
+        }
       }
     }
   }
