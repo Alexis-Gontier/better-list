@@ -3,6 +3,8 @@ import "server-only";
 import { cacheLife } from "next/cache";
 
 import {
+  type AiringSchedule,
+  airingScheduleDataSchema,
   type Media,
   type MediaDetail,
   mediaByIdDataSchema,
@@ -13,6 +15,7 @@ import {
   toAniListSort,
 } from "@/features/media/schemas/search-media.schema";
 import {
+  AIRING_SCHEDULE_QUERY,
   MEDIA_BY_ID_QUERY,
   SEARCH_MEDIA_QUERY,
 } from "@/features/media/server/media.documents";
@@ -226,4 +229,113 @@ export async function searchMedia(
   params: SearchMediaParams,
 ): Promise<SearchMediaResult | null> {
   return tryAniList(() => fetchSearchMedia(params));
+}
+
+/**
+ * Combien de pages de grille horaire on accepte de demander pour une semaine.
+ *
+ * Cinquante diffusions par page, et une série suivie en produit une par semaine : quatre pages
+ * couvrent deux cents épisodes hebdomadaires, soit très au-delà de ce qu'un cercle de quatre
+ * comptes peut suivre. La borne n'est pas là pour tronquer un cas réel mais pour qu'une réponse
+ * inattendue — un `hasNextPage` toujours vrai — ne vide pas le quota AniList en boucle.
+ */
+const MAX_AIRING_PAGES = 4;
+const AIRING_PAGE_SIZE = 50;
+
+/**
+ * La grille horaire d'une semaine, pour un ensemble d'œuvres donné.
+ *
+ * **Les ids sont dans la clé du cache, et c'est assumé** — contrairement à `fetchMediaById`, où
+ * `includeAdult` en a été sorti exprès. La différence est qu'ici les ids ne sont pas une préférence
+ * mais la question elle-même : demander la grille de vingt séries ou de toutes celles de la saison
+ * ne renvoie pas la même chose. Filtrer après coup supposerait de rapatrier tout le planning
+ * mondial de la semaine — huit pages au bas mot, contre une — pour n'en garder que vingt lignes.
+ * Le cercle compte quatre comptes : c'est au plus quatre entrées par semaine, contre des centaines
+ * de requêtes économisées.
+ *
+ * **`cacheLife("minutes")`, et c'est la skill `anilist-read` qui le fixe**, pas un arbitrage refait
+ * ici : sa table de volatilité réserve `"minutes"` au planning de diffusion, quand la recherche et
+ * les tendances ont `"hours"` et une fiche terminée `"days"`. La ligne avait été écrite d'avance
+ * pour cette requête précise — `AIRING_SCHEDULE_QUERY` n'avait jamais eu d'écran —, donc elle n'est
+ * pas une table périmée qu'on pourrait corriger en passant.
+ *
+ * L'objection du quota ne tient pas à l'examen : le cercle compte quatre comptes, la clé est le jeu
+ * d'ids suivis, soit au pire quelques revalidations par minute contre un plafond de trente. Le prix
+ * est payé du bon côté — une grille horaire est ce qui bouge le plus vite de tout ce qu'on lit chez
+ * AniList, et c'est le seul écran où une diffusion repoussée se voit tout de suite.
+ */
+async function fetchAiringSchedule({
+  mediaIds,
+  from,
+  to,
+}: {
+  mediaIds: number[];
+  from: number;
+  to: number;
+}): Promise<AiringSchedule[]> {
+  "use cache";
+  cacheLife("minutes");
+
+  const schedules: AiringSchedule[] = [];
+
+  for (let page = 1; page <= MAX_AIRING_PAGES; page++) {
+    const { Page } = await anilistQuery({
+      query: AIRING_SCHEDULE_QUERY,
+      variables: {
+        mediaIds,
+        /*
+          **Les deux bornes d'AniList sont strictes**, et `airingWeek` rend un intervalle
+          semi-ouvert `[from, to[`. `airingAt_greater: from - 1` rattrape le premier côté — sans
+          quoi un épisode diffusé pile à minuit le lundi manquerait à sa propre semaine. Le second
+          côté tombe juste tel quel : `airingAt_lesser: to` est exactement `< to`, c'est-à-dire la
+          borne exclue qu'on veut.
+        */
+        from: from - 1,
+        to,
+        page,
+        perPage: AIRING_PAGE_SIZE,
+      },
+      schema: airingScheduleDataSchema,
+    });
+
+    schedules.push(...Page.airingSchedules);
+
+    if (!Page.pageInfo.hasNextPage) break;
+  }
+
+  return schedules;
+}
+
+/**
+ * La grille horaire de la semaine, **avec la panne rattrapée hors du cache**.
+ *
+ * Même règle que `searchMedia` : le `"use cache"` ne voit passer que des succès, et l'écran reçoit
+ * `null` pour dire ce qu'il ne peut pas montrer. Un planning est d'ailleurs le cas où mémoriser une
+ * panne serait le plus coûteux — la semaine servie serait vide pendant des heures, et un planning
+ * vide ne se distingue pas d'une semaine sans diffusion.
+ *
+ * **Les ids sont triés avant d'entrer dans le cache.** Ils forment la clé, et deux visites qui
+ * suivent les mêmes séries dans un ordre différent poseraient sinon deux entrées pour une seule
+ * question — donc deux requêtes AniList prélevées sur le même quota.
+ */
+export async function getAiringSchedule({
+  mediaIds,
+  from,
+  to,
+}: {
+  mediaIds: number[];
+  from: number;
+  to: number;
+}): Promise<AiringSchedule[] | null> {
+  // Rien de suivi, rien à demander : `mediaId_in: []` partirait chez AniList pour rapporter le vide
+  // qu'on connaît déjà, et dépenserait un crédit de quota pour ça.
+  if (mediaIds.length === 0) return [];
+
+  return tryAniList(() =>
+    fetchAiringSchedule({
+      mediaIds: [...mediaIds].sort((a, b) => a - b),
+      from,
+      to,
+    }),
+  );
 }

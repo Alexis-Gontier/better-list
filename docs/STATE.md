@@ -8,15 +8,24 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **7 septembre 2026**.
+Relevé le **8 septembre 2026**.
 
-> ### En un mot : sept écrans sur onze, et les préférences s'appliquent enfin.
+> ### En un mot : huit écrans sur onze, et le planning sait dire de combien on est en retard.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> sept routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
+> huit routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
-> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, et depuis le
-> 7 septembre **`/settings`**. Les quatre autres routes construites restent des placeholders.
+> miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, le
+> 7 septembre **`/settings`**, et le 8 septembre **`/calendar`**. Les trois autres routes
+> construites restent des placeholders.
+>
+> **`/calendar` est le premier écran dont la forme a été choisie sur pièces.** Douze plannings de
+> diffusion en service ont été relevés avant d'écrire une ligne, les cinq références francophones
+> comprises : **douze rendent une liste verticale groupée par jour, aucun une grille de sept
+> colonnes** (docs/JOURNAL.md). Et le relevé a désigné ce que l'écran a de plus qu'eux — Icotaku,
+> Nautiljon, Myutaku et Crunchyroll disent ce qui sort, pas où l'on en est. **Le retard épisode par
+> épisode est donc la seule chose de cet écran qu'on ne pouvait pas aller copier ailleurs**, et il
+> s'écrit en toutes lettres plutôt qu'en « +11 ».
 >
 > **C'était le premier gain de la refonte, et il est encaissé** : `/search` et `/library` étaient le
 > même écran écrit deux fois, et ce doublon est ce qui a motivé toute l'opération. Ils partagent
@@ -96,7 +105,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
-| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **vidé** — en refonte |
+| `/calendar` (`calendar`) | Planning de diffusion, filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — liste par jour, navigation de semaine, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
 | `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | `Edition`, `OwnedVolume` | **déclaré, non construit** |
@@ -514,12 +523,16 @@ prétend s'y fier.**
   disait mot pour mot ce qu'elle attendait — « les bornes du miroir attendent le cron ». Toutes ces
   entrées annonçaient leur propre péremption, et c'est ce qui rend le bloc lisible.
 
-  Restent au gel, et c'est exactement la liste des écrans qui manquent : `calendar-params` et
-  `profile-params` (contrats d'URL de `/calendar` et `/u`), `command.schema` (la palette `⌘K`),
-  `use-debounced-value`, `use-reduced-motion`, et des chemins d'exports — les formateurs de `media`,
-  les **trois** documents GraphQL encore sans écran (catalogue, planning, vocabulaire de filtres),
-  les schémas de `media`, les défauts de `preferences`, `formatEventTime` qui attend le journal, et
-  `removeEntry` qui attend son geste.
+  **`calendar-params.ts` en est sorti pour de bon le 8 septembre**, avec le planning — quatrième
+  entrée à disparaître entièrement plutôt qu'à se rétrograder. Le contrat d'URL qu'il fixait a été
+  respecté tel quel : la semaine reste un décalage entier, jamais une date, ce qui est bien la
+  raison pour laquelle il avait été épargné.
+
+  Restent au gel, et c'est exactement la liste des écrans qui manquent : `profile-params` (contrat
+  d'URL de `/u`), `command.schema` (la palette `⌘K`), `use-debounced-value`, `use-reduced-motion`,
+  et des chemins d'exports — les formateurs de `media`, les **deux** documents GraphQL encore sans
+  écran (catalogue de l'accueil, vocabulaire de filtres), les schémas de `media`, les défauts de
+  `preferences`, `formatEventTime` qui attend le journal, et `removeEntry` qui attend son geste.
 
   **Une entrée y est revenue le jour même, et c'est la seule fois** : `removeEntry` et
   `removeEntrySchema`, quand le menu qui les appelait a été retiré. Le gel dit toujours « en
@@ -756,7 +769,16 @@ vocabulaire de tous les autres.
    et écrit par `saveEntry`. Restent le journal, les onglets lourds, les chiffres de la communauté,
    et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
    cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
-3. `/calendar` — se rebranche sur `airing-week.ts` et `calendar-params.ts`, épargnés.
+3. `/calendar` — **fait** (8 septembre), et il s'est bien rebranché sur `airing-week.ts` et
+   `calendar-params.ts` sans les toucher. La forme — liste verticale par jour — a été tranchée sur
+   un relevé de douze plannings en service plutôt qu'au goût (docs/JOURNAL.md). `AIRING_SCHEDULE_QUERY`
+   a enfin son écran, cinq mois après avoir été écrite. **Ce qui reste sur cet écran**, et que le
+   relevé a désigné dans cet ordre : (a) un réglage de **portée** — Aujourd'hui / Semaine / Mois —,
+   l'axe que trois produits sur douze offrent contre un seul pour la disposition ; (b) une densité
+   **compacte** sans jaquette, qui ferait tenir la semaine entière dans un écran ; (c) la question
+   des séries **planifiées**, aujourd'hui écartées du planning parce que leur progression nulle les
+   ferait toutes afficher en retard maximal — le besoin « je veux savoir qu'elle sort » est réel
+   mais demande autre chose que le retard.
 4. `/lists`, `/lists/[id]` et `/l/[token]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
    réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.
    La fenêtre « Ajouter à une liste » de la fiche et le partage par jeton sont livrés avec : **le
