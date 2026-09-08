@@ -114,11 +114,24 @@ export function AiringWeekGrid({
                   Rien.
                 </p>
               ) : (
-                day.items.map((cell) => (
+                day.items.map((cell, index) => (
                   <AiringCard
                     cell={cell}
                     key={cell.id}
                     now={now}
+                    /*
+                      **La première case de chaque colonne, et elle seule.** Ce sont les sept
+                      jaquettes de la rangée du haut, donc tout ce qui est au-dessus de la ligne de
+                      flottaison — et l'une d'elles porte la mesure de LCP, que Next signalait en
+                      clair dans la console.
+
+                      Sept et pas 124 : en mode « tout », marquer toutes les cases prioritaires
+                      reviendrait à n'en prioriser aucune, et ferait concurrencer la première image
+                      par cent dix-sept autres. C'est la règle déjà appliquée par `/library`
+                      avec `WIDEST_COLUMN_COUNT`, ramenée ici à la géométrie d'une grille : une
+                      rangée y vaut une case par colonne.
+                    */
+                    priority={index === 0}
                     titleLanguage={titleLanguage}
                   />
                 ))
@@ -141,10 +154,13 @@ export function AiringWeekGrid({
 function AiringCard({
   cell,
   now,
+  priority = false,
   titleLanguage,
 }: {
   cell: AiringCell;
   now: Date;
+  /** Charger la jaquette **sans attendre** — réservé à la rangée du haut, voir l'appelant. */
+  priority?: boolean;
   titleLanguage: TitleLanguage;
 }) {
   const { media, entry } = cell;
@@ -182,6 +198,7 @@ function AiringCard({
               alt=""
               className={cn("object-cover", !entry && "opacity-70")}
               fill
+              priority={priority}
               sizes="150px"
               src={media.coverImage.large}
             />

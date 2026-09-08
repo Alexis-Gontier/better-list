@@ -247,12 +247,12 @@ const AIRING_PAGE_SIZE = 50;
  *
  * `docs/PRODUCT.md` §9 écartait le planning global sur un calcul qui s'est révélé faux : il annonçait
  * cinq mille entrées par semaine, soit cent requêtes sur les trente que la minute partage. **La
- * mesure du 8 septembre 2026 donne 248 diffusions**, soit cinq requêtes — le chiffre de §9 venait de
+ * mesure du 8 septembre 2026 donne 124 diffusions**, soit trois requêtes — le chiffre de §9 venait de
  * `pageInfo.total`, qu'AniList plafonne à 5000 (voir `ANILIST_TOTAL_CAP` plus haut dans ce fichier).
  * Un plafond de compteur avait été pris pour un volume. §9 a été corrigé.
  *
  * Six pages restent malgré tout la borne, et pas parce qu'on douterait de la mesure : une semaine
- * chargée — une rentrée de saison, un rattrapage massif — peut dépasser 248 sans prévenir, et ce
+ * chargée — une rentrée de saison, un rattrapage massif — peut dépasser 124 sans prévenir, et ce
  * plafond garantit qu'aucune semaine, même anormale, ne coûtera plus de six requêtes pour remplir
  * une entrée de cache.
  *

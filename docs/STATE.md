@@ -22,7 +22,7 @@ Relevé le **8 septembre 2026**.
 > **`/calendar` a fait tomber une limite produit qui n'existait pas.** PRODUCT.md §9 interdisait le
 > planning global sur un calcul faux — cinq mille diffusions par semaine, cent requêtes — tiré du
 > `pageInfo.total` plafonné d'AniList, ce même plafond que le dépôt documentait déjà sous
-> `ANILIST_TOTAL_CAP`. **La semaine en compte 248**, soit cinq requêtes. L'écran propose donc les
+> `ANILIST_TOTAL_CAP`. **La semaine en compte 124**, soit trois requêtes. L'écran propose donc les
 > deux portées, et §9 est corrigé.
 >
 > **C'est aussi le premier écran dont la forme a été choisie sur pièces.** Douze plannings de

@@ -39,9 +39,18 @@ cent requêtes sur les trente de la minute, donc « un planning "tout AniList" n
 et le proposer un jour supposerait une seconde source ou un miroir des grilles horaires, **pas un
 réglage** ». Le bouton demandé était nommément écarté.
 
-**Le vrai chiffre est 248.** Compté sur les cases réellement rendues par `?portee=tout` pour la
-semaine du 7 au 13 septembre : 248 diffusions, dont 240 hors bibliothèque, sans atteindre le
-plafond de pages que l'écran s'impose. **Cinq requêtes, pas cent.** Un facteur vingt.
+**Le vrai chiffre est 124.** Compté colonne par colonne dans le DOM rendu par `?portee=tout` pour
+la semaine du 7 au 13 septembre — 11 + 11 + 19 + 16 + 14 + 26 + 27 —, chaque colonne annonçant
+exactement ce qu'elle contient, sans atteindre le plafond de pages que l'écran s'impose. **Trois
+requêtes, pas cent.** Un facteur quarante.
+
+**Le premier relevé disait 248, soit exactement le double, et l'erreur mérite d'être racontée.** Il
+comptait des motifs dans la réponse HTTP brute avec `grep` — or chaque ligne y figure deux fois, une
+fois dans le HTML diffusé et une fois dans la charge RSC que Next sérialise à la suite. Le doublon
+était invisible parce que le chiffre restait plausible. Corriger §9 pour avoir cité un nombre sans
+dire d'où il venait, puis le remplacer par un nombre obtenu par une méthode fausse, est une leçon
+qui se suffit à elle-même : **la méthode fait partie du chiffre.** Les deux documents portent
+désormais la leur.
 
 **Et l'erreur était déjà documentée ailleurs dans le dépôt.** Les cinq mille venaient de
 `pageInfo.total`, qu'AniList plafonne à 5000 quelle que soit la requête — c'est mot pour mot ce que
@@ -61,8 +70,22 @@ et porte désormais la méthode avec le chiffre.
 `403 — temporarily disabled due to severe stability issues`, par intermittence toute la séance.
 C'est ce qui a fait écrire d'abord un plafond de pages « faute de pouvoir mesurer ». **Le plafond
 reste**, mais pour la bonne raison maintenant : non pas parce qu'on ignore le volume, mais parce
-qu'une semaine de rentrée de saison peut dépasser 248 sans prévenir. Effet de bord utile : la panne
+qu'une semaine de rentrée de saison peut dépasser 124 sans prévenir. Effet de bord utile : la panne
 a permis de voir `ScheduleUnavailable` en conditions réelles, et l'écran dégrade proprement.
+
+**La fenêtre part du jour courant, plus du lundi** (décision d'Alexis, même séance). `airingWeek`
+rend désormais sept jours à partir d'aujourd'hui, et le calcul du lundi disparaît avec — ce
+`(getUTCDay() + 6) % 7` qui rattrapait le dimanche que `getDay()` compte comme 0, et qui avait son
+propre test. Le raisonnement tient en une phrase : **sur un planning, les jours déjà passés
+n'apprennent plus rien**, et un samedi soir la semaine civile n'a plus qu'un jour à montrer.
+LiveChart laisse d'ailleurs choisir ce point de départ (« Hier · Aujourd'hui · Dimanche · Lundi »),
+donc c'est un réglage réel du domaine.
+
+Contrepartie assumée : **on ne voit plus ce qui a été diffusé plus tôt dans la semaine civile**, et
+il faut `?week=-1` pour y revenir. Le libellé du bouton de retour est passé de « Cette semaine » à
+« Aujourd'hui », parce que l'ancien promettait un lundi qu'on ne montre plus. Sept tests de
+`airing-week.test.ts` ont été réécrits avec le comportement, dont celui du dimanche — qui ne teste
+plus un cas particulier mais son absence : aucun jour de la semaine n'a plus de statut spécial.
 
 **Ce que la grille coûte, et c'est le relevé d'hier qui le disait.** Une colonne fait 150 px : le
 retard n'y tient plus en toutes lettres et devient « +16 », avec la phrase entière en `title` et en

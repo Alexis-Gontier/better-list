@@ -89,12 +89,16 @@ export function AiringWeekNav({
       <p className="font-medium text-sm tabular-nums">{label}</p>
 
       {/*
-        Le retour au présent n'apparaît que lorsqu'on n'y est pas : sur la semaine en cours, ce
+        Le retour au présent n'apparaît que lorsqu'on n'y est pas : sur la fenêtre du jour, ce
         bouton ne ferait rien, et un bouton qui ne fait rien apprend à ne plus lire la barre.
+
+        « Aujourd'hui » et non « Cette semaine » depuis que la fenêtre part du jour courant
+        (`airing-week.ts`) : elle ne coïncide plus avec la semaine civile, et l'ancien libellé
+        promettait donc un lundi qu'on ne montre plus.
       */}
       {offset !== 0 ? (
         <Button asChild className="ml-auto" size="sm" variant="ghost">
-          <Link href={routes.calendar}>Cette semaine</Link>
+          <Link href={routes.calendar}>Aujourd'hui</Link>
         </Button>
       ) : null}
     </div>
