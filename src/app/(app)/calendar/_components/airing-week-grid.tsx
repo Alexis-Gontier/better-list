@@ -161,8 +161,18 @@ function AiringCard({
   return (
     <div className="flex flex-col gap-1">
       <div className="relative">
+        {/*
+          **Une bande courte, pas une jaquette entière** (Alexis, 8 septembre 2026). En 2:3, une
+          case mesurait 225 px de haut sur une colonne de 150 : le dimanche, qui porte 27
+          diffusions, faisait plus de six écrans à lui seul. Une hauteur fixe de 96 px rend la
+          semaine parcourable, ce qui est la seule raison d'être d'une grille.
+
+          `object-cover` sans point d'ancrage : le centre est ce qui marche le mieux sur une
+          jaquette d'anime, où le titre occupe le bas et le personnage le milieu. Ancrer en haut
+          rognait les visages sur la moitié du catalogue.
+        */}
         <Link
-          className="relative block aspect-2/3 overflow-hidden rounded-sm bg-surface-raised"
+          className="relative block h-24 overflow-hidden rounded-sm bg-surface-raised"
           href={routes.media(media.id)}
           tabIndex={-1}
           aria-hidden
@@ -200,8 +210,17 @@ function AiringCard({
         {formatAiringTime(cell.airingAt)}
       </p>
 
+      {/*
+        **Une seule ligne** (Alexis, 8 septembre 2026). Deux lignes faisaient varier la hauteur des
+        cases d'une colonne à l'autre selon la longueur des titres, et une grille dont les rangées
+        ne s'alignent pas ne se lit plus comme une grille.
+
+        `truncate` et non `line-clamp-1` : les deux coupent, mais `truncate` garde le texte sur une
+        ligne de bloc et n'a pas besoin du contexte `-webkit-box`. Le titre entier reste dans
+        `title`, donc rien n'est perdu — seulement replié.
+      */}
       <Link
-        className="line-clamp-2 font-medium text-xs leading-tight hover:underline"
+        className="truncate font-medium text-xs leading-tight hover:underline"
         href={routes.media(media.id)}
         title={title}
       >

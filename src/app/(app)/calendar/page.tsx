@@ -294,7 +294,7 @@ function AiringWeekSkeleton() {
         {SKELETON_DAYS.map((day) => (
           <div className="flex flex-col gap-2 bg-background p-2" key={day}>
             <Skeleton className="h-7 w-full" />
-            <Skeleton className="aspect-2/3 w-full rounded-sm" />
+            <Skeleton className="h-24 w-full rounded-sm" />
             <Skeleton className="h-3 w-10" />
             <Skeleton className="h-3 w-full" />
           </div>
