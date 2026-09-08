@@ -24,7 +24,7 @@ import {
  * le planning global en toutes lettres, et précisait que le proposer supposerait « une seconde
  * source ou un miroir des grilles horaires, **pas un réglage** » — c'est-à-dire exactement ce
  * paramètre. Son chiffre était faux : il annonçait cinq mille diffusions par semaine, la mesure en
- * donne **248**. Les cinq mille venaient du `pageInfo.total` plafonné d'AniList, que le dépôt
+ * donne **124**. Les cinq mille venaient du `pageInfo.total` plafonné d'AniList, que le dépôt
  * documentait déjà sous `ANILIST_TOTAL_CAP` sans faire le rapprochement. §9 est corrigé, daté, et
  * porte la mesure.
  *

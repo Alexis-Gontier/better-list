@@ -472,10 +472,17 @@ Autour de la collection physique (§4.5) :
   entrées, mesuré, pas estimé », soit cent requêtes sur les trente de la minute, et concluait qu'un
   planning « tout AniList » n'était pas finançable ni même proposable en réglage.
 
-  **Le vrai chiffre est 248.** Relevé sur la semaine du 7 au 13 septembre 2026, en comptant les
-  cases réellement rendues par `/calendar?portee=tout` : 248 diffusions, dont 240 hors bibliothèque,
-  sans atteindre le plafond de pages que l'écran s'impose. Soit **cinq requêtes** à cinquante par
-  page, pas cent.
+  **Le vrai chiffre est 124.** Relevé sur la semaine du 7 au 13 septembre 2026, en comptant les
+  cases du DOM rendu par `/calendar?portee=tout`, colonne par colonne : 11 + 11 + 19 + 16 + 14 + 26
+  + 27 = 124, chaque colonne annonçant exactement ce qu'elle contient, et sans atteindre le plafond
+  de pages que l'écran s'impose. Soit **trois requêtes** à cinquante par page, pas cent. (C'est le
+  compte après filtre de contenu adulte, donc une borne basse de ce qu'AniList rend.)
+
+  **La méthode compte autant que le chiffre, et le premier relevé était faux.** Il annonçait 248 —
+  exactement le double — parce qu'il comptait des motifs dans la réponse HTTP brute, où chaque ligne
+  figure deux fois : une fois dans le HTML diffusé, une fois dans la charge RSC. Corrigé le jour même
+  en comptant les nœuds du DOM. Une limite qui cite un nombre doit dire d'où il vient : c'est le
+  reproche fait à la version précédente de ce paragraphe, et il valait aussi pour son remplaçant.
 
   L'erreur a une cause précise et elle était déjà écrite ailleurs dans ce dépôt : les cinq mille
   venaient de `pageInfo.total`, **qu'AniList plafonne à 5000 quelle que soit la requête** —
