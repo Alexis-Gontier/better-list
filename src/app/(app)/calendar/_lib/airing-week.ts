@@ -11,8 +11,14 @@ import { LOCALE, TIMEZONE } from "@/config/locale";
  * dans le fuseau du serveur rangerait la moitié des animes de la nuit dans la mauvaise colonne. Les
  * bornes envoyées à AniList sont donc des minuits **parisiens**, pas des minuits UTC.
  *
- * La semaine commence le **lundi**, comme partout en France — et pas le dimanche que renvoie
- * `getDay()`.
+ * **La fenêtre commence au jour courant**, pas au lundi (décision d'Alexis, 8 septembre 2026).
+ * C'est sept jours à partir d'aujourd'hui, et non la semaine civile en cours : sur un planning, les
+ * jours déjà passés n'apprennent plus rien, et un samedi soir la semaine civile n'a plus qu'un jour
+ * à montrer. LiveChart laisse d'ailleurs choisir ce point de départ (« Hier · Aujourd'hui ·
+ * Dimanche · Lundi ») — c'est un réglage réel du domaine, pas une lubie.
+ *
+ * Conséquence assumée : **on ne voit plus ce qui a été diffusé plus tôt dans la semaine civile**.
+ * `?week=-1` le montre, et c'est le compromis retenu tant que le point de départ n'est pas réglable.
  */
 
 /** Un jour du planning : sa colonne, son intitulé, et l'instant où il commence. */
@@ -25,10 +31,10 @@ export type AiringDay = {
 };
 
 export type AiringWeek = {
-  /** Nombre de semaines depuis celle en cours : négatif dans le passé, 0 pour aujourd'hui. */
+  /** Décalage en tranches de sept jours depuis aujourd'hui : négatif dans le passé, 0 pour la fenêtre qui commence aujourd'hui. */
   offset: number;
   days: AiringDay[];
-  /** « 3–9 août 2026 » — la semaine en une ligne. */
+  /** « 8–14 août 2026 » — les sept jours en une ligne. */
   label: string;
   /** Début de la semaine, en secondes Unix. **Inclus.** */
   from: number;
@@ -185,10 +191,13 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
   const todayKey = dayKey(today);
 
   const civilToday = Date.UTC(today.year, today.month - 1, today.day);
-  // `getUTCDay()` compte le dimanche comme 0 ; on veut le lundi comme 0.
-  const sinceMonday = (new Date(civilToday).getUTCDay() + 6) % DAYS_PER_WEEK;
-  const civilMonday =
-    civilToday + (offset * DAYS_PER_WEEK - sinceMonday) * MS_PER_DAY;
+  /*
+    Le premier jour de la fenêtre, **et c'est aujourd'hui** quand `offset` vaut zéro. Le calcul du
+    lundi qui vivait ici — `(getUTCDay() + 6) % 7`, pour rattraper le dimanche que `getDay()` compte
+    comme 0 — a disparu avec lui : il n'y a plus de jour de la semaine à retrouver, seulement un
+    nombre de jours à ajouter.
+  */
+  const civilStart = civilToday + offset * DAYS_PER_WEEK * MS_PER_DAY;
 
   /**
    * Une borne, **calculée à la demande plutôt que tirée d'un tableau**.
@@ -200,7 +209,7 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
    * fonction rend une `Date`, toujours, et il n'y a plus de tableau intermédiaire à traverser.
    */
   function boundary(index: number): Date {
-    const civil = new Date(civilMonday + index * MS_PER_DAY);
+    const civil = new Date(civilStart + index * MS_PER_DAY);
 
     return parisMidnight(
       civil.getUTCFullYear(),
@@ -222,8 +231,8 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
 
   const first = boundary(0);
   const last = boundary(DAYS_PER_WEEK - 1);
-  /** La huitième borne : le lundi suivant, qui ferme l'intervalle sans en faire partie. */
-  const nextMonday = boundary(DAYS_PER_WEEK);
+  /** La huitième borne : le lendemain du dernier jour, qui ferme l'intervalle sans en faire partie. */
+  const dayAfterLast = boundary(DAYS_PER_WEEK);
 
   return {
     offset,
@@ -233,7 +242,7 @@ export function airingWeek(now: Date, offset: number): AiringWeek {
     // main demanderait de traiter les deux cas.
     label: WEEK_LABEL_FORMAT.formatRange(first, last),
     from: Math.floor(first.getTime() / 1000),
-    to: Math.floor(nextMonday.getTime() / 1000),
+    to: Math.floor(dayAfterLast.getTime() / 1000),
   };
 }
 

@@ -73,6 +73,20 @@ reste**, mais pour la bonne raison maintenant : non pas parce qu'on ignore le vo
 qu'une semaine de rentrée de saison peut dépasser 124 sans prévenir. Effet de bord utile : la panne
 a permis de voir `ScheduleUnavailable` en conditions réelles, et l'écran dégrade proprement.
 
+**La fenêtre part du jour courant, plus du lundi** (décision d'Alexis, même séance). `airingWeek`
+rend désormais sept jours à partir d'aujourd'hui, et le calcul du lundi disparaît avec — ce
+`(getUTCDay() + 6) % 7` qui rattrapait le dimanche que `getDay()` compte comme 0, et qui avait son
+propre test. Le raisonnement tient en une phrase : **sur un planning, les jours déjà passés
+n'apprennent plus rien**, et un samedi soir la semaine civile n'a plus qu'un jour à montrer.
+LiveChart laisse d'ailleurs choisir ce point de départ (« Hier · Aujourd'hui · Dimanche · Lundi »),
+donc c'est un réglage réel du domaine.
+
+Contrepartie assumée : **on ne voit plus ce qui a été diffusé plus tôt dans la semaine civile**, et
+il faut `?week=-1` pour y revenir. Le libellé du bouton de retour est passé de « Cette semaine » à
+« Aujourd'hui », parce que l'ancien promettait un lundi qu'on ne montre plus. Sept tests de
+`airing-week.test.ts` ont été réécrits avec le comportement, dont celui du dimanche — qui ne teste
+plus un cas particulier mais son absence : aucun jour de la semaine n'a plus de statut spécial.
+
 **Ce que la grille coûte, et c'est le relevé d'hier qui le disait.** Une colonne fait 150 px : le
 retard n'y tient plus en toutes lettres et devient « +16 », avec la phrase entière en `title` et en
 texte accessible. C'était l'argument qui avait fait écarter la grille ; il reste vrai, il est

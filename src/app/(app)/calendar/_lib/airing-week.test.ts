@@ -34,87 +34,95 @@ function plain(value: string): string {
 }
 
 describe("airingWeek", () => {
-  it("part du lundi, pas du jour courant", () => {
+  it("part du jour courant, pas du lundi", () => {
     // Samedi 8 août 2026, 12 h à Paris.
     const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 0);
 
     expect(week.days).toHaveLength(7);
-    expect(week.days[0]?.key).toBe("2026-08-03");
-    expect(week.days[0]?.label).toBe("Lundi 3 août");
-    expect(week.days[6]?.key).toBe("2026-08-09");
-    expect(plain(week.label)).toBe("3–9 août 2026");
+    expect(week.days[0]?.key).toBe("2026-08-08");
+    expect(week.days[0]?.label).toBe("Samedi 8 août");
+    expect(week.days[6]?.key).toBe("2026-08-14");
+    expect(plain(week.label)).toBe("8–14 août 2026");
   });
 
-  it("range le dimanche dans la semaine qui vient de s'écouler", () => {
-    // Le cas que `getDay()` rate : dimanche vaut 0, donc un calcul naïf ferait commencer la
-    // semaine le lendemain et le planning du jour disparaîtrait de sa propre page.
-    const week = airingWeek(new Date("2026-08-09T10:00:00Z"), 0);
-
-    expect(week.days[0]?.key).toBe("2026-08-03");
-    expect(week.days[6]?.key).toBe("2026-08-09");
-    expect(week.days[6]?.isToday).toBe(true);
+  it("commence aujourd'hui quel que soit le jour de la semaine", () => {
+    // Le dimanche et le lundi étaient les deux cas particuliers de l'ancien calcul : l'un parce que
+    // `getDay()` le compte comme 0, l'autre parce qu'il était l'origine. Ils n'ont plus rien de
+    // particulier, et ce test est là pour que ça le reste.
+    expect(airingWeek(new Date("2026-08-09T10:00:00Z"), 0).days[0]?.key).toBe(
+      "2026-08-09",
+    );
+    expect(airingWeek(new Date("2026-08-10T10:00:00Z"), 0).days[0]?.key).toBe(
+      "2026-08-10",
+    );
   });
 
-  it("marque le jour courant, et lui seul", () => {
+  it("marque le jour courant en première colonne, et lui seul", () => {
     const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 0);
 
     expect(week.days.filter((day) => day.isToday)).toHaveLength(1);
-    expect(week.days[5]?.key).toBe("2026-08-08");
-    expect(week.days[5]?.isToday).toBe(true);
+    expect(week.days[0]?.isToday).toBe(true);
   });
 
-  it("change de semaine à minuit à Paris, pas à minuit UTC", () => {
-    // Dimanche 23 h 30 UTC, donc lundi 1 h 30 à Paris : la semaine a déjà tourné ici, pas là-bas.
+  it("ne marque aucun jour courant sur une fenêtre décalée", () => {
+    const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 1);
+
+    expect(week.days.filter((day) => day.isToday)).toHaveLength(0);
+  });
+
+  it("change de jour à minuit à Paris, pas à minuit UTC", () => {
+    // Dimanche 23 h 30 UTC, donc lundi 1 h 30 à Paris : la fenêtre a déjà tourné ici, pas là-bas.
     const week = airingWeek(new Date("2026-08-09T23:30:00Z"), 0);
 
     expect(week.days[0]?.key).toBe("2026-08-10");
     expect(week.days[0]?.isToday).toBe(true);
   });
 
-  it("décale d'une semaine entière, dans les deux sens", () => {
+  it("décale de sept jours entiers, dans les deux sens", () => {
     const now = new Date("2026-08-08T10:00:00Z");
 
-    expect(airingWeek(now, 1).days[0]?.key).toBe("2026-08-10");
-    expect(airingWeek(now, -1).days[0]?.key).toBe("2026-07-27");
-    expect(airingWeek(now, -1).days[6]?.key).toBe("2026-08-02");
+    expect(airingWeek(now, 1).days[0]?.key).toBe("2026-08-15");
+    expect(airingWeek(now, -1).days[0]?.key).toBe("2026-08-01");
+    expect(airingWeek(now, -1).days[6]?.key).toBe("2026-08-07");
   });
 
-  it("borne la semaine sur des minuits parisiens", () => {
+  it("borne la fenêtre sur des minuits parisiens", () => {
     const week = airingWeek(new Date("2026-08-08T10:00:00Z"), 0);
 
     // Été : Paris est à UTC+2, donc minuit tombe à 22 h la veille.
-    expect(week.from).toBe(seconds("2026-08-02T22:00:00Z"));
-    expect(week.to).toBe(seconds("2026-08-09T22:00:00Z"));
+    expect(week.from).toBe(seconds("2026-08-07T22:00:00Z"));
+    expect(week.to).toBe(seconds("2026-08-14T22:00:00Z"));
   });
 
-  it("perd une heure sur la semaine du passage à l'heure d'été", () => {
-    // Dimanche 29 mars 2026, 2 h devient 3 h. La semaine ne dure alors que 167 heures — un
-    // `from + 7 jours` la ferait déborder d'une heure sur le lundi suivant.
+  it("perd une heure sur une fenêtre qui traverse le passage à l'heure d'été", () => {
+    // Dimanche 29 mars 2026, 2 h devient 3 h. La fenêtre du 25 au 31 l'enjambe et ne dure donc que
+    // 167 heures — un `from + 7 jours` déborderait d'une heure sur le 1er avril.
     const week = airingWeek(new Date("2026-03-25T12:00:00Z"), 0);
 
-    expect(week.days[0]?.key).toBe("2026-03-23");
-    expect(week.days[6]?.key).toBe("2026-03-29");
-    expect(week.from).toBe(seconds("2026-03-22T23:00:00Z"));
-    expect(week.to).toBe(seconds("2026-03-29T22:00:00Z"));
+    expect(week.days[0]?.key).toBe("2026-03-25");
+    expect(week.days[6]?.key).toBe("2026-03-31");
+    expect(week.from).toBe(seconds("2026-03-24T23:00:00Z"));
+    expect(week.to).toBe(seconds("2026-03-31T22:00:00Z"));
     expect(week.to - week.from).toBe(WEEK - HOUR);
   });
 
-  it("gagne une heure sur la semaine du retour à l'heure d'hiver", () => {
+  it("gagne une heure sur une fenêtre qui traverse le retour à l'heure d'hiver", () => {
     const week = airingWeek(new Date("2026-10-21T12:00:00Z"), 0);
 
-    expect(week.days[0]?.key).toBe("2026-10-19");
-    expect(week.days[6]?.key).toBe("2026-10-25");
-    expect(week.to).toBe(seconds("2026-10-25T23:00:00Z"));
+    expect(week.days[0]?.key).toBe("2026-10-21");
+    expect(week.days[6]?.key).toBe("2026-10-27");
+    expect(week.from).toBe(seconds("2026-10-20T22:00:00Z"));
+    expect(week.to).toBe(seconds("2026-10-27T23:00:00Z"));
     expect(week.to - week.from).toBe(WEEK + HOUR);
   });
 
   it("traverse les mois et les années", () => {
-    const straddling = airingWeek(new Date("2026-12-02T12:00:00Z"), 0);
+    const straddling = airingWeek(new Date("2026-11-30T12:00:00Z"), 0);
     expect(plain(straddling.label)).toBe("30 novembre – 6 décembre 2026");
 
     const newYear = airingWeek(new Date("2026-12-31T12:00:00Z"), 0);
-    expect(newYear.days[0]?.key).toBe("2026-12-28");
-    expect(newYear.days[6]?.key).toBe("2027-01-03");
+    expect(newYear.days[0]?.key).toBe("2026-12-31");
+    expect(newYear.days[6]?.key).toBe("2027-01-06");
   });
 });
 
@@ -151,7 +159,7 @@ describe("groupAiringByDay", () => {
 
   it("rend les sept jours, y compris les vides", () => {
     const days = groupAiringByDay(week, [
-      { airingAt: seconds("2026-08-05T12:00:00Z") },
+      { airingAt: seconds("2026-08-10T12:00:00Z") },
     ]);
 
     expect(days).toHaveLength(7);
@@ -161,8 +169,8 @@ describe("groupAiringByDay", () => {
 
   it("conserve l'ordre d'entrée dans une journée", () => {
     const days = groupAiringByDay(week, [
-      { airingAt: seconds("2026-08-05T10:00:00Z"), episode: 1 },
-      { airingAt: seconds("2026-08-05T16:00:00Z"), episode: 2 },
+      { airingAt: seconds("2026-08-10T10:00:00Z"), episode: 1 },
+      { airingAt: seconds("2026-08-10T16:00:00Z"), episode: 2 },
     ]);
 
     expect(days[2]?.items.map((item) => item.episode)).toEqual([1, 2]);
