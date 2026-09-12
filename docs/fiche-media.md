@@ -52,8 +52,8 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 - [x] `status` — En cours, Terminé, Annoncé, En pause, Annulé
 - [ ] `countryOfOrigin` — ce qui distingue manga (JP), manhwa (KR) et manhua (CN)
 - [ ] `source` — l'œuvre d'origine : manga, light novel, jeu vidéo, original…
-- [ ] `genres` — la liste courte et officielle, à ne pas confondre avec les `tags`
-- [ ] `isAdult` — sert déjà de **filtre** côté serveur ; reste à décider s'il se signale à l'écran
+- [x] `genres` — en badges `secondary`, dans l'onglet Aperçu. Traduits par `formatGenre` : dix-neuf valeurs fermées, donc une table est tenable
+- [ ] `isAdult` — sert déjà de **filtre** côté serveur, sur l'œuvre comme sur ses relations, ses recommandations et ses tags ; reste à décider s'il se signale à l'écran
 
 **Volume et durée**
 
@@ -65,7 +65,7 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 
 - [x] `season` + `seasonYear` — « Printemps 2009 »
 - [ ] `startDate` / `endDate` — dates floues : l'un des trois champs peut manquer
-- [ ] `nextAiringEpisode` — quel épisode, à quelle heure, dans combien de temps
+- [x] `nextAiringEpisode` — **sixième colonne de la ligne de faits**, pas une section : « Ép. 1178 · dans 2 j 7 h », date complète en infobulle. Le décompte est recalculé depuis `airingAt` au rendu, jamais lu dans `timeUntilAiring` — celui-ci est figé par le `cacheLife` d'un jour
 
 **Images**
 
@@ -85,20 +85,20 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 
 **Classification**
 
-- [ ] `tags` — bien plus fins que les genres, avec un `rank` de pertinence, et **des marqueurs de spoiler à respecter** (`isMediaSpoiler`, `isGeneralSpoiler`)
+- [x] `tags` — en badges `outline` avec leur `rank`, triés par pertinence décroissante, dans l'onglet Aperçu. **Les deux marqueurs de spoiler sont respectés** — `isMediaSpoiler` comme `isGeneralSpoiler` —, et ceux-là partent sous un repli dont le libellé dit ce qu'il cache. Les noms restent en anglais : plusieurs centaines de valeurs ouvertes, une table serait périmée à la semaine
 
 **Les gens**
 
 - [x] `studios` — le studio principal, en cinquième colonne de la ligne de faits, **sur les animes**
 - [x] `staff` — l'auteur (« Story & Art »), même colonne, **sur les mangas** ; AniList n'a aucun éditeur (§9)
-- [ ] `characters` — 12 demandés : rôle, nom, portrait
-- [ ] `characters.voiceActors` — les doubleurs japonais, déjà demandés
-- [ ] `staff` en entier — les 8 demandés, avec leur rôle
+- [x] `characters` — au format AniList : personnage ancré à gauche, doubleur à droite, chacun tourné vers l'extérieur de la carte. **Six dans l'aperçu, vingt-cinq dans l'onglet**, qui a sa propre requête (`MEDIA_CHARACTERS_QUERY`)
+- [x] `characters.voiceActors` — le doubleur japonais, à droite de son personnage, avec sa langue (`languageV2`). Le premier de la liste triée `[RELEVANCE]`, pas tous : un rôle redistribué entre deux saisons en compte plusieurs. Le côté droit **disparaît** quand il est vide — c'est le cas de tous les mangas
+- [x] `staff` en entier — **quatre dans l'aperçu, vingt-cinq dans l'onglet** (`MEDIA_STAFF_QUERY`), avec leur rôle. Les rôles courants sont traduits et **la portée entre parenthèses est détachée puis raccrochée** (« Director (eps 1-278) » → « Réalisation (eps 1-278) ») : sans ça l'onglet d'une série longue restait presque tout en anglais
 
 **Les liens vers d'autres œuvres**
 
-- [ ] `relations` — suite, préquelle, adaptation, spin-off, film récap. **C'est la matière de l'ordre de visionnage d'une franchise** (PRODUCT.md §8, meilleur rapport valeur/effort du projet)
-- [ ] `recommendations` — 12 œuvres proches, avec leur score de recommandation
+- [x] `relations` — **groupées par nature de lien**, chaque groupe en jaquettes (`MediaCard`) sous son intitulé et son compte. C'est la première fois que cet écran ressemble à l'ordre de visionnage d'une franchise (PRODUCT.md §8) : la structure est la mise en page, pas une étiquette à lire ligne par ligne. Les groupes suivent `RELATION_ORDER` ; la colonne vertébrale — origine, préquelle, suite, œuvre principale, adaptation — reste dépliée, le contexte se replie. **Pas de requête dédiée** : le champ n'accepte aucune pagination chez AniList, donc la requête de fiche les a déjà toutes
+- [x] `recommendations` — **six dans l'aperçu, vingt dans l'onglet** (`MEDIA_RECOMMENDATIONS_QUERY`), en `MediaCard` telle quelle : la même carte que `/search` et `/library`. Le `rating` n'est pas affiché — c'est l'ordre qui le porte
 
 **Ailleurs**
 
@@ -230,7 +230,27 @@ récupérer, tout à afficher.
 
 ## Ce qui est à l'écran aujourd'hui, en une phrase
 
-Bannière, jaquette, titre et titres secondaires, cinq faits (format, statut, compteur, saison,
-studio ou auteur), une barre de suivi **qui enregistre pour de bon** — un bouton d'ajout tant que
-l'œuvre n'est pas suivie, puis statut, progression, note et une fenêtre pour le reste —, et le
-synopsis. Tout le reste de ce document attend.
+Un hero — bannière, jaquette, titre et titres secondaires, six faits (format, statut, compteur,
+saison, studio ou auteur, prochain épisode) et une barre de suivi **qui enregistre pour de bon** —,
+puis **cinq onglets** : Aperçu, Personnages, Équipe, Œuvres liées, Tags.
+
+**L'aperçu donne l'inventaire, pas un chapitre** : synopsis, genres, six personnages, quatre
+postes, trois liens et six recommandations, chaque bloc portant un « Tout voir » vers son onglet.
+Ses chiffres sont exactement ce que la requête de fiche ramène, donc il ne coûte aucune lecture de
+plus que le hero.
+
+**Chaque onglet va chercher sa propre donnée.** Le serveur ne rend que le panneau désigné par
+`?onglet=`, donc la lecture AniList part avec lui : Personnages en demande 25, Équipe 25,
+Œuvres liées 20 recommandations. Tags et relations ne coûtent rien — les premiers voyagent
+gratuitement avec la fiche, les secondes n'acceptent aucune pagination chez AniList.
+
+**Le prix est explicite** : une visite qui reste sur l'aperçu coûte une requête, comme avant ;
+chaque onglet ouvert en coûte une de plus, mise en cache pour la journée et partagée par les quatre
+comptes. En échange, la recherche du navigateur ne trouve plus que l'onglet affiché.
+
+**Un onglet vide n'est pas ouvert**, et la décision se prend sur l'échantillon de la fiche — jamais
+en dépensant le crédit qui servirait à le remplir. C'est ce qui fait dégrader la fiche toute seule
+un jour de coupure : le repli sur le miroir n'a ni personnages, ni équipe, ni relations, donc il ne
+reste que l'aperçu.
+
+Tout le reste de ce document attend encore.

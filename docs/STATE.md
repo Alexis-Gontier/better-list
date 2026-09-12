@@ -13,7 +13,11 @@ Relevé le **8 septembre 2026**.
 > ### En un mot : huit écrans sur onze, et le planning sait dire de combien on est en retard.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> huit routes ont de nouveau un écran réel : `/media/[id]` (son **hero**, et lui seul),
+> huit routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
+> **cinq onglets** — Aperçu, Personnages, Équipe, Œuvres liées, Tags —, et un **pied de page à
+> colonnes** dérivé de `mainNav` qui porte enfin l'attribution AniList attendue par leurs CGU — §9.
+> Il est monté sur `(app)` comme sur `(share)`, mais **sans ses liens sur la liste partagée** : ils
+> mènent tous derrière la garde),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
 > miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, le
 > 7 septembre **`/settings`**, et le 8 septembre **`/calendar`**. Les trois autres routes
@@ -104,7 +108,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | --- | --- | --- | --- |
 | `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
-| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero livré, suivi fonctionnel** — restent le journal, les onglets lourds et les listes |
+| `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
@@ -177,9 +181,13 @@ c'est se promettre de le relire une fois de trop.
 - ~~**`api/cron/refresh-media` et `vercel.json` sont supprimés.**~~ **Remis le 7 septembre 2026**,
   deux jours plus tard : le miroir `Media` est de nouveau rafraîchi une fois par jour, et
   `CRON_SECRET` a retrouvé son unique lecteur. C'est le premier des deux handlers supprimés à
-  revenir ; `api/command` attend toujours sa palette.
-- **`api/command` est supprimé** avec la palette `⌘K` qu'il servait. Son schéma survit : il porte la
-  règle du « +1 », dont `command.queries.ts` était le seul autre dépositaire.
+  revenir ; `api/command` ne reviendra pas de sitôt.
+- **`api/command` est supprimé** avec la palette `⌘K` qu'il servait. ~~Son schéma survit : il porte
+  la règle du « +1 ».~~ **Le 12 septembre 2026, `features/command/` a été supprimée en entier,
+  schéma compris** : la palette avait été reconstruite dans la journée, puis retirée sur décision
+  d'Alexis avant d'être commitée. La règle du « +1 » n'est pas perdue pour autant — elle n'était
+  plus orpheline depuis `/library` : `entry-progress-stepper.tsx` porte la même borne sous la forme
+  `ceiling !== null && current >= ceiling`.
 - **Le canari de `architecture.test.ts` est en `.skip`.** Voir les écarts connus — c'est le point le
   plus important de cette page.
 
@@ -411,7 +419,11 @@ porte donc sa propre garde, et c'est la seule qu'il ait.
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
 | `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** |
 
-`api/command` reste supprimé, avec la palette `⌘K` qu'il servait.
+`api/command` reste supprimé, avec la palette `⌘K` qu'il servait. Il a été réécrit le 12 septembre
+2026 puis retiré le soir même, et sa raison d'être vaut d'être retenue pour le jour où la palette
+reviendra : une recherche à la frappe **ne passe pas par une Server Action**, parce qu'une action
+est un POST que Next sérialise — la réponse à « fri » arriverait après celle à « frieren ». Un `GET`
+s'annule (`AbortController`) et rend son quota.
 
 ### Et trois conventions de fichier
 
@@ -445,7 +457,7 @@ composante : `entry-status-dot`, la pastille de statut, posée dans le slot `mar
 | **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — cinq lectures sans aucun cache, parce que tout y dépend du visiteur — et **`tracking.actions`, les deux premières Server Actions du dépôt**. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating`, `entry-status-dot`, et `entry-quick-edit` — la fenêtre d'édition rapide, promue de `/library` quand `/search` l'a demandée. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
-| **`command`** | `schemas/command.schema` seul — il porte la règle du « +1 ». |
+| **`command`** | *supprimée en entier le 12 septembre 2026* — son schéma était le dernier reste, et la règle du « +1 » qu'il gardait vit désormais dans `entry-progress-stepper`. Reconstruite puis retirée le même jour (§ la palette, plus bas). |
 | **`profile`** | *supprimée en entier* — elle n'était que des queries, et `/u/[username]` était son seul consommateur. |
 
 `lib/http/anilist.ts` n'a pas bougé : c'est du transport, il vit dans `lib/` et non dans une feature.
@@ -534,8 +546,14 @@ prétend s'y fier.**
   respecté tel quel : la semaine reste un décalage entier, jamais une date, ce qui est bien la
   raison pour laquelle il avait été épargné.
 
+  **`command.schema.ts` en est sorti le 12 septembre 2026 par la porte de sortie** : le fichier est
+  supprimé, pas consommé. Cinquième entrée à disparaître, et la première dont la raison d'être avait
+  expiré sans que personne ne repasse la lire — elle était gelée parce qu'elle portait seule la
+  règle du « +1 », que `entry-progress-stepper.tsx` porte depuis `/library`. **Un gel devrait nommer
+  la condition qui le lève, pas seulement celle qui l'a posé.**
+
   Restent au gel, et c'est exactement la liste des écrans qui manquent : `profile-params` (contrat
-  d'URL de `/u`), `command.schema` (la palette `⌘K`), `use-debounced-value`, `use-reduced-motion`,
+  d'URL de `/u`), `use-debounced-value`, `use-reduced-motion`,
   et des chemins d'exports — les formateurs de `media`, les **deux** documents GraphQL encore sans
   écran (catalogue de l'accueil, vocabulaire de filtres), les schémas de `media`, les défauts de
   `preferences`, `formatEventTime` qui attend le journal, et `removeEntry` qui attend son geste.
@@ -771,10 +789,21 @@ vocabulaire de tous les autres.
    l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
    [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
    des filtres : 66 lignes, **21 cochées**.
-2. `/media/[id]` — **le hero et le suivi sont faits** (6 septembre) : la barre lit l'`Entry` réelle
-   et écrit par `saveEntry`. Restent le journal, les onglets lourds, les chiffres de la communauté,
-   et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle. L'inventaire à
-   cocher est dans [fiche-media.md](./fiche-media.md) : 73 lignes, 23 cochées.
+2. `/media/[id]` — **le hero, le suivi et le bas de la fiche sont faits** : la barre lit l'`Entry`
+   réelle et écrit par `saveEntry` (6 septembre), et le 11 septembre le bas de la fiche est devenu
+   **cinq onglets** : Aperçu, Personnages, Équipe, Œuvres liées, Tags — plus le prochain épisode en
+   sixième colonne de la ligne de faits. **Chaque onglet a sa propre lecture AniList** : le serveur
+   ne rend que le panneau désigné par `?onglet=`, donc Personnages peut en demander 25 là où la
+   requête de fiche n'en ramène que 6. Le coût est explicite — une visite qui reste sur l'aperçu
+   coûte une requête comme avant, chaque onglet ouvert en coûte une de plus, cachée pour la journée
+   et partagée par les quatre comptes. Tags et relations n'en coûtent aucune. **L'aperçu donne
+   l'inventaire, pas un chapitre** : un échantillon de chaque bloc et un « Tout voir ». Un onglet
+   vide n'est pas ouvert, et la décision se prend sur l'échantillon de la fiche — jamais en
+   dépensant le crédit qui le remplirait —, ce qui fait dégrader la fiche toute seule un jour de
+   coupure. Restent le journal, les chiffres de la communauté, les tomes possédés, ce que le cercle
+   en pense, et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle.
+   L'inventaire à cocher est dans
+   [fiche-media.md](./fiche-media.md) : 73 lignes, **31 cochées**.
 3. `/calendar` — **fait** (8 septembre), et il s'est bien rebranché sur `airing-week.ts` et
    `calendar-params.ts` sans les toucher. La forme — liste verticale par jour — a été tranchée sur
    un relevé de douze plannings en service plutôt qu'au goût (docs/JOURNAL.md). `AIRING_SCHEDULE_QUERY`
@@ -796,7 +825,13 @@ vocabulaire de tous les autres.
    sont pour de bonnes raisons. Reste `/u/[username]`, l'autre petit.
 6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 
-Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Le cron de
+Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Elle a été
+réécrite le 12 septembre 2026 — faux champ dans l'en-tête, dialogue cmdk, recherche du catalogue à
+la frappe — puis **retirée le soir même sur décision d'Alexis**, et `features/command/` avec elle.
+Le jour où elle revient, elle repart d'une page blanche ; deux choses valent d'être reprises telles
+quelles : la lecture passe par un **route handler** et non par une Server Action (§ les route
+handlers), et le « +1 » n'y remonte pas — `Entrée` est un réflexe, et un réflexe ne doit pas écrire
+dans le journal. Le cron de
 rafraîchissement du miroir figurait ici aussi ; il a été repris le 7 septembre 2026, hors de l'ordre
 des écrans puisqu'il n'en est pas un.
 

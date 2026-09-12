@@ -385,6 +385,52 @@ export const mediaByIdDataSchema = z.object({
 });
 
 /**
+ * Réponses des lectures **par onglet** de la fiche.
+ *
+ * Les trois portent `isAdult` pour une raison unique et non cosmétique : la préférence de contenu
+ * du compte s'applique **hors du cache**, sur des données déjà en mémoire (docs/PRODUCT.md §4.1).
+ * Sans ce champ, l'onglet d'une œuvre classée adulte s'afficherait alors que sa fiche est refusée —
+ * chaque lecture doit donc pouvoir répondre à la question toute seule, sans dépendre d'une autre.
+ *
+ * `id` est demandé pour la même raison qu'ailleurs : c'est la seule preuve que la réponse concerne
+ * bien l'œuvre demandée.
+ */
+const tabMediaSchema = z.object({
+  id: z.number().int(),
+  isAdult: z.boolean(),
+});
+
+export const mediaCharactersDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      characters: z
+        .object({ edges: z.array(characterEdgeSchema).default([]) })
+        .default({ edges: [] }),
+    })
+    .nullable(),
+});
+
+export const mediaStaffDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      staff: z
+        .object({ edges: z.array(staffEdgeSchema).default([]) })
+        .default({ edges: [] }),
+    })
+    .nullable(),
+});
+
+export const mediaRecommendationsDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      recommendations: z
+        .object({ nodes: z.array(recommendationNodeSchema).default([]) })
+        .default({ nodes: [] }),
+    })
+    .nullable(),
+});
+
+/**
  * Réponse du rafraîchissement par lot. Pas de `pageInfo` : l'appelant sait ce qu'il a demandé, et
  * l'écart entre les ids envoyés et ceux qui reviennent est l'information utile (une œuvre supprimée
  * chez AniList ne revient simplement pas).

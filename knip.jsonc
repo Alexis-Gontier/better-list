@@ -59,7 +59,11 @@
     // qu'à se rétrograder en gel « exports », après `library-params.ts`, `search-params.ts` et
     // `lists.schema.ts`.
     "src/app/(app)/u/[username]/_lib/profile-params.ts": ["files"], // contrat d'URL — attend /u
-    "src/features/command/schemas/command.schema.ts": ["files"], // porte la règle du « +1 » — attend ⌘K
+    // `command.schema.ts` a **quitté le gel le 12 septembre 2026 par la porte de sortie** : le
+    // fichier est supprimé, pas consommé. Il était épargné parce qu'il portait seul la règle du
+    // « +1 » ; `entry-progress-stepper.tsx`, arrivé depuis avec `/library`, porte la même borne.
+    // Première entrée à disparaître parce que sa raison d'être avait expiré — d'où la leçon : **un
+    // gel devrait nommer la condition qui le lève, pas seulement celle qui l'a posé.**
     // `library-params.ts` est **sorti du gel le 6 septembre 2026** : `/library` le consomme de bout
     // en bout — les parseurs et les listes d'options par la barre, `loadLibraryFilters` par la page,
     // `serializeLibraryFilters` par la rangée de statuts. Première entrée à disparaître pour de bon
