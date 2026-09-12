@@ -1,4 +1,5 @@
 import { AniListOutageNotice } from "@/components/layout/anilist-outage-notice";
+import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { requireApprovedUser } from "@/lib/auth/session";
 import { isAniListDown } from "@/lib/http/anilist";
@@ -55,6 +56,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <main className="container mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children}
       </main>
+
+      {/*
+        **Hors du `main`, et c'est un choix de structure, pas de style.** Le pied de page n'est pas
+        le contenu de la page courante : le mettre dedans le ferait annoncer comme tel par un
+        lecteur d'écran, et il entrerait dans la largeur maximale du contenu au lieu de porter sa
+        propre bordure d'un bord à l'autre.
+      */}
+      <Footer withNavigation />
     </div>
   );
 }

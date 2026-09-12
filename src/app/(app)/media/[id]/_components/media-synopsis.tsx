@@ -26,7 +26,11 @@ export function MediaSynopsis({ description }: MediaSynopsisProps) {
       <h2 className="text-lg font-semibold">Synopsis</h2>
 
       {paragraphs.length > 0 ? (
-        <div className="flex max-w-prose flex-col gap-3 text-sm/6 text-muted-foreground">
+        // Sur toute la largeur (décision d'Alexis du 11 septembre 2026). La colonne `max-w-prose`
+        // laissait la moitié droite de l'écran vide au-dessus de trois sections qui, elles,
+        // l'occupent entièrement — le synopsis paraissait alors être un encart plutôt que le texte
+        // de la page.
+        <div className="flex flex-col gap-3 text-sm/6 text-muted-foreground">
           {paragraphs.map((paragraph) => (
             // Le paragraphe lui-même comme clé : deux paragraphes identiques dans un même synopsis
             // n'existent pas, et un index se périmerait au premier remaniement du texte.

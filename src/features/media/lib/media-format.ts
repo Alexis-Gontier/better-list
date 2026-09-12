@@ -179,6 +179,146 @@ export function formatMediaStatus(status: MediaStatus | null): string | null {
   return status ? STATUS_LABELS[status] : null;
 }
 
+/**
+ * Nature du lien entre deux œuvres (`MediaRelation`).
+ *
+ * **C'est le libellé qu'on lit avant le titre** sur une carte de relation : savoir qu'on regarde
+ * la suite ou un film récapitulatif change ce qu'on fait du lien. D'où le choix de termes qui
+ * tranchent — « Histoire parallèle » plutôt que « Side story », qui ne dit rien à qui ne connaît
+ * pas le vocabulaire d'AniList.
+ *
+ * `Record<string, string>` et non `Record<MediaRelation, string>` : le champ arrive en `string` du
+ * schéma (`relationEdgeSchema`), et une valeur inconnue retombe sur le brut plutôt que de faire
+ * disparaître la relation.
+ */
+const RELATION_LABELS: Record<string, string> = {
+  ADAPTATION: "Adaptation",
+  PREQUEL: "Préquelle",
+  SEQUEL: "Suite",
+  PARENT: "Œuvre principale",
+  SIDE_STORY: "Histoire parallèle",
+  CHARACTER: "Personnage commun",
+  SUMMARY: "Récapitulatif",
+  ALTERNATIVE: "Version alternative",
+  SPIN_OFF: "Spin-off",
+  OTHER: "Autre",
+  SOURCE: "Œuvre d'origine",
+  COMPILATION: "Compilation",
+  CONTAINS: "Contient",
+};
+
+export function formatRelationType(type: string | null): string | null {
+  if (!type) return null;
+  return RELATION_LABELS[type] ?? type;
+}
+
+/**
+ * Rôle d'un personnage dans l'œuvre (`CharacterRole`).
+ *
+ * `BACKGROUND` n'a pas de traduction littérale utile — « arrière-plan » décrit un plan de caméra,
+ * pas un rôle. « Figuration » dit ce que c'est.
+ */
+const CHARACTER_ROLE_LABELS: Record<string, string> = {
+  MAIN: "Principal",
+  SUPPORTING: "Secondaire",
+  BACKGROUND: "Figuration",
+};
+
+export function formatCharacterRole(role: string | null): string | null {
+  if (!role) return null;
+  return CHARACTER_ROLE_LABELS[role] ?? role;
+}
+
+/**
+ * Langue de doublage (`languageV2`).
+ *
+ * AniList la rend **en anglais et en toutes lettres** — « Japanese », pas un code ISO —, donc la
+ * table indexe le mot anglais. La requête ne demande aujourd'hui que le japonais
+ * (`MEDIA_BY_ID_QUERY`), mais elle accepte toutes les langues : les autres entrées sont là pour le
+ * jour où on en demandera une deuxième, et coûtent quelques lignes.
+ */
+const VOICE_LANGUAGE_LABELS: Record<string, string> = {
+  Japanese: "Japonais",
+  English: "Anglais",
+  French: "Français",
+  Korean: "Coréen",
+  Chinese: "Chinois",
+  Spanish: "Espagnol",
+  German: "Allemand",
+  Italian: "Italien",
+  Portuguese: "Portugais",
+};
+
+export function formatVoiceLanguage(language: string | null): string | null {
+  if (!language) return null;
+  return VOICE_LANGUAGE_LABELS[language] ?? language;
+}
+
+/**
+ * Rôle d'un membre de l'équipe.
+ *
+ * **Ce n'est pas une énumération, c'est du texte libre**, et la table est donc explicitement
+ * partielle : AniList y trouve « Director », mais aussi « Theme Song Performance (ED 14) » ou
+ * « 2nd Key Animation ». Traduire les quelques rôles qui reviennent sur chaque fiche vaut mieux que
+ * de tout laisser en anglais ; prétendre les couvrir tous serait faux, donc le brut est un repli
+ * normal et non un échec.
+ *
+ * **La portée entre parenthèses est détachée avant la recherche, puis raccrochée.** AniList écrit
+ * « Director (eps 1-278) », « Character Design (eps 385-891) » : sur une série longue, c'est la
+ * forme de la *plupart* des rôles, et sans ce détachement l'onglet Équipe de One Piece restait
+ * presque entièrement en anglais. Vu à l'écran le 11 septembre 2026. La portée elle-même n'est pas
+ * traduite — « eps 1-278 » se lit dans toutes les langues, et « OP1, OP15 » est un nom propre.
+ *
+ * Les rôles composés à la virgule, eux, ne sont pas découpés : « Director, Script » demanderait deux
+ * traductions et une recomposition, pour un gain qui ne se voit que sur une poignée de fiches.
+ */
+const STAFF_ROLE_LABELS: Record<string, string> = {
+  Director: "Réalisation",
+  "Chief Director": "Réalisation en chef",
+  "Assistant Director": "Assistant réalisateur",
+  "Episode Director": "Réalisation d'épisode",
+  "Original Creator": "Œuvre originale",
+  "Original Story": "Histoire originale",
+  "Series Composition": "Composition de la série",
+  Script: "Scénario",
+  Storyboard: "Storyboard",
+  "Character Design": "Character design",
+  "Art Director": "Direction artistique",
+  "Animation Director": "Direction de l'animation",
+  "Chief Animation Director": "Direction de l'animation en chef",
+  "Key Animation": "Animation clé",
+  "Sound Director": "Direction du son",
+  Music: "Musique",
+  Producer: "Production",
+  "Executive Producer": "Production exécutive",
+  "Color Design": "Design des couleurs",
+  "Director of Photography": "Direction de la photographie",
+  Editing: "Montage",
+  "Story & Art": "Scénario et dessin",
+  Story: "Scénario",
+  Art: "Dessin",
+};
+
+/** « Director (eps 1-278) » → le rôle d'un côté, sa portée de l'autre. */
+const ROLE_SCOPE = /^(.*?)\s*(\([^()]*\))$/;
+
+export function formatStaffRole(role: string | null): string | null {
+  if (!role) return null;
+
+  const [, base, scope] = role.match(ROLE_SCOPE) ?? [];
+
+  // Pas de portée détachée : le rôle est cherché tel quel. Les deux groupes sont solidaires — le
+  // motif ne peut pas en capturer un sans l'autre —, donc tester le premier suffit au compilateur.
+  if (base === undefined) return STAFF_ROLE_LABELS[role] ?? role;
+
+  const label = STAFF_ROLE_LABELS[base];
+
+  // Sans traduction connue, on rend le rôle **tel qu'AniList l'a écrit** plutôt que recomposé : la
+  // recomposition normaliserait l'espace avant la parenthèse, donc retoucherait une chaîne qu'on n'a
+  // pas su traduire — une modification invisible et sans objet.
+  return label ? `${label} ${scope}` : role;
+}
+
 export function formatCountry(code: string | null): string | null {
   if (!code) return null;
   return COUNTRY_LABELS[code] ?? code;

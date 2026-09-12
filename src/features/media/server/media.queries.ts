@@ -6,8 +6,12 @@ import {
   type AiringSchedule,
   airingScheduleDataSchema,
   type Media,
+  type MediaCompact,
   type MediaDetail,
   mediaByIdDataSchema,
+  mediaCharactersDataSchema,
+  mediaRecommendationsDataSchema,
+  mediaStaffDataSchema,
   searchMediaDataSchema,
 } from "@/features/media/schemas/media.schema";
 import {
@@ -17,6 +21,9 @@ import {
 import {
   AIRING_SCHEDULE_QUERY,
   MEDIA_BY_ID_QUERY,
+  MEDIA_CHARACTERS_QUERY,
+  MEDIA_RECOMMENDATIONS_QUERY,
+  MEDIA_STAFF_QUERY,
   SEARCH_MEDIA_QUERY,
 } from "@/features/media/server/media.documents";
 import { anilistQuery, isAniListError, tryAniList } from "@/lib/http/anilist";
@@ -89,6 +96,141 @@ export async function getMediaById(
   if (media.isAdult && !includeAdult) return null;
 
   return media;
+}
+
+/**
+ * Les lectures **par onglet** de la fiche.
+ *
+ * Chacune coûte un crédit sur les trente de la minute, et c'est le choix assumé du 11 septembre
+ * 2026 : les onglets vont chercher leur donnée eux-mêmes plutôt que de tout faire ramener par la
+ * requête de fiche. Trois précautions rendent la dépense tenable.
+ *
+ * 1. **Le serveur ne rend que le panneau actif** (`?onglet=`), donc une lecture ne part que si
+ *    quelqu'un ouvre l'onglet. Une visite qui reste sur l'aperçu coûte exactement ce qu'elle
+ *    coûtait avant.
+ * 2. **`cacheLife("days")`**, comme la fiche : la dépense est par œuvre et par jour, pas par
+ *    visite. Les quatre comptes du cercle partagent la même entrée.
+ * 3. **Le filtre 18+ reste hors du cache**, donc une seule entrée par œuvre sert tout le monde.
+ *
+ * Chaque lecture renvoie `null` quand l'œuvre n'existe pas **ou** qu'elle est refusée par la
+ * préférence — les deux cas volontairement confondus, comme sur la fiche : répondre différemment
+ * reviendrait à confirmer l'existence de ce qu'on refuse de montrer.
+ */
+
+/**
+ * Le casting complet. Vingt-cinq personnages, contre les six de l'aperçu.
+ *
+ * Le `try` ne rattrape que le 404 — et **dans** le cache, comme `fetchMediaById` : une œuvre qui
+ * n'existe pas ne se met pas à exister, alors qu'une panne se répare et doit pouvoir être retentée
+ * à la visite suivante.
+ */
+async function fetchMediaCharacters(id: number) {
+  "use cache";
+  cacheLife("days");
+
+  try {
+    const { Media } = await anilistQuery({
+      query: MEDIA_CHARACTERS_QUERY,
+      variables: { id },
+      schema: mediaCharactersDataSchema,
+    });
+
+    return Media;
+  } catch (error) {
+    if (isAniListError(error) && error.isNotFound) return null;
+    throw error;
+  }
+}
+
+export async function getMediaCharacters(
+  id: number,
+  { includeAdult }: { includeAdult: boolean },
+): Promise<MediaDetail["characters"]["edges"] | null> {
+  const media = await fetchMediaCharacters(id);
+
+  if (!media) return null;
+  if (media.isAdult && !includeAdult) return null;
+
+  return media.characters.edges;
+}
+
+/** L'équipe complète. Vingt-cinq postes, contre les quatre de l'aperçu. */
+async function fetchMediaStaff(id: number) {
+  "use cache";
+  cacheLife("days");
+
+  try {
+    const { Media } = await anilistQuery({
+      query: MEDIA_STAFF_QUERY,
+      variables: { id },
+      schema: mediaStaffDataSchema,
+    });
+
+    return Media;
+  } catch (error) {
+    if (isAniListError(error) && error.isNotFound) return null;
+    throw error;
+  }
+}
+
+export async function getMediaStaff(
+  id: number,
+  { includeAdult }: { includeAdult: boolean },
+): Promise<MediaDetail["staff"]["edges"] | null> {
+  const media = await fetchMediaStaff(id);
+
+  if (!media) return null;
+  if (media.isAdult && !includeAdult) return null;
+
+  return media.staff.edges;
+}
+
+/**
+ * Les recommandations complètes. Vingt et une, contre les sept de l'aperçu — trois rangées
+ * pleines au palier large, où la grille en compte sept par ligne.
+ *
+ * **Les relations ne sont pas ici**, et ce n'est pas un oubli : le champ `relations` d'AniList
+ * n'accepte aucune pagination, donc la requête de fiche les a déjà toutes. Leur consacrer une
+ * lecture dépenserait un crédit pour redemander ce qu'on a en mémoire.
+ */
+async function fetchMediaRecommendations(id: number) {
+  "use cache";
+  cacheLife("days");
+
+  try {
+    const { Media } = await anilistQuery({
+      query: MEDIA_RECOMMENDATIONS_QUERY,
+      variables: { id },
+      schema: mediaRecommendationsDataSchema,
+    });
+
+    return Media;
+  } catch (error) {
+    if (isAniListError(error) && error.isNotFound) return null;
+    throw error;
+  }
+}
+
+export async function getMediaRecommendations(
+  id: number,
+  { includeAdult }: { includeAdult: boolean },
+): Promise<MediaCompact[] | null> {
+  const media = await fetchMediaRecommendations(id);
+
+  if (!media) return null;
+  if (media.isAdult && !includeAdult) return null;
+
+  /*
+    Deux tamis, appliqués ici plutôt que par l'appelant. `mediaRecommendation` est nul quand l'œuvre
+    recommandée a été supprimée d'AniList depuis le vote ; le second est la préférence de contenu,
+    qui vaut pour chaque œuvre recommandée et pas seulement pour celle qu'on regarde.
+  */
+  return media.recommendations.nodes.flatMap((node) => {
+    const recommended = node.mediaRecommendation;
+    if (!recommended) return [];
+    if (recommended.isAdult && !includeAdult) return [];
+    return [recommended];
+  });
 }
 
 /** Ce qu'une recherche rend : la page demandée, et de quoi la situer dans l'ensemble. */
