@@ -27,6 +27,232 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 12 septembre 2026 — la palette revient, puis repart le soir même
+
+**La question de départ n'était pas celle-là.** Alexis demandait s'il y avait un anti-rebond sur la
+barre de `/search`, vu le plafond d'AniList. Il y en a un, de 300 ms, posé par nuqs sur l'**écriture
+de l'URL** et non sur la valeur du champ — la distinction compte, puisque c'est le trajet
+`shallow: false` qui coûte, pas la frappe. La réponse a fait apparaître un mort : `use-debounced-value`
+n'avait aucun appelant, et de fil en aiguille la palette `⌘K` a été reconstruite.
+
+**Puis Alexis a dit « non, enlève ».** Tout est reparti : `features/command/` en entier — schéma,
+hook, query, composant — et `api/command` avec. La palette n'a jamais été commitée. Ce qui reste de
+la séance tient en trois choses qui survivent à la suppression :
+
+**La règle du « +1 » n'était plus orpheline, contrairement à ce que STATE.md disait.** Le schéma de
+`command` était gelé au motif qu'il portait seul `total === null || progress < total`. C'était vrai
+le 5 septembre ; ça ne l'était plus : `entry-progress-stepper.tsx`, arrivé avec `/library`, porte la
+même borne sous la forme `ceiling !== null && current >= ceiling`. Le gel avait été posé pour une
+bonne raison, et la raison avait expiré sans que personne ne repasse la lire — c'est ce qui a permis
+de supprimer le fichier sans rien perdre. **Une entrée de gel devrait porter la condition qui la
+lève, pas seulement celle qui l'a posée.**
+
+**Le chiffre de six lignes venait de l'ancienne palette, et il était faux dans la nouvelle.** Le
+schéma annonçait « six tiennent dans la hauteur du dialogue sans défilement » — hérité d'une liste
+de texte nu. Avec une jaquette par ligne, une rangée passe de 32 à 49 px, et l'échappatoire vers
+`/search` tombait sous la pliure : exactement la ligne qui doit survivre à une panne d'AniList.
+**Un commentaire qui cite un chiffre doit dire d'où il vient, sinon il se recopie dans un contexte
+où il est faux.**
+
+**Une palette est le mauvais endroit pour un geste qui écrit.** L'ancienne avançait d'un épisode
+depuis la liste, et se protégeait par un toast nommant l'œuvre « pour qu'une erreur se voie ». Un
+garde-fou qui existe parce que le geste est mal placé est un signe, pas une solution : `Entrée` y
+est un réflexe. Si la palette revient un jour, elle cherchera, et c'est tout.
+
+**Et la leçon de séance : le fichier manquant venait d'une séance précédente.** Le build cassait sur
+un import de `command-palette` que rien n'avait jamais écrit — les docs, le contrat, le hook et le
+handler avaient tous été posés, le composant non. Une séance qui écrit son journal avant son code
+laisse un dépôt qui décrit un fichier absent.
+
+---
+## 11 septembre 2026 — le bas de la fiche, et la donnée qui attendait depuis toujours
+
+**Les quatre sections demandées n'ont coûté aucune requête AniList.** Relations, recommandations,
+personnages et prochain épisode étaient **déjà** dans `MEDIA_BY_ID_QUERY` et déjà validés par
+`mediaDetailSchema` — depuis le jour où la requête a été écrite. Le premier réflexe avait été de
+regarder le quota et le budget de la skill `anilist-read` ; la bonne question était de lire la
+sélection existante. À retenir avant toute séance « ajoute X sur la fiche » : `docs/fiche-media.md`
+§1.1 liste précisément ce qui arrive gratuitement, et sa raison d'être est celle-là.
+
+**One Piece a 65 relations, et il a fallu les voir pour le savoir.** La première version les rendait
+toutes, sans tri : le raisonnement écrit dans le fichier disait qu'« une œuvre a rarement plus d'une
+dizaine de liens » et que « les couper demanderait de choisir lequel compte le moins — précisément
+ce qu'on ne sait pas faire ». Les deux moitiés de la phrase étaient fausses. À l'écran, la section
+occupait les trois quarts de la page, et la **suite de la série** s'y trouvait noyée entre deux
+courts-métrages promotionnels. On sait très bien choisir : une préquelle et un personnage commun ne
+sont pas le même genre de lien. D'où `RELATION_ORDER`, neuf liens dépliés, le reste sous un repli.
+
+C'est la deuxième fois en deux séances qu'un raisonnement écrit avec assurance dans un commentaire
+tombe à la première capture. La capture n'est pas une vérification de fin de course, c'est l'endroit
+où l'on découvre la donnée réelle.
+
+**Puis Berserk a cassé le correctif.** Dix relations : le repli en cachait **une seule**, et
+affichait « Voir les 1 autres liens ». Deux bugs pour le prix d'un — une grammaire et un contrôle
+qui coûtait un clic pour économiser une ligne. Le seuil `FOLD_THRESHOLD` répond aux deux. La leçon
+est la même que pour la ligne de faits : **un plafond doit toujours être essayé sur le cas court
+autant que sur le cas long**, et les deux se choisissent en ouvrant deux fiches.
+
+**Le décompte se recalcule, il ne se lit pas.** `nextAiringEpisode.timeUntilAiring` est figé à
+l'instant de la lecture AniList — qui est cachée un jour. Affiché tel quel, « dans 3 j » se serait
+trompé d'une journée entière sur la moitié des visites. `airingAt` est absolu, donc la soustraction
+se fait au rendu. La règle générale : **un cache ne doit jamais contenir de durée relative**, et
+quand l'API en propose une à côté d'un horodatage, c'est l'horodatage qu'on garde.
+
+**`<details>` natif plutôt que le `Collapsible` de shadcn.** Le composant installé aurait rendu
+cliente toute la section, et donc embarqué la grille des relations dans le bundle — pour un repli.
+Le navigateur sait replier une liste sans JavaScript, et l'état n'a rien à synchroniser avec quoi
+que ce soit. Le changement de libellé « Voir… / Replier » se fait en CSS, par `group-open:`. À
+resservir chaque fois qu'un repli n'a pas besoin de parler au reste de la page.
+
+**Et les œuvres liées ont changé de forme une seconde fois — la bonne.** La liste plate de cartes
+horizontales, triée par importance, marchait et ne disait toujours rien : sur soixante-cinq liens il
+fallait **lire chaque étiquette** pour reconstituer ce que la franchise contient. Le tri avait
+remonté les bons liens en tête sans jamais donner sa forme à l'ensemble.
+
+Groupées par nature de lien, la structure **devient** la mise en page : une préquelle, quatre
+adaptations, trente-six histoires parallèles se comptent d'un coup d'œil. C'est la première fois que
+cet écran ressemble à ce que PRODUCT.md §8 attend de ces données. Le repli change de critère avec :
+il ne coupe plus à un nombre de cartes — ce qui tranchait au milieu d'une catégorie — mais entre la
+colonne vertébrale et le contexte, et la frontière est **calculée** depuis `RELATION_ORDER` plutôt
+qu'écrite deux fois.
+
+Second gain, non prévu : en passant aux jaquettes, la carte du catalogue sert ici telle quelle.
+« ONE PIECE FILM: Z » et « ONE PIECE FILM: GOLD » sont deux lignes de texte presque identiques et
+deux images sans rapport — **dans une franchise, la couverture identifie mieux que le titre**. Le bas
+de la fiche n'a plus de carte à lui.
+
+**Puis les onglets ont reçu chacun leur lecture AniList, et c'est le vrai changement de la
+journée.** La version précédente les rendait tous en même temps, servis par l'unique requête de
+fiche : elle ramenait douze personnages, huit postes et douze recommandations pour n'en afficher
+qu'une poignée, et aucun onglet ne pouvait montrer plus que ce plafond. En donnant sa requête à
+chaque onglet, Personnages en montre vingt-cinq.
+
+Ce qui rend la dépense tenable tient en une phrase : **le serveur ne rend que le panneau désigné par
+`?onglet=`**. Les déclencheurs sont donc des `<Link>` et non des boutons — c'est ce qui fait partir
+la lecture avec la navigation, alors que des onglets clients auraient dû tout charger d'avance pour
+pouvoir tout garder monté. Une visite qui reste sur l'aperçu coûte exactement ce qu'elle coûtait ;
+chaque onglet ouvert coûte un crédit de plus, caché une journée et partagé par les quatre comptes.
+
+**Deux onglets n'ont pas de requête, et le refus est aussi instructif que les trois qui en ont
+une.** Les tags voyagent gratuitement avec la fiche ; les relations n'acceptent aucune pagination
+chez AniList, donc la requête de fiche les a déjà **toutes**. Leur donner une lecture aurait dépensé
+un crédit pour redemander ce qu'on avait en mémoire. « Chaque onglet a sa requête » est une bonne
+règle jusqu'à l'endroit précis où elle ne rapporte rien.
+
+**Et il a fallu décider quels onglets ouvrir sans les lire.** Un onglet vide ne doit pas s'afficher,
+mais le savoir en interrogeant AniList coûterait exactement le crédit qu'on cherche à ne pas
+dépenser. La décision se prend donc sur l'**échantillon** que la requête de fiche ramène déjà : un
+échantillon vide vaut preuve que l'ensemble l'est. La règle de dégradation du jour de coupure tient
+toujours, gratuitement.
+
+**L'aperçu a été repensé dans la foulée, et le défaut se voyait à l'usage** : arriver sur une fiche
+ne disait rien de ce qu'elle contenait, il fallait ouvrir trois onglets pour savoir s'il y avait
+quelque chose à voir. Il montre désormais un échantillon de chaque chose avec un « Tout voir ».
+Le chiffre de chaque échantillon est calé sur ce que la requête de fiche ramène — six personnages,
+quatre postes, six recommandations —, si bien qu'**il ne coûte toujours rien**. Un aperçu donne
+l'inventaire, pas un chapitre.
+
+**Et le bas de la fiche a fini en onglets, après avoir été une pile de sections le matin même.** La
+question posée à midi était « empilées ou onglets ? », et la pile avait gagné sur trois arguments :
+tout lisible sans clic, tout serveur, un Ctrl+F qui trouve. Le premier était le seul vrai — les deux
+autres ne tenaient pas. Radix garde **tous les panneaux montés**, donc la recherche du navigateur
+trouve ce qu'un onglet fermé semble cacher ; et un composant client qui reçoit ses panneaux **en
+propriétés** ne convertit pas son sous-arbre, donc personnages, équipe et relations restent des
+Server Components hors du bundle. Ce qui a tranché, c'est l'écran : une fiche bien documentée
+devenait interminable.
+
+La leçon n'est pas « les onglets sont meilleurs ». C'est qu'un argument de conception qui repose sur
+une limite technique doit être vérifié contre la technique en question, pas récité. Deux des trois
+étaient des croyances sur ce que les onglets coûtent.
+
+*(Et l'argument du Ctrl+F, le seul qui tenait, a fini par tomber de l'autre côté : avec les lectures
+par onglet, les panneaux ne sont plus montés, donc la recherche du navigateur ne trouve que ce qui
+est à l'écran. C'est le prix de la lecture à la demande, et il est écrit dans `page.tsx`.)*
+
+**Une erreur de raisonnement qui mérite d'être écrite** : pour ne pas ouvrir d'onglet vide, la page
+avait d'abord fait `const characters = <MediaCharacters … />` puis testé `characters ? …`. Un
+élément React est un objet de description, **toujours vrai** — le composant n'a pas encore tourné au
+moment où la page décide. D'où `_lib/media-panels.ts` : les sélecteurs que la page et le composant
+partagent, l'une pour savoir s'il y a quelque chose, l'autre pour l'afficher. Le bon effet de bord
+est que le filtrage 18+ et le tri des relations n'existent plus qu'à un seul endroit.
+
+Et cette règle rend gratuitement autre chose : un jour de coupure AniList, le repli sur le miroir n'a
+ni personnages, ni équipe, ni relations, donc la fiche se réduit toute seule à son aperçu — sans
+qu'aucun composant connaisse l'existence de la panne. C'est exactement ce que l'ancien `buildTabs`
+faisait avant la mise à blanc, retrouvé sans l'avoir cherché.
+
+**Trois bugs que seule la capture a montrés**, tous les trois hors de portée du typecheck :
+« Director (eps 1-278) » restait en anglais parce que ma table cherchait le rôle entier — or sur une
+série longue la *plupart* des rôles portent cette portée, donc il faut la détacher avant de chercher
+et la raccrocher après ; les cartes débordaient leur colonne en 390 px, un enfant de grille ayant
+`min-width: auto`, si bien que le `truncate` du titre ne se déclenchait jamais (590 px de carte dans
+343 px de colonne, mesuré) ; et Windows dessinait une barre de défilement grise sous les onglets,
+pour un conteneur qui n'avait rien à faire défiler.
+
+**Les personnages ont été livrés deux fois, et la première jetait une donnée qu'elle avait.** La
+version initiale était une grille de six portraits nus — compacte, cohérente avec les jaquettes. Mais
+`voiceActors` était **déjà dans la réponse**, demandé depuis toujours, et le lien personnage ↔ voix
+est précisément ce qu'on vient chercher sur la fiche d'un anime. Alexis a envoyé une capture
+d'AniList, et la forme s'est imposée : personnage à gauche, doubleur à droite, chacun tourné vers
+l'extérieur de la carte. **La symétrie remplace une étiquette** — on comprend l'appariement sans
+qu'aucune carte ait à écrire « Doubleur ».
+
+Même leçon que pour les quatre sections, un cran plus fin : la question n'est pas *quelle donnée
+peut-on aller chercher*, c'est *quelle donnée a-t-on déjà et n'affiche-t-on pas*. Ici la réponse
+était dans le document GraphQL, à deux lignes de ce qu'on rendait.
+
+Et la gouttière a dû changer de sens. Toutes les grilles du dépôt ont un écart vertical plus grand
+que l'horizontal — c'est lui qui protège le titre d'une carte de la jaquette du dessous. Ici c'est
+l'inverse : le portrait du doubleur d'une carte touche celui du personnage de sa voisine, et à
+`gap-2` on lisait une file de portraits au lieu de paires. **C'est le vide qui dit où une carte
+finit**, et la règle qui vaut pour une grille d'objets isolés ne vaut pas pour une grille de cartes
+symétriques.
+
+La grille est finalement passée à **trois colonnes** (AniList s'arrête à deux) : six personnages sur
+deux rangées plutôt que trois, donc la section tient d'un coup d'œil. Le prix est un nom tronqué sur
+six — « Chopper Tony To… » —, arbitrage d'Alexis, et il tient parce que l'infobulle rend le nom
+entier : **un nom coupé n'est pas un nom perdu**.
+
+**Le pied de page n'a pas été ajouté parce qu'il en manquait un.** La demande était « ajoute un
+footer » ; la question utile était ce qu'il aurait à dire. Un cercle privé de quatre comptes n'a
+ni visiteur à orienter, ni page « à propos », et sa navigation tient déjà dans un en-tête collant —
+un plan du site en bas n'aurait servi qu'à ressembler à un site public. Ce qui manquait vraiment
+était **l'attribution AniList** : PRODUCT.md §9 la note attendue par leurs CGU depuis le début, tout
+le catalogue vient de chez eux, et aucun écran ne la donnait. Le pied de page fait donc une ligne,
+et il est monté sur `(share)` autant que sur `(app)` — c'est là qu'il compte le plus, puisqu'une
+liste partagée est la seule page qu'un inconnu peut ouvrir.
+
+**Puis Alexis l'a voulu « digne d'un vrai site », et la version à colonnes a soulevé la vraie
+question** : lesquelles ? Pas « Aide », « À propos », « Confidentialité » — aucune de ces pages
+n'existe, et `config/navigation.ts` avait déjà tranché le principe pour `/collection` : *une entrée
+de nav qui répond 404 se lit comme une panne, pas comme un chantier*. Le pied de page reprend donc
+`mainNav` tel quel plutôt que de recopier ses libellés — un bas de page qui réécrit l'en-tête est le
+doublon qui finira par proposer deux plans différents du même site — et n'ajoute qu'une colonne
+« Compte ». Elle n'a qu'une entrée, et c'est la vérité sur le produit.
+
+**Et la colonne de liens ne peut pas être partout.** Tout ce qu'elle pointe est derrière la garde de
+`(app)`, or `/l/[token]` s'ouvre sans compte : la même contrainte que le `(share)` documente pour son
+en-tête. D'où un `withNavigation` qui n'est pas un réglage d'apparence mais une règle d'accès — la
+liste partagée garde la marque et l'attribution, c'est-à-dire ce qu'on **doit** dire, et perd ce
+qu'on ne peut pas tenir.
+
+**Pas d'année dans la signature.** Un millésime demanderait de lire l'horloge au rendu, sur un
+composant monté sur *tous* les layouts — y compris celui dont la coquille doit pouvoir être servie
+d'avance. « Usage non commercial » est une condition des CGU d'AniList : ça dit quelque chose de
+vrai, là où « © 2026 » n'aurait dit que la date du dernier déploiement.
+
+Son lien sortant porte `rel="noreferrer"`, et pas par réflexe : sans lui, l'en-tête `Referer` envoie
+à AniList l'adresse d'où vient le clic — qui, sur `/l/[token]`, **contient le jeton de partage**. Une
+fuite de jeton par un lien de courtoisie est exactement le genre de chose qu'aucune capture ne
+montre.
+
+**Et un piège d'outillage, pour mémoire.** Écrire un gros composant TSX par heredoc `bash` a échoué
+sur un caractère que le shell a mal pris, et un patch Python appliqué à la place avait produit une
+IIFE bancale. Pour un fichier entier, l'outil d'écriture direct ; le patch en place ne vaut que pour
+un remplacement chirurgical dont on a lu les deux bords.
+
+---
+
 ## 8 septembre 2026 — la limite qui n'existait pas
 
 Le planning venait d'être livré en liste. Alexis a demandé l'inverse : une grille par semaine,
