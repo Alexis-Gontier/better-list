@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Footer } from "@/components/layout/footer";
 import { Logo } from "@/components/layout/logo";
 import { site } from "@/config/site";
 
@@ -37,6 +38,16 @@ export default function ShareLayout({ children }: { children: ReactNode }) {
       <main className="container mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
         {children}
       </main>
+
+      {/*
+        **L'attribution est due ici autant que dans l'application**, et c'est même ici qu'elle
+        compte le plus : une liste partagée est la seule page du produit qu'un inconnu peut ouvrir,
+        donc la seule où quelqu'un peut voir les données d'AniList sans savoir d'où elles viennent.
+
+        Le pied de page est l'unique exception à la règle « aucun lien vers l'application » énoncée
+        plus haut : le sien sort du site, il ne mène donc personne vers une porte fermée.
+      */}
+      <Footer />
     </div>
   );
 }

@@ -476,13 +476,34 @@ Autour de la collection physique (§4.5) :
 - **Quota AniList partagé** (§4.1). Toute fonctionnalité qui interroge AniList par utilisateur et
   par affichage est à considérer comme un incident en puissance.
 
-- **Le planning ne peut pas être global.** Une semaine de diffusion, toutes œuvres confondues,
-  compte **cinq mille entrées** chez AniList — mesuré, pas estimé, et le compteur y est plafonné
-  donc c'est un plancher. À cinquante par page, afficher une semaine complète coûterait cent
-  requêtes sur les trente de la minute que le serveur partage entre tous les visiteurs. `/calendar`
-  filtre donc à la source, par `mediaId_in`, sur ce que le compte suit. Ce n'est pas une V1 de
-  quelque chose : un planning « tout AniList » n'est pas finançable, et le proposer un jour
-  supposerait une seconde source ou un miroir des grilles horaires, pas un réglage.
+- ~~**Le planning ne peut pas être global.**~~ **Levée le 8 septembre 2026 — la limite reposait sur
+  une mesure fausse.** Elle affirmait qu'une semaine toutes œuvres confondues comptait « cinq mille
+  entrées, mesuré, pas estimé », soit cent requêtes sur les trente de la minute, et concluait qu'un
+  planning « tout AniList » n'était pas finançable ni même proposable en réglage.
+
+  **Le vrai chiffre est 124.** Relevé sur la semaine du 7 au 13 septembre 2026, en comptant les
+  cases du DOM rendu par `/calendar?portee=tout`, colonne par colonne : 11 + 11 + 19 + 16 + 14 + 26
+  + 27 = 124, chaque colonne annonçant exactement ce qu'elle contient, et sans atteindre le plafond
+  de pages que l'écran s'impose. Soit **trois requêtes** à cinquante par page, pas cent. (C'est le
+  compte après filtre de contenu adulte, donc une borne basse de ce qu'AniList rend.)
+
+  **La méthode compte autant que le chiffre, et le premier relevé était faux.** Il annonçait 248 —
+  exactement le double — parce qu'il comptait des motifs dans la réponse HTTP brute, où chaque ligne
+  figure deux fois : une fois dans le HTML diffusé, une fois dans la charge RSC. Corrigé le jour même
+  en comptant les nœuds du DOM. Une limite qui cite un nombre doit dire d'où il vient : c'est le
+  reproche fait à la version précédente de ce paragraphe, et il valait aussi pour son remplaçant.
+
+  L'erreur a une cause précise et elle était déjà écrite ailleurs dans ce dépôt : les cinq mille
+  venaient de `pageInfo.total`, **qu'AniList plafonne à 5000 quelle que soit la requête** —
+  exactement ce que `ANILIST_TOTAL_CAP` documente dans `media.queries.ts` depuis le 6 septembre, et
+  que la version précédente de ce paragraphe reconnaissait à demi-mot en parlant d'un « plancher »
+  sans en tirer la conséquence. Un plafond de compteur avait été lu comme un volume de données.
+
+  `/calendar` propose donc les deux portées, et le choix est un simple `?portee=`. Le filtrage par
+  `mediaId_in` reste le défaut : il est plus utile — c'est là que le retard par épisode a un sens —
+  et non parce qu'il serait le seul soutenable. Un plafond de pages dur borne malgré tout le mode
+  global (`media.queries.ts`), pour qu'une semaine anormalement chargée ne puisse pas surprendre le
+  quota.
 - **CGU AniList** : usage non commercial, attribution attendue.
 - **Import MAL / AniList** : personne n'a de compte à migrer aujourd'hui, donc hors périmètre. Le
   choix d'aligner les statuts sur `MediaListStatus` (§4.2) suffit à garder la porte ouverte.

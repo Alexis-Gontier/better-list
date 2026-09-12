@@ -1,12 +1,14 @@
 "use client";
 
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { CalendarIcon, PencilIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
+import { fr } from "react-day-picker/locale";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogClose,
@@ -18,8 +20,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { TIMEZONE } from "@/config/locale";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
 import { EntryStatusSelect } from "@/features/tracking/components/entry-status-select";
@@ -167,6 +181,16 @@ export function EntryQuickEdit({
    */
   const save = () => execute({ mediaId, ...entryDraftChanges(entry, draft) });
 
+  /**
+   * La borne « pas de date future », relue à chaque rendu plutôt que figée à l'ouverture.
+   *
+   * Un onglet laissé ouvert la nuit franchit minuit : figée, la borne interdirait de dater
+   * d'aujourd'hui le lendemain matin. Il n'y a pas d'écart d'hydratation à craindre malgré
+   * l'appel à `new Date()` — cette valeur n'est lue que dans `DialogContent`, qui n'est monté
+   * qu'une fois la fenêtre ouverte, donc jamais au rendu serveur.
+   */
+  const today = TODAY_IN_PARIS.format(new Date());
+
   return (
     <Dialog onOpenChange={openChange} open={open}>
       <DialogTrigger asChild>
@@ -291,7 +315,14 @@ export function EntryQuickEdit({
             </Field>
 
             <Field label="Commencé le">
+              {/*
+                Deux bornes hautes, dont la plus contraignante gagne : on ne commence pas dans le
+                futur, et on ne commence pas après avoir fini. La seconde ne s'applique que quand
+                la date de fin est renseignée — sur une série en cours, il n'y a rien à borner.
+              */}
               <DateField
+                label="la date de début"
+                max={earliest(today, draft.finishedAt)}
                 onValueChange={(startedAt) => edit({ startedAt })}
                 value={draft.startedAt}
               />
@@ -325,7 +356,15 @@ export function EntryQuickEdit({
             </Field>
 
             <Field label="Terminé le">
+              {/*
+                Le pendant du champ précédent : on ne finit pas dans le futur, et on ne finit pas
+                avant d'avoir commencé. Les deux contraintes sont donc posées **une fois chacune**,
+                de part et d'autre, plutôt que dupliquées — c'est ce qui les empêche de diverger.
+              */}
               <DateField
+                label="la date de fin"
+                max={today}
+                min={draft.startedAt || undefined}
                 onValueChange={(finishedAt) => edit({ finishedAt })}
                 value={draft.finishedAt}
               />
@@ -418,11 +457,93 @@ function EntryQuickEditBanner({ src }: { src: string | null }) {
 }
 
 /**
- * Une date du suivi, dans le format que produit un `<input type="date">`.
+ * « Aujourd'hui », **à Paris**, au format d'un `<input type="date">`.
  *
- * Une **chaîne** et pas un `Date`, comme dans `EntryDraft` : c'est ce que le navigateur envoie, et
- * une date sérialisée puis désérialisée à travers la frontière client/serveur est une source
- * d'écarts de fuseau pour rien (`entry-draft.ts`). La conversion se fait côté serveur, une fois.
+ * Le fuseau est explicite parce que `config/locale.ts` l'exige de tout `Intl.*` du projet : sans
+ * lui, « aujourd'hui » vaudrait le jour du serveur au rendu et celui du visiteur à l'hydratation.
+ * Ici la borne sert à interdire les dates futures, et une borne qui bascule d'un jour selon
+ * l'endroit d'où l'on regarde n'est pas une borne.
+ *
+ * `en-CA` est la locale dont le format court **est** `AAAA-MM-JJ` : c'est le seul endroit du dépôt
+ * où l'on ne passe pas `LOCALE`, parce qu'on ne produit pas du texte à lire mais la valeur d'un
+ * `<input>`, dont le format est imposé par HTML et non par la langue de l'interface.
+ */
+const TODAY_IN_PARIS = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * `AAAA-MM-JJ` → la `Date` **locale** que react-day-picker manipule, posée à midi.
+ *
+ * Midi et non minuit : le calendrier compare des jours civils locaux, et une date construite à
+ * minuit bascule la veille au moindre décalage — c'est le même piège que le stockage à midi UTC
+ * décrit dans `entry-draft.ts`, à l'autre bout de la chaîne.
+ *
+ * Rend `undefined` sur une chaîne vide ou à moitié saisie : le champ reste la source, et un
+ * `<input type="date">` en cours de frappe passe par des valeurs qui ne sont pas des dates.
+ */
+function parseDateInputValue(value: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+  if (year === undefined || month === undefined || day === undefined) {
+    return undefined;
+  }
+
+  return new Date(year, month - 1, day, 12);
+}
+
+/** La réciproque : accesseurs **locaux**, pour rester symétrique de la construction ci-dessus. */
+function toDateInputValue(date: Date): string {
+  return [
+    String(date.getFullYear()).padStart(4, "0"),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+/**
+ * Le plus petit des deux, en ignorant les vides — pour composer deux bornes hautes.
+ *
+ * Les chaînes `AAAA-MM-JJ` se comparent dans l'ordre lexicographique, qui est ici l'ordre
+ * chronologique : c'est la propriété qui fait de ce format la bonne représentation, et elle
+ * dispense de convertir en `Date` pour trancher.
+ */
+function earliest(...values: Array<string | undefined>): string | undefined {
+  // Prédicat de type explicite : sans lui, `filter` rend toujours `Array<string | undefined>` et
+  // la comparaison ci-dessous porterait sur des valeurs que TypeScript croit encore absentes.
+  const dates = values.filter(
+    (value): value is string => value !== undefined && value !== "",
+  );
+
+  return dates.length > 0 ? dates.reduce((a, b) => (a < b ? a : b)) : undefined;
+}
+
+/**
+ * Une date du suivi : un champ qui se tape, et un calendrier qui le remplit.
+ *
+ * Une **chaîne** `AAAA-MM-JJ` et pas un `Date`, comme dans `EntryDraft` : c'est ce que le
+ * navigateur envoie, et une date sérialisée puis désérialisée à travers la frontière client/serveur
+ * est une source d'écarts de fuseau pour rien (`entry-draft.ts`). La conversion se fait côté
+ * serveur, une fois. **Le contrat n'a donc pas bougé** en passant au calendrier, et les six écrans
+ * qui ouvrent cette fenêtre n'ont rien à savoir du changement.
+ *
+ * **Les deux moyens de saisie coexistent, et aucun n'est décoratif.** Le champ reste un
+ * `<input type="date">` : on tape « 12/03/2024 » d'une traite quand on connaît la date, ce qu'un
+ * calendrier seul rendrait impossible — douze clics pour remonter un an. Le calendrier sert
+ * l'autre moitié des cas : « c'était le week-end dernier », qu'on ne sait pas dater mais qu'on sait
+ * reconnaître. L'indicateur natif de Chrome est masqué pour qu'il n'y ait **qu'une** icône de
+ * calendrier dans le champ, la nôtre — deux affordances pour le même geste se lisent comme deux
+ * gestes différents.
+ *
+ * **Les bornes sont posées aux deux endroits**, et il le faut : `min`/`max` sur l'`<input>` valent
+ * pour la frappe, `disabled` sur le calendrier vaut pour le clic. N'en poser qu'une laisserait
+ * l'autre chemin produire ce que le premier refuse. Ce sont des garde-fous de saisie, pas une
+ * validation : `tracking.actions.ts` reste seul juge, parce que rien de ce qui vient du navigateur
+ * ne fait autorité.
  *
  * **Une date vide n'est pas un effacement tant qu'on n'y touche pas.** `entryDraftChanges` compare
  * au chargé : un champ laissé vide sur une œuvre sans date ne part pas, ce qui laisse la transition
@@ -432,19 +553,116 @@ function EntryQuickEditBanner({ src }: { src: string | null }) {
 function DateField({
   value,
   onValueChange,
+  label,
+  min,
+  max,
 }: {
   value: string;
   onValueChange: (value: string) => void;
+  /**
+   * Le nom accessible du champ et de son bouton.
+   *
+   * L'intitulé visible est porté par `Field`, qui rend un `<p>` et non un `<label>` — il n'y a donc
+   * pas de `for` pour relier les deux (voir `Field`). Sans ce nom, un lecteur d'écran annonce deux
+   * champs de date identiques et un bouton « calendrier » qui ne dit pas lequel il ouvre.
+   */
+  label: string;
+  /** Bornes **incluses**, au même format. `undefined` quand il n'y a rien à borner de ce côté. */
+  min?: string;
+  max?: string;
 }) {
+  const [open, setOpen] = useState(false);
+
+  const selected = parseDateInputValue(value);
+  const minDate = min ? parseDateInputValue(min) : undefined;
+  const maxDate = max ? parseDateInputValue(max) : undefined;
+
+  /*
+    Un **tableau** de matchers, et non `{ before, after }` en un seul objet : cette forme-là est un
+    `DateInterval` chez react-day-picker, qui désigne l'intérieur de l'intervalle — soit exactement
+    l'inverse de ce qu'on veut désarmer. Un tableau, lui, s'entend comme une union : un jour est
+    désarmé s'il tombe sous l'un des matchers.
+  */
+  const disabled = [
+    ...(minDate ? [{ before: minDate }] : []),
+    ...(maxDate ? [{ after: maxDate }] : []),
+  ];
+
   return (
-    <Input
-      className="w-full"
-      onChange={(event) => onValueChange(event.target.value)}
-      type="date"
-      value={value}
-    />
+    <InputGroup>
+      <InputGroupInput
+        aria-label={label}
+        // L'indicateur natif ferait doublon avec le bouton juste à sa droite.
+        className="[&::-webkit-calendar-picker-indicator]:hidden"
+        max={max}
+        min={min}
+        onChange={(event) => onValueChange(event.target.value)}
+        type="date"
+        value={value}
+      />
+
+      <InputGroupAddon align="inline-end">
+        <Popover onOpenChange={setOpen} open={open}>
+          <PopoverTrigger asChild>
+            <InputGroupButton
+              aria-label={`Choisir ${label} dans un calendrier`}
+              size="icon-xs"
+            >
+              <CalendarIcon />
+            </InputGroupButton>
+          </PopoverTrigger>
+
+          {/*
+            `w-auto p-0` : le calendrier porte son propre rembourrage et sa propre largeur, et la
+            largeur par défaut d'un `PopoverContent` le comprimerait.
+          */}
+          <PopoverContent align="end" className="w-auto p-0">
+            <Calendar
+              /*
+                Le focus part dans la grille à l'ouverture : sans lui, le calendrier s'ouvre au
+                clavier sans qu'on puisse s'y déplacer, et il ne serait qu'un ornement pour qui
+                n'utilise pas la souris.
+              */
+              autoFocus
+              /*
+                Les mois et les années en listes déroulantes. Une série commencée en 2019 est à
+                quatre-vingts clics de flèche du mois courant — et c'est précisément le cas où l'on
+                vient rattraper un historique, donc celui qu'il ne faut pas punir.
+              */
+              captionLayout="dropdown"
+              /*
+                On ouvre sur le mois de la date saisie ; à défaut, sur celui de la borne haute —
+                c'est-à-dire aujourd'hui, ou le jour de fin quand il est déjà connu. Ouvrir sur le
+                mois courant alors que tout y est désarmé montrerait une grille entièrement grise.
+              */
+              defaultMonth={selected ?? maxDate}
+              disabled={disabled}
+              endMonth={maxDate}
+              locale={fr}
+              mode="single"
+              onSelect={(date) => {
+                onValueChange(date ? toDateInputValue(date) : "");
+                setOpen(false);
+              }}
+              selected={selected}
+              startMonth={minDate ?? OLDEST_SELECTABLE_MONTH}
+            />
+          </PopoverContent>
+        </Popover>
+      </InputGroupAddon>
+    </InputGroup>
   );
 }
+
+/**
+ * Le plancher des listes déroulantes du calendrier.
+ *
+ * `captionLayout="dropdown"` a besoin d'un intervalle fini pour remplir sa liste d'années. 1960
+ * n'est pas une date ronde choisie au hasard : c'est avant *Astro Boy* (1963), donc avant la
+ * première série animée télévisée japonaise. Rien de ce que ce catalogue peut contenir n'a pu être
+ * commencé avant.
+ */
+const OLDEST_SELECTABLE_MONTH = new Date(1960, 0);
 
 /**
  * Une ligne du formulaire : son intitulé, puis son contrôle.

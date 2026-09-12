@@ -51,11 +51,15 @@ export function Header({ user }: { user: SessionUser }) {
           </div>
 
           {/*
-            La palette `⌘K` manque ici depuis la mise à blanc du 5 septembre 2026 : elle vivait dans
-            `features/command/`, et son route handler `api/command` est parti avec elle. Son schéma
-            (`features/command/schemas/command.schema.ts`) est épargné — il porte la règle du « +1 »,
-            seul endroit où elle survive. La remonter est le premier geste de la reconstruction du
-            chrome.
+            La palette `⌘K` manque ici depuis la mise à blanc du 5 septembre 2026, et le
+            12 septembre 2026 le reste de `features/command/` est parti aussi — schéma compris.
+
+            Son schéma avait été épargné au motif qu'il portait seul la règle du « +1 »
+            (`total === null || progress < total`). C'était vrai le 5 septembre ; ça ne l'est plus :
+            `entry-progress-stepper.tsx`, arrivé avec `/library`, porte la même borne sous la forme
+            `ceiling !== null && current >= ceiling`. Le gel avait une raison, la raison a expiré, et
+            garder un fichier sans appelant pour une règle qui vit ailleurs coûte plus qu'il ne
+            protège. La palette se réécrira le jour où on la voudra.
           */}
           <div className="flex items-center gap-2">
             <NotificationsMenu />

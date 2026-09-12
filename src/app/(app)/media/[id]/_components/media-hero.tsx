@@ -65,7 +65,13 @@ export function MediaHero({
     <section>
       <MediaBanner src={media.bannerImage} />
 
-      <div className="grid gap-6 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      {/*
+        **La gouttière a été resserrée le 11 septembre 2026** (décision d'Alexis) : à `sm:gap-8`,
+        la jaquette et le titre se lisaient comme deux blocs voisins plutôt que comme un même
+        en-tête. C'est la gouttière de la grille qui la porte, et elle seule — un `margin` posé sur
+        l'une des deux colonnes ferait diverger l'écart selon le côté où on l'écrit.
+      */}
+      <div className="grid gap-6 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
         {/*
           **La jaquette est calée par le bas, pas par le haut**, et c'est ce qui la fait finir sur
           la même ligne que la barre de suivi quel que soit le contenu. Une marge négative fixe ne

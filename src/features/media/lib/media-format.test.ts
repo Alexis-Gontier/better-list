@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   cleanDescription,
+  formatCharacterRole,
   formatCountdown,
   formatDateRange,
   formatDuration,
   formatFuzzyDate,
+  formatRelationType,
   formatSeason,
   formatSource,
+  formatStaffRole,
+  formatVoiceLanguage,
   mediaTitle,
 } from "@/features/media/lib/media-format";
 
@@ -180,5 +184,72 @@ describe("cleanDescription", () => {
   it("renvoie un tableau vide plutôt que null", () => {
     expect(cleanDescription(null)).toEqual([]);
     expect(cleanDescription("   ")).toEqual([]);
+  });
+});
+
+describe("formatRelationType", () => {
+  it("traduit les liens dont le terme anglais ne dit rien", () => {
+    expect(formatRelationType("SIDE_STORY")).toBe("Histoire parallèle");
+    expect(formatRelationType("SEQUEL")).toBe("Suite");
+  });
+
+  /**
+   * AniList ajoute des valeurs à cette énumération. Une relation dont le type est inconnu doit
+   * rester affichée — perdre le lien serait pire que montrer son étiquette brute.
+   */
+  it("retombe sur le brut plutôt que de faire disparaître la relation", () => {
+    expect(formatRelationType("TIE_IN")).toBe("TIE_IN");
+    expect(formatRelationType(null)).toBeNull();
+  });
+});
+
+describe("formatCharacterRole", () => {
+  it("traduit les trois rôles", () => {
+    expect(formatCharacterRole("MAIN")).toBe("Principal");
+    expect(formatCharacterRole("BACKGROUND")).toBe("Figuration");
+  });
+
+  it("retombe sur le brut", () => {
+    expect(formatCharacterRole("CAMEO")).toBe("CAMEO");
+    expect(formatCharacterRole(null)).toBeNull();
+  });
+});
+
+describe("formatVoiceLanguage", () => {
+  /** AniList rend le mot anglais en toutes lettres, pas un code ISO : la table indexe ce mot-là. */
+  it("traduit la langue de doublage", () => {
+    expect(formatVoiceLanguage("Japanese")).toBe("Japonais");
+    expect(formatVoiceLanguage("French")).toBe("Français");
+  });
+
+  it("retombe sur le brut", () => {
+    expect(formatVoiceLanguage("Hindi")).toBe("Hindi");
+    expect(formatVoiceLanguage(null)).toBeNull();
+  });
+});
+
+describe("formatStaffRole", () => {
+  it("traduit les rôles courants", () => {
+    expect(formatStaffRole("Original Creator")).toBe("Œuvre originale");
+    expect(formatStaffRole("Music")).toBe("Musique");
+  });
+
+  /**
+   * La forme la plus fréquente sur une série longue : sans le détachement, l'onglet Équipe de One
+   * Piece restait presque entièrement en anglais.
+   */
+  it("détache la portée entre parenthèses, la traduction faite", () => {
+    expect(formatStaffRole("Director (eps 1-278)")).toBe(
+      "Réalisation (eps 1-278)",
+    );
+  });
+
+  /** Sans traduction connue, la chaîne d'AniList est rendue intacte, portée comprise. */
+  it("retombe sur le brut sans le recomposer", () => {
+    expect(formatStaffRole("Theme Song Performance (OP1)")).toBe(
+      "Theme Song Performance (OP1)",
+    );
+    expect(formatStaffRole("2nd Key Animation")).toBe("2nd Key Animation");
+    expect(formatStaffRole(null)).toBeNull();
   });
 });

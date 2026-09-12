@@ -441,6 +441,83 @@ export async function getLibrary({
   };
 }
 
+/**
+ * Les statuts qui donnent droit à une place au planning.
+ *
+ * **`CURRENT` et `REPEATING`, pas `PLANNING`** — et c'est une décision, pas un raccourci. Le
+ * planning répond à « où j'en suis avec ce qui sort », et une série planifiée n'a pas de « où j'en
+ * suis » : sa progression vaut zéro, donc chacun de ses épisodes s'afficherait en retard maximal.
+ * Une saison entière de « 24 épisodes de retard » noierait les trois lignes qui comptent.
+ *
+ * Le cas « je prévois de la regarder et je veux savoir qu'elle sort » est réel, mais il demande un
+ * autre traitement que le retard — il est noté dans docs/STATE.md plutôt que tranché ici.
+ */
+const AIRING_ENTRY_STATUSES = ["CURRENT", "REPEATING"] satisfies EntryStatus[];
+
+/** Une série suivie susceptible d'avoir un épisode cette semaine. */
+export type AiringWatchlistItem = {
+  media: MediaCompact;
+  /** Mon suivi en entier — la fenêtre d'édition rapide s'ouvre depuis cet écran aussi. */
+  entry: EntryState;
+  banner: string | null;
+  /** Le nombre d'épisodes annoncé, `null` sur une série en cours dont AniList ignore le total. */
+  total: number | null;
+};
+
+/**
+ * Ce que je suis et qui peut encore diffuser — **la moitié « moi » du planning.**
+ *
+ * L'autre moitié vient d'AniList (`getAiringSchedule`), et les deux ne se rencontrent qu'à
+ * l'affichage. La séparation n'est pas cosmétique : cette lecture-ci dépend du visiteur et ne doit
+ * donc jamais être mémorisée, quand celle d'AniList doit l'être pour ne pas vider le quota. Les
+ * mêler dans une seule fonction obligerait à choisir, et le mauvais choix des deux est celui qui
+ * sert la bibliothèque d'un compte à un autre.
+ *
+ * **Restreint aux animes** : `AIRING_SCHEDULE_QUERY` interroge une grille de diffusion télévisée,
+ * qui n'existe pas pour un manga. Envoyer les ids d'un webtoon reviendrait à demander à AniList de
+ * confirmer qu'il n'a rien — au prix d'une clé de cache plus large et d'un `in` plus long.
+ *
+ * **Pas de pagination**, contrairement à `getLibrary` : ce qu'on suit en cours de diffusion se
+ * compte en dizaines, pas en centaines, et la semaine se sert d'un coup. Une page de planning n'a
+ * de toute façon pas de sens — on ne pagine pas sept jours.
+ */
+export async function getAiringWatchlist({
+  includeAdult,
+}: {
+  includeAdult: boolean;
+}): Promise<AiringWatchlistItem[]> {
+  const userId = await currentUserId();
+
+  const rows = await prisma.entry.findMany({
+    where: {
+      userId,
+      status: { in: AIRING_ENTRY_STATUSES },
+      /*
+        Le filtre 18+ est posé **dans la requête**, comme partout ailleurs
+        (docs/recherche-filtres.md §2.5) : une ligne écartée à l'affichage a quand même traversé le
+        réseau, et elle aurait ici un second effet — son id serait parti chez AniList, donc dans une
+        clé de cache que rien ne devrait porter.
+      */
+      media: {
+        type: "ANIME",
+        ...(includeAdult ? {} : { isAdult: false }),
+      },
+    },
+    select: {
+      ...ENTRY_STATE_SELECT,
+      media: { select: MIRRORED_MEDIA_SELECT },
+    },
+  });
+
+  return rows.map(({ media, ...entry }) => ({
+    media: compactFromMirror(media),
+    entry,
+    banner: media.bannerImage,
+    // Toujours des épisodes ici : la requête ne ramène que des animes.
+    total: media.episodes,
+  }));
+}
+
 /** Une œuvre telle que le plateau la manipule — une jaquette, un titre, une note. */
 export type TierEntry = {
   mediaId: number;

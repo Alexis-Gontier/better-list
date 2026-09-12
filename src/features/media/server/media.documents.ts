@@ -280,6 +280,35 @@ export const AIRING_SCHEDULE_QUERY = /* GraphQL */ `
         mediaId
         episode
         airingAt
+        # L'œuvre voyage avec sa diffusion depuis le 8 septembre 2026, et c'est le mode « tout »
+        # qui l'exige : sur ce qu'on suit, le miroir local fournissait déjà titre et jaquette, mais
+        # une série qu'on ne suit pas n'est **pas** au miroir — sans ces champs, la grille afficherait
+        # des lignes anonymes.
+        #
+        # Le strict nécessaire d'une case de grille, et rien de plus (skill anilist-read) : pas de
+        # description, pas de relations, pas de genres. isAdult n'est pas décoratif — c'est lui qui
+        # permet d'appliquer la préférence de contenu hors du cache, sur des données déjà en mémoire.
+        media {
+          id
+          type
+          format
+          status
+          episodes
+          averageScore
+          isAdult
+          title {
+            romaji
+            english
+            native
+            userPreferred
+          }
+          coverImage {
+            extraLarge
+            large
+            medium
+            color
+          }
+        }
       }
     }
   }
@@ -361,8 +390,65 @@ export const FILTER_VOCABULARY_QUERY = /* GraphQL */ `
 `;
 
 /**
- * Sélection riche de la fiche. Personnages, staff et recommandations sont bornés côté requête
- * pour garder la charge utile — et le coût en quota AniList — raisonnable.
+ * Un personnage et sa voix. Partagé entre l'échantillon de l'aperçu et l'onglet complet, pour que
+ * les deux rendent exactement la même carte — un champ ajouté d'un côté seulement produirait une
+ * vignette différente selon l'onglet où on la regarde.
+ */
+const CHARACTER_EDGE_FIELDS = /* GraphQL */ `
+  fragment CharacterEdgeFields on CharacterEdge {
+    role
+    node {
+      id
+      name {
+        full
+      }
+      image {
+        large
+      }
+    }
+    voiceActors(language: JAPANESE, sort: [RELEVANCE]) {
+      id
+      name {
+        full
+      }
+      image {
+        large
+      }
+      languageV2
+    }
+  }
+`;
+
+/** Un membre de l'équipe et son poste. Même rôle partagé que `CharacterEdgeFields`. */
+const STAFF_EDGE_FIELDS = /* GraphQL */ `
+  fragment StaffEdgeFields on StaffEdge {
+    role
+    node {
+      id
+      name {
+        full
+      }
+      image {
+        large
+      }
+    }
+  }
+`;
+
+/**
+ * La fiche — **ce que porte l'écran d'ouverture, et rien de plus**.
+ *
+ * Elle a maigri le 11 septembre 2026, quand les onglets ont reçu leurs propres lectures : elle
+ * ramenait douze personnages, huit membres d'équipe et douze recommandations pour n'en afficher
+ * qu'une poignée. Les plafonds sont désormais calés sur ce que l'onglet « Aperçu » montre
+ * réellement — un échantillon —, et les onglets dédiés vont chercher le reste eux-mêmes.
+ *
+ * **`relations` reste ici, et c'est délibéré.** Le champ n'accepte aucun argument de pagination
+ * chez AniList : il rend la franchise entière ou rien. Lui consacrer une requête à part dépenserait
+ * un crédit de quota pour redemander ce que celle-ci ramène déjà.
+ *
+ * Même chose pour `tags` : l'onglet du même nom se sert dans cette réponse plutôt que de payer une
+ * requête pour une liste qui voyage gratuitement avec le reste.
  */
 export const MEDIA_BY_ID_QUERY = /* GraphQL */ `
   query MediaById($id: Int) {
@@ -439,42 +525,16 @@ export const MEDIA_BY_ID_QUERY = /* GraphQL */ `
           }
         }
       }
-      characters(sort: [ROLE, RELEVANCE], perPage: 12) {
+      # Six et quatre : la taille de l'échantillon de l'aperçu, pas un plafond d'affichage.
+      # Les onglets Personnages et Équipe ont leurs propres requêtes.
+      characters(sort: [ROLE, RELEVANCE], perPage: 6) {
         edges {
-          role
-          node {
-            id
-            name {
-              full
-            }
-            image {
-              large
-            }
-          }
-          voiceActors(language: JAPANESE, sort: [RELEVANCE]) {
-            id
-            name {
-              full
-            }
-            image {
-              large
-            }
-            languageV2
-          }
+          ...CharacterEdgeFields
         }
       }
-      staff(sort: [RELEVANCE], perPage: 8) {
+      staff(sort: [RELEVANCE], perPage: 3) {
         edges {
-          role
-          node {
-            id
-            name {
-              full
-            }
-            image {
-              large
-            }
-          }
+          ...StaffEdgeFields
         }
       }
       relations {
@@ -485,7 +545,7 @@ export const MEDIA_BY_ID_QUERY = /* GraphQL */ `
           }
         }
       }
-      recommendations(sort: [RATING_DESC], perPage: 12) {
+      recommendations(sort: [RATING_DESC], perPage: 7) {
         nodes {
           rating
           mediaRecommendation {
@@ -496,5 +556,74 @@ export const MEDIA_BY_ID_QUERY = /* GraphQL */ `
     }
   }
   ${MEDIA_FIELDS}
+  ${MEDIA_COMPACT_FIELDS}
+  ${CHARACTER_EDGE_FIELDS}
+  ${STAFF_EDGE_FIELDS}
+`;
+
+/**
+ * Le casting complet d'une œuvre — **la requête de l'onglet Personnages**.
+ *
+ * Elle coûte un crédit de quota, et c'est ce que l'onglet achète : vingt-cinq personnages au lieu
+ * des six de l'aperçu. Elle n'est tirée que lorsqu'on ouvre l'onglet, jamais au chargement de la
+ * fiche — c'est le serveur qui ne rend que le panneau actif (`?onglet=`), donc la dépense suit
+ * l'intention et pas la visite.
+ *
+ * `isAdult` est demandé pour une seule raison : appliquer la préférence de contenu hors du cache,
+ * sur des données déjà en mémoire, comme partout ailleurs dans ce dépôt.
+ */
+export const MEDIA_CHARACTERS_QUERY = /* GraphQL */ `
+  query MediaCharacters($id: Int, $perPage: Int = 25) {
+    Media(id: $id) {
+      id
+      isAdult
+      characters(sort: [ROLE, RELEVANCE], perPage: $perPage) {
+        edges {
+          ...CharacterEdgeFields
+        }
+      }
+    }
+  }
+  ${CHARACTER_EDGE_FIELDS}
+`;
+
+/** L'équipe complète — **la requête de l'onglet Équipe**. Même contrat que le casting. */
+export const MEDIA_STAFF_QUERY = /* GraphQL */ `
+  query MediaStaff($id: Int, $perPage: Int = 25) {
+    Media(id: $id) {
+      id
+      isAdult
+      staff(sort: [RELEVANCE], perPage: $perPage) {
+        edges {
+          ...StaffEdgeFields
+        }
+      }
+    }
+  }
+  ${STAFF_EDGE_FIELDS}
+`;
+
+/**
+ * Les recommandations complètes — **la requête de l'onglet Œuvres liées**.
+ *
+ * Elle ne redemande **pas** les relations : le champ `relations` d'AniList n'accepte aucune
+ * pagination, donc la requête de fiche les a déjà toutes. Ce qui manque à cet onglet, c'est
+ * uniquement la suite des recommandations au-delà des six de l'aperçu.
+ */
+export const MEDIA_RECOMMENDATIONS_QUERY = /* GraphQL */ `
+  query MediaRecommendations($id: Int, $perPage: Int = 21) {
+    Media(id: $id) {
+      id
+      isAdult
+      recommendations(sort: [RATING_DESC], perPage: $perPage) {
+        nodes {
+          rating
+          mediaRecommendation {
+            ...MediaCompactFields
+          }
+        }
+      }
+    }
+  }
   ${MEDIA_COMPACT_FIELDS}
 `;

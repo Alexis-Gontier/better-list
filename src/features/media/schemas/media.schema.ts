@@ -334,11 +334,31 @@ export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
  * n'existe chez AniList que si ces quatre valeurs existent. Une diffusion sans date n'est pas une
  * diffusion.
  */
+/**
+ * L'œuvre telle qu'une case de planning en a besoin.
+ *
+ * `mediaCompactSchema` étendu plutôt que recopié (skill `anilist-read`) : c'est la même forme que
+ * partout ailleurs, plus le plafond d'épisodes — dont la carte de planning a besoin pour écrire
+ * « vu 10 / 12 », et que `MediaCompact` ne porte pas parce qu'une vignette de catalogue s'en passe.
+ */
+export const airingMediaSchema = mediaCompactSchema.extend({
+  episodes: z.number().int().nullable(),
+});
+export type AiringMedia = z.infer<typeof airingMediaSchema>;
+
 export const airingScheduleSchema = z.object({
   id: z.number().int(),
   mediaId: z.number().int(),
   episode: z.number().int(),
   airingAt: z.number().int(),
+  /**
+   * L'œuvre diffusée, **jointe par AniList depuis le 8 septembre 2026**.
+   *
+   * `nullable()` comme presque tout chez AniList : une grille horaire dont l'œuvre a été supprimée
+   * entre-temps rend `null` plutôt que de disparaître. Une diffusion sans œuvre n'est pas affichable
+   * — l'écran la laisse tomber plutôt que de rendre une case anonyme.
+   */
+  media: airingMediaSchema.nullable(),
 });
 export type AiringSchedule = z.infer<typeof airingScheduleSchema>;
 
@@ -362,6 +382,52 @@ export const searchMediaDataSchema = z.object({
 
 export const mediaByIdDataSchema = z.object({
   Media: mediaDetailSchema.nullable(),
+});
+
+/**
+ * Réponses des lectures **par onglet** de la fiche.
+ *
+ * Les trois portent `isAdult` pour une raison unique et non cosmétique : la préférence de contenu
+ * du compte s'applique **hors du cache**, sur des données déjà en mémoire (docs/PRODUCT.md §4.1).
+ * Sans ce champ, l'onglet d'une œuvre classée adulte s'afficherait alors que sa fiche est refusée —
+ * chaque lecture doit donc pouvoir répondre à la question toute seule, sans dépendre d'une autre.
+ *
+ * `id` est demandé pour la même raison qu'ailleurs : c'est la seule preuve que la réponse concerne
+ * bien l'œuvre demandée.
+ */
+const tabMediaSchema = z.object({
+  id: z.number().int(),
+  isAdult: z.boolean(),
+});
+
+export const mediaCharactersDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      characters: z
+        .object({ edges: z.array(characterEdgeSchema).default([]) })
+        .default({ edges: [] }),
+    })
+    .nullable(),
+});
+
+export const mediaStaffDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      staff: z
+        .object({ edges: z.array(staffEdgeSchema).default([]) })
+        .default({ edges: [] }),
+    })
+    .nullable(),
+});
+
+export const mediaRecommendationsDataSchema = z.object({
+  Media: tabMediaSchema
+    .extend({
+      recommendations: z
+        .object({ nodes: z.array(recommendationNodeSchema).default([]) })
+        .default({ nodes: [] }),
+    })
+    .nullable(),
 });
 
 /**
