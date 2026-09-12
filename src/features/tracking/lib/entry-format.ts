@@ -125,10 +125,19 @@ const YEAR_FORMAT = new Intl.DateTimeFormat("en-CA", {
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Clé de regroupement d'une journée. Sa forme exacte n'a aucune importance — elle n'est jamais
- * affichée ni triée, seulement comparée à d'autres clés produites par la même fonction.
+ * Clé de regroupement d'une journée, **dans le fuseau de référence**.
+ *
+ * Exportée depuis que le calendrier d'activité du profil en a besoin : lui range une année entière
+ * en 365 cases, journées vides comprises, ce que `groupEventsByDay` ne peut pas faire — celui-ci ne
+ * connaît que les jours où il s'est passé quelque chose. Les deux doivent pourtant appeler *le
+ * même* « quel jour est-ce ? », sinon une journée de la grille et son groupe dans le journal
+ * peuvent tomber de part et d'autre de minuit.
+ *
+ * Sa forme exacte reste sans importance côté journal — comparée, jamais affichée. Le calendrier,
+ * lui, s'appuie sur le fait qu'`en-CA` produit `AAAA-MM-JJ` : c'est la clé qu'il passe au composant,
+ * et une **date seule**, jamais un instant (voir `activity-calendar.tsx`).
  */
-function dayKey(date: Date): string {
+export function dayKey(date: Date): string {
   return DAY_KEY_FORMAT.format(date);
 }
 
