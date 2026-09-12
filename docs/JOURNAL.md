@@ -27,6 +27,94 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 12 septembre 2026 — le profil, ou trois fois la même erreur de couleur
+
+`/u/[username]` est livré. La logique s'est écrite sans surprise ; c'est la **couleur** qui a coûté
+la séance, et toujours pour la même raison.
+
+**Un cran de `--chart-*` est une luminosité fixe, donc un pari sur le fond.** La série vaut
+0,64 / 0,51 / 0,37 / 0,26 en sombre et 0,55 / 0,44 / 0,34 / 0,21 en clair — l'ordre s'inverse. Trois
+versions se sont donc succédé sur les mêmes barres : `--chart-2` passait *devant* l'accent sur
+Obsidienne (il est plus clair que lui : 0,64 contre 0,59) ; `--chart-3`, qui réparait ça, devenait
+du charbon sur blanc. La réponse qui tient dans les deux thèmes est **une opacité de
+`--muted-foreground`**, parce que le token s'inverse avec le thème : moins d'opacité veut alors dire
+moins de contraste, quel que soit le fond. À retenir dès qu'on veut « un gris discret » : ne pas
+choisir un cran, choisir une opacité du texte secondaire.
+
+**Le même piège, inversé, sur la barre de répartition.** On avait ordonné les gris par taille de
+part — le plus sombre à la plus grosse — pour que « Terminé », qui occupe les deux tiers, ne crie
+pas. En thème clair, « le plus sombre » est devenu un **pavé noir**, exactement le contraire du but.
+Une règle d'emphase formulée en luminosité absolue ne survit pas au changement de thème.
+
+**Et une opacité n'est pas une échelle.** La rampe du calendrier d'activité avait d'abord été faite
+d'opacités de l'accent (`/25`, `/45`, `/70`) : trois crans sur quatre étaient indiscernables sur le
+quasi-noir, parce qu'en dessous de 0,30 de luminosité tout se confond avec le fond de la carte. Une
+carte de chaleur a besoin de **pas de luminosité réguliers**, ce qui n'est pas la même chose que des
+pas d'opacité réguliers. D'où la famille `--activity-1..4` dans `globals.css`, quatre valeurs
+écrites à la main par thème, dont la dernière *est* l'accent.
+
+**Ce qui a tranché le débat de la barre de statuts, c'est une incohérence de notre côté.** Elle
+était grise, au nom du garde-fou qui réserve les teintes `--status-*` à la pastille et les interdit
+en surface. Alexis a demandé les couleurs de `/library`, et il avait raison sur un argument que le
+dépôt portait déjà : le motif écrit du garde-fou est que ces teintes doivent « perdre » face à une
+jaquette — or cet écran n'en a aucune à cet endroit, ce qui est **exactement** l'exception qu'on
+s'était accordée trois blocs plus haut pour la rampe du calendrier. Refuser ici ce qu'on acceptait
+là n'était pas une règle, c'était un goût. Le garde-fou porte désormais son exception par écrit.
+
+Le vrai réglage du compromis n'était d'ailleurs pas la teinte mais **l'aire** : les mêmes six
+couleurs sur une barre de 36 px dominaient la page, sur 28 px elles se lisent sans s'imposer.
+
+### Deux choses qu'on ne pouvait pas voir à l'écran
+
+**Les règles de visibilité ont été mesurées, pas constatées.** La base ne contient qu'un compte et
+zéro entrée privée : regarder l'écran ne prouvait rien. Le filtre 18+ fait passer 395 → 277 entrées
+et 834 → 603 événements ; une entrée privée disparaît bien pour un visiteur (395 → 394), vérifié
+dans une transaction **volontairement annulée**, donc sans rien écrire. C'est une technique à
+reprendre : `$transaction` + `throw` donne un banc d'essai sur données réelles qui ne laisse aucune
+trace.
+
+**Une fausse alerte qu'on a failli corriger à tort.** Des lignes du journal semblaient avoir perdu
+leur jaquette, et un repli était déjà en train d'être écrit — jusqu'à ce qu'un compte en base dise
+que **les 411 fiches du miroir en ont une**. Les images étaient simplement encore en cours
+d'optimisation par Next en dev (`complete: false`). La leçon : avant d'écrire un repli, vérifier que
+le cas qu'il traite existe. Le repli a été gardé — `Media.coverImage` est nullable — mais son
+commentaire dit maintenant qu'aucune donnée ne l'emprunte.
+
+### Trois formes essayées puis jetées
+
+- **Le camembert des statuts** → une barre de composition. Six parts qui ne se distinguent qu'à la
+  teinte font de la légende le vrai graphe.
+- **L'aire mensuelle anime / manga** → des barres, puis **supprimée**. Une courbe continue promet
+  des valeurs entre les points, alors qu'un compte mensuel n'existe qu'aux douze abscisses. Et le
+  bloc était redondant deux fois : avec le calendrier au-dessus pour le rythme, avec les tuiles de
+  l'en-tête pour l'équilibre entre les deux supports.
+- **Le journal en colonnes CSS** → une grille **à l'intérieur** de chaque journée. Mettre les
+  *journées* en colonnes laissait de grands blancs dès que deux voisines n'avaient pas la même
+  taille, et empêchait l'intitulé de date d'être collant (`sticky` ne fonctionne pas en
+  multi-colonnes). Découper à l'intérieur d'une journée n'a aucun des deux défauts.
+
+### Et quatre pièges de plateforme
+
+- **Une frontière `<Suspense>` ne suffit pas à autoriser `new Date()`** sous `cacheComponents` :
+  Next refuse la valeur au prérendu tant qu'aucun **accès dynamique** ne l'a précédée dans le même
+  composant. `await params` joue ce rôle, comme `await searchParams` sur `/calendar`.
+- **Le registre shadcn déclare `"dependencies": ["cn"]`** sur `chart` : le CLI installerait un
+  paquet parasite et écrirait `from "cn"`. Les fichiers ont été posés à la main.
+- **Recharts anime ses barres au montage**, ce qui est une décoration sur une statistique figée — et
+  ce qui rendait les captures d'écran vides, la page étant photographiée pendant que les barres
+  montaient. `isAnimationActive={false}` partout.
+- **`interval={0}` sur un axe** force toutes les graduations et les fait se chevaucher sous 400 px.
+  Le réglage par défaut en affiche autant qu'il en tient : une échelle à trous se lit, une échelle
+  superposée non.
+
+**Un espacement qui suit le découpage technique se voit.** La colonne mélangeait 32 px entre les
+blocs suspendus et 16 px entre deux cartes d'un même bloc — or les cinq cartes sont de même rang, et
+deux d'entre elles partageaient simplement une frontière de suspension. Mesuré à l'écran plutôt que
+jugé à l'œil, puis uniformisé à 16 px. Dans la foulée : un squelette qui **oublie le séparateur**
+annonce 17 px de moins que le bloc réel et fait sauter toute la page à l'arrivée des données.
+
+---
+
 ## 12 septembre 2026 — la palette revient, puis repart le soir même
 
 **La question de départ n'était pas celle-là.** Alexis demandait s'il y avait un anti-rebond sur la

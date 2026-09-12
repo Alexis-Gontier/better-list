@@ -8,20 +8,35 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **8 septembre 2026**.
+Relevé le **12 septembre 2026**.
 
-> ### En un mot : huit écrans sur onze, et le planning sait dire de combien on est en retard.
+> ### En un mot : neuf écrans sur onze, et le journal est enfin lu.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> huit routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
+> neuf routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
 > **cinq onglets** — Aperçu, Personnages, Équipe, Œuvres liées, Tags —, et un **pied de page à
 > colonnes** dérivé de `mainNav` qui porte enfin l'attribution AniList attendue par leurs CGU — §9.
 > Il est monté sur `(app)` comme sur `(share)`, mais **sans ses liens sur la liste partagée** : ils
 > mènent tous derrière la garde),
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
 > miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, le
-> 7 septembre **`/settings`**, et le 8 septembre **`/calendar`**. Les trois autres routes
-> construites restent des placeholders.
+> 7 septembre **`/settings`**, le 8 septembre **`/calendar`**, et le 12 septembre
+> **`/u/[username]`**. Les deux autres routes construites — `/` et les placeholders de
+> `/collection` — restent en attente.
+>
+> **`/u/[username]` lit enfin le journal**, qui était le prochain pas de ce document depuis le
+> 6 septembre. `EntryEvent` se remplissait sans que rien ne l'affiche, et la table étant
+> *append-only* et non rétroactive, chaque jour sans lecture était un jour où l'on ignorait si ce
+> qu'elle enregistrait était juste. Elle l'était : 834 événements sur un an, un calendrier
+> d'activité à la GitHub, et un journal paginé par vingt.
+>
+> **Deux visibilités, et elles ne viennent pas du même endroit** — c'est ce que cet écran a appris.
+> `Entry.private` dépend du **profil regardé** : son propriétaire voit ses entrées privées, personne
+> d'autre, et elles disparaissent alors de *tout*, compteurs compris — un total qui ne colle pas à
+> la somme des parts trahirait leur existence. `includeAdult` dépend du **compte qui regarde** :
+> c'est une préférence d'affichage, pas une propriété de la bibliothèque visitée. La base ne
+> contenant qu'un compte et aucune entrée privée, les deux règles ont été **mesurées** plutôt que
+> constatées à l'œil (JOURNAL.md).
 >
 > **`/calendar` a fait tomber une limite produit qui n'existait pas.** PRODUCT.md §9 interdisait le
 > planning global sur un calcul faux — cinq mille diffusions par semaine, cent requêtes — tiré du
@@ -114,7 +129,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
-| `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **vidé** — en refonte |
+| `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **livré** (12 septembre) — calendrier d'activité sur un an, répartition par statut, notes, genres, journal paginé |
 | `/calendar` (`calendar`) | Planning de diffusion, tout ou filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — grille 7 colonnes, navigation de semaine, portée réglable, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
@@ -458,7 +473,7 @@ composante : `entry-status-dot`, la pastille de statut, posée dans le slot `mar
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
 | **`command`** | *supprimée en entier le 12 septembre 2026* — son schéma était le dernier reste, et la règle du « +1 » qu'il gardait vit désormais dans `entry-progress-stepper`. Reconstruite puis retirée le même jour (§ la palette, plus bas). |
-| **`profile`** | *supprimée en entier* — elle n'était que des queries, et `/u/[username]` était son seul consommateur. |
+| **`profile`** | *recréée le 12 septembre 2026*, avec l'écran qui la consomme. `lib/` : `profile-activity` (le découpage d'une année en 365 cases, les cinq crans, la série de jours) et `profile-stats` (les notes 0–100 vers dix paliers d'étoiles, le top genres, les heures estimées) — testés tous les deux. `server/profile.queries` : quatre lectures, toutes en base, **aucune ne touche AniList**, aucune mise en cache — ce qu'on lit dépend du profil regardé, ce qu'on a le droit d'en lire dépend du compte qui regarde. |
 
 `lib/http/anilist.ts` n'a pas bougé : c'est du transport, il vit dans `lib/` et non dans une feature.
 Avec `media.documents.ts` et `media.queries.ts`, l'intégration AniList est de nouveau complète — le
@@ -552,8 +567,12 @@ prétend s'y fier.**
   règle du « +1 », que `entry-progress-stepper.tsx` porte depuis `/library`. **Un gel devrait nommer
   la condition qui le lève, pas seulement celle qui l'a posé.**
 
-  Restent au gel, et c'est exactement la liste des écrans qui manquent : `profile-params` (contrat
-  d'URL de `/u`), `use-debounced-value`, `use-reduced-motion`,
+  `profile-params.ts` et les exports d'`entry-format.ts` sont **sortis du gel le 12 septembre
+  2026**, avec `/u/[username]` : le premier fixait le contrat d'URL du journal — la page en entier,
+  jamais un curseur —, et il a été respecté tel quel ; le second gardait `formatEventTime`, qui
+  attendait le journal nommément. Sixième et septième entrées à disparaître.
+
+  Restent au gel : `use-debounced-value`, `use-reduced-motion`,
   et des chemins d'exports — les formateurs de `media`, les **deux** documents GraphQL encore sans
   écran (catalogue de l'accueil, vocabulaire de filtres), les schémas de `media`, les défauts de
   `preferences`, `formatEventTime` qui attend le journal, et `removeEntry` qui attend son geste.
@@ -695,16 +714,22 @@ Il ne reste donc **aucune erreur de console** sur le site.
 
 ## Le prochain pas
 
-**Le journal.** Le suivi s'enregistre depuis le 6 septembre, et `EntryEvent` se remplit — mais
-**rien ne l'affiche**. C'est le prochain pas, et c'est le plus urgent des trois raisons : la table
-est *append-only* et non rétroactive, donc chaque jour où personne ne la lit est un jour où l'on ne
-sait pas si ce qu'elle enregistre est juste. `describeEntryEvent` et `groupEventsByDay` sont écrits
-et testés (`entry-format.ts`), et `formatEventTime` est la dernière entrée du gel `knip` qui
-l'attend nommément.
+**L'accueil `/`.** C'est la dernière route en refonte, et elle a toujours été prévue en dernier :
+c'est l'écran qui cite tous les autres, donc celui qu'on ne peut dessiner qu'avec le vocabulaire
+complet sous les yeux. Il l'est désormais — vignette, grille, coquille de filtres, pagination,
+pastilles de statut, calendrier d'activité, journal.
 
-C'est aussi ce qui devrait rallumer le canari d'`architecture.test.ts` : un journal d'œuvre est
-précisément un composant de `features/*/components/` exporté, serveur et `async` — celui que le
-pronostic précédent attendait à tort du panneau de suivi.
+**Le journal, qui occupait cette place depuis le 6 septembre, est fait** (12 septembre, avec
+`/u/[username]`). Ce qu'il a appris et qui vaut pour la suite : `describeEntryEvent`,
+`groupEventsByDay` et `formatDayLabel` étaient déjà écrits **et testés** depuis la V1, et le
+commentaire de `groupEventsByDay` disait lui-même avoir été écrit pour « le tableau de bord [qui]
+lit le journal de toutes les œuvres ». Il n'y avait donc aucune logique de journal à écrire, une
+présentation à poser dessus. Le gel `knip` avait raison de les garder.
+
+Il reste une chose que ce journal **ne fait pas** : cliquer une case du calendrier d'activité
+n'amène pas au jour correspondant. Il y faudrait un `?jour=` dans `profile-params.ts` et un filtre
+de plus dans `getProfileJournal` — le geste est le seul intérêt d'avoir mis les deux sur le même
+défilement, et il n'est pas branché.
 
 Ensuite, dans l'ordre où ça se posera : le **compteur de résultats** de `/search`, qui doit dire
 « plus de 5000 » et non « 5000 » ; et les champs de suivi que la fiche ne porte pas encore alors que
@@ -822,8 +847,11 @@ vocabulaire de tous les autres.
 5. `/settings` — **fait** (7 septembre), et il a tenu la promesse d'être petit : cinq fichiers, dont
    un promu depuis l'en-tête (`user-avatar.tsx`). La relecture des préférences annoncée ici s'est
    réduite à constater que le schéma Zod disait déjà tout — deux réglages, et les deux écartés le
-   sont pour de bonnes raisons. Reste `/u/[username]`, l'autre petit.
-6. `/` — en dernier, avec le vocabulaire complet sous les yeux.
+   sont pour de bonnes raisons.
+6. `/u/[username]` — **fait** (12 septembre), et il n'était pas si petit : cinq graphes, une feature
+   recréée, deux modules purs testés, et une famille de tokens ajoutée au thème (`--activity-*`).
+   Ce qui a coûté le plus n'était pas la logique mais la **couleur** — voir JOURNAL.md.
+7. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 
 Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Elle a été
 réécrite le 12 septembre 2026 — faux champ dans l'en-tête, dialogue cmdk, recherche du catalogue à
