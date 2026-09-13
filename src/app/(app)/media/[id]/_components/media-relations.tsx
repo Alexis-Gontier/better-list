@@ -15,9 +15,11 @@ type MediaRelationsProps = {
 };
 
 /**
- * Les œuvres liées — **une seule rangée, qui défile** (décision d'Alexis du 12 septembre 2026).
+ * Les œuvres liées — **en grille, comme les recommandations** (13 septembre 2026). La rangée
+ * unique qui défile, décrite ci-dessous, a tenu un jour : elle est retirée, mais son raisonnement
+ * sur l'étiquette de lien portée par la carte reste vrai.
  *
- * Deux formes ont précédé celle-ci. Une liste plate de cartes horizontales, d'abord : elle
+ * Deux formes l'avaient précédée. Une liste plate de cartes horizontales, d'abord : elle
  * obligeait à lire chaque étiquette pour reconstituer la franchise. Puis un groupement par nature
  * de lien, avec un repli `<details>` sur les catégories de contexte : la structure devenait la mise
  * en page, mais le prix était la hauteur — sur One Piece, cinq titres de groupe et autant de
@@ -46,33 +48,17 @@ export function MediaRelations({
   return (
     <MediaSection href={href} title="Œuvres liées">
       {/*
-        `overflow-x-auto` et rien d'autre : pas de flèches, pas de JavaScript. Une rangée qui déborde
-        se fait défiler à la molette horizontale, au trackpad et au doigt, et le focus clavier amène
-        lui-même la carte suivante dans le champ — les liens sont focalisables, donc le navigateur
-        fait le travail sans qu'on ait à rendre le conteneur focalisable à la main.
-
-        `pb-1` réserve la place de la barre de défilement là où le système la peint par-dessus le
-        contenu, pour qu'elle ne vienne pas mordre la ligne des types de lien. Elle reste visible,
-        au contraire de la barre d'onglets qui la masque (`scrollbar-none`) : là-haut, les onglets
-        coupés disent déjà qu'il y en a d'autres, ici c'est le seul repère fixe.
-
-        Le débord négatif est celui du planning (`airing-week-grid.tsx`) : au palier étroit, la
-        rangée court jusqu'au bord de l'écran plutôt que de s'arrêter dans la marge du conteneur —
-        une rangée qui défile doit sortir du cadre, sinon elle a l'air de finir là où elle est
-        coupée. Il retombe dans la marge à partir de `sm`, où le conteneur passe à `px-6` et où le
-        décalage ne correspondrait plus.
-
-        La **largeur fixe** des cartes est ce qui fait la rangée : sans `shrink-0`, flex les
-        comprimerait toutes pour rentrer dans la largeur disponible au lieu de déborder, et
-        soixante-cinq jaquettes deviendraient soixante-cinq traits verticaux. Le format retenu
-        laisse une carte à moitié visible au bord droit sur la plupart des fiches — c'est ce bord
-        coupé qui dit qu'il y a autre chose derrière, mieux que n'importe quelle flèche.
+        **La grille de « À voir ensuite », et plus de défilement** (décision d'Alexis du
+        13 septembre 2026). La rangée unique gardait la hauteur constante, mais sur One Piece elle
+        faisait 9 000 px de large pour 1 100 visibles : soixante-cinq œuvres qu'on ne parcourt pas à
+        la molette horizontale. La grille passe à la ligne — l'onglet dédié est fait pour qu'on y
+        descende — et les deux blocs du même onglet ont désormais la même forme.
       */}
-      <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+      <ul className="grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-7">
         {relations.map((edge) => (
           // La clé est l'id de l'œuvre liée, pas celui de l'arête : AniList n'expose pas d'id
           // d'arête dans cette sélection, et une même œuvre n'apparaît qu'une fois par fiche.
-          <li className="w-32 shrink-0" key={edge.node.id}>
+          <li className="min-w-0" key={edge.node.id}>
             <RelationCard edge={edge} titleLanguage={titleLanguage} />
           </li>
         ))}
