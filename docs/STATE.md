@@ -8,7 +8,7 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **12 septembre 2026**.
+Relevé le **13 septembre 2026**.
 
 > ### En un mot : neuf écrans sur onze, et le journal est enfin lu.
 >
@@ -326,7 +326,7 @@ session. L'action ne tranche rien elle-même.
 | --- | --- | --- |
 | `saveEntry` | la barre de la fiche | **au geste** — un contrôle bouge, ce champ-là part |
 | `saveEntry` | la fenêtre d'une vignette (`/library`, `/search`) | **au bouton** — on corrige trois choses, on valide |
-| `removeEntry` | *sans appelant* | écrite et vue fonctionner, sous confirmation ; son menu a été retiré le même jour |
+| `removeEntry` | la fenêtre d'édition du suivi (fiche **et** vignettes) | **sous confirmation** — de retour le 13 septembre 2026, après une semaine sans appelant |
 
 **La barre de la fiche a deux états**, décision d'Alexis du même jour : tant que l'œuvre n'est pas
 suivie, elle ne montre qu'un bouton **« Ajouter à ma bibliothèque »**. Un statut « Prévu », un
@@ -575,7 +575,8 @@ prétend s'y fier.**
   Restent au gel : `use-debounced-value`, `use-reduced-motion`,
   et des chemins d'exports — les formateurs de `media`, les **deux** documents GraphQL encore sans
   écran (catalogue de l'accueil, vocabulaire de filtres), les schémas de `media`, les défauts de
-  `preferences`, `formatEventTime` qui attend le journal, et `removeEntry` qui attend son geste.
+  `preferences` et `formatEventTime` qui attend le journal. `removeEntry` en est **sorti le
+  13 septembre 2026**, avec son geste.
 
   **Une entrée y est revenue le jour même, et c'est la seule fois** : `removeEntry` et
   `removeEntrySchema`, quand le menu qui les appelait a été retiré. Le gel dit toujours « en
@@ -614,9 +615,10 @@ prétend s'y fier.**
   bien qu'arriver sur `/search` depuis une fiche saine masquait le bandeau en pleine panne. Il repose sur une variable de module (`isAniListDown`), donc sur la
   mémoire d'une instance de serveur : au pire il manque à quelqu'un pendant une requête, jamais
   l'inverse. Le raisonnement est dans `lib/http/anilist.ts`.
-- **Rien dans l'interface ne retire une œuvre de la bibliothèque.** Le menu à trois points de la
-  fiche est parti le 6 septembre avec la fenêtre d'édition rapide, et `removeEntry` est retournée au
-  gel de `knip.jsonc` faute d'appelant. Le geste devra revenir sous `alert-dialog`, déjà installé.
+- ~~**Rien dans l'interface ne retire une œuvre de la bibliothèque.**~~ **Fait le 13 septembre
+  2026.** « Retirer de ma bibliothèque » vit dans le pied de la fenêtre d'édition du suivi — le seul
+  endroit ouvert depuis la fiche comme depuis chaque vignette —, sous `alert-dialog`, qui dit que le
+  journal part avec. `entry-remove-button.tsx` ; `removeEntry` a quitté le gel de `knip.jsonc`.
 - ~~Le miroir `Media` n'est plus rafraîchi : le cron est supprimé.~~ **Fait le 7 septembre 2026**
   — voir plus bas. Ce qui reste dû à sa place est plus étroit : la passe n'est **vérifiée par aucun
   test de bout en bout**, seulement par des doubles. Elle a en revanche été **appelée pour de vrai**

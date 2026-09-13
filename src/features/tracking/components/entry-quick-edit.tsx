@@ -35,6 +35,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { TIMEZONE } from "@/config/locale";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
+import { EntryRemoveButton } from "@/features/tracking/components/entry-remove-button";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
 import { EntryStatusSelect } from "@/features/tracking/components/entry-status-select";
 import {
@@ -387,6 +388,17 @@ export function EntryQuickEdit({
           </div>
 
           <DialogFooter>
+            {/*
+              Seulement sur une œuvre suivie : on ne retire pas ce qui n'est pas là.
+            */}
+            {entry ? (
+              <EntryRemoveButton
+                disabled={isPending}
+                mediaId={mediaId}
+                onRemoved={() => setOpen(false)}
+                title={title}
+              />
+            ) : null}
             <DialogClose asChild>
               <Button disabled={isPending} variant="outline">
                 Annuler
