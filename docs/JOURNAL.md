@@ -27,6 +27,21 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 13 septembre 2026 — retirer une œuvre, et des transitions qu'on croyait lentes
+
+**Le retrait revient dans la fenêtre d'édition, pas dans un menu de la fiche.** C'est le seul
+endroit qui s'ouvre à la fois depuis la fiche et depuis les vignettes de cinq écrans : un bouton,
+et il est partout où l'on voit une œuvre suivie. Confirmation simple — la dictée du nom reste
+réservée à la suppression d'une liste —, mais la fenêtre dit que le journal part avec l'entrée.
+Vérifié à l'écran sur une œuvre ajoutée pour l'essai, puis retirée : pastille disparue, bouton
+revenu à « Ajouter » après rechargement.
+
+**« Les pages mettent des secondes à changer » ne venait pas du code.** Mesuré au navigateur : en
+build de prod, l'URL change en ~10 ms et le contenu arrive en ~350 ms ; en dev, le premier passage
+sur une route compile (jusqu'à 1,1 s, lisible dans `GET … (next.js: …ms)`), le second retombe à
+~60 ms. Chaque navigation fait quand même une lecture Neon (`getPreferences`, ~100 ms à chaud) :
+si la lenteur revient hors dev, c'est la piste à suivre — une base en veille se réveille lentement.
+
 ## 12 septembre 2026 — le profil, ou trois fois la même erreur de couleur
 
 `/u/[username]` est livré. La logique s'est écrite sans surprise ; c'est la **couleur** qui a coûté
