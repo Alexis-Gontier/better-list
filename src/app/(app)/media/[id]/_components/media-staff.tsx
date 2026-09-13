@@ -54,18 +54,24 @@ function StaffCard({ edge }: { edge: StaffEdge }) {
       <div className="flex h-20 items-stretch gap-3 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
         <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
 
-        <div className="flex min-w-0 flex-col justify-center py-2 pr-3">
-          <p className="truncate text-sm font-medium" title={name ?? undefined}>
+        {/*
+          **La typographie est celle de la carte d'un personnage** (décision d'Alexis du
+          13 septembre 2026) : nom sur deux lignes au plus, poste en capitales espacées, calés en
+          haut et en bas. Le poste d'équipe est du texte libre et plus long qu'un « Principal » —
+          il est donc tronqué sur une ligne, et l'infobulle rend l'entier.
+        */}
+        <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-3">
+          <p
+            className="line-clamp-2 text-sm font-medium"
+            title={name ?? undefined}
+          >
             {name}
           </p>
           {role ? (
-            /*
-              Le rôle n'est **pas** en capitales espacées comme celui d'un personnage, et l'écart est
-              voulu : « Principal » est une valeur parmi trois, qui se lit comme une étiquette, alors
-              qu'un rôle d'équipe est du texte libre — « Direction de l'animation en chef » en
-              capitales espacées passerait sur deux lignes et crierait. L'infobulle rend l'entier.
-            */
-            <p className="truncate text-xs text-muted-foreground" title={role}>
+            <p
+              className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase"
+              title={role}
+            >
               {role}
             </p>
           ) : null}
