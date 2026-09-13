@@ -18,17 +18,15 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
 /**
  * Combien de liens l'aperçu montre.
  *
- * Huit, soit **la rangée pleine et une carte qui dépasse** au palier large. Le chiffre était à
- * trois tant que les liens s'empilaient en grille, où chaque carte de plus coûtait de la hauteur
- * sur une fiche où cinq autres blocs attendent. Depuis que le bloc tient sur une seule ligne qui
- * défile (`MediaRelations`, 12 septembre 2026), montrer trois liens ou huit coûte exactement la
- * même place — et une rangée aux deux tiers vide, juste au-dessus des sept recommandations, se
- * lisait comme une franchise pauvre plutôt que comme un échantillon.
+ * Sept, soit **une rangée pleine** de la grille au palier large — la même que les sept
+ * recommandations juste en dessous. Il était à huit tant que le bloc était une ligne qui défile ;
+ * depuis qu'il passe à la ligne (13 septembre 2026), une huitième carte ouvrirait une deuxième
+ * rangée pour elle seule.
  *
  * Ça reste un échantillon, et « Tout voir » garde son sens : une franchise qui arrive jusqu'ici en
  * compte souvent trente.
  */
-const SAMPLE_RELATIONS = 8;
+const SAMPLE_RELATIONS = 7;
 
 type MediaOverviewProps = {
   media: MediaDetail;
