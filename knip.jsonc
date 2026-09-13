@@ -73,7 +73,8 @@
     // en bout — les parseurs et les listes d'options par la barre, `loadLibraryFilters` par la page,
     // `serializeLibraryFilters` par la rangée de statuts. Première entrée à disparaître pour de bon
     // plutôt qu'à se rétrograder en gel « exports ».
-    "src/hooks/use-debounced-value.ts": ["files"], // attend une saisie de recherche
+    // `use-debounced-value.ts` est **sorti du gel le 13 septembre 2026** : la palette de recherche de
+    // l'en-tête (`command-search.tsx`) est la saisie de recherche qu'il attendait nommément.
     "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
     // `safe-action.ts` est **sorti du gel le 6 septembre 2026** : `tracking.actions.ts` consomme
     // `authActionClient`, et c'est la première Server Action du dépôt. `actionClient`, lui, reste
@@ -115,8 +116,11 @@
     // confirmation `alert-dialog`. Huitième entrée à disparaître, et la seule qui y était revenue.
   },
 
-  // Trois familles employées uniquement par de la présentation supprimée : `embla` par les
-  // carrousels de l'accueil, `cmdk` et `react-hotkeys-hook` par la palette `⌘K`.
+  // Deux familles employées uniquement par de la présentation supprimée : `embla` par les
+  // carrousels de l'accueil, `react-hotkeys-hook` par l'ancienne palette `⌘K`.
+  //
+  // **`cmdk` en est sorti le 13 septembre 2026**, avec la palette de recherche de l'en-tête. Son
+  // raccourci s'écoute avec un `keydown` nu : `react-hotkeys-hook` reste donc sans appelant.
   //
   // **`@dnd-kit` en est sorti le 6 septembre 2026**, avec le mode réorganisation de `/lists/[id]` :
   // `core`, `sortable`, `modifiers` et `utilities` sont tous les quatre consommés par
@@ -129,7 +133,7 @@
   //
   // Elles restent au `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte
   // les reprendra, et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
-  "ignoreDependencies": ["cmdk", "embla-carousel.*", "react-hotkeys-hook"]
+  "ignoreDependencies": ["embla-carousel.*", "react-hotkeys-hook"]
 
   // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
   // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux

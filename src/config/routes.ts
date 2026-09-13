@@ -87,4 +87,14 @@ export const routes = {
     /** Compte créé, en attente d'approbation (PRODUCT.md §7.1). */
     waitlist: "/waitlist",
   },
+
+  /**
+   * Les route handlers appelés depuis le client.
+   *
+   * Hors du `matcher` du proxy et hors du layout `(app)` : chacun porte sa propre garde.
+   */
+  api: {
+    /** La recherche de la palette, à la frappe (`features/command/`). */
+    search: "/api/search",
+  },
 } as const;

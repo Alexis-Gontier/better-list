@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
+import { CommandSearch } from "@/features/command/components/command-search";
 import type { SessionUser } from "@/lib/auth/server";
 
 /**
@@ -51,17 +52,12 @@ export function Header({ user }: { user: SessionUser }) {
           </div>
 
           {/*
-            La palette `⌘K` manque ici depuis la mise à blanc du 5 septembre 2026, et le
-            12 septembre 2026 le reste de `features/command/` est parti aussi — schéma compris.
-
-            Son schéma avait été épargné au motif qu'il portait seul la règle du « +1 »
-            (`total === null || progress < total`). C'était vrai le 5 septembre ; ça ne l'est plus :
-            `entry-progress-stepper.tsx`, arrivé avec `/library`, porte la même borne sous la forme
-            `ceiling !== null && current >= ceiling`. Le gel avait une raison, la raison a expiré, et
-            garder un fichier sans appelant pour une règle qui vit ailleurs coûte plus qu'il ne
-            protège. La palette se réécrira le jour où on la voudra.
+            La recherche est **la première du groupe de droite** : c'est un geste de navigation, et
+            les trois qui suivent sont des réglages du compte. Elle revient le 13 septembre 2026,
+            réécrite depuis une page blanche (docs/STATE.md).
           */}
           <div className="flex items-center gap-2">
+            <CommandSearch />
             <NotificationsMenu />
             <ThemeToggle />
             <UserMenu

@@ -423,7 +423,7 @@ plus importants ont été **vus échouer** sur une mutation volontaire du code.
 **Ce qui ne l'est pas** : la passe de bout en bout contre une vraie base. Elle a été appelée une
 fois, à la main, et ce fichier est le seul endroit où ça reste écrit.
 
-### Les deux route handlers
+### Les trois route handlers
 
 Aucun ne vit sous le layout `(app)`, et le `matcher` du proxy exclut `api/` **en entier** : chacun
 porte donc sa propre garde, et c'est la seule qu'il ait.
@@ -432,12 +432,14 @@ porte donc sa propre garde, et c'est la seule qu'il ait.
 | --- | --- | --- |
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
 | `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** |
+| `api/search` | La recherche de la palette de l'en-tête, à la frappe | session **approuvée**, sinon 401 — jamais de redirection, un `fetch` attend du JSON |
 
-`api/command` reste supprimé, avec la palette `⌘K` qu'il servait. Il a été réécrit le 12 septembre
-2026 puis retiré le soir même, et sa raison d'être vaut d'être retenue pour le jour où la palette
-reviendra : une recherche à la frappe **ne passe pas par une Server Action**, parce qu'une action
-est un POST que Next sérialise — la réponse à « fri » arriverait après celle à « frieren ». Un `GET`
-s'annule (`AbortController`) et rend son quota.
+`api/search` est arrivé le 13 septembre 2026 avec la palette, **à la place d'`api/command`**,
+réécrit puis retiré le 12. Sa raison d'être est restée la même : une recherche à la frappe **ne
+passe pas par une Server Action**, parce qu'une action est un POST que Next sérialise — la réponse à
+« fri » arriverait après celle à « frieren ». Un `GET` s'annule (`AbortController`) et rend son
+quota. Il n'ajoute **aucune lecture AniList** : c'est `searchMedia`, cachée une heure, avec le repli
+sur le miroir de `/search`.
 
 ### Et trois conventions de fichier
 
@@ -856,15 +858,19 @@ vocabulaire de tous les autres.
    Ce qui a coûté le plus n'était pas la logique mais la **couleur** — voir JOURNAL.md.
 7. `/` — en dernier, avec le vocabulaire complet sous les yeux.
 
-Hors de cet ordre, à replacer quand ça arrange : la palette `⌘K` et son `api/command`. Elle a été
-réécrite le 12 septembre 2026 — faux champ dans l'en-tête, dialogue cmdk, recherche du catalogue à
-la frappe — puis **retirée le soir même sur décision d'Alexis**, et `features/command/` avec elle.
-Le jour où elle revient, elle repart d'une page blanche ; deux choses valent d'être reprises telles
-quelles : la lecture passe par un **route handler** et non par une Server Action (§ les route
-handlers), et le « +1 » n'y remonte pas — `Entrée` est un réflexe, et un réflexe ne doit pas écrire
-dans le journal. Le cron de
-rafraîchissement du miroir figurait ici aussi ; il a été repris le 7 septembre 2026, hors de l'ordre
-des écrans puisqu'il n'en est pas un.
+Hors de cet ordre : **la palette de recherche est revenue le 13 septembre 2026**, repartie d'une
+page blanche. Un bouton discret dans l'en-tête (`Ctrl K`, loupe seule sous `md`), cinq résultats
+avec jaquette, format, année et pastille de suivi, la rangée « N résultats · Tout voir » vers
+`/search`, et le groupe « Aller à ». Elle ne fait que chercher et naviguer : le « +1 » n'y remonte
+pas — `Entrée` est un réflexe, et un réflexe ne doit pas écrire dans le journal.
+
+Deux choses apprises au navigateur : **`pageInfo.total` vaut 5000 pour toute recherche par titre**,
+d'où « Meilleurs résultats » au plafond plutôt qu'un chiffre ; et cmdk laissait sa sélection sur
+« Aller à » quand les résultats arrivaient au-dessus, si bien qu'`Entrée` ouvrait la bibliothèque —
+la sélection est désormais pilotée. `use-debounced-value` et `cmdk` ont quitté le gel de `knip.jsonc`.
+
+Le cron de rafraîchissement du miroir figurait ici aussi ; il a été repris le 7 septembre 2026, hors
+de l'ordre des écrans puisqu'il n'en est pas un.
 
 Chaque branche retire du bloc `ignoreIssues` de `knip.jsonc` les entrées que sa route rebranche.
 Quand la dernière part, le bloc entier part avec elle.
