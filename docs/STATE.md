@@ -306,8 +306,7 @@ valeurs, `.on-inverted-surface`, existe parce qu'une teinte choisie pour Obsidie
 l'onglet actif de la rangée de statuts, qui s'inverse : mesuré à l'écran sur « En pause ».
 
 Ce qui **manquait** : les **états vides**, dessinés depuis le 7 septembre 2026 (voir l'audit plus
-bas). Ce qui **manque encore** : le **compteur de résultats**, qui devrait dire « plus de 5000 »
-plutôt que « 5000 » ; et le tri par titre, qui suit le romaji sur les deux écrans et non
+bas). Ce qui **manque encore** : le tri par titre, qui suit le romaji sur les deux écrans et non
 `titleLanguage`. L'inventaire complet est dans [recherche-filtres.md](./recherche-filtres.md) :
 66 lignes, **21 cochées**.
 
@@ -733,9 +732,10 @@ n'amène pas au jour correspondant. Il y faudrait un `?jour=` dans `profile-para
 de plus dans `getProfileJournal` — le geste est le seul intérêt d'avoir mis les deux sur le même
 défilement, et il n'est pas branché.
 
-Ensuite, dans l'ordre où ça se posera : le **compteur de résultats** de `/search`, qui doit dire
-« plus de 5000 » et non « 5000 » ; et les champs de suivi que la fiche ne porte pas encore alors que
-la fenêtre d'une vignette les a — dates, notes, relectures.
+**Écartés le 13 septembre 2026, décision d'Alexis** : le **compteur de résultats** de `/search` —
+aucun n'est affiché, et aucun ne le sera ; `pageInfo.total`, plafonné à 5000, n'aurait de toute façon
+rien dit de juste — et l'**affichage sur la fiche** des dates, notes et relectures : ils restent dans
+la fenêtre d'édition, que le crayon de la barre ouvre déjà.
 
 Le **retour du cron de rafraîchissement**, qui figurait ici, est fait depuis le 7 septembre 2026.
 
@@ -812,7 +812,7 @@ vocabulaire de tous les autres.
    annoncé. C'était le premier gain réel de la refonte : ces deux écrans étaient le même, écrit deux
    fois. Ils partagent maintenant quatre pièces de `shared/` et `features/media/`, et leurs deux
    contrats d'URL sont sortis du gel de `knip.jsonc`. **Ce qui reste sur ces deux écrans** : le
-   compteur de résultats, le tri par titre qui devrait suivre `titleLanguage`, et
+   tri par titre qui devrait suivre `titleLanguage`, et
    l'annotation des cartes du catalogue par ce qu'on suit déjà — l'issue 1 de
    [recherche-filtres.md](./recherche-filtres.md) §2, qui demande une lecture de plus. L'inventaire
    des filtres : 66 lignes, **21 cochées**.
@@ -828,7 +828,8 @@ vocabulaire de tous les autres.
    vide n'est pas ouvert, et la décision se prend sur l'échantillon de la fiche — jamais en
    dépensant le crédit qui le remplirait —, ce qui fait dégrader la fiche toute seule un jour de
    coupure. Restent le journal, les chiffres de la communauté, les tomes possédés, ce que le cercle
-   en pense, et les champs de suivi que la fenêtre d'une vignette porte déjà mais pas elle.
+   en pense. Les dates, notes et relectures
+   restent dans la fenêtre d'édition, sans affichage sur la page (décision du 13 septembre 2026).
    L'inventaire à cocher est dans
    [fiche-media.md](./fiche-media.md) : 73 lignes, **31 cochées**.
 3. `/calendar` — **fait** (8 septembre), et il s'est bien rebranché sur `airing-week.ts` et
