@@ -4,6 +4,7 @@ import {
   episodeLag,
   formatLag,
   hasAired,
+  latestAiredPerMedia,
 } from "@/features/tracking/lib/airing-lag";
 
 /**
@@ -79,5 +80,79 @@ describe("formatLag", () => {
 
   it("traite un retard négatif comme « à jour »", () => {
     expect(formatLag(-2)).toBe("à jour");
+  });
+});
+
+describe("latestAiredPerMedia", () => {
+  /** Une diffusion réduite à ce que la réduction regarde. */
+  const slot = (mediaId: number, episode: number, at: string) => ({
+    mediaId,
+    episode,
+    airingAt: seconds(at),
+  });
+
+  const NOW = new Date("2026-09-12T00:00:00Z");
+
+  it("garde la dernière diffusion passée d'une série", () => {
+    const latest = latestAiredPerMedia(
+      [
+        slot(1, 10, "2026-09-04T21:00:00Z"),
+        slot(1, 11, "2026-09-11T21:00:00Z"),
+      ],
+      NOW,
+    );
+
+    expect(latest.get(1)?.episode).toBe(11);
+  });
+
+  it("ne se laisse pas dépasser par une diffusion reçue dans le désordre", () => {
+    // AniList rend sa grille triée, mais rien dans le contrat ne le promet : c'est la comparaison
+    // qui décide, pas le rang d'arrivée.
+    const latest = latestAiredPerMedia(
+      [
+        slot(1, 11, "2026-09-11T21:00:00Z"),
+        slot(1, 10, "2026-09-04T21:00:00Z"),
+      ],
+      NOW,
+    );
+
+    expect(latest.get(1)?.episode).toBe(11);
+  });
+
+  it("écarte une diffusion à venir au profit de la dernière passée", () => {
+    // Ce qui sépare cette réduction d'un simple maximum : l'épisode 12 est le plus récent de la
+    // liste, et c'est précisément celui qu'il ne faut pas retenir.
+    const latest = latestAiredPerMedia(
+      [
+        slot(1, 11, "2026-09-11T21:00:00Z"),
+        slot(1, 12, "2026-09-18T21:00:00Z"),
+      ],
+      NOW,
+    );
+
+    expect(latest.get(1)?.episode).toBe(11);
+  });
+
+  it("ne retient rien d'une série dont tout est à venir", () => {
+    const latest = latestAiredPerMedia(
+      [slot(1, 1, "2026-09-18T21:00:00Z")],
+      NOW,
+    );
+
+    expect(latest.has(1)).toBe(false);
+  });
+
+  it("tient une entrée par série", () => {
+    const latest = latestAiredPerMedia(
+      [slot(1, 11, "2026-09-11T21:00:00Z"), slot(2, 3, "2026-09-10T15:00:00Z")],
+      NOW,
+    );
+
+    expect(latest.get(1)?.episode).toBe(11);
+    expect(latest.get(2)?.episode).toBe(3);
+  });
+
+  it("rend une table vide sur une grille vide", () => {
+    expect(latestAiredPerMedia([], NOW).size).toBe(0);
   });
 });

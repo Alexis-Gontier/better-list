@@ -4,13 +4,12 @@ import { cache } from "react";
 
 import { getLists } from "@/features/lists/server/lists.queries";
 import { currentSeason } from "@/features/media/lib/media-season";
-import type { AiringSchedule } from "@/features/media/schemas/media.schema";
-import {
-  getAiringSchedule,
-  searchMedia,
-} from "@/features/media/server/media.queries";
+import { searchMedia } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
-import { episodeLag, hasAired } from "@/features/tracking/lib/airing-lag";
+import {
+  type AiringLag,
+  airingLags,
+} from "@/features/tracking/server/airing-lags";
 import {
   getHomeTracking,
   getLibraryEntriesFor,
@@ -43,101 +42,6 @@ const catalogueBase = (includeAdult: boolean) => ({
 });
 
 // --- Mon suivi -------------------------------------------------------------------
-
-const HOUR_IN_SECONDS = 3600;
-const CATCH_UP_DAYS = 7;
-
-/**
- * La fenêtre où l'on va chercher ce qui vient de sortir : **les sept derniers jours, arrondis à
- * l'heure**.
- *
- * L'arrondi n'est pas une approximation, c'est ce qui rend la lecture mémorisable. Les deux bornes
- * forment la clé du `"use cache"` de `getAiringSchedule` : calculées à la seconde, deux visites
- * espacées d'un instant poseraient deux entrées pour la même question, et chaque affichage de
- * l'accueil coûterait un crédit du quota partagé. À l'heure, c'est une entrée par heure — et une
- * grille horaire ne bouge pas plus vite que ça.
- *
- * La borne haute est **la fin de l'heure en cours**, donc un peu dans l'avenir : ce qui n'a pas
- * encore été diffusé est écarté à la lecture par `hasAired`, qui compare à l'instant réel. Une
- * borne posée à l'heure pleine passée aurait au contraire perdu l'épisode sorti il y a dix minutes,
- * c'est-à-dire exactement celui que cette rangée existe pour montrer.
- *
- * Sept jours parce qu'un anime diffuse par semaine : c'est la fenêtre qui attrape le dernier
- * épisode de chaque série suivie, sans ramener un trimestre de grille pour rien.
- */
-function recentAiringWindow(now: Date) {
-  const to =
-    Math.ceil(now.getTime() / 1000 / HOUR_IN_SECONDS) * HOUR_IN_SECONDS;
-
-  return { from: to - CATCH_UP_DAYS * 24 * HOUR_IN_SECONDS, to };
-}
-
-/** Ce qu'un épisode sorti change à une ligne de suivi : son retard, et sa fraîcheur. */
-type AiringLag = {
-  /** Combien d'épisodes diffusés je n'ai pas vus. Toujours strictement positif ici. */
-  lag: number;
-  /** Quand le dernier a été diffusé — ce qui décide de l'ordre de la rangée. */
-  airedAt: number;
-};
-
-/**
- * **Ce qui est sorti et que je n'ai pas vu**, série par série.
- *
- * C'est le rapprochement de `/calendar`, resserré sur le passé proche : ce que je suis vient de mes
- * lignes `Entry` — déjà lues, on ne les redemande pas —, la grille horaire vient d'AniList
- * (`getAiringSchedule`, mémorisée quelques minutes ; sans quoi le quota de trente requêtes par
- * minute partagé par toute l'IP y passerait). Les deux ne se rencontrent qu'ici.
- *
- * **Seuls les animes sont demandés.** `AIRING_SCHEDULE_QUERY` interroge une grille de diffusion
- * télévisée, qui n'existe pas pour un manga : envoyer l'id d'un webtoon reviendrait à faire
- * confirmer un vide, au prix d'une clé de cache plus large. Sans anime en cours, aucune requête ne
- * part — `getAiringSchedule` s'arrête sur une liste d'ids vide.
- *
- * **Le retard se calcule sur le dernier épisode réellement diffusé**, pas sur le nombre de
- * diffusions de la fenêtre : une série qui sort deux épisodes d'un coup met en retard de deux, et
- * une série muette depuis six jours garde le retard de son dernier épisode.
- *
- * Une série à jour n'entre pas dans la table, et AniList muet la rend vide : la rangée retombe
- * alors sur la progression. Annoncer « à jour » sur la foi d'une panne serait le seul mensonge
- * qu'elle puisse commettre.
- */
-async function airingLags(items: LibraryItem[], now: Date) {
-  const { from, to } = recentAiringWindow(now);
-  const schedule = await getAiringSchedule({
-    mediaIds: items
-      .filter((item) => item.media.type === "ANIME")
-      .map((item) => item.media.id),
-    from,
-    to,
-  });
-
-  const lags = new Map<number, AiringLag>();
-  if (!schedule) return lags;
-
-  /** La dernière diffusion **déjà passée** de chaque série, dans la fenêtre. */
-  const latest = new Map<number, AiringSchedule>();
-  for (const slot of schedule.schedules) {
-    if (!hasAired(slot.airingAt, now)) continue;
-
-    const known = latest.get(slot.mediaId);
-    if (!known || slot.airingAt > known.airingAt)
-      latest.set(slot.mediaId, slot);
-  }
-
-  for (const item of items) {
-    const slot = latest.get(item.media.id);
-    if (!slot) continue;
-
-    const lag = episodeLag({
-      episode: slot.episode,
-      progress: item.entry.progress,
-      aired: true,
-    });
-    if (lag > 0) lags.set(item.media.id, { lag, airedAt: slot.airingAt });
-  }
-
-  return lags;
-}
 
 /** Une ligne de « En cours », **et ce qui l'attend** : zéro quand il n'y a rien de nouveau. */
 export type TrackedItem = LibraryItem & AiringLag;
@@ -202,11 +106,18 @@ export const loadTracking = cache(async () => {
   const { includeAdult, titleLanguage } = await getPreferences();
   const { active, resumable } = await getHomeTracking({ includeAdult });
 
-  const lags = await airingLags(active, new Date());
+  /*
+    AniList muet rend `null` ici, et la rangée retombe alors sur l'ordre de la base : annoncer
+    « à jour » sur la foi d'une panne serait le seul mensonge qu'elle puisse commettre. La cloche
+    de l'en-tête, elle, a la place de le dire — c'est pourquoi `airingLags` distingue les deux cas
+    plutôt que de rendre une table vide.
+  */
+  const lags =
+    (await airingLags(active, new Date())) ?? new Map<number, AiringLag>();
   const current: TrackedItem[] = active
     .map((item) => ({
       ...item,
-      ...(lags.get(item.media.id) ?? { lag: 0, airedAt: 0 }),
+      ...(lags.get(item.media.id) ?? { lag: 0, episode: 0, airedAt: 0 }),
     }))
     .sort((first, second) => second.airedAt - first.airedAt)
     .slice(0, RAIL_COUNT);

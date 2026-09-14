@@ -3,12 +3,12 @@ import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 import { MainNav } from "@/components/layout/main-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 import { CommandSearch } from "@/features/command/components/command-search";
+import { NotificationsMenu } from "@/features/tracking/components/notifications-menu";
 import type { SessionUser } from "@/lib/auth/server";
 
 /**

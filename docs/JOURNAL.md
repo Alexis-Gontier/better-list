@@ -27,6 +27,35 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 14 septembre 2026 — la cloche, et la différence entre « rien » et « on ne sait pas »
+
+La cloche de l'en-tête tenait un tableau vide écrit en dur depuis le 8 août. La remplir n'a
+demandé **aucune table** : les données existaient déjà en entier — `getAiringWatchlist` pour la
+moitié « moi », `getAiringSchedule` pour celle d'AniList, et `airingLags` qui les rapproche depuis
+l'accueil. Tout le travail a été de déplacer trois choses et d'en écrire une quatrième.
+
+**Ce qu'on a appris en promouvant `airingLags` :** l'accueil s'en tirait avec une `Map` vide quand
+AniList ne répond pas, parce que sa rangée **retombe sur la progression** — elle a autre chose à
+montrer. La cloche n'a rien d'autre : une table vide s'y lirait « rien de neuf », c'est-à-dire une
+affirmation, au moment précis où l'on ne sait rien. La fonction promue rend donc `null` et non plus
+une table vide, et les deux appelants en font ce qu'ils peuvent — `?? new Map()` côté accueil, un
+message côté cloche. **Un type de retour a changé parce qu'un deuxième appelant avait moins de
+ressources que le premier**, pas parce qu'il était mal choisi au départ.
+
+**Le bug qu'on n'aurait pas vu en relisant le code.** La vignette demandait `coverImage.medium`,
+avec un commentaire expliquant qu'une jaquette de 40 px n'a pas besoin de l'image de fiche. La
+réponse HTTP, elle, rendait une URL `/cover/large/` : `compactFromMirror` recopie **l'unique** URL
+stockée dans les trois tailles. Le commentaire justifiait une économie qui n'existait pas. Corrigé
+en `large`, comme `MediaCard` — et la leçon est dans la méthode : c'est `curl` sur le handler qui
+l'a trouvé, pas la relecture.
+
+**Et un piège de l'outillage local.** `scripts/dev-session-cookie.mjs` vise `better-call` par son
+chemin pnpm complet, version comprise. La montée en 1.4.0 l'a cassé net
+(`ERR_MODULE_NOT_FOUND`). C'est le prix assumé de ne pas recopier un HMAC, mais il se paie à chaque
+bump : le script est hors dépôt, donc personne ne le répare avant d'en avoir besoin.
+
+---
+
 ## 14 septembre 2026 — une fenêtre de temps qui bouge à la seconde ne se mémorise jamais
 
 **La clé de cache était une horloge.** La rangée « En cours » de l'accueil demande à AniList ce qui a
