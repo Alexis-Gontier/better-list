@@ -27,6 +27,45 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 14 septembre 2026 — une fenêtre de temps qui bouge à la seconde ne se mémorise jamais
+
+**La clé de cache était une horloge.** La rangée « En cours » de l'accueil demande à AniList ce qui a
+été diffusé ces sept derniers jours, par `getAiringSchedule` — un `"use cache"` dont les deux bornes
+sont les arguments, donc la clé. Calculées depuis `now` à la seconde, deux visites espacées d'un
+instant posent deux entrées pour la même question : le cache aurait eu l'air de fonctionner en ne
+servant jamais rien, et chaque affichage de l'accueil aurait coûté un crédit du quota partagé par
+toute l'IP. Arrondies à l'heure, c'est une entrée par heure. **Règle générale : une lecture mémorisée
+qui prend une fenêtre de temps doit la quantifier sur la durée de vie du cache, jamais sur l'instant
+de la demande.** Et la borne haute vaut la *fin* de l'heure en cours, pas l'instant : ce qui n'est
+pas encore sorti est écarté à la lecture (`hasAired`, qui compare au vrai `now`), ce qui laisse
+entrer l'épisode diffusé il y a dix minutes — précisément celui que la rangée existe pour montrer.
+
+**Une fonction pure relue par l'autre bout est un test gratuit.** `/calendar` calcule le retard
+depuis l'épisode **à venir** (`episodeLag({ aired: false })`), l'accueil depuis le dernier **déjà
+diffusé** (`aired: true`). Deux chemins de données indépendants, trois séries, les mêmes nombres —
+11, 6 et 16. La vérification a coûté un aller-retour au navigateur, et elle vaut mieux qu'un test
+sur l'un des deux chemins seulement.
+
+**Deux rangées qui se ressemblent, c'est un tri — pas une rangée.** « Nouveaux épisodes » a vécu une
+heure au-dessus de « En cours » : elle montrait les mêmes jaquettes, à trois près. Fusionnées, la
+rangée répond aux deux questions d'un coup — les séries qui ont du neuf passent en tête, et la ligne
+sous la jaquette dit leur retard. **L'ordre porte l'information que la seconde rangée portait**, et
+il ne coûte pas un écran de hauteur. Le même raisonnement a fait ranger « À reprendre » sur ce qu'il
+reste à finir plutôt que sur l'ancienneté : « il y a quatre mois » est vrai de la moitié de la
+rangée, « il reste six chapitres » désigne la série qu'on finit ce soir.
+
+**Un variant shadcn repeint son fond au survol, et il gagne.** Le « +1 » posé sur une jaquette porte
+`bg-overlay` — la plaque presque opaque sans laquelle une pastille se délave sur une couverture
+claire. Le variant `outline` pose, lui, `hover:bg-muted` et `dark:hover:bg-input/50`, tous deux
+translucides : le bouton s'effaçait donc exactement au moment où le curseur l'atteignait. Un fond
+posé pour une raison de lisibilité doit être réaffirmé **à chaque état du variant**, pas seulement
+au repos.
+
+Et une chausse-trappe, en passant : trier avec `Infinity` comme valeur « on ne sait pas » rend
+`Infinity - Infinity`, c'est-à-dire `NaN`, et un comparateur qui rend `NaN` laisse l'ordre au hasard
+du moteur — là même où l'on voulait que l'ordre reçu de la base tienne. Une sentinelle finie
+(`Number.MAX_SAFE_INTEGER`) fait ce que l'infini promettait.
+
 ## 13 septembre 2026 — retirer une œuvre, et des transitions qu'on croyait lentes
 
 **Le retrait revient dans la fenêtre d'édition, pas dans un menu de la fiche.** C'est le seul

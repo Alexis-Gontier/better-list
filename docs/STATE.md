@@ -8,12 +8,12 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **13 septembre 2026**.
+Relevé le **14 septembre 2026**.
 
-> ### En un mot : neuf écrans sur onze, et le journal est enfin lu.
+> ### En un mot : dix écrans sur onze — l'accueil est fait, et la refonte des routes est finie.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
-> neuf routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
+> dix routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
 > **cinq onglets** — Aperçu, Personnages, Équipe, Œuvres liées, Tags —, et un **pied de page à
 > colonnes** dérivé de `mainNav` qui porte enfin l'attribution AniList attendue par leurs CGU — §9.
 > Il est monté sur `(app)` comme sur `(share)`, mais **sans ses liens sur la liste partagée** : ils
@@ -21,8 +21,30 @@ Relevé le **13 septembre 2026**.
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
 > miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, le
 > 7 septembre **`/settings`**, le 8 septembre **`/calendar`**, et le 12 septembre
-> **`/u/[username]`**. Les deux autres routes construites — `/` et les placeholders de
-> `/collection` — restent en attente.
+> **`/u/[username]`**, et le 14 septembre **l'accueil `/`**, dernier de l'ordre. Il ne reste que
+> les placeholders de `/collection`.
+>
+> **L'accueil ne montre que ce qui vient de quelque part.** Cinq zones, chacune avec sa frontière :
+> un carrousel de tendances en pleine largeur — qui dit « Reprendre à l'épisode 12 » sur une œuvre
+> déjà suivie plutôt que son synopsis —, « En cours » où **les séries dont un épisode est sorti
+> passent en tête avec leur retard**, « À reprendre » **rangée sur ce qu'il reste à finir** et non
+> sur l'ancienneté, mes listes, les tendances et la saison. Toutes les jaquettes sont la `MediaCard`
+> du catalogue, aux paliers de `CatalogueGrid` : une œuvre a la même apparence et le même geste ici,
+> sur `/search` et sur `/library`.
+>
+> **Le « +1 » est le premier geste d'écriture posé sur une vignette**, et il est sur les trois
+> écrans : un cran d'avance sans ouvrir la fenêtre d'édition, révélé au survol du crayon, sur les
+> œuvres déjà suivies seulement. Il écrit par `saveEntry`, donc dans `EntryEvent`.
+>
+> **Et l'accueil a fait remonter deux pièces dans `features/`** : `airing-lag.ts`, parti du `_lib/`
+> de `/calendar` — le retard épisode par épisode est la même question ici et là-bas —, et
+> `entry-quick-actions.tsx`, parti de son propre `_components/` quand `/search` et `/library` ont
+> demandé le « +1 ». La règle de promotion à la lettre, deux fois.
+>
+> **Ce que l'accueil ne fait pas, et c'est une limite d'AniList** : le « il y a du neuf » ne vaut que
+> pour les animes. La grille horaire est télévisée ; aucun calendrier de parution n'existe pour les
+> webtoons, qui sont pourtant le gros de la bibliothèque d'Alexis. Une rangée « En cours » y répond
+> alors par la progression — « ch. 79 / 85 ».
 >
 > **`/u/[username]` lit enfin le journal**, qui était le prochain pas de ce document depuis le
 > 6 septembre. `EntryEvent` se remplissait sans que rien ne l'affiche, et la table étant
@@ -121,7 +143,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 
 | Route | Rôle | Modèles | État |
 | --- | --- | --- | --- |
-| `/` (`home`) | Bandeau de reprise, chiffres, rangée « En cours », listes, découverte | `Entry`, `EntryEvent`, `Media`, `List` | **vidé** — en refonte |
+| `/` (`home`) | Carrousel de tendances, suivi, listes, découverte | `Entry`, `Media`, `List` | **livré** (14 septembre) — carrousel pleine largeur, « En cours » mené par les épisodes sortis, « À reprendre » rangée sur ce qu'il reste, listes, tendances, saison |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
@@ -717,10 +739,27 @@ Il ne reste donc **aucune erreur de console** sur le site.
 
 ## Le prochain pas
 
-**L'accueil `/`.** C'est la dernière route en refonte, et elle a toujours été prévue en dernier :
-c'est l'écran qui cite tous les autres, donc celui qu'on ne peut dessiner qu'avec le vocabulaire
-complet sous les yeux. Il l'est désormais — vignette, grille, coquille de filtres, pagination,
-pastilles de statut, calendrier d'activité, journal.
+**L'accueil est fait (14 septembre), et c'était la dernière route de l'ordre.** La refonte des
+écrans est donc finie ; ce qui suit n'est plus une reconstruction mais des choix ouverts.
+
+**Le premier est dans `knip.jsonc`, et il a une date.** Le gel de la mise à blanc devait partir avec
+la dernière route ; il reste cinq entrées, et chacune sait maintenant ce qui la lèvera :
+
+- `BROWSE_CATALOGUE_QUERY` et `browseCatalogueDataSchema` **ont perdu l'écran pour lequel ils
+  avaient été gelés** : l'accueil est fait sans eux, sur deux `searchMedia`. Or ce document
+  rassemble cinq rangées en **une seule requête** par alias GraphQL, là où l'accueil en dépense
+  deux. Donc : ou bien on s'en sert et l'accueil retombe à une requête, ou bien on le supprime. Ne
+  rien décider serait la seule mauvaise réponse.
+- `FILTER_VOCABULARY_QUERY` et `MediaTagOption` attendent les facettes de genres et de tags de
+  `/search` — l'inventaire de [recherche-filtres.md](./recherche-filtres.md), 21 lignes cochées
+  sur 66.
+- `formatListStatus`, `formatRanking` et `ScoreDistribution` attendent les **chiffres de la
+  communauté** sur la fiche, qui sont au reste de la liste ci-dessous.
+- `PageInfo`, `MediaBrowse` et `SearchMediaInput` sont les types de ce qui précède, et partiront
+  avec.
+
+`react-hotkeys-hook` en est parti pour de bon : la palette est revenue le 13 septembre sur un
+`keydown` nu, et la dépendance a été désinstallée plutôt que regelée.
 
 **Le journal, qui occupait cette place depuis le 6 septembre, est fait** (12 septembre, avec
 `/u/[username]`). Ce qu'il a appris et qui vaut pour la suite : `describeEntryEvent`,
@@ -856,7 +895,17 @@ vocabulaire de tous les autres.
 6. `/u/[username]` — **fait** (12 septembre), et il n'était pas si petit : cinq graphes, une feature
    recréée, deux modules purs testés, et une famille de tokens ajoutée au thème (`--activity-*`).
    Ce qui a coûté le plus n'était pas la logique mais la **couleur** — voir JOURNAL.md.
-7. `/` — en dernier, avec le vocabulaire complet sous les yeux.
+7. `/` — **fait** (14 septembre), en dernier et avec le vocabulaire complet sous les yeux, comme
+   annoncé. Il n'a presque rien inventé : la carte du catalogue, la grille, les pastilles de statut,
+   la fenêtre d'édition rapide et le retard épisode par épisode existaient tous. Ce qu'il a ajouté,
+   c'est un ordre — le suivi avant la découverte — et **le « +1 »**, qui est reparti de là vers
+   `/search` et `/library`. Deux passes de plus que prévu, et elles ont toutes deux retiré quelque
+   chose : la rangée « Du moment » et ses quatre onglets (un second catalogue au milieu de l'accueil,
+   que `/search` fait mieux), puis la rangée « Nouveaux épisodes », fusionnée dans « En cours » —
+   elle montrait les mêmes jaquettes que celle du dessous, à trois près. **Ce qui reste sur cet
+   écran** : la recommandation personnelle à la place de « Cette saison » (`getMediaRecommendations`
+   existe déjà, une requête, mémorisée en jours), et le choix ouvert sur `BROWSE_CATALOGUE_QUERY`
+   ci-dessus.
 
 Hors de cet ordre : **la palette de recherche est revenue le 13 septembre 2026**, repartie d'une
 page blanche. Un bouton discret dans l'en-tête (`Ctrl K`, loupe seule sous `md`), cinq résultats

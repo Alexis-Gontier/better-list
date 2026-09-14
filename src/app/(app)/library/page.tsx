@@ -24,6 +24,7 @@ import { routes } from "@/config/routes";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryQuickActions } from "@/features/tracking/components/entry-quick-actions";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import {
@@ -239,15 +240,28 @@ async function LibraryResults({
               fenêtre y partent, pas les vingt et une cartes qui les entourent.
             */
             action={
-              <EntryQuickEdit
-                banner={item.banner}
-                compact
-                entry={item.entry}
+              /*
+                **Le « +1 » accompagne la fenêtre depuis le 14 septembre 2026**, ici comme sur
+                l'accueil et `/search`. C'est l'écran où il paie le plus : chaque ligne de cette
+                grille est une œuvre suivie, donc chaque carte le porte.
+              */
+              <EntryQuickActions
                 mediaId={item.media.id}
-                title={mediaTitle(item.media.title, titleLanguage)}
+                progress={item.entry.progress}
                 total={item.total}
+                tracked
                 unit={item.unit}
-              />
+              >
+                <EntryQuickEdit
+                  banner={item.banner}
+                  compact
+                  entry={item.entry}
+                  mediaId={item.media.id}
+                  title={mediaTitle(item.media.title, titleLanguage)}
+                  total={item.total}
+                  unit={item.unit}
+                />
+              </EntryQuickActions>
             }
             key={item.media.id}
             /*

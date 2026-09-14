@@ -8,6 +8,7 @@ import {
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
+import { partitionTracking } from "@/features/tracking/lib/home-tracking";
 import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
@@ -404,27 +405,99 @@ export async function getLibrary({
   });
 
   return {
-    items: rows.map(({ media, ...entry }) => ({
-      media: compactFromMirror(media),
-      /*
-        L'entrée est reprise telle quelle : la sélection ci-dessus est déjà exactement un
-        `EntryState`, donc la recopier champ par champ n'ajouterait qu'un endroit de plus où en
-        oublier un le jour où le modèle en gagne un.
-      */
-      entry,
-      banner: media.bannerImage,
-      /*
-        L'unité suit le type de l'œuvre, comme partout ailleurs dans le produit : un anime se
-        compte en épisodes, tout le reste en chapitres. La même condition décide des deux — ce
-        qu'on compte et jusqu'où —, donc elle s'écrit une fois.
-      */
-      unit: media.type === "ANIME" ? "episode" : "chapitre",
-      total: media.type === "ANIME" ? media.episodes : media.chapters,
-    })),
+    items: rows.map(libraryItemFrom),
     total,
     page,
     pageCount,
   };
+}
+
+/**
+ * Une ligne `Entry` et son œuvre → une `LibraryItem`.
+ *
+ * Écrite une fois pour les deux lectures qui rendent cette forme : `getLibrary` et
+ * `getHomeTracking` sélectionnent exactement les mêmes colonnes.
+ */
+function libraryItemFrom({
+  media,
+  ...entry
+}: EntryState & {
+  media: Parameters<typeof compactFromMirror>[0] & {
+    bannerImage: string | null;
+    episodes: number | null;
+    chapters: number | null;
+  };
+}): LibraryItem {
+  return {
+    media: compactFromMirror(media),
+    /*
+      L'entrée est reprise telle quelle : la sélection est déjà exactement un `EntryState`, donc la
+      recopier champ par champ n'ajouterait qu'un endroit de plus où en oublier un le jour où le
+      modèle en gagne un.
+    */
+    entry,
+    banner: media.bannerImage,
+    /*
+      L'unité suit le type de l'œuvre, comme partout ailleurs dans le produit : un anime se compte
+      en épisodes, tout le reste en chapitres. La même condition décide des deux — ce qu'on compte
+      et jusqu'où —, donc elle s'écrit une fois.
+    */
+    unit: media.type === "ANIME" ? "episode" : "chapitre",
+    total: media.type === "ANIME" ? media.episodes : media.chapters,
+  };
+}
+
+/**
+ * Combien de lignes l'accueil relit au plus.
+ *
+ * Large exprès : les deux rangées se servent dans les mêmes lignes, et une limite trop courte coupe
+ * silencieusement la plus ancienne des deux — mesuré le 14 septembre 2026, soixante lignes pour
+ * trente séries en cours et trente-huit en pause. Chaque rangée se plafonne ensuite elle-même.
+ */
+const HOME_TRACKING_TAKE = 200;
+
+/** Une œuvre de l'accueil, et depuis quand je n'y ai pas touché. */
+export type HomeTrackingItem = LibraryItem & { lastActivity: Date };
+
+/**
+ * Mon suivi pour l'accueil : **« en cours » et « à reprendre », en une seule lecture**.
+ *
+ * Les deux rangées viennent de la même table, triées de la même façon : une seule requête les
+ * ramène, et `partitionTracking` — testé — les répartit par statut. Ici on ne fait que ramener les
+ * lignes, de la plus récemment touchée à la plus ancienne.
+ *
+ * `updatedAt` voyage en plus de l'`EntryState`, sous le nom `lastActivity` : c'est l'ancienneté
+ * qu'affiche « à reprendre » (« il y a trois mois »), et il n'appartient pas à la forme qu'édite la
+ * fenêtre de suivi.
+ */
+export async function getHomeTracking({
+  includeAdult,
+}: {
+  includeAdult: boolean;
+}): Promise<{ active: HomeTrackingItem[]; resumable: HomeTrackingItem[] }> {
+  const userId = await currentUserId();
+
+  const rows = await prisma.entry.findMany({
+    where: {
+      userId,
+      status: { in: ["CURRENT", "REPEATING", "PAUSED"] },
+      ...(includeAdult ? {} : { media: { isAdult: false } }),
+    },
+    orderBy: { updatedAt: "desc" },
+    take: HOME_TRACKING_TAKE,
+    select: {
+      ...ENTRY_STATE_SELECT,
+      updatedAt: true,
+      media: { select: MIRRORED_MEDIA_SELECT },
+    },
+  });
+
+  return partitionTracking(
+    rows.map(({ updatedAt, ...row }) => ({
+      ...libraryItemFrom(row),
+      lastActivity: updatedAt,
+    })),
+  );
 }
 
 /**

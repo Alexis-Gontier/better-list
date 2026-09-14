@@ -34,6 +34,7 @@ import {
 import { searchMediaInMirror } from "@/features/media/server/media.mirror";
 import { searchMedia } from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { EntryQuickActions } from "@/features/tracking/components/entry-quick-actions";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
@@ -275,15 +276,34 @@ async function SearchResults({
                 vocabulaire, pas dans la mécanique.
               */
               action={
-                <EntryQuickEdit
-                  banner={item.bannerImage}
-                  compact
-                  entry={entry}
+                /*
+                  **Le « +1 » accompagne la fenêtre depuis le 14 septembre 2026**, ici comme sur
+                  l'accueil et `/library` : avancer d'un cran est le geste le plus fréquent du
+                  produit, et il ne doit pas dépendre de l'écran où l'on croise une jaquette.
+
+                  Il ne paraît que sur une œuvre **déjà suivie** — c'est la moitié rare des
+                  résultats d'un catalogue : « +1 » sur une œuvre qu'on ne suit pas ne veut rien
+                  dire, c'est « Ajouter » que propose alors la fenêtre.
+                */
+                <EntryQuickActions
                   mediaId={item.id}
-                  title={mediaTitle(item.title, titleLanguage)}
+                  progress={entry?.progress ?? 0}
                   total={item.type === "ANIME" ? item.episodes : item.chapters}
+                  tracked={entry !== null}
                   unit={item.type === "ANIME" ? "episode" : "chapitre"}
-                />
+                >
+                  <EntryQuickEdit
+                    banner={item.bannerImage}
+                    compact
+                    entry={entry}
+                    mediaId={item.id}
+                    title={mediaTitle(item.title, titleLanguage)}
+                    total={
+                      item.type === "ANIME" ? item.episodes : item.chapters
+                    }
+                    unit={item.type === "ANIME" ? "episode" : "chapitre"}
+                  />
+                </EntryQuickActions>
               }
               /*
                 **Rien du tout quand l'œuvre n'est pas suivie**, et c'est la moitié de

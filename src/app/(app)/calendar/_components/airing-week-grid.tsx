@@ -1,11 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-
-import {
-  episodeLag,
-  formatLag,
-  hasAired,
-} from "@/app/(app)/calendar/_lib/airing-lag";
 import {
   type AiringWeek,
   formatAiringTime,
@@ -16,6 +10,11 @@ import { mediaTitle } from "@/features/media/lib/media-format";
 import type { AiringMedia } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
+import {
+  episodeLag,
+  formatLag,
+  hasAired,
+} from "@/features/tracking/lib/airing-lag";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import { cn } from "@/lib/utils";
 
