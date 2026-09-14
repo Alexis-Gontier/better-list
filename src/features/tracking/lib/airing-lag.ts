@@ -8,6 +8,12 @@
  *
  * Fonctions pures et testées, comme `airing-week.ts` d'à côté : un décalage d'un épisode se lit mal
  * dans du JSX, et se lit très bien dans un test.
+ *
+ * **Parti du `_lib/` de `/calendar`, promu ici le 14 septembre 2026, quand l'accueil en a eu
+ * besoin** : sa rangée « Nouveaux épisodes » pose exactement la question du planning — combien
+ * d'épisodes diffusés je n'ai pas vus. Deuxième route, donc `features/`, et `tracking/` plutôt que
+ * `media/` : le retard n'existe que par `Entry.progress`. La règle de promotion d'ARCHITECTURE.md,
+ * appliquée comme elle l'a été pour `MediaCard`.
  */
 
 /**

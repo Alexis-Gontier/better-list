@@ -73,6 +73,12 @@ function revalidateTracking(mediaId: number) {
   revalidatePath(routes.media(mediaId));
   revalidatePath(routes.library);
   revalidatePath(routes.search);
+  /*
+    L'accueil s'y ajoute depuis le 14 septembre 2026 : ses rangées « En cours » et « À reprendre »
+    lisent le suivi, et son « +1 » écrit dessus. Sans cette purge, la carte qu'on vient d'avancer
+    garderait son ancienne progression au retour sur la page.
+  */
+  revalidatePath(routes.home);
 }
 
 /**

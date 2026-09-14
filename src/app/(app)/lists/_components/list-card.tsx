@@ -1,7 +1,6 @@
 import Link from "next/link";
-
-import { ListCoverMosaic } from "@/app/(app)/lists/_components/list-cover-mosaic";
 import { routes } from "@/config/routes";
+import { ListCoverMosaic } from "@/features/lists/components/list-cover-mosaic";
 import type { ListSummary } from "@/features/lists/server/lists.queries";
 
 /**

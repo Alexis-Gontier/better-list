@@ -48,6 +48,13 @@
   //
   // **Si ce bloc existe encore une fois les routes reconstruites, c'est un oubli, pas une
   // décision.** Le dernier à partir emporte `ignoreIssues` et `ignoreDependencies` avec lui.
+  //
+  // **L'accueil est passé le 14 septembre 2026, et c'était la dernière route.** `ignoreDependencies`
+  // est parti avec, comme promis. `ignoreIssues` survit à cinq entrées près, et c'est une décision
+  // écrite : chacune nomme désormais **ce qui la lèvera** — les facettes de `/search`, les chiffres
+  // de la communauté sur la fiche, et un arbitrage à rendre sur `BROWSE_CATALOGUE_QUERY`, qui a
+  // perdu l'écran pour lequel il avait été gelé. La liste et l'arbitrage sont dans docs/STATE.md,
+  // « Le prochain pas ».
   // ─────────────────────────────────────────────────────────────────────────────────────────────
   "ignoreIssues": {
     // ── Fichiers sans importateur ───────────────────────────────────────────────────────────────
@@ -75,14 +82,19 @@
     // plutôt qu'à se rétrograder en gel « exports ».
     // `use-debounced-value.ts` est **sorti du gel le 13 septembre 2026** : la palette de recherche de
     // l'en-tête (`command-search.tsx`) est la saisie de recherche qu'il attendait nommément.
-    "src/hooks/use-reduced-motion.ts": ["files"], // attend le carrousel de l'accueil
+    // `use-reduced-motion.ts` est **sorti du gel le 14 septembre 2026** : le carrousel de tête de
+    // l'accueil est exactement ce qu'il attendait — il coupe la transition d'Embla et laisse
+    // l'autoplay tranquille quand le système demande moins d'animation.
     // `safe-action.ts` est **sorti du gel le 6 septembre 2026** : `tracking.actions.ts` consomme
     // `authActionClient`, et c'est la première Server Action du dépôt. `actionClient`, lui, reste
     // couvert par `ignoreExportsUsedInFile` — il n'a pas d'appelant direct, il est la base sur
     // laquelle `authActionClient` est construit dans le même fichier.
 
     // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
-    "src/features/media/lib/media-format.ts": ["exports"], // 9 formateurs — attendent leurs écrans
+    // Deux formateurs, et non plus neuf : les sept autres ont trouvé leur écran. `formatListStatus`
+    // et `formatRanking` attendent les **chiffres de la communauté** sur la fiche — la répartition
+    // des statuts et les classements —, qui sont la dernière chose absente de `/media/[id]`.
+    "src/features/media/lib/media-format.ts": ["exports"],
     // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
     // pour le gel « exports ». `MEDIA_BY_ID_QUERY` et `SEARCH_MEDIA_QUERY` sont consommées, et
     // **`MEDIA_MIRROR_QUERY` l'est depuis le 7 septembre 2026** — le cron l'envoie par lots de
@@ -104,9 +116,18 @@
     // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
     // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que
     // l'entrée précédente disait attendre, et elle part avec, comme `library-params.ts` avant elle.
-    "src/features/media/schemas/media.schema.ts": ["exports", "types"], // 5 schémas, 9 types
-    "src/features/media/schemas/search-media.schema.ts": ["types"], // entrée et params de recherche
-    "src/features/preferences/schemas/preferences.schema.ts": ["exports"] // défauts — attendent /settings
+    // Un schéma et quatre types, et non plus cinq et neuf : `browseCatalogueDataSchema`,
+    // `MediaBrowse` et `PageInfo` tombent avec l'arbitrage sur `BROWSE_CATALOGUE_QUERY` ;
+    // `MediaTagOption` attend les facettes ; `ScoreDistribution` attend les chiffres de la
+    // communauté.
+    "src/features/media/schemas/media.schema.ts": ["exports", "types"],
+    // `SearchMediaInput` seul : le type d'entrée, dont personne n'a besoin tant que les appelants
+    // passent des littéraux que `z.input` valide par inférence.
+    "src/features/media/schemas/search-media.schema.ts": ["types"]
+    // `preferences.schema.ts` est **sorti du gel le 14 septembre 2026**, et par constat plutôt que
+    // par travail : ses défauts avaient trouvé leur appelant avec `/settings`, le 7 septembre. Une
+    // entrée de gel qui ne gèle plus rien est un mensonge qui dort — c'est la passe de l'accueil,
+    // qui devait solder ce bloc, qui l'a réveillé.
     // `entry-format.ts` a **quitté le gel le 12 septembre 2026** : `formatEventTime` attendait le
     // journal nommément, et le journal est arrivé avec `/u/[username]`. Le fichier y a même gagné
     // un export — `dayKey`, jusque-là privé, que le calendrier d'activité partage désormais avec le
@@ -114,26 +135,14 @@
     // `removeEntry` et `removeEntrySchema` sont **sortis du gel le 13 septembre 2026** : le geste de
     // retrait est revenu dans la fenêtre d'édition du suivi (`entry-remove-button.tsx`), sous
     // confirmation `alert-dialog`. Huitième entrée à disparaître, et la seule qui y était revenue.
-  },
+  }
 
-  // Deux familles employées uniquement par de la présentation supprimée : `embla` par les
-  // carrousels de l'accueil, `react-hotkeys-hook` par l'ancienne palette `⌘K`.
-  //
-  // **`cmdk` en est sorti le 13 septembre 2026**, avec la palette de recherche de l'en-tête. Son
-  // raccourci s'écoute avec un `keydown` nu : `react-hotkeys-hook` reste donc sans appelant.
-  //
-  // **`@dnd-kit` en est sorti le 6 septembre 2026**, avec le mode réorganisation de `/lists/[id]` :
-  // `core`, `sortable`, `modifiers` et `utilities` sont tous les quatre consommés par
-  // `list-reorder-grid.tsx`, et `rankAfterMove` — testé depuis le premier jour et gelé depuis —
-  // fait enfin le calcul pour lequel il avait été isolé.
-  //
-  // **`next-safe-action` en est sorti le 6 septembre 2026**, avec `lib/safe-action.ts` : la
-  // première Server Action du dépôt l'importe, et son hook `useAction` est consommé par les deux
-  // écrans d'édition du suivi.
-  //
-  // Elles restent au `package.json` plutôt que d'être désinstallées puis réinstallées : la refonte
-  // les reprendra, et une version qui bouge entre-temps ferait rejouer un choix déjà tranché.
-  "ignoreDependencies": ["embla-carousel.*", "react-hotkeys-hook"]
+  // **`ignoreDependencies` a disparu le 14 septembre 2026**, avec la dernière route de la refonte,
+  // comme le gel ci-dessus l'avait promis. Les six familles qu'il portait sont toutes reprises —
+  // `next-safe-action` et `@dnd-kit` le 6 septembre, `cmdk` et `use-debounced-value` le 13, `embla`
+  // le 14 avec les carrousels de l'accueil — sauf une : `react-hotkeys-hook` n'a pas été regelée,
+  // elle a été **désinstallée**. La palette `⌘K` est revenue sans elle, sur un `keydown` nu, donc la
+  // condition qui la gardait au `package.json` — « la refonte la reprendra » — est tombée.
 
   // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
   // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux

@@ -4,7 +4,7 @@ import {
   episodeLag,
   formatLag,
   hasAired,
-} from "@/app/(app)/calendar/_lib/airing-lag";
+} from "@/features/tracking/lib/airing-lag";
 
 /**
  * Le sujet de ce fichier est la frontière « déjà diffusé / à venir », parce que c'est elle qui vaut

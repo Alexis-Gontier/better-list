@@ -67,6 +67,16 @@ type MediaCardProps = {
    * lien, posé par-dessus la jaquette en position absolue.
    */
   action?: React.ReactNode;
+  /**
+   * Des lignes d'information **sous le titre**, une par entrée, chacune tronquée.
+   *
+   * Ajoutée le 14 septembre 2026 pour la rangée « À reprendre » de l'accueil, qui a besoin de dire
+   * où l'on en est et depuis quand — c'est toute l'information de cette rangée. Absente partout
+   * ailleurs, et c'est voulu : dans une grille, des cartes de hauteurs différentes cassent
+   * l'alignement horizontal (voir le titre sur une ligne, plus bas). Un appelant qui la passe la
+   * passe donc **à toutes les cartes de sa rangée**, avec le même nombre de lignes.
+   */
+  details?: string[];
 };
 
 export function MediaCard({
@@ -75,6 +85,7 @@ export function MediaCard({
   priority,
   marker,
   action,
+  details,
 }: MediaCardProps) {
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
   const title = mediaTitle(media.title, titleLanguage);
@@ -153,11 +164,18 @@ export function MediaCard({
           — c'est-à-dire précisément ceux où l'on a besoin d'un repère. Le titre garde donc son
           `min-w-0` et sa troncature ; la pastille garde sa place, quoi qu'il arrive.
         */}
-        <div className="flex items-center gap-1.5">
-          {marker}
-          <p className="min-w-0 truncate text-sm" title={title}>
-            {title}
-          </p>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5">
+            {marker}
+            <p className="min-w-0 truncate text-sm" title={title}>
+              {title}
+            </p>
+          </div>
+          {details?.map((line) => (
+            <p className="truncate text-muted-foreground text-xs" key={line}>
+              {line}
+            </p>
+          ))}
         </div>
       </Link>
 
