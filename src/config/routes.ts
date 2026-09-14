@@ -94,6 +94,8 @@ export const routes = {
    * Hors du `matcher` du proxy et hors du layout `(app)` : chacun porte sa propre garde.
    */
   api: {
+    /** Les épisodes sortis que je n'ai pas vus, pour la cloche de l'en-tête (`features/tracking/`). */
+    notifications: "/api/notifications",
     /** La recherche de la palette, à la frappe (`features/command/`). */
     search: "/api/search",
   },

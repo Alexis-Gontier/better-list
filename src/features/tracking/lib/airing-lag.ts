@@ -76,3 +76,35 @@ export function formatLag(lag: number): string {
 
   return lag === 1 ? "1 épisode de retard" : `${lag} épisodes de retard`;
 }
+
+/**
+ * La dernière diffusion **déjà passée** de chaque série, dans une grille horaire quelconque.
+ *
+ * Ce n'est pas un maximum sur `airingAt`, et c'est tout l'intérêt : la grille d'une fenêtre qui
+ * mord sur l'avenir contient l'épisode de samedi prochain, qui serait le plus récent et qu'il ne
+ * faut surtout pas retenir — `episodeLag` compterait alors un épisode de retard sur une série à
+ * jour. Le filtre `hasAired` passe donc **avant** la comparaison, jamais après.
+ *
+ * La comparaison est explicite plutôt que confiée à l'ordre d'arrivée : AniList rend sa grille
+ * triée, mais rien dans le contrat ne le promet, et une réduction qui dépend d'une promesse non
+ * écrite se casse le jour où elle change.
+ *
+ * Générique sur la forme reçue : la fonction ne lit que `mediaId` et `airingAt`, et rend la
+ * diffusion **entière** — l'appelant a besoin de son `episode`, qui ne la regarde pas. C'est aussi
+ * ce qui la garde à l'écart des schémas d'AniList, donc testable sans en fabriquer un.
+ */
+export function latestAiredPerMedia<
+  T extends { mediaId: number; airingAt: number },
+>(schedules: readonly T[], now: Date): Map<number, T> {
+  const latest = new Map<number, T>();
+
+  for (const slot of schedules) {
+    if (!hasAired(slot.airingAt, now)) continue;
+
+    const known = latest.get(slot.mediaId);
+    if (!known || slot.airingAt > known.airingAt)
+      latest.set(slot.mediaId, slot);
+  }
+
+  return latest;
+}

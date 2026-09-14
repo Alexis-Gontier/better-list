@@ -41,6 +41,15 @@ Relevé le **14 septembre 2026**.
 > `entry-quick-actions.tsx`, parti de son propre `_components/` quand `/search` et `/library` ont
 > demandé le « +1 ». La règle de promotion à la lettre, deux fois.
 >
+> **Et la cloche de l'en-tête a cessé d'être un décor** (14 septembre 2026). Elle portait un tableau
+> vide écrit en dur depuis le 8 août ; elle dit maintenant **les épisodes sortis qu'on n'a pas vus**,
+> le même rapprochement que la rangée « En cours » mais depuis les dix routes. **Aucune table, aucune
+> migration** : le retard *est* l'état non-lu, le badge s'éteint au « +1 » et non à l'ouverture du
+> menu — une notification ne peut donc ni se perdre, ni survivre à ce qu'elle annonçait. Troisième
+> promotion du même mouvement : `airingLags` est monté du `_lib/` de l'accueil vers
+> `features/tracking/server/`, et le menu de `components/layout/` vers `features/tracking/components/`
+> — il connaît désormais `Entry` et `Media`, donc il change de maison.
+>
 > **Ce que l'accueil ne fait pas, et c'est une limite d'AniList** : le « il y a du neuf » ne vaut que
 > pour les animes. La grille horaire est télévisée ; aucun calendrier de parution n'existe pour les
 > webtoons, qui sont pourtant le gros de la bibliothèque d'Alexis. Une rangée « En cours » y répond
@@ -445,7 +454,7 @@ plus importants ont été **vus échouer** sur une mutation volontaire du code.
 **Ce qui ne l'est pas** : la passe de bout en bout contre une vraie base. Elle a été appelée une
 fois, à la main, et ce fichier est le seul endroit où ça reste écrit.
 
-### Les trois route handlers
+### Les quatre route handlers
 
 Aucun ne vit sous le layout `(app)`, et le `matcher` du proxy exclut `api/` **en entier** : chacun
 porte donc sa propre garde, et c'est la seule qu'il ait.
@@ -455,6 +464,7 @@ porte donc sa propre garde, et c'est la seule qu'il ait.
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
 | `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** |
 | `api/search` | La recherche de la palette de l'en-tête, à la frappe | session **approuvée**, sinon 401 — jamais de redirection, un `fetch` attend du JSON |
+| `api/notifications` | Les épisodes sortis que je n'ai pas vus, pour la cloche de l'en-tête | idem `api/search` — approuvée, sinon 401 |
 
 `api/search` est arrivé le 13 septembre 2026 avec la palette, **à la place d'`api/command`**,
 réécrit puis retiré le 12. Sa raison d'être est restée la même : une recherche à la frappe **ne
@@ -462,6 +472,13 @@ passe pas par une Server Action**, parce qu'une action est un POST que Next sér
 « fri » arriverait après celle à « frieren ». Un `GET` s'annule (`AbortController`) et rend son
 quota. Il n'ajoute **aucune lecture AniList** : c'est `searchMedia`, cachée une heure, avec le repli
 sur le miroir de `/search`.
+
+`api/notifications` est arrivé le 14 septembre 2026 avec la cloche. **Il n'a pas d'entrée** : sa
+question est portée en entier par la session et par l'heure, donc rien à valider. Le menu l'appelle
+**une fois, au montage** — l'en-tête est monté par le layout `(app)` et ne se remonte pas aux
+navigations client, si bien que c'est un appel par chargement complet et non par page. Il n'ajoute
+**aucune lecture AniList** : `airingLags` interroge une fenêtre arrondie à l'heure, donc la cloche
+tombe dans l'entrée de `"use cache"` que l'accueil vient de poser.
 
 ### Et trois conventions de fichier
 
