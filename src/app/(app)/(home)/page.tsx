@@ -70,17 +70,15 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-12">
-      <Suspense
-        fallback={<Skeleton className="h-72 w-full rounded-xl sm:h-96" />}
-      >
+      <Suspense fallback={<SpotlightSkeleton />}>
         <Spotlight />
       </Suspense>
 
-      <Suspense fallback={<RailSkeleton />}>
+      <Suspense fallback={<TrackingSkeleton />}>
         <Tracking />
       </Suspense>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<ListsRailSkeleton />}>
         <ListsRail />
       </Suspense>
 
@@ -296,12 +294,78 @@ async function SeasonRail() {
 // --- Squelettes --------------------------------------------------------------------
 
 const RAIL_SKELETON_KEYS = Array.from({ length: 7 }, (_, i) => `rail-${i}`);
+const WIDE_SKELETON_KEYS = Array.from({ length: 3 }, (_, i) => `tuile-${i}`);
 
-/** Aux proportions de `CatalogueGrid` : trois colonnes, sept dès `lg`, même gouttière. */
-function RailSkeleton() {
+/** Les points de la une, moins celui de la diapositive courante, qui est plus large. */
+const DOT_SKELETON_KEYS = Array.from(
+  { length: SPOTLIGHT_COUNT - 1 },
+  (_, i) => `point-${i}`,
+);
+
+/**
+ * Le double de la une : la diapositive, **et la rangée de points sous elle**.
+ *
+ * Le repli s'arrêtait à la diapositive, alors que `SpotlightCarousel` empile les deux avec un
+ * `gap-4` : vingt-deux pixels de moins que ce qui arrive, et tout l'accueil descendait d'autant au
+ * remplacement. La largeur, elle, tombe juste sans rien faire — la diapositive reprend exactement
+ * la boîte de contenu du `main`, que ce squelette occupe déjà.
+ */
+function SpotlightSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-72 w-full rounded-xl sm:h-96" />
+      <div className="flex items-center justify-center">
+        <div className="flex items-center gap-1.5">
+          <Skeleton className="h-1.5 w-6 rounded-full" />
+          {DOT_SKELETON_KEYS.map((key) => (
+            <Skeleton className="size-1.5 rounded-full" key={key} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Le double de mon suivi, **en deux rangées et non en une**.
+ *
+ * `Tracking` rend « En cours » *et* « À reprendre » sous une seule frontière — une seule lecture
+ * les sert toutes les deux. Un squelette d'une rangée annonçait donc la moitié de ce qui arrive, et
+ * la découverte remontait de trois cents pixels au remplacement.
+ *
+ * Elles sont rendues en fragment, comme les vraies : ce sont les enfants directs de la colonne de
+ * l'accueil qui reçoivent son `gap-12`, et une enveloppe ici en ferait un seul bloc.
+ *
+ * `details` parce que chaque carte de ces deux rangées porte une ligne de plus sous son titre — le
+ * retard ou la progression (`trackingDetails`), ce qu'il reste à finir (`resumeDetails`).
+ */
+function TrackingSkeleton() {
+  return (
+    <>
+      <RailSkeleton details />
+      <RailSkeleton details />
+    </>
+  );
+}
+
+/**
+ * Le double d'une rangée de jaquettes.
+ *
+ * Aux proportions de `CatalogueGrid` : trois colonnes, sept dès `lg`, même gouttière. **L'en-tête
+ * porte aussi ses deux flèches** — elles font 36 px là où le titre seul en fait 28, et la rangée
+ * sautait de huit à leur arrivée. Elles sont cachées sous `sm`, comme dans `HomeRail`.
+ */
+function RailSkeleton({ details = false }: { details?: boolean }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-7 w-48" />
+        <div className="hidden shrink-0 items-center gap-1 sm:flex">
+          <Skeleton className="size-9" />
+          <Skeleton className="size-9" />
+        </div>
+      </div>
+
       <div className="flex gap-3 overflow-hidden">
         {RAIL_SKELETON_KEYS.map((key) => (
           <div
@@ -309,7 +373,55 @@ function RailSkeleton() {
             key={key}
           >
             <Skeleton className="aspect-2/3 w-full rounded-md" />
-            <Skeleton className="h-4 w-4/5" />
+            {/*
+              `gap-0.5` entre le titre et sa ligne d'appoint, comme dans `MediaCard` — et `h-5`
+              pour le titre (`text-sm`, 20 px d'interligne), `h-4` pour la ligne (`text-xs`, 16).
+            */}
+            <div className="flex flex-col gap-0.5">
+              <Skeleton className="h-5 w-4/5" />
+              {details ? <Skeleton className="h-4 w-3/5" /> : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Le double de la rangée « Mes listes » — des tuiles en largeur, pas des jaquettes.
+ *
+ * Elle n'avait **aucun** repli : la zone s'ouvrait d'un coup et poussait les tendances de deux cents
+ * pixels vers le bas. Le repli d'une rangée qui peut ne pas venir se paie d'un bref clignotement
+ * sur un compte sans liste ; c'est le même pari que pour les tendances, qui disparaissent aussi
+ * quand AniList ne répond pas.
+ */
+function ListsRailSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-7 w-40" />
+        <div className="hidden shrink-0 items-center gap-1 sm:flex">
+          <Skeleton className="size-9" />
+          <Skeleton className="size-9" />
+        </div>
+      </div>
+
+      <div className="flex gap-4 overflow-hidden">
+        {WIDE_SKELETON_KEYS.map((key) => (
+          <div
+            className="flex w-[85%] shrink-0 flex-col gap-3 rounded-lg border border-border p-3 sm:w-1/2 lg:w-1/3"
+            key={key}
+          >
+            {/*
+              `aspect-8/3` : quatre cases en 2:3 côte à côte, aux gouttières près — la mosaïque de
+              `ListTile`, et la même approximation que le squelette de `/lists`.
+            */}
+            <Skeleton className="aspect-8/3 w-full" />
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-4 w-16" />
+            </div>
           </div>
         ))}
       </div>

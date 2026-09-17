@@ -284,19 +284,35 @@ function ScheduleUnavailable() {
 }
 
 /**
- * Le squelette, aux proportions de ce qu'il annonce : sept intitulés de jour, et une ou deux lignes
- * sous chacun. Un squelette approximatif déplace ce qu'il remplace.
+ * Le squelette de la semaine, **charpente pour charpente** : sept colonnes, l'en-tête bordé de
+ * chacune, puis ses cases. Un squelette approximatif déplace ce qu'il remplace.
  */
 function AiringWeekSkeleton() {
   return (
     <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
       <div className="grid min-w-[52rem] grid-cols-7 gap-px overflow-hidden rounded-md border bg-border">
         {SKELETON_DAYS.map((day) => (
-          <div className="flex flex-col gap-2 bg-background p-2" key={day}>
-            <Skeleton className="h-7 w-full" />
-            <Skeleton className="h-24 w-full rounded-sm" />
-            <Skeleton className="h-3 w-10" />
-            <Skeleton className="h-3 w-full" />
+          <div className="flex flex-col bg-background" key={day}>
+            {/*
+              L'en-tête de colonne a son propre fond et sa propre bordure dans la grille rendue :
+              posé dans le rembourrage du corps, comme il l'était, le squelette perdait à la fois la
+              séparation et une douzaine de pixels.
+            */}
+            <div className="border-b bg-surface-raised px-2 py-1.5">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-4 w-6" />
+            </div>
+
+            <div className="flex flex-1 flex-col gap-2.5 p-2">
+              {SKELETON_CELLS.map((cell) => (
+                <div className="flex flex-col gap-1" key={`${day}-${cell}`}>
+                  <Skeleton className="h-24 w-full rounded-sm" />
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -304,16 +320,42 @@ function AiringWeekSkeleton() {
   );
 }
 
-/** Le squelette de la barre : deux flèches et l'intitulé, aux mêmes dimensions. */
+/**
+ * Le squelette de la barre : la navigation de semaine **et la portée**.
+ *
+ * Il ne montrait que les flèches et l'intitulé, alors que `AiringWeekBar` pose aussi la bascule
+ * « Ce que je suis / Tout » à l'autre bout de la rangée — elle paraissait d'un coup au
+ * remplacement. Le retour « Aujourd'hui » n'y est pas : il ne s'affiche qu'une fois sorti de la
+ * semaine en cours, et on arrive toujours dedans.
+ */
 function AiringWeekNavSkeleton() {
   return (
-    <div className="flex items-center gap-2">
-      <Skeleton className="size-9" />
-      <Skeleton className="size-9" />
-      <Skeleton className="h-4 w-44" />
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Skeleton className="size-9" />
+        <Skeleton className="size-9" />
+        <Skeleton className="h-5 w-44" />
+      </div>
+
+      {/* Deux boutons `sm` collés, comme le `ButtonGroup` de la portée. */}
+      <div className="flex items-center gap-px">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-8 w-14" />
+      </div>
     </div>
   );
 }
 
 /** Sept jours. Des identifiants plutôt que l'indice de boucle, comme les autres squelettes. */
 const SKELETON_DAYS = Array.from({ length: 7 }, (_, index) => `day-${index}`);
+
+/**
+ * **Deux cases par jour**, et c'est une espérance, pas une mesure.
+ *
+ * Une colonne en portait une seule, quand une semaine de suivi en aligne trois à six sur ses bons
+ * jours : la grille doublait de hauteur au remplacement. Deux est le milieu honnête — la portée
+ * d'arrivée est « ce que je suis », où une quinzaine d'épisodes se répartissent sur sept jours.
+ * Aucune valeur fixe ne peut faire mieux : c'est le jour le plus chargé qui décide de la hauteur de
+ * la grille, et on ne le connaît qu'après la réponse.
+ */
+const SKELETON_CELLS = Array.from({ length: 2 }, (_, index) => `case-${index}`);

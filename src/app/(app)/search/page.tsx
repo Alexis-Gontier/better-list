@@ -10,7 +10,10 @@ import {
   CatalogueGridSkeleton,
   WIDEST_COLUMN_COUNT,
 } from "@/components/shared/catalogue-grid";
-import { CataloguePagination } from "@/components/shared/catalogue-pagination";
+import {
+  CataloguePagination,
+  CataloguePaginationSkeleton,
+} from "@/components/shared/catalogue-pagination";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +88,19 @@ export default async function SearchPage({
         statique, elle n'a aucune raison d'attendre AniList pour s'afficher. Une frontière par zone,
         jamais de `loading.tsx` de segment (docs/ARCHITECTURE.md).
       */}
-      <Suspense fallback={<CatalogueGridSkeleton />}>
+      <Suspense
+        fallback={
+          /*
+            La grille **et sa pagination** : les deux viennent de la même lecture, donc de la même
+            frontière. Un squelette qui s'arrête à la grille annonce une page trop courte, et le
+            pied de page descend d'un cran au remplacement.
+          */
+          <div className="flex flex-col gap-8">
+            <CatalogueGridSkeleton />
+            <CataloguePaginationSkeleton />
+          </div>
+        }
+      >
         <SearchResults searchParams={searchParams} />
       </Suspense>
     </div>

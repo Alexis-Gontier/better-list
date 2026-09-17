@@ -175,7 +175,7 @@ La règle est donc : **chaque zone qui attend porte son propre `<Suspense>`, ave
 squelette nommé d'après elle.**
 
 ```tsx
-<Suspense fallback={<SearchResultsSkeleton />}>
+<Suspense fallback={<CatalogueGridSkeleton />}>
   <SearchResults searchParams={searchParams} />
 </Suspense>
 ```
@@ -185,14 +185,23 @@ Trois conséquences qu'on veut, et qui justifient de renoncer à la convention :
 - **La page ne devient jamais dynamique en entier.** Avec `cacheComponents`, ce qui est hors des
   frontières se prérend ; le titre et le chrome sont dans le HTML initial. C'est ce qui rend une
   navigation instantanée, et un `loading.tsx` y renoncerait par construction.
-- **Le squelette dit ce qu'il remplace.** `SearchResultsSkeleton` a la forme d'une grille de
-  jaquettes, `EntryPanelSkeleton` celle du panneau de suivi. Un squelette générique de page ne
+- **Le squelette dit ce qu'il remplace.** `CatalogueGridSkeleton` a la forme d'une grille de
+  jaquettes, `MediaDetailSkeleton` celle du hero d'une fiche. Un squelette générique de page ne
   ressemble à rien de ce qui va s'afficher, donc il déplace la mise en page au moment où il s'en va.
+
+  **Et il le dit au pixel, pas à peu près** (audit du 17 septembre 2026). Trois pièges reviennent,
+  et chacun a coûté un saut visible : une ligne de texte qu'on double avec la mauvaise hauteur —
+  `text-sm` fait **20 px** d'interligne, donc `h-5` et non `h-4` ; une zone qui rend **plusieurs**
+  blocs sous une seule frontière, dont le repli n'en annonce qu'un ; et une grille responsive dont
+  le repli est figé à la hauteur qu'elle a sur un seul palier. Quand la coquille est composable —
+  une `Card`, une grille partagée —, le squelette compose la vraie plutôt que d'en recopier les
+  marges : elle reste juste toute seule.
 - **La page n'attend rien elle-même.** Elle ne lit pas `searchParams`, elle transmet la promesse à
   ses enfants. Une page qui `await` avant de rendre annule toutes les frontières placées dessous.
 
-Un squelette vit avec la zone qu'il double : dans le `_components/` de la route (`search-results-skeleton.tsx`)
-ou dans `features/<d>/components/` quand la zone y vit déjà (`entry-panel-skeleton.tsx`).
+Un squelette vit avec la zone qu'il double : au bas du `page.tsx` quand la zone y est écrite, dans
+le `_components/` de la route quand elle en sort (`media-detail-skeleton.tsx`), ou à côté de la
+pièce partagée qu'il imite (`CatalogueGridSkeleton` dans `components/shared/catalogue-grid.tsx`).
 
 `app/loading.tsx` existe, lui, et reste : c'est le filet de la racine, pas le chargement d'un écran.
 

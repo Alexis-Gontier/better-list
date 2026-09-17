@@ -61,7 +61,10 @@ export function CatalogueGridSkeleton() {
       {SKELETON_KEYS.map((key) => (
         <div className="flex flex-col gap-2" key={key}>
           <Skeleton className="aspect-2/3 w-full rounded-md" />
-          <Skeleton className="h-4 w-4/5" />
+          {/* `h-5` et non `h-4` : le titre d'une carte est en `text-sm`, dont l'interligne fait
+              20 px. Quatre pixels par rangée, trois rangées, et la page remontait de douze au
+              remplacement. */}
+          <Skeleton className="h-5 w-4/5" />
         </div>
       ))}
     </CatalogueGrid>

@@ -9,7 +9,10 @@ import {
   CatalogueGridSkeleton,
   WIDEST_COLUMN_COUNT,
 } from "@/components/shared/catalogue-grid";
-import { CataloguePagination } from "@/components/shared/catalogue-pagination";
+import {
+  CataloguePagination,
+  CataloguePaginationSkeleton,
+} from "@/components/shared/catalogue-pagination";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,7 +84,19 @@ export default function LibraryPage({ searchParams }: PageProps<"/library">) {
         <Separator />
       </div>
 
-      <Suspense fallback={<CatalogueGridSkeleton />}>
+      <Suspense
+        fallback={
+          /*
+            La grille **et sa pagination** : les deux viennent de la même lecture, donc de la même
+            frontière. Un squelette qui s'arrête à la grille annonce une page trop courte, et le
+            pied de page descend d'un cran au remplacement.
+          */
+          <div className="flex flex-col gap-8">
+            <CatalogueGridSkeleton />
+            <CataloguePaginationSkeleton />
+          </div>
+        }
+      >
         <LibraryResults searchParams={searchParams} />
       </Suspense>
     </div>
@@ -117,31 +132,54 @@ async function LibraryControls({
   );
 }
 
-/** Le squelette des contrôles, aux proportions de ce qu'il annonce : sept onglets, puis la barre. */
+/**
+ * Le squelette des contrôles, aux proportions de ce qu'il annonce : sept onglets, puis la barre.
+ *
+ * **La charpente est celle de `FilterBar`, classe pour classe** — `gap-3` entre les rangées,
+ * `sm:flex-1` sur le champ, et surtout `flex-wrap` sur les sélecteurs. Sans ce dernier, le
+ * squelette tenait ses deux sélecteurs sur une ligne de 376 px là où la vraie barre les replie en
+ * dessous de `sm` : en 390, la barre gagnait une rangée au remplacement et toute la grille
+ * descendait.
+ */
 function LibraryControlsSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {STATUS_SKELETON_KEYS.map((key) => (
-          <Skeleton className="h-8 w-28 rounded-md" key={key} />
+      <div className="flex flex-wrap items-center gap-2">
+        {STATUS_SKELETON_WIDTHS.map(({ key, className }) => (
+          <Skeleton className={className} key={key} />
         ))}
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Skeleton className="h-9 w-full sm:max-w-md sm:flex-1" />
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-9 w-52" />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex flex-col gap-2 sm:flex-1 sm:flex-row sm:items-center">
+            <Skeleton className="h-9 w-full sm:max-w-md sm:flex-1" />
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-9 w-40" />
+              <Skeleton className="h-9 w-52" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/** Six statuts plus « Tout ». Des identifiants plutôt que l'indice de boucle — voir le squelette de grille. */
-const STATUS_SKELETON_KEYS = Array.from(
-  { length: 7 },
-  (_, index) => `status-${index}`,
-);
+/**
+ * Sept onglets — « Tout » et les six statuts — **à la largeur de leur intitulé**.
+ *
+ * Sept cases identiques se replient autrement que sept cases inégales : c'est le nombre de rangées
+ * de la bande, donc sa hauteur, qui en dépend sur un écran étroit. Les largeurs suivent l'ordre de
+ * `LIBRARY_STATUS_OPTIONS`, pastille et compteur compris.
+ */
+const STATUS_SKELETON_WIDTHS = [
+  { key: "tout", className: "h-8 w-20 rounded-md" },
+  { key: "en-cours", className: "h-8 w-32 rounded-md" },
+  { key: "termine", className: "h-8 w-30 rounded-md" },
+  { key: "en-pause", className: "h-8 w-30 rounded-md" },
+  { key: "abandonne", className: "h-8 w-32 rounded-md" },
+  { key: "prevu", className: "h-8 w-24 rounded-md" },
+  { key: "relecture", className: "h-8 w-32 rounded-md" },
+];
 
 /**
  * La grille, et la pagination qui en dépend.

@@ -90,25 +90,33 @@ async function DisplaySection() {
   );
 }
 
-/** Deux lignes de réglage aux proportions de celles qui arrivent : le libellé, l'aide, le contrôle. */
+/**
+ * Deux lignes de réglage aux proportions de celles qui arrivent : le libellé, l'aide, le contrôle.
+ *
+ * Les interlignes sont ceux du rendu et non des valeurs rondes : `text-lg` pour l'intitulé de
+ * section (28 px), `text-sm` pour tout le reste (20). À `h-4` partout, la section annonçait douze
+ * pixels de moins qu'elle n'en prend.
+ */
 function DisplaySectionSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-4 w-80 max-w-full" />
+        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-5 w-80 max-w-full" />
       </div>
       <div className="flex flex-col gap-6">
-        {SKELETON_KEYS.map((key) => (
+        {SKELETON_ROWS.map(({ key, control }) => (
           <div
             className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
             key={key}
           >
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-4 w-64 max-w-full" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-5 w-64 max-w-full" />
             </div>
-            <Skeleton className="h-8 w-40 shrink-0" />
+            <div className="shrink-0">
+              <Skeleton className={control} />
+            </div>
           </div>
         ))}
       </div>
@@ -116,5 +124,12 @@ function DisplaySectionSkeleton() {
   );
 }
 
-/** Des identifiants plutôt que l'indice de boucle — la convention des autres squelettes du dépôt. */
-const SKELETON_KEYS = ["langue", "adulte"];
+/**
+ * Les deux réglages, **avec la forme de leur contrôle** : un groupe de bascules pour la langue des
+ * titres, un interrupteur pour le 18+. Le second faisait la largeur du premier, ce qui annonçait un
+ * bouton de cent soixante pixels là où il en arrive trente-six.
+ */
+const SKELETON_ROWS = [
+  { key: "langue", control: "h-8 w-40" },
+  { key: "adulte", control: "h-5 w-9" },
+];

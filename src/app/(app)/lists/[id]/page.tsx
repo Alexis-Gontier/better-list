@@ -302,11 +302,28 @@ function ListDetailSkeleton() {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-8 w-28" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96 max-w-full" />
+        {/* `-ml-2` comme le vrai retour, qui déborde à gauche pour aligner son texte sur le titre. */}
+        <Skeleton className="-ml-2 h-8 w-28" />
+
+        {/*
+          **La ligne du titre porte aussi sa barre d'actions**, à droite : « Réorganiser » et le
+          menu de la liste. Le squelette s'arrêtait au titre, et les deux boutons paraissaient d'un
+          coup. Trois lignes à gauche et non deux, pour la même raison : le décompte (« 18 œuvres »)
+          manquait, soit vingt pixels de moins que ce qui arrive.
+        */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-5 w-96 max-w-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="size-9" />
+          </div>
         </div>
+
         <Separator />
       </div>
       <CatalogueGridSkeleton />

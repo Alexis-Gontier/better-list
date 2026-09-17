@@ -18,10 +18,11 @@ import { fontVariables } from "@/styles/fonts";
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
   /*
-    **Le nom du site d'abord, puis celui de la page** (décision d'Alexis, 7 septembre 2026) :
-    « Better-List · Rechercher ». Un onglet se réduit à quelques caractères dès qu'on en ouvre
-    plusieurs, et c'est alors la marque qui permet de retrouver le bon — le nom de la page, lui, se
-    relit d'un coup d'œil une fois dedans.
+    **Le nom de la page d'abord, puis celui du site** (décision d'Alexis, 17 septembre 2026, qui
+    renverse celle du 7 septembre) : « Rechercher · Better-List ». Ce qui est rogné quand on ouvre
+    plusieurs onglets, c'est la fin du titre — donc autant que ce soit la marque qui parte, puisque
+    tous les onglets du site la répètent à l'identique. C'est le nom de la page qui les distingue
+    les uns des autres, et c'est lui qu'il faut garder au début.
 
     Le point médian est le séparateur de la maison : c'est déjà lui qui sépare les titres secondaires
     d'une œuvre, et l'auteur du décompte sur une liste partagée.
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
     nomment** ; le défaut couvre celles qui ne déclarent rien — `/signup`, qui ne fait que rediriger,
     sortait avec un `<title>` **vide** avant le 7 septembre 2026.
   */
-  title: { default: site.name, template: `${site.name} · %s` },
+  title: { default: site.name, template: `%s · ${site.name}` },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

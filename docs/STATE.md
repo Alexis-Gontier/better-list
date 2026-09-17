@@ -666,6 +666,45 @@ prétend s'y fier.**
 - `/collection` est déclarée dans `routes.ts` sans écran derrière, comme avant la mise à blanc.
   `routes.ts` le dit lui-même dans son commentaire.
 
+### L'audit du 17 septembre 2026 — les squelettes, à la hauteur près
+
+Relecture de **tous** les replis de chargement, à la demande d'Alexis. Lue dans le code, pas au
+navigateur : les hauteurs se calculent depuis les classes Tailwind, et le profil du navigateur de
+test était pris. Chaque écran a ensuite été servi par `curl` avec un cookie de session pour vérifier
+que les nouveaux squelettes partent bien dans le flux — neuf routes, toutes en 200.
+
+**La couverture était déjà bonne** : une frontière par zone sur les neuf écrans, aucun `loading.tsx`
+de segment, et les quatre pages bloquantes (`/login`, `/waitlist`, `/l/[token]`, le layout `(app)`)
+justifiées une à une. Ce qui manquait, c'était la **fidélité**.
+
+| Trouvé | État |
+| --- | --- |
+| `h-4` servait de ligne de `text-sm`, qui fait **20 px** — dans `CatalogueGridSkeleton` (donc sur quatre écrans), les réglages, le profil, les listes | **corrigé** — `h-5`, et les autres interlignes revus avec (`text-lg` → `h-7`, `text-xs` → `h-4`) |
+| L'accueil : `Tracking` rend **deux** rangées sous une seule frontière, le repli n'en annonçait qu'une | **corrigé** — `TrackingSkeleton`, deux rangées en fragment, avec la ligne d'appoint que portent leurs cartes |
+| L'accueil : le repli de la une oubliait la rangée de points et son `gap-4` du carrousel | **corrigé** — 22 px qui manquaient sous la diapositive |
+| L'accueil : « Mes listes » n'avait **aucun** repli (`fallback={null}`) | **corrigé** — `ListsRailSkeleton`, des tuiles en largeur |
+| Les en-têtes de rangée oubliaient leurs deux flèches — 28 px annoncés, 36 rendus | **corrigé** |
+| Profil : les quatre tuiles figées à `h-26` (104 px) alors qu'elles passent en deux colonnes sous `sm` (171 px) | **corrigé** — le squelette reprend la grille, pas la hauteur |
+| Profil : la rangée notes/genres calibrée pour les deux colonnes de `lg`, moitié trop courte en dessous | **corrigé** — même grille `lg:grid-cols-2`, et les cartes composent le vrai `Card` |
+| `/library` : les deux sélecteurs du repli sans `flex-wrap` — une ligne de 376 px dans une boîte de 358 | **corrigé**, et les sept onglets de statut ont retrouvé des largeurs inégales, qui se replient comme les vrais |
+| `/calendar` : le repli de la barre oubliait la bascule de portée ; la grille annonçait une case par jour | **corrigé** — la bascule est là, deux cases par jour, et l'en-tête de colonne a retrouvé sa bordure |
+| `/lists/[id]` : l'en-tête oubliait le décompte et ses deux boutons de droite | **corrigé** |
+| `/search` et `/library` : le repli s'arrêtait à la grille, sans la pagination | **corrigé** — `CataloguePaginationSkeleton` |
+| `MediaTabSkeleton` semblait générique | **fausse alerte** — il a exactement la grille et les cartes `h-20` de `media-characters.tsx`, et son commentaire le disait déjà |
+
+**Deux replis sous-estiment volontairement, et c'est le bon choix.** Le journal du profil : une page
+fait vingt événements, près de neuf cents pixels, et un pavé gris de cette taille pèse plus que le
+saut qu'il éviterait. La grille du planning : c'est le jour le plus chargé qui décide de sa hauteur,
+et on ne le connaît qu'après la réponse — deux cases par jour est une espérance, pas une mesure.
+
+**Le filet automatique n'existe pas sous `(app)`.** `instant = false` sur son layout désactive la
+validation de coquille statique pour toute l'application (règle du `false` le plus haut dans
+l'arbre). C'est justifié — la garde d'accès doit savoir qui demande —, mais Next ne signalera jamais
+une frontière manquante ici. Relire à la main est le seul filet.
+
+**Ce qui reste dû, et qui n'a pas été fait** : `(app)` n'a ni `error.tsx` ni `not-found.tsx`, donc un
+`notFound()` sur `/media/99999` sort la page racine en plein écran, sans en-tête ni pied de page.
+
 ### L'audit du 7 septembre 2026 — ce que le typecheck ne voyait pas
 
 Séance de **relecture au navigateur**, écran par écran, en 1440 et en 390. Le contrôle de santé
@@ -678,7 +717,7 @@ Séance de **relecture au navigateur**, écran par écran, en 1440 et en 390. Le
 | `/l/[token]` journalisait « uncached data during prerendering » **à chaque visite** | **corrigé** — `export const instant = false` |
 | Le bandeau de panne ne se mettait à jour que depuis la fiche | **corrigé** — `/search` rapporte aussi |
 | `/signup` sortait avec un `<title>` **vide**, et `/lists/[id]` affichait « Liste » pour toutes les listes | **corrigé** — `generateMetadata` sur la liste, et un gabarit à la racine |
-| Les onglets ne disaient pas de quel site ils venaient | **corrigé** (demande d'Alexis) — « Better-List · Rechercher », le nom d'abord |
+| Les onglets ne disaient pas de quel site ils venaient | **corrigé** (demande d'Alexis) — « Rechercher · Better-List », la page d'abord, le site après (17 septembre 2026) |
 | `/login`, `/signup` et `/waitlist` — les seules pages qui répondent sans session — n'avaient **aucune** balise `robots` | **corrigé** — `noindex, nofollow` sur le layout `(auth)`, pour les trois d'un coup |
 | Chaînes anglaises pour lecteurs d'écran : `Close`, `More pages`, et les `aria-label` de la pagination — seul nom accessible de ces boutons sous `sm` | **corrigé** |
 | **AniList répondait 403 à toute requête du serveur** — il manquait un en-tête `Referer` | **corrigé**, et couvert par un test |
