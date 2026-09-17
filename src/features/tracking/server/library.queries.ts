@@ -8,7 +8,6 @@ import {
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
-import { partitionTracking } from "@/features/tracking/lib/home-tracking";
 import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
@@ -456,48 +455,41 @@ function libraryItemFrom({
  */
 const HOME_TRACKING_TAKE = 200;
 
-/** Une œuvre de l'accueil, et depuis quand je n'y ai pas touché. */
-export type HomeTrackingItem = LibraryItem & { lastActivity: Date };
-
 /**
- * Mon suivi pour l'accueil : **« en cours » et « à reprendre », en une seule lecture**.
+ * Mon suivi pour l'accueil : **ce que je regarde ou relis**.
  *
- * Les deux rangées viennent de la même table, triées de la même façon : une seule requête les
- * ramène, et `partitionTracking` — testé — les répartit par statut. Ici on ne fait que ramener les
- * lignes, de la plus récemment touchée à la plus ancienne.
+ * **`CURRENT` et `REPEATING`, plus `PAUSED` jusqu'au 17 septembre 2026.** La lecture ramenait alors
+ * les deux piles d'un coup et `partitionTracking` — un module à part, testé — les séparait par
+ * statut pour les deux rangées de l'accueil. « À reprendre » retirée (décision d'Alexis), la pile
+ * en pause n'avait plus de lecteur : la requête s'arrête aux statuts actifs, et le module de
+ * répartition est parti avec sa dernière raison d'exister.
  *
- * `updatedAt` voyage en plus de l'`EntryState`, sous le nom `lastActivity` : c'est l'ancienneté
- * qu'affiche « à reprendre » (« il y a trois mois »), et il n'appartient pas à la forme qu'édite la
- * fenêtre de suivi.
+ * `lastActivity` a suivi le même chemin : `updatedAt` ne voyageait en plus de l'`EntryState` que
+ * pour l'ancienneté qu'affichait « à reprendre ». Il reste l'ordre de la lecture, du plus récemment
+ * touché au plus ancien — ce que la rangée restante utilise pour départager ce qui n'a rien de neuf.
  */
 export async function getHomeTracking({
   includeAdult,
 }: {
   includeAdult: boolean;
-}): Promise<{ active: HomeTrackingItem[]; resumable: HomeTrackingItem[] }> {
+}): Promise<LibraryItem[]> {
   const userId = await currentUserId();
 
   const rows = await prisma.entry.findMany({
     where: {
       userId,
-      status: { in: ["CURRENT", "REPEATING", "PAUSED"] },
+      status: { in: ["CURRENT", "REPEATING"] },
       ...(includeAdult ? {} : { media: { isAdult: false } }),
     },
     orderBy: { updatedAt: "desc" },
     take: HOME_TRACKING_TAKE,
     select: {
       ...ENTRY_STATE_SELECT,
-      updatedAt: true,
       media: { select: MIRRORED_MEDIA_SELECT },
     },
   });
 
-  return partitionTracking(
-    rows.map(({ updatedAt, ...row }) => ({
-      ...libraryItemFrom(row),
-      lastActivity: updatedAt,
-    })),
-  );
+  return rows.map((row) => libraryItemFrom(row));
 }
 
 /**

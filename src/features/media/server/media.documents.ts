@@ -54,7 +54,20 @@ const MEDIA_FIELDS = /* GraphQL */ `
   }
 `;
 
-/** Sélection allégée, réutilisée dans les relations et recommandations. */
+/**
+ * Sélection allégée — **ce que `MediaCard` affiche**, donc ce que demandent les relations, les
+ * recommandations et le catalogue éditorialisé de l'accueil.
+ *
+ * Les cinq champs `episodes` … `genres` ont été ajoutés le 14 septembre 2026 pour le **panneau de
+ * survol** de la carte (`mediaCompactSchema`) : sans eux, le panneau ne sait dire qu'un format et un
+ * statut. `countryOfOrigin` et `description` les ont suivis le 17 septembre, quand le panneau a
+ * demandé un synopsis.
+ *
+ * **Tous pèsent sur la taille de la réponse, jamais sur le nombre de requêtes — le quota reste
+ * intact.** C'est ce qui a fait préférer cette voie à une lecture déclenchée au survol : trente
+ * requêtes par minute sont partagées entre tous les visiteurs, et survoler une rangée de sept
+ * jaquettes en aurait dépensé sept.
+ */
 const MEDIA_COMPACT_FIELDS = /* GraphQL */ `
   fragment MediaCompactFields on Media {
     id
@@ -75,6 +88,13 @@ const MEDIA_COMPACT_FIELDS = /* GraphQL */ `
       medium
       color
     }
+    episodes
+    chapters
+    season
+    seasonYear
+    genres
+    countryOfOrigin
+    description(asHtml: false)
   }
 `;
 
@@ -118,41 +138,23 @@ const MEDIA_MIRROR_FIELDS = /* GraphQL */ `
 `;
 
 /**
- * Sélection du catalogue éditorialisé de l'accueil : la carte compacte, plus l'année et la bannière.
+ * Sélection du catalogue éditorialisé de l'accueil : **la carte compacte, plus la bannière**.
  *
- * `MediaCompactFields` ne porte pas `seasonYear`, or c'est l'information qui distingue deux entrées
- * d'une même franchise dans une rangée « les mieux notés ». Un champ de plus sur douze cartes, contre
- * la sélection complète de `MediaFields` qui en ramènerait quinze inutiles.
+ * Elle recopiait champ par champ la sélection compacte, en y ajoutant `seasonYear` et `genres`.
+ * Depuis le 14 septembre 2026, ces deux-là sont dans `MediaCompactFields` — le panneau de survol les
+ * demande partout —, et ce fragment se contente donc de **le composer**. Deux sélections qui
+ * divergent silencieusement, c'est exactement ce que la recopie rendait possible.
  *
- * `bannerImage` et `genres` servent au **hero** de l'accueil, et à lui seul : les vignettes n'en
- * veulent pas. Ils sont demandés ici plutôt que dans un alias dédié parce qu'un sixième champ `Page`
- * coûterait une entrée de plus dans la réponse pour redemander des œuvres que `trending` ramène déjà
- * — le hero se sert dans cette rangée quand la bibliothèque est vide (`home-hero.tsx`). Deux champs
- * de plus sur soixante cartes, contre une requête entière économisée.
+ * `bannerImage` sert au **hero** de l'accueil, et à lui seul : les vignettes n'en veulent pas. Elle
+ * est demandée ici plutôt que dans un alias dédié parce qu'un cinquième champ `Page` coûterait une
+ * entrée de plus dans la réponse pour redemander des œuvres que `trending` ramène déjà — le hero se
+ * sert dans cette rangée quand la bibliothèque est vide (`home-hero.tsx`). Un champ de plus sur
+ * quarante-huit cartes, contre une requête entière économisée.
  */
 const MEDIA_BROWSE_FIELDS = /* GraphQL */ `
   fragment MediaBrowseFields on Media {
-    id
-    type
-    format
-    status
-    averageScore
-    isAdult
-    seasonYear
+    ...MediaCompactFields
     bannerImage
-    genres
-    title {
-      romaji
-      english
-      native
-      userPreferred
-    }
-    coverImage {
-      extraLarge
-      large
-      medium
-      color
-    }
   }
 `;
 
@@ -236,6 +238,7 @@ export const BROWSE_CATALOGUE_QUERY = /* GraphQL */ `
     }
   }
   ${MEDIA_BROWSE_FIELDS}
+  ${MEDIA_COMPACT_FIELDS}
 `;
 
 /**

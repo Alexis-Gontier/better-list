@@ -313,8 +313,6 @@ async function LibraryResults({
             */
             marker={<EntryStatusDot status={item.entry.status} />}
             media={item.media}
-            // La première rangée au palier le plus large : c'est tout ce qui est au-dessus de la
-            // ligne de flottaison, et la première de ces jaquettes porte la mesure de LCP.
             priority={index < WIDEST_COLUMN_COUNT}
             titleLanguage={titleLanguage}
           />

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { BookmarkPlusIcon, CalendarIcon, PencilIcon } from "lucide-react";
 import Image from "next/image";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
@@ -205,14 +205,29 @@ export function EntryQuickEdit({
           ne se transposait pas au catalogue, où la plupart des cartes ne sont pas encore suivies.
 
           **Deux icônes et pas une, parce que ce ne sont pas deux fois le même geste** : un crayon
-          modifie ce qui existe, un plus crée ce qui n'existe pas. Sur `/search`, où la plupart des
+          modifie ce qui existe, un signet crée ce qui n'existe pas. Sur `/search`, où la plupart des
           résultats ne sont dans aucune bibliothèque, c'est **la seule information de la carte qui
           dise « celle-là, tu ne l'as pas »** en dehors de la pastille absente. Le nom accessible dit
           déjà la même chose, en toutes lettres ; l'icône la donne à l'œil.
 
-          `outline` et pas d'accent : la règle est celle de la barre de la fiche (même décision, même
-          jour) — un bouton plein tire l'œil plus que la jaquette, et vingt et un d'entre eux
-          feraient de la grille un damier.
+          **Un signet et non un plus, et c'est un correctif du 17 septembre 2026** (relevé par
+          Alexis). Le plus était déjà pris : `EntryQuickActions` en pose un juste au-dessus, sur les
+          œuvres suivies, pour avancer d'un épisode. Le même dessin portait donc deux gestes sans
+          rapport — « +1 » ici, « ajouter à ma bibliothèque » là —, et rien ne les distinguait d'une
+          carte à sa voisine. `BookmarkPlus` dit ce que ce bouton-ci fait vraiment : ranger une œuvre
+          chez soi, pas incrémenter quoi que ce soit.
+
+          **Et il est plein, quand celui d'une œuvre suivie reste en `outline`** (même décision).
+          C'est le renversement d'une règle écrite ici le 6 septembre : « un bouton plein tire l'œil
+          plus que la jaquette ». Elle visait une grille entière de boutons pleins — or l'action ne
+          paraît qu'au survol à partir de `sm`, donc un seul est à l'écran à la fois, et c'est
+          précisément celui qu'on vise. La hiérarchie qui en sort est juste : **plein pour entrer
+          dans la bibliothèque, discret pour ajuster ce qui y est déjà.**
+
+          ⚠️ Sous `sm`, en revanche, l'action est posée en permanence sur chaque jaquette
+          (`MediaCard`) : la grille de trois colonnes d'un téléphone y porte donc autant de boutons
+          pleins que de cartes non suivies. C'est le coût connu de ce choix, et il se verra d'abord
+          sur `/search`.
         */}
         <Button
           aria-label={
@@ -221,9 +236,9 @@ export function EntryQuickEdit({
               : `Ajouter ${title} à ma bibliothèque`
           }
           size={compact ? "icon-sm" : "icon"}
-          variant="outline"
+          variant={entry ? "outline" : "default"}
         >
-          {entry ? <PencilIcon /> : <PlusIcon />}
+          {entry ? <PencilIcon /> : <BookmarkPlusIcon />}
         </Button>
       </DialogTrigger>
 
