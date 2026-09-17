@@ -7,6 +7,7 @@ import {
   formatDateRange,
   formatDuration,
   formatFuzzyDate,
+  formatMediaCount,
   formatRelationType,
   formatSeason,
   formatSource,
@@ -130,6 +131,51 @@ describe("formatDuration", () => {
   it("traite zéro et null comme une durée inconnue", () => {
     expect(formatDuration(null)).toBeNull();
     expect(formatDuration(0)).toBeNull();
+  });
+});
+
+describe("formatMediaCount", () => {
+  const count = (
+    partial: Partial<Parameters<typeof formatMediaCount>[0]>,
+  ): Parameters<typeof formatMediaCount>[0] => ({
+    type: "ANIME",
+    format: "TV",
+    episodes: null,
+    chapters: null,
+    ...partial,
+  });
+
+  it("compte en épisodes un anime, en chapitres une œuvre écrite", () => {
+    expect(formatMediaCount(count({ episodes: 12 }))).toBe("12 épisodes");
+    expect(
+      formatMediaCount(
+        count({ type: "MANGA", format: "MANGA", chapters: 214 }),
+      ),
+    ).toBe("214 chapitres");
+  });
+
+  it("accorde le singulier", () => {
+    expect(formatMediaCount(count({ format: "OVA", episodes: 1 }))).toBe(
+      "1 épisode",
+    );
+  });
+
+  it("ne lit que le compteur de son type", () => {
+    expect(formatMediaCount(count({ chapters: 214 }))).toBeNull();
+    expect(
+      formatMediaCount(count({ type: "MANGA", format: "MANGA", episodes: 12 })),
+    ).toBeNull();
+  });
+
+  it("laisse un film au seul libellé de son format", () => {
+    expect(
+      formatMediaCount(count({ format: "MOVIE", episodes: 1 })),
+    ).toBeNull();
+  });
+
+  it("traite zéro et null comme un volume inconnu", () => {
+    expect(formatMediaCount(count({ episodes: 0 }))).toBeNull();
+    expect(formatMediaCount(count({ episodes: null }))).toBeNull();
   });
 });
 

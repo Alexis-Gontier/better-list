@@ -3,20 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import {
-  FeaturedSpotlight,
-  ListTile,
-} from "@/app/(app)/(home)/_components/home-cards";
+import { FeaturedSpotlight } from "@/app/(app)/(home)/_components/home-cards";
 import {
   CatalogueMediaCard,
-  resumeDetails,
   TrackedMediaCard,
   trackingDetails,
 } from "@/app/(app)/(home)/_components/home-media-card";
 import { HomeRail } from "@/app/(app)/(home)/_components/home-rail";
 import { SpotlightCarousel } from "@/app/(app)/(home)/_components/spotlight-carousel";
 import {
-  loadLists,
   loadSeason,
   loadSeasonEntries,
   loadTracking,
@@ -31,6 +26,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
@@ -47,8 +43,8 @@ export const metadata: Metadata = {
  *
  * 1. À la une : les tendances qui ont une bannière, en carrousel — **et où j'en suis** sur celles
  *    que je suis déjà.
- * 2. En cours — **ce qui vient de sortir en tête** —, puis À reprendre.
- * 3. Mes listes.
+ * 2. En cours, **ce qui vient de sortir en tête**.
+ * 3. — un trait —
  * 4. Tendances, puis Cette saison.
  *
  * **Toutes les jaquettes sont la `MediaCard` du catalogue**, aux paliers de `CatalogueGrid` : une
@@ -64,6 +60,20 @@ export const metadata: Metadata = {
  * saison » juste en dessous. Ce que l'accueil a de propre, c'est mon suivi ; trois requêtes AniList
  * partent avec elles.
  *
+ * **Deux rangées sont parties le 17 septembre 2026** (décisions d'Alexis).
+ *
+ * « À reprendre » d'abord : elle montrait les séries en pause, rangées sur ce qu'il restait à
+ * finir. C'est une pile qu'on consulte quand on décide d'y revenir, pas quelque chose qu'on veut
+ * voir chaque fois qu'on arrive — et `/library?status=PAUSED`, où son titre menait, la montre en
+ * entier. L'accueil ne garde de mon suivi que ce qui est **en cours**.
+ *
+ * « Mes listes » ensuite, et pour une
+ * raison voisine : elle montrait au milieu de l'accueil ce que `/lists` montre en entier, avec sa
+ * mosaïque, sa création et son état vide. Une rangée qui ne fait que résumer un écran voisin, sur
+ * un produit à quatre comptes qui tiennent chacun trois ou quatre listes, coûte un défilement pour
+ * une information déjà à un clic dans la navigation. L'accueil est désormais mon suivi, puis la
+ * découverte — et rien qui double un autre écran.
+ *
  * Le fichier reste de toute façon : `routes.home` est la redirection d'après connexion, le
  * `callbackURL` GitHub, la sortie de la liste d'attente et le repli de `proxy.ts`.
  */
@@ -74,13 +84,31 @@ export default function HomePage() {
         <Spotlight />
       </Suspense>
 
-      <Suspense fallback={<TrackingSkeleton />}>
+      {/* `details` : chaque carte d'« En cours » porte son retard ou sa progression sous le titre. */}
+      <Suspense fallback={<RailSkeleton details />}>
         <Tracking />
       </Suspense>
 
-      <Suspense fallback={<ListsRailSkeleton />}>
-        <ListsRail />
-      </Suspense>
+      {/*
+        **Le trait qui sépare mon suivi de la découverte** (demande d'Alexis, 17 septembre 2026).
+        Au-dessus, ce qui est à moi ; en dessous, ce que le catalogue propose. C'est la seule
+        frontière de l'accueil que l'ordre seul ne rendait pas lisible : les rangées se ressemblent
+        toutes, et rien ne disait où l'on passait de l'une à l'autre.
+
+        **Sans marge propre** : l'écart est porté par la colonne, comme sur `/search`, `/library`,
+        `/lists` et la fiche. Une marge posée sur un séparateur lui ferait dicter l'espacement de
+        ses deux voisins, et la prochaine zone ajoutée ici arriverait avec un rythme différent selon
+        qu'elle suit un trait ou non.
+
+        **Il est dans la coquille statique, pas dans une zone suspendue**, et c'est un arbitrage
+        assumé. Le prix : AniList muette rend les deux rangées du dessous vides, et la page se
+        termine alors par un trait seul — sur un écran qui porte déjà le bandeau de panne et qui a
+        perdu son carrousel. Le gagner reviendrait à faire rendre le trait par la rangée des
+        tendances, donc à le faire arriver en flux : il faudrait le poser aussi dans `RailSkeleton`,
+        partagé avec la rangée de saison qui n'en veut pas. Un trait stable qui traîne une fois par
+        panne vaut mieux qu'un trait qui saute à chaque chargement.
+      */}
+      <Separator />
 
       <Suspense fallback={<RailSkeleton />}>
         <TrendingRail />
@@ -126,25 +154,27 @@ async function Spotlight() {
 // --- Mon suivi -------------------------------------------------------------------
 
 /**
- * Mon suivi, en deux rangées.
+ * Mon suivi — **une rangée, « En cours »**.
  *
- * **« En cours » mène avec ce qui vient de sortir** : les séries dont un épisode est tombé passent
- * en tête et disent leur retard, les autres disent où j'en suis (`trackingDetails`). Elles ont eu
- * leur propre rangée le temps d'une passe, le 14 septembre 2026 ; elle montrait les mêmes jaquettes
- * que celle du dessous, à trois près, et Alexis a demandé la fusion. Le classement se fait dans
+ * **Elle mène avec ce qui vient de sortir** : les séries dont un épisode est tombé passent en tête
+ * et disent leur retard, les autres disent où j'en suis (`trackingDetails`). Elles ont eu leur
+ * propre rangée le temps d'une passe, le 14 septembre 2026 ; elle montrait les mêmes jaquettes que
+ * celle du dessous, à trois près, et Alexis a demandé la fusion. Le classement se fait dans
  * `loadTracking`, qui a les données pour.
  *
- * « À reprendre » garde la sienne : ce sont des séries en pause, donc une autre décision — y
- * revenir — et une autre information, depuis quand.
+ * **« À reprendre » l'accompagnait jusqu'au 17 septembre 2026**, avec les séries en pause rangées
+ * sur ce qu'il restait à finir. Elle est partie sur décision d'Alexis : reprendre une série en
+ * pause est une intention qu'on a en allant la chercher, pas une chose à proposer à chaque
+ * arrivée. `/library?status=PAUSED` la montre en entier.
  */
 async function Tracking() {
-  const { active, resumable, titleLanguage } = await loadTracking();
+  const { active, titleLanguage } = await loadTracking();
 
   /*
-    Un compte neuf n'a rien en cours ni rien à reprendre : sans ce message, l'accueil passerait
-    directement du carrousel au catalogue, et rien ne dirait par où commencer.
+    Un compte neuf n'a rien en cours : sans ce message, l'accueil passerait directement du carrousel
+    au catalogue, et rien ne dirait par où commencer.
   */
-  if (active.length === 0 && resumable.length === 0) {
+  if (active.length === 0) {
     return (
       <Empty className="border border-dashed">
         <EmptyHeader>
@@ -166,53 +196,18 @@ async function Tracking() {
     );
   }
 
-  const now = new Date();
-
   return (
-    <>
-      {active.length > 0 ? (
-        <HomeRail
-          href={serializeLibraryFilters(routes.library, { status: "CURRENT" })}
-          title="En cours"
-        >
-          {active.map((item) => (
-            <TrackedMediaCard
-              details={trackingDetails(item)}
-              item={item}
-              key={item.media.id}
-              titleLanguage={titleLanguage}
-            />
-          ))}
-        </HomeRail>
-      ) : null}
-
-      {resumable.length > 0 ? (
-        <HomeRail
-          href={serializeLibraryFilters(routes.library, { status: "PAUSED" })}
-          title="À reprendre"
-        >
-          {resumable.map((item) => (
-            <TrackedMediaCard
-              details={resumeDetails(item, now)}
-              item={item}
-              key={item.media.id}
-              titleLanguage={titleLanguage}
-            />
-          ))}
-        </HomeRail>
-      ) : null}
-    </>
-  );
-}
-
-async function ListsRail() {
-  const lists = await loadLists();
-  if (lists.length === 0) return null;
-
-  return (
-    <HomeRail href={routes.lists.root} size="wide" title="Mes listes">
-      {lists.map((list) => (
-        <ListTile key={list.id} list={list} />
+    <HomeRail
+      href={serializeLibraryFilters(routes.library, { status: "CURRENT" })}
+      title="En cours"
+    >
+      {active.map((item) => (
+        <TrackedMediaCard
+          details={trackingDetails(item)}
+          item={item}
+          key={item.media.id}
+          titleLanguage={titleLanguage}
+        />
       ))}
     </HomeRail>
   );
@@ -294,7 +289,6 @@ async function SeasonRail() {
 // --- Squelettes --------------------------------------------------------------------
 
 const RAIL_SKELETON_KEYS = Array.from({ length: 7 }, (_, i) => `rail-${i}`);
-const WIDE_SKELETON_KEYS = Array.from({ length: 3 }, (_, i) => `tuile-${i}`);
 
 /** Les points de la une, moins celui de la diapositive courante, qui est plus large. */
 const DOT_SKELETON_KEYS = Array.from(
@@ -323,28 +317,6 @@ function SpotlightSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * Le double de mon suivi, **en deux rangées et non en une**.
- *
- * `Tracking` rend « En cours » *et* « À reprendre » sous une seule frontière — une seule lecture
- * les sert toutes les deux. Un squelette d'une rangée annonçait donc la moitié de ce qui arrive, et
- * la découverte remontait de trois cents pixels au remplacement.
- *
- * Elles sont rendues en fragment, comme les vraies : ce sont les enfants directs de la colonne de
- * l'accueil qui reçoivent son `gap-12`, et une enveloppe ici en ferait un seul bloc.
- *
- * `details` parce que chaque carte de ces deux rangées porte une ligne de plus sous son titre — le
- * retard ou la progression (`trackingDetails`), ce qu'il reste à finir (`resumeDetails`).
- */
-function TrackingSkeleton() {
-  return (
-    <>
-      <RailSkeleton details />
-      <RailSkeleton details />
-    </>
   );
 }
 
@@ -380,47 +352,6 @@ function RailSkeleton({ details = false }: { details?: boolean }) {
             <div className="flex flex-col gap-0.5">
               <Skeleton className="h-5 w-4/5" />
               {details ? <Skeleton className="h-4 w-3/5" /> : null}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Le double de la rangée « Mes listes » — des tuiles en largeur, pas des jaquettes.
- *
- * Elle n'avait **aucun** repli : la zone s'ouvrait d'un coup et poussait les tendances de deux cents
- * pixels vers le bas. Le repli d'une rangée qui peut ne pas venir se paie d'un bref clignotement
- * sur un compte sans liste ; c'est le même pari que pour les tendances, qui disparaissent aussi
- * quand AniList ne répond pas.
- */
-function ListsRailSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <Skeleton className="h-7 w-40" />
-        <div className="hidden shrink-0 items-center gap-1 sm:flex">
-          <Skeleton className="size-9" />
-          <Skeleton className="size-9" />
-        </div>
-      </div>
-
-      <div className="flex gap-4 overflow-hidden">
-        {WIDE_SKELETON_KEYS.map((key) => (
-          <div
-            className="flex w-[85%] shrink-0 flex-col gap-3 rounded-lg border border-border p-3 sm:w-1/2 lg:w-1/3"
-            key={key}
-          >
-            {/*
-              `aspect-8/3` : quatre cases en 2:3 côte à côte, aux gouttières près — la mosaïque de
-              `ListTile`, et la même approximation que le squelette de `/lists`.
-            */}
-            <Skeleton className="aspect-8/3 w-full" />
-            <div className="flex items-center justify-between gap-2">
-              <Skeleton className="h-5 w-1/2" />
-              <Skeleton className="h-4 w-16" />
             </div>
           </div>
         ))}

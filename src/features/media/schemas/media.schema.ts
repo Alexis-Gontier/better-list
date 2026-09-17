@@ -222,7 +222,34 @@ export const staffEdgeSchema = z.object({
   }),
 });
 
-/** Media allégé, utilisé dans les relations et recommandations (même carte que la liste). */
+/**
+ * Media allégé — **ce qu'une vignette de catalogue sait d'une œuvre**, partout dans le produit.
+ *
+ * C'est la forme qu'attend `MediaCard`, donc celle de la recherche, de la bibliothèque, de
+ * l'accueil, des listes, des relations et des recommandations.
+ *
+ * **Élargi le 14 septembre 2026** de cinq champs — `episodes`, `chapters`, `season`, `seasonYear`,
+ * `genres` — pour le panneau de survol de la carte. Le choix est d'élargir **cette** forme plutôt
+ * que de câbler sept appelants : le panneau doit dire la même chose sur les sept écrans, et une
+ * carte riche par construction est ce qui l'assure sans qu'aucun appelant ait à y penser. C'est
+ * aussi ce qui a fait disparaître les redéclarations de `mediaBrowseSchema` et
+ * `airingMediaSchema`, qui reprenaient déjà une partie de ces champs chacun dans son coin.
+ *
+ * **Élargi de nouveau le 17 septembre 2026** de `countryOfOrigin` et `description`, quand le panneau
+ * a demandé un synopsis. La question posée était « et si on faisait une requête au survol ? » : la
+ * réponse est non, et c'est le quota qui tranche — trente requêtes par minute partagées entre tous
+ * les visiteurs, contre sept dépensées à survoler une seule rangée. Élargir la réponse qu'on
+ * demande déjà donne la même information pour zéro requête.
+ *
+ * **Ce que ça coûte** : sept champs de plus sur les ~50 nœuds de relations et recommandations de la
+ * fiche, et sur les 48 cartes de l'accueil — dont un synopsis, qui est le seul vraiment lourd. De la
+ * taille de réponse, **aucune requête de plus** : le quota AniList, seule ressource comptée ici, ne
+ * bouge pas.
+ *
+ * **Le miroir local n'a ni l'un ni l'autre en colonne** pour le synopsis (§4.1 n'a retenu que de
+ * quoi « afficher une carte et trier »), donc une recherche servie par le repli rend `null` : le
+ * panneau s'y referme sur ce qu'il a, comme il le fait déjà pour une œuvre annoncée sans note.
+ */
 export const mediaCompactSchema = z.object({
   id: z.number().int(),
   type: mediaTypeSchema,
@@ -232,6 +259,13 @@ export const mediaCompactSchema = z.object({
   isAdult: z.boolean(),
   title: mediaTitleSchema,
   coverImage: mediaCoverImageSchema.nullable(),
+  episodes: z.number().int().nullable(),
+  chapters: z.number().int().nullable(),
+  season: mediaSeasonSchema.nullable(),
+  seasonYear: z.number().int().nullable(),
+  genres: z.array(z.string()),
+  countryOfOrigin: z.string().nullable(),
+  description: z.string().nullable(),
 });
 export type MediaCompact = z.infer<typeof mediaCompactSchema>;
 
@@ -306,19 +340,19 @@ export const mediaMirrorSchema = z.object({
 export type MediaMirror = z.infer<typeof mediaMirrorSchema>;
 
 /**
- * Carte du catalogue éditorialisé : la carte compacte, plus l'année de diffusion et la bannière.
+ * Carte du catalogue éditorialisé : la carte compacte, **plus la bannière**.
  *
- * `MediaCard` attend un `MediaCompact` ; l'extension le satisfait donc sans conversion, et la rangée
- * gagne « Série TV · 2024 » en ligne de contexte.
+ * `MediaCard` attend un `MediaCompact` ; l'extension le satisfait donc sans conversion.
+ *
+ * Elle redéclarait `seasonYear` et `genres` jusqu'au 14 septembre 2026 ; `mediaCompactSchema` les
+ * porte désormais pour tout le monde, et l'extension se réduit au seul champ qui lui est propre.
  *
  * `bannerImage` n'est lu que par le hero de l'accueil, qui se rabat sur les tendances quand la
  * bibliothèque est vide. Elle est `null` sur la plupart des mangas et des webtoons chez AniList —
  * l'appelant doit toujours prévoir le cas.
  */
 export const mediaBrowseSchema = mediaCompactSchema.extend({
-  seasonYear: z.number().int().nullable(),
   bannerImage: z.string().nullable(),
-  genres: z.array(z.string()),
 });
 export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
 
@@ -337,12 +371,25 @@ export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
 /**
  * L'œuvre telle qu'une case de planning en a besoin.
  *
- * `mediaCompactSchema` étendu plutôt que recopié (skill `anilist-read`) : c'est la même forme que
- * partout ailleurs, plus le plafond d'épisodes — dont la carte de planning a besoin pour écrire
- * « vu 10 / 12 », et que `MediaCompact` ne porte pas parce qu'une vignette de catalogue s'en passe.
+ * **Un `pick` de `mediaCompactSchema`, et plus une extension** depuis le 14 septembre 2026. La
+ * carte compacte s'est élargie de cinq champs pour le panneau de survol ; le planning, lui, n'a pas
+ * de `MediaCard` — il a sa propre case — et n'a donc aucune raison de payer des genres et une
+ * saison sur les 124 diffusions d'une semaine. Le `pick` garde la parenté (renommer un champ de la
+ * carte compacte casse ici, ce qui est le bon côté pour se tromper) sans hériter de l'élargissement.
+ *
+ * `episodes` est retenu parce que la case écrit « vu 10 / 12 » ; le reste est ce qu'une vignette
+ * demande, ni plus ni moins.
  */
-export const airingMediaSchema = mediaCompactSchema.extend({
-  episodes: z.number().int().nullable(),
+export const airingMediaSchema = mediaCompactSchema.pick({
+  id: true,
+  type: true,
+  format: true,
+  status: true,
+  averageScore: true,
+  isAdult: true,
+  title: true,
+  coverImage: true,
+  episodes: true,
 });
 export type AiringMedia = z.infer<typeof airingMediaSchema>;
 

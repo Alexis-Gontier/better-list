@@ -75,6 +75,40 @@ haut dans l'arbre, et elle est justifiée par la garde d'accès. Next ne signale
 frontière manquante sous `(app)`. Relire à la main est le seul filet, ce qui est précisément ce
 qu'on vient de faire.
 
+**Et le soir même, la rangée « Mes listes » a été retirée de l'accueil.** Elle venait de recevoir
+son squelette le matin — celui qui lui manquait —, et Alexis l'a fait partir dans la journée : une
+rangée qui résume un écran voisin coûte un défilement pour ce que la navigation atteint en un clic,
+sur un produit où chacun tient trois ou quatre listes. C'est le même raisonnement que pour « Du
+moment » trois jours plus tôt, et il faudra sans doute se le rappeler avant d'ajouter la prochaine
+rangée : l'accueil n'a de propre que mon suivi.
+
+Trois choses sont parties avec elle, et c'est le point à retenir : `ListTile`, `loadLists`, et le
+gabarit `wide` de `HomeRail` — dont elle était **le seul appelant**. Une variante de mise en page
+que plus rien ne rend ne se signale nulle part : ni `tsc`, ni `knip`, qui ne voient pas une branche
+de `className` morte. Retirer une zone, c'est remonter jusqu'à ce qui n'existait que pour elle.
+
+**Un squelette écrit le matin, jeté le soir** : ce n'est pas du travail perdu, c'est le prix d'un
+audit qui passe avant une décision de produit. L'inverse — décider, puis auditer — aurait coûté la
+même heure, à l'endroit où elle se voit moins.
+
+**Puis « À reprendre » est partie à son tour**, et celle-là descendait plus profond. La rangée
+n'était que la pointe d'une pile entretenue sur toute la hauteur : `resumeDetails` la mettait en
+mots, `remainingUnits` calculait ce qu'il restait, `UNKNOWN_REMAINING` rangeait derrière les séries
+dont AniList ignore le total, `getHomeTracking` lisait les `PAUSED` en plus des actifs, et
+`partitionTracking` — **un module de `features/` avec ses quatre tests** — existait pour séparer les
+deux piles. Tout cela n'avait qu'un lecteur, et il vient de disparaître.
+
+`lastActivity` est le cas qui mérite d'être noté : `updatedAt` voyageait en plus de l'`EntryState`
+**uniquement** pour l'ancienneté qu'affichait cette rangée (« il y a trois mois »), et son
+commentaire le disait. L'ordre de la lecture, lui, reste — c'est autre chose, et c'est ce qui
+départage encore les séries sans rien de neuf.
+
+**Rien de tout ça ne se serait signalé tout seul.** `tsc` voit un symbole inutilisé, pas un champ de
+retour que personne ne lit ; `knip` voit un export sans importateur, pas une requête qui ramène
+deux fois trop de lignes. Le seul fil à tirer était la rangée elle-même, puis la question à chaque
+étage : est-ce que ceci existait pour elle ? Trois écrans retirés en un jour, et à chaque fois la
+vraie tâche était en dessous de ce qu'on voyait.
+
 ## 14 septembre 2026 — la cloche, et la différence entre « rien » et « on ne sait pas »
 
 La cloche de l'en-tête tenait un tableau vide écrit en dur depuis le 8 août. La remplir n'a

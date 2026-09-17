@@ -4,10 +4,9 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
-import { ListCoverMosaic } from "@/features/lists/components/list-cover-mosaic";
-import type { ListSummary } from "@/features/lists/server/lists.queries";
 import {
   cleanDescription,
+  formatAverageScore,
   formatMediaStatus,
   mediaTitle,
 } from "@/features/media/lib/media-format";
@@ -23,13 +22,6 @@ import { cn } from "@/lib/utils";
 
 function coverOf(media: MediaCompact) {
   return media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
-}
-
-function formatScore(averageScore: number | null) {
-  if (!averageScore) return null;
-  return (averageScore / 20).toLocaleString("fr-FR", {
-    maximumFractionDigits: 1,
-  });
 }
 
 /** Une pastille posée sur une image : fond presque opaque, capitales serrées. */
@@ -103,7 +95,7 @@ export function FeaturedSpotlight({
 }) {
   const background = media.bannerImage ?? coverOf(media);
   const synopsis = cleanDescription(media.description)[0];
-  const score = formatScore(media.averageScore);
+  const score = formatAverageScore(media.averageScore);
   const status = formatMediaStatus(media.status);
 
   return (
@@ -159,26 +151,6 @@ export function FeaturedSpotlight({
             </ImageBadge>
           ) : null}
         </div>
-      </div>
-    </Link>
-  );
-}
-
-// --- Listes -----------------------------------------------------------------------
-
-/** Une liste : sa mosaïque, son nom, combien elle contient. */
-export function ListTile({ list }: { list: ListSummary }) {
-  return (
-    <Link
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/50"
-      href={routes.lists.detail(list.id)}
-    >
-      <ListCoverMosaic covers={list.covers} />
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate font-semibold text-sm">{list.title}</span>
-        <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-          {list.itemCount} œuvres
-        </span>
       </div>
     </Link>
   );

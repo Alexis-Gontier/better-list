@@ -28,13 +28,18 @@ export type EntryUnit = "episode" | "chapitre";
  * Les tournures sont écrites en entier plutôt que composées : le français élide (« nombre
  * **d'**épisodes » mais « nombre **de** chapitres ») et accorde le participe au support — on *voit*
  * des épisodes, on *lit* des chapitres. Aucune concaténation ne produit ça correctement.
+ *
+ * `short` est l'abréviation des **endroits étroits** : sous une jaquette de trois colonnes et dans
+ * le panneau de survol d'une carte, « épisode 12 / 26 » déborde là où « ép. 12 / 26 » tient. Elle
+ * était écrite dans le `_components/` de l'accueil ; le panneau en est le deuxième appelant, et elle
+ * rejoint donc la table qui tient déjà les deux autres formes du même mot.
  */
 export const ENTRY_UNIT_LABELS: Record<
   EntryUnit,
-  { singular: string; consumed: string }
+  { singular: string; consumed: string; short: string }
 > = {
-  episode: { singular: "épisode", consumed: "Épisodes vus" },
-  chapitre: { singular: "chapitre", consumed: "Chapitres lus" },
+  episode: { singular: "épisode", consumed: "Épisodes vus", short: "ép." },
+  chapitre: { singular: "chapitre", consumed: "Chapitres lus", short: "ch." },
 };
 
 export const ENTRY_STATUS_LABELS: Record<EntryStatus, string> = {

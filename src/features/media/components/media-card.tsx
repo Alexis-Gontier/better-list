@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { routes } from "@/config/routes";
+import { MediaHoverCard } from "@/features/media/components/media-hover-card";
+import { MediaPreview } from "@/features/media/components/media-preview";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
@@ -24,6 +26,13 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
  * Composant **serveur**, et il le reste : le geste est du CSS, le contenu qu'il révèle vient de
  * l'appelant par le slot `action`. Rendre cette carte cliente embarquerait la grille entière dans
  * le bundle pour un bouton.
+ *
+ * **Le survol dit aussi ce que la carte ne peut pas montrer** (14 septembre 2026) : un panneau paraît
+ * sous le curseur avec la jaquette, le titre entier, la note, l'état de diffusion, le volume, la
+ * saison, les genres et le synopsis — `media-preview.tsx`. Il n'ouvre aucune lecture ; tout ce qu'il affiche est déjà
+ * dans le `MediaCompact` que la carte a en main, c'est d'ailleurs pour lui que cette forme s'est
+ * élargie de cinq champs. Et la carte ne devient pas cliente pour autant : le déclencheur est un
+ * composant client minuscule qui reçoit la carte et le panneau en props, tous deux rendus ici.
  */
 
 type MediaCardProps = {
@@ -99,85 +108,98 @@ export function MediaCard({
     */
     <div className="group relative flex flex-col gap-2">
       {/*
-        **Pas de préchargement, et c'est le quota qui décide.** Next précharge par défaut les liens
-        qui entrent dans le champ de vision. Chaque préchargement de `/media/[id]` exécute la
-        `generateMetadata` de la fiche, qui appelle AniList : sur une grille de vingt et une cartes,
-        faire défiler la recherche pourrait donc dépenser jusqu'à vingt et une des trente requêtes
-        que la minute partage entre tous les visiteurs (docs/recherche-filtres.md), sans que
-        personne n'ait cliqué.
-
-        **Non vérifié à l'écran, et ça ne peut pas l'être ici** : Next désactive le préchargement
-        des liens en développement — le journal réseau ne montre aucune requête vers `/media/*`.
-        C'est donc une précaution raisonnée, pas une mesure. À confirmer sur un déploiement, en
-        regardant si une grille affichée sans clic consomme du quota.
-
-        Ce qu'on perd est une navigation un peu moins instantanée vers une fiche. Ce qu'on garde est
-        la seule ressource que ce projet ne peut pas acheter. **Le survol n'y touche pas** : il
-        n'ouvre aucune lecture, il fait glisser un voile.
+        **Le panneau de survol enveloppe le lien, pas la carte entière.** Radix attache son
+        déclencheur à l'élément qu'on lui donne : sur l'enveloppe, il capterait aussi le survol du
+        bouton d'action, qui est son frère — approcher la souris du « +1 » ouvrirait un panneau
+        par-dessus le geste qu'on vise. Sur le lien, il couvre exactement la jaquette et le titre,
+        c'est-à-dire ce qu'on survole quand on regarde une œuvre. Et le lien étant focusable, le
+        panneau vient aussi au clavier.
       */}
-      <Link
-        className="flex flex-col gap-2"
-        href={routes.media(media.id)}
-        prefetch={false}
+      <MediaHoverCard
+        preview={<MediaPreview media={media} titleLanguage={titleLanguage} />}
       >
         {/*
-          Le rapport 2:3 est posé sur le conteneur et non sur l'image : c'est ce qui **réserve la
-          place avant le chargement**, donc ce qui empêche la grille de sauter quand les jaquettes
-          arrivent une à une. Une œuvre sans jaquette occupe alors exactement la même case qu'une
-          autre, au lieu de tasser sa rangée.
+            **Pas de préchargement, et c'est le quota qui décide.** Next précharge par défaut les liens
+            qui entrent dans le champ de vision. Chaque préchargement de `/media/[id]` exécute la
+            `generateMetadata` de la fiche, qui appelle AniList : sur une grille de vingt et une cartes,
+            faire défiler la recherche pourrait donc dépenser jusqu'à vingt et une des trente requêtes
+            que la minute partage entre tous les visiteurs (docs/recherche-filtres.md), sans que
+            personne n'ait cliqué.
 
-          Le liseré est **interne** (`inset`) plutôt qu'une bordure : une bordure ajouterait un
-          pixel à la boîte et désalignerait les cartes entre elles. Il encastre la jaquette au lieu
-          de l'entourer — c'est le premier des trois leviers de signature de la spec du 2 septembre,
-          et le seul qui ne coûte rien à poser tout de suite.
+            **Non vérifié à l'écran, et ça ne peut pas l'être ici** : Next désactive le préchargement
+            des liens en développement — le journal réseau ne montre aucune requête vers `/media/*`.
+            C'est donc une précaution raisonnée, pas une mesure. À confirmer sur un déploiement, en
+            regardant si une grille affichée sans clic consomme du quota.
+
+            Ce qu'on perd est une navigation un peu moins instantanée vers une fiche. Ce qu'on garde est
+            la seule ressource que ce projet ne peut pas acheter. **Le survol n'y touche toujours pas** :
+            son panneau se contente de remettre en forme ce que la carte a déjà reçu, il n'ouvre aucune
+            lecture — c'est même la contrainte qui a décidé de son contenu.
         */}
-        <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
-          {cover ? (
-            <Image
-              alt=""
-              className="object-cover"
-              fill
-              priority={priority}
-              /*
-                Les tailles suivent les paliers de la grille — sans elles, `next/image` sert une
-                image pleine largeur de viewport pour une vignette de 140 px, soit dix fois trop de
-                pixels sur une page qui en affiche vingt et une.
-              */
-              sizes="(min-width: 1280px) 12vw, (min-width: 1024px) 16vw, (min-width: 640px) 25vw, 45vw"
-              src={cover}
-            />
-          ) : null}
-        </div>
+        <Link
+          className="flex flex-col gap-2"
+          href={routes.media(media.id)}
+          prefetch={false}
+        >
+          {/*
+            Le rapport 2:3 est posé sur le conteneur et non sur l'image : c'est ce qui **réserve la
+            place avant le chargement**, donc ce qui empêche la grille de sauter quand les jaquettes
+            arrivent une à une. Une œuvre sans jaquette occupe alors exactement la même case qu'une
+            autre, au lieu de tasser sa rangée.
 
-        {/*
-          **Le titre tient sur une ligne**, coupé au besoin — décision d'Alexis du 6 septembre 2026.
-          Sur deux lignes, la hauteur des cartes variait d'une rangée à l'autre selon la longueur
-          des titres, et la grille perdait son alignement horizontal ; sur une, toutes les cartes
-          font exactement la même hauteur. Le titre complet reste accessible par l'infobulle native
-          du navigateur, que `truncate` déclenche sur le texte coupé.
-
-          `alt=""` sur l'image, à dessein : le titre est juste là, en texte. Le répéter ferait lire
-          deux fois la même chose à un lecteur d'écran.
-
-          Le marqueur est **hors du texte tronqué**, pas dedans : `truncate` coupe le contenu de son
-          propre élément, donc une pastille placée à l'intérieur disparaîtrait sur les titres longs
-          — c'est-à-dire précisément ceux où l'on a besoin d'un repère. Le titre garde donc son
-          `min-w-0` et sa troncature ; la pastille garde sa place, quoi qu'il arrive.
-        */}
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5">
-            {marker}
-            <p className="min-w-0 truncate text-sm" title={title}>
-              {title}
-            </p>
+            Le liseré est **interne** (`inset`) plutôt qu'une bordure : une bordure ajouterait un
+            pixel à la boîte et désalignerait les cartes entre elles. Il encastre la jaquette au lieu
+            de l'entourer — c'est le premier des trois leviers de signature de la spec du 2 septembre,
+            et le seul qui ne coûte rien à poser tout de suite.
+          */}
+          <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+            {cover ? (
+              <Image
+                alt=""
+                className="object-cover"
+                fill
+                priority={priority}
+                /*
+                  Les tailles suivent les paliers de la grille — sans elles, `next/image` sert une
+                  image pleine largeur de viewport pour une vignette de 140 px, soit dix fois trop de
+                  pixels sur une page qui en affiche vingt et une.
+                */
+                sizes="(min-width: 1280px) 12vw, (min-width: 1024px) 16vw, (min-width: 640px) 25vw, 45vw"
+                src={cover}
+              />
+            ) : null}
           </div>
-          {details?.map((line) => (
-            <p className="truncate text-muted-foreground text-xs" key={line}>
-              {line}
-            </p>
-          ))}
-        </div>
-      </Link>
+
+          {/*
+            **Le titre tient sur une ligne**, coupé au besoin — décision d'Alexis du 6 septembre 2026.
+            Sur deux lignes, la hauteur des cartes variait d'une rangée à l'autre selon la longueur
+            des titres, et la grille perdait son alignement horizontal ; sur une, toutes les cartes
+            font exactement la même hauteur. Le titre complet reste accessible par l'infobulle native
+            du navigateur, que `truncate` déclenche sur le texte coupé.
+
+            `alt=""` sur l'image, à dessein : le titre est juste là, en texte. Le répéter ferait lire
+            deux fois la même chose à un lecteur d'écran.
+
+            Le marqueur est **hors du texte tronqué**, pas dedans : `truncate` coupe le contenu de son
+            propre élément, donc une pastille placée à l'intérieur disparaîtrait sur les titres longs
+            — c'est-à-dire précisément ceux où l'on a besoin d'un repère. Le titre garde donc son
+            `min-w-0` et sa troncature ; la pastille garde sa place, quoi qu'il arrive.
+          */}
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5">
+              {marker}
+              <p className="min-w-0 truncate text-sm" title={title}>
+                {title}
+              </p>
+            </div>
+            {details?.map((line) => (
+              <p className="truncate text-muted-foreground text-xs" key={line}>
+                {line}
+              </p>
+            ))}
+          </div>
+        </Link>
+      </MediaHoverCard>
 
       {action ? (
         /*

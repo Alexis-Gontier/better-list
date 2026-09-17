@@ -24,11 +24,17 @@ Relevé le **14 septembre 2026**.
 > **`/u/[username]`**, et le 14 septembre **l'accueil `/`**, dernier de l'ordre. Il ne reste que
 > les placeholders de `/collection`.
 >
-> **L'accueil ne montre que ce qui vient de quelque part.** Cinq zones, chacune avec sa frontière :
+> **L'accueil ne montre que ce qui vient de quelque part.** Trois zones, chacune avec sa frontière :
 > un carrousel de tendances en pleine largeur — qui dit « Reprendre à l'épisode 12 » sur une œuvre
 > déjà suivie plutôt que son synopsis —, « En cours » où **les séries dont un épisode est sorti
-> passent en tête avec leur retard**, « À reprendre » **rangée sur ce qu'il reste à finir** et non
-> sur l'ancienneté, mes listes, les tendances et la saison. Toutes les jaquettes sont la `MediaCard`
+> passent en tête avec leur retard**, puis les tendances et la saison. **Un trait sépare les deux
+> moitiés** — mon suivi au-dessus, la découverte en dessous : c'est la seule frontière de l'écran
+> que l'ordre seul ne rendait pas lisible, les rangées se ressemblant toutes.
+>
+> **Deux rangées sont parties le 17 septembre 2026** (décisions d'Alexis) : « À reprendre », que
+> `/library?status=PAUSED` montre en entier — on y va quand on décide d'y revenir, ce n'est pas une
+> chose à proposer à chaque arrivée —, et « Mes listes », qui résumait un écran que la navigation
+> atteint en un clic. L'accueil ne garde de mon suivi que ce qui est **en cours**. Toutes les jaquettes sont la `MediaCard`
 > du catalogue, aux paliers de `CatalogueGrid` : une œuvre a la même apparence et le même geste ici,
 > sur `/search` et sur `/library`.
 >
@@ -152,7 +158,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 
 | Route | Rôle | Modèles | État |
 | --- | --- | --- | --- |
-| `/` (`home`) | Carrousel de tendances, suivi, listes, découverte | `Entry`, `Media`, `List` | **livré** (14 septembre) — carrousel pleine largeur, « En cours » mené par les épisodes sortis, « À reprendre » rangée sur ce qu'il reste, listes, tendances, saison |
+| `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel pleine largeur, « En cours » mené par les épisodes sortis, tendances, saison. « À reprendre » et « Mes listes » retirées le 17 septembre |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
@@ -682,7 +688,7 @@ justifiées une à une. Ce qui manquait, c'était la **fidélité**.
 | `h-4` servait de ligne de `text-sm`, qui fait **20 px** — dans `CatalogueGridSkeleton` (donc sur quatre écrans), les réglages, le profil, les listes | **corrigé** — `h-5`, et les autres interlignes revus avec (`text-lg` → `h-7`, `text-xs` → `h-4`) |
 | L'accueil : `Tracking` rend **deux** rangées sous une seule frontière, le repli n'en annonçait qu'une | **corrigé** — `TrackingSkeleton`, deux rangées en fragment, avec la ligne d'appoint que portent leurs cartes |
 | L'accueil : le repli de la une oubliait la rangée de points et son `gap-4` du carrousel | **corrigé** — 22 px qui manquaient sous la diapositive |
-| L'accueil : « Mes listes » n'avait **aucun** repli (`fallback={null}`) | **corrigé** — `ListsRailSkeleton`, des tuiles en largeur |
+| L'accueil : « Mes listes » n'avait **aucun** repli (`fallback={null}`) | **corrigé** le matin — puis sans objet : la rangée a été retirée dans la journée, squelette et gabarit `wide` avec elle |
 | Les en-têtes de rangée oubliaient leurs deux flèches — 28 px annoncés, 36 rendus | **corrigé** |
 | Profil : les quatre tuiles figées à `h-26` (104 px) alors qu'elles passent en deux colonnes sous `sm` (171 px) | **corrigé** — le squelette reprend la grille, pas la hauteur |
 | Profil : la rangée notes/genres calibrée pour les deux colonnes de `lg`, moitié trop courte en dessous | **corrigé** — même grille `lg:grid-cols-2`, et les cartes composent le vrai `Card` |

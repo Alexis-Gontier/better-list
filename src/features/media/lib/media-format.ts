@@ -363,6 +363,30 @@ export type MirroredMedia = {
   coverImage: string | null;
   meanScore: number | null;
   isAdult: boolean;
+  /**
+   * Les cinq colonnes du **panneau de survol** (14 septembre 2026).
+   *
+   * Elles étaient déjà dans la table `Media` — le miroir recopie toute la fiche depuis le début
+   * (docs/PRODUCT.md §4.1) —, seule la sélection les ignorait. Les ajouter ne coûte donc aucune
+   * requête, aucune migration : `/library`, `/lists/[id]` et `/l/[token]` disent désormais la même
+   * chose que `/search` au survol, sans rien demander à AniList.
+   */
+  episodes: number | null;
+  chapters: number | null;
+  season: MediaSeason | null;
+  seasonYear: number | null;
+  genres: string[];
+  /**
+   * Les deux colonnes ajoutées le **17 septembre 2026**, et pour la même raison que les cinq
+   * précédentes : elles dormaient déjà dans la table, seule la sélection les ignorait.
+   *
+   * `countryOfOrigin` distingue un manhwa d'un manga, ce que le format seul ne dit pas.
+   * `coverColor` est la teinte dominante de la jaquette, qui sert de fond au panneau le temps du
+   * chargement — sans elle, une recherche servie par le repli montrerait un rectangle gris là où
+   * AniList donne un rectangle à l'œuvre.
+   */
+  countryOfOrigin: string | null;
+  coverColor: string | null;
 };
 
 /**
@@ -412,11 +436,14 @@ export function mirroredTitle(
  * avec exactement les mêmes treize colonnes dans un ordre différent. Le troisième appelant a rendu
  * la duplication visible ; elle vit désormais auprès de la fonction qui la consomme.
  *
- * `episodes`, `chapters` et `bannerImage` ne sont pas dans `MediaCompact` et n'ont rien à y faire :
- * cette forme décrit une œuvre pour une vignette, et trois colonnes de plus sur toutes les listes
- * du produit pour servir la fenêtre d'édition rapide serait un mauvais échange. Elles voyagent donc
- * à côté, dans `total` et `banner` — et le plafond n'est pas un confort : un pas de progression
- * sans lui laisse taper « épisode 900 » sur une série de douze.
+ * `bannerImage` n'est pas dans `MediaCompact` et n'a rien à y faire : cette forme décrit une œuvre
+ * pour une vignette, et une colonne de plus sur toutes les listes du produit pour servir la fenêtre
+ * d'édition rapide serait un mauvais échange. Elle voyage donc à côté, dans `banner`.
+ *
+ * `episodes` et `chapters`, eux, **sont** entrés dans `MediaCompact` le 14 septembre 2026 avec le
+ * panneau de survol. Ils restent lus par `total` pour la fenêtre d'édition rapide — le plafond n'y
+ * est pas un confort : un pas de progression sans lui laisse taper « épisode 900 » sur une série de
+ * douze — mais ils ne sont plus une exception dans cette sélection.
  *
  * C'est un littéral de sélection Prisma, donc **de la donnée** : ce fichier reste importable depuis
  * un composant client, comme il l'est déjà pour `mediaTitle`.
@@ -435,6 +462,11 @@ export const MIRRORED_MEDIA_SELECT = {
   episodes: true,
   chapters: true,
   bannerImage: true,
+  season: true,
+  seasonYear: true,
+  genres: true,
+  countryOfOrigin: true,
+  coverColor: true,
 } as const;
 
 export function compactFromMirror(media: MirroredMedia): MediaCompact {
@@ -463,9 +495,25 @@ export function compactFromMirror(media: MirroredMedia): MediaCompact {
           extraLarge: media.coverImage,
           large: media.coverImage,
           medium: media.coverImage,
-          color: null,
+          // Le miroir la stocke depuis toujours (`coverColor`) ; le panneau de survol est le
+          // premier à la lire hors de la fiche, et le repli de panne n'a aucune raison de la perdre.
+          color: media.coverColor,
         }
       : null,
+    episodes: media.episodes,
+    chapters: media.chapters,
+    season: media.season,
+    seasonYear: media.seasonYear,
+    genres: media.genres,
+    countryOfOrigin: media.countryOfOrigin,
+    /*
+      **Le miroir n'a pas de synopsis, et c'est §4.1 qui en a décidé** : la table ne retient que de
+      quoi « afficher une carte et trier ». Une recherche servie par le repli rend donc un panneau
+      sans synopsis — il s'y referme sur ce qu'il a, comme sur une œuvre annoncée sans note. Ajouter
+      la colonne serait un autre arbitrage que celui-ci : du stockage pour un texte que personne ne
+      cherche ni ne trie.
+    */
+    description: null,
   };
 }
 
@@ -520,6 +568,62 @@ export function formatSeason(
 
   if (label && year) return `${label} ${year}`;
   return label ?? (year ? String(year) : null);
+}
+
+/**
+ * La note de la communauté AniList, **sur l'échelle du produit** : « 4,2 », pas « 84 ».
+ *
+ * AniList note sur cent ; Better-List note sur cinq étoiles partout où l'on saisit une note
+ * (`entry-format.ts`). Afficher deux échelles dans la même page ferait lire « 84 » et « 4,5 » à
+ * quelques centimètres l'un de l'autre sans dire qu'ils parlent de la même chose.
+ *
+ * **Promue ici le 14 septembre 2026** : elle était écrite dans le `_components/` de l'accueil, et le
+ * panneau de survol de `MediaCard` en est le deuxième appelant — la règle de promotion
+ * d'ARCHITECTURE.md. Elle atterrit dans `features/media/` et non dans `features/tracking/` parce
+ * qu'`averageScore` est une propriété de l'œuvre, pas de mon suivi ; la conversion est la même que
+ * celle de `scoreToStars`, mais la partager ferait dépendre le catalogue du domaine du suivi pour
+ * une division.
+ *
+ * `0` est traité comme absent, et c'est juste ici : AniList rend `null` pour une œuvre que personne
+ * n'a notée, et `0` n'apparaît que sur des fiches sans note réelle — l'inverse du choix de
+ * `formatCount`, où zéro est une information.
+ */
+export function formatAverageScore(averageScore: number | null): string | null {
+  if (!averageScore) return null;
+
+  return (averageScore / POINTS_PER_STAR).toLocaleString("fr-FR", {
+    maximumFractionDigits: 1,
+  });
+}
+
+/** Cent points AniList pour cinq étoiles. */
+const POINTS_PER_STAR = 20;
+
+/**
+ * Le volume d'une œuvre — « 12 épisodes », « 214 chapitres ».
+ *
+ * C'est `type` qui choisit l'unité, et pas `format` : un light novel se compte en chapitres comme un
+ * manga, et AniList les range tous les deux sous `MANGA`. Le champ qui ne correspond pas au type est
+ * toujours `null` de leur côté ; on n'a donc pas à arbitrer entre deux valeurs présentes.
+ *
+ * **Un film n'a pas de volume**, et c'est la seule exception : AniList lui met `episodes: 1`, ce qui
+ * donnerait « Film · 1 épisode » — une précision qui n'apprend rien et qui se lit mal. Le libellé de
+ * format dit déjà tout.
+ *
+ * `0` est traité comme absent : une série annoncée dont le nombre d'épisodes n'est pas arrêté arrive
+ * tantôt à `null`, tantôt à `0`, et « 0 épisode » serait faux dans les deux cas.
+ */
+export function formatMediaCount(
+  media: Pick<MediaCompact, "type" | "format" | "episodes" | "chapters">,
+): string | null {
+  if (media.format === "MOVIE") return null;
+
+  const count = media.type === "ANIME" ? media.episodes : media.chapters;
+  if (!count) return null;
+
+  const unit = media.type === "ANIME" ? "épisode" : "chapitre";
+
+  return `${count} ${unit}${count > 1 ? "s" : ""}`;
 }
 
 /** Durée d'un épisode, en minutes chez AniList. */

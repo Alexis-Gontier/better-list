@@ -1,7 +1,4 @@
-import type {
-  ResumableItem,
-  TrackedItem,
-} from "@/app/(app)/(home)/_lib/home-data";
+import type { TrackedItem } from "@/app/(app)/(home)/_lib/home-data";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { Media } from "@/features/media/schemas/media.schema";
@@ -12,43 +9,10 @@ import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot"
 import { formatLag } from "@/features/tracking/lib/airing-lag";
 import {
   ENTRY_UNIT_LABELS,
-  type EntryUnit,
   formatEntryProgress,
-  formatSince,
 } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import type { LibraryItem } from "@/features/tracking/server/library.queries";
-
-/**
- * La ligne d'une carte « À reprendre » : **ce qu'il reste à finir**.
- *
- * C'est ce qui fait reprendre, et l'ancienneté qui s'écrivait ici ne le faisait pas (décision
- * d'Alexis du 14 septembre 2026) : « il y a quatre mois » est vrai de la moitié de la rangée, quand
- * « il reste six chapitres » désigne la série qu'on finit ce soir. La rangée se range d'ailleurs
- * dessus (`loadTracking`).
- *
- * **L'ancienneté reste le repli**, pour les séries dont AniList ignore le total — sans elle, ces
- * cartes-là n'auraient plus rien à dire, et une carte muette casse l'alignement d'une rangée
- * (`MediaCard`).
- */
-export function resumeDetails(item: ResumableItem, now: Date): string[] {
-  if (item.remaining !== null) {
-    const { singular } = ENTRY_UNIT_LABELS[item.unit];
-    const plural = item.remaining > 1 ? "s" : "";
-
-    return [`Il reste ${item.remaining} ${singular}${plural}`];
-  }
-
-  const since = formatSince(item.lastActivity, now);
-
-  return [`${since.charAt(0).toUpperCase()}${since.slice(1)}`];
-}
-
-/** L'unité abrégée : sous une jaquette de trois colonnes, « épisode » ne tient pas. */
-const UNIT_ABBREVIATIONS: Record<EntryUnit, string> = {
-  episode: "ép.",
-  chapitre: "ch.",
-};
 
 /**
  * La ligne d'une carte « En cours » : **ce qui m'attend, ou bien où j'en suis**.
@@ -66,7 +30,9 @@ export function trackingDetails(item: TrackedItem): string[] {
   const progress = formatEntryProgress(item.entry.progress, item.total);
 
   return [
-    progress ? `${UNIT_ABBREVIATIONS[item.unit]} ${progress}` : "Pas commencé",
+    progress
+      ? `${ENTRY_UNIT_LABELS[item.unit].short} ${progress}`
+      : "Pas commencé",
   ];
 }
 
@@ -86,8 +52,9 @@ export function trackingDetails(item: TrackedItem): string[] {
 /**
  * Une œuvre de mon suivi : elle a toujours une entrée, donc toujours une pastille.
  *
- * `details` passe des lignes sous le titre — la rangée « À reprendre » y met où j'en suis et depuis
- * quand (`resumeDetails`). La rangée « En cours » n'en passe pas.
+ * `details` passe des lignes sous le titre : « En cours » y met le retard, ou bien où j'en suis
+ * (`trackingDetails`). C'était aussi le cas de « À reprendre », partie le 17 septembre 2026 —
+ * l'unique rangée restante est donc le seul appelant de ce paramètre.
  */
 export function TrackedMediaCard({
   item,

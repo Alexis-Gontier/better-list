@@ -10,7 +10,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { cn } from "@/lib/utils";
 
 /**
  * Une rangée de l'accueil : un titre-lien et un carrousel.
@@ -19,14 +18,15 @@ import { cn } from "@/lib/utils";
  * Les flèches sont dans l'en-tête et non sur les bords — posées de part et d'autre de la rangée,
  * elles sortaient du conteneur et chevauchaient la marge sous `lg`.
  *
- * `size` règle combien de cartes tiennent à l'écran : `poster` pour des jaquettes, `wide` pour des
- * cartes en largeur.
- *
- * **`poster` reprend les paliers de `CatalogueGrid`** — trois colonnes, puis sept dès `lg`, et la
- * même gouttière `gap-x-3` (d'où `-ml-3` / `pl-3` au lieu des `4` par défaut du carrousel). Une
+ * **Les cartes reprennent les paliers de `CatalogueGrid`** — trois colonnes, puis sept dès `lg`, et
+ * la même gouttière `gap-x-3` (d'où `-ml-3` / `pl-3` au lieu des `4` par défaut du carrousel). Une
  * `MediaCard` a ainsi exactement la même largeur sur l'accueil que sur `/search` et `/library`.
+ *
+ * **Il y avait un second gabarit, `wide`, pour des cartes en largeur** : il n'avait qu'un appelant,
+ * la rangée « Mes listes », et il est parti avec elle le 17 septembre 2026. Une variante de mise en
+ * page que plus rien ne rend est une branche qu'on garde à jour sans jamais la voir.
  */
-const POSTER_ITEM_CLASS = "basis-1/3 pl-3 lg:basis-1/7";
+const ITEM_CLASS = "basis-1/3 pl-3 lg:basis-1/7";
 
 /**
  * Les flèches d'une rangée, **au style d'un bouton icône `outline` ordinaire**.
@@ -45,12 +45,10 @@ const RAIL_ARROW_PROPS = {
 export function HomeRail({
   title,
   href,
-  size = "poster",
   children,
 }: {
   title: string;
   href?: string;
-  size?: "poster" | "wide";
   children: React.ReactNode;
 }) {
   return (
@@ -68,16 +66,9 @@ export function HomeRail({
         </div>
       </div>
 
-      <CarouselContent className={cn(size === "poster" && "-ml-3")}>
+      <CarouselContent className="-ml-3">
         {Children.map(children, (child) => (
-          <CarouselItem
-            className={cn(
-              size === "poster" && POSTER_ITEM_CLASS,
-              size === "wide" && "basis-[85%] sm:basis-1/2 lg:basis-1/3",
-            )}
-          >
-            {child}
-          </CarouselItem>
+          <CarouselItem className={ITEM_CLASS}>{child}</CarouselItem>
         ))}
       </CarouselContent>
     </Carousel>

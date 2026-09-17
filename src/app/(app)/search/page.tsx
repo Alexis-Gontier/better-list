@@ -331,8 +331,6 @@ async function SearchResults({
                 entry ? <EntryStatusDot status={entry.status} /> : undefined
               }
               media={item}
-              // La première rangée au palier le plus large : c'est tout ce qui est au-dessus de la
-              // ligne de flottaison, et la première de ces jaquettes porte la mesure de LCP.
               priority={index < WIDEST_COLUMN_COUNT}
               titleLanguage={titleLanguage}
             />
