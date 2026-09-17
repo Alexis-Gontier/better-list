@@ -27,6 +27,54 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 17 septembre 2026 — l'onglet, puis un audit des squelettes
+
+Deux choses ce jour-là, et la seconde est née d'une question d'Alexis : « est-ce que tous les
+squelettes sont bons ? »
+
+**L'onglet dit la page avant le site.** « Rechercher · Better-List » remplace « Better-List ·
+Rechercher », posé dix jours plus tôt. L'argument qui a renversé le précédent : ce qui est rogné
+quand on ouvre huit onglets, c'est la **fin** du titre — autant que ce soit la marque qui parte,
+puisque tous les onglets du site la répètent à l'identique. C'est le nom de la page qui les
+distingue les uns des autres. Deux commentaires traînaient encore l'ancien ordre ailleurs.
+
+**L'audit a trouvé une couverture complète et une fidélité inégale.** Aucune zone sans frontière,
+aucun `loading.tsx` de segment, les quatre pages bloquantes justifiées une à une. Mais la moitié des
+replis n'avaient pas la taille de ce qu'ils remplacent, et un squelette qui ment sur sa hauteur fait
+exactement ce que la règle prétend éviter.
+
+Trois familles d'erreur, et elles se répètent d'un écran à l'autre :
+
+1. **L'interligne.** `h-4` servait de ligne de `text-sm`, qui en fait **20**. Quatre pixels par
+   ligne, trois rangées de grille, et la page remontait de douze au remplacement. C'était dans
+   `CatalogueGridSkeleton` — donc sur quatre écrans à la fois —, dans les réglages, dans le profil.
+2. **Une frontière, plusieurs blocs.** `Tracking` rend « En cours » *et* « À reprendre » sous un
+   seul `<Suspense>` parce qu'une seule lecture les sert : le repli n'annonçait qu'une rangée sur
+   deux. Même erreur sur la barre du planning, dont le squelette oubliait la bascule de portée, et
+   sur l'en-tête d'une liste, qui oubliait son décompte et ses deux boutons.
+3. **Le palier unique.** Les quatre tuiles du profil passent en deux colonnes sous `sm` ; leur repli
+   était figé à 104 px quand le bloc replié en fait 171. La rangée notes/genres avait le défaut
+   symétrique : une hauteur calibrée pour les deux colonnes de `lg`, la moitié de ce qui arrive en
+   dessous. Les deux se corrigent de la même façon — le squelette reprend la **grille**, pas la
+   hauteur.
+
+**Une fausse alerte, et elle valait la leçon.** `MediaTabSkeleton` avait l'air d'un pavé générique
+jusqu'à ce qu'on ouvre `media-characters.tsx` : mêmes classes de grille, mêmes cartes en `h-20`. Le
+commentaire de la fonction le disait déjà ; on avait lu celui de la constante en dessous. Un audit
+qui ne lit pas le commentaire de ce qu'il accuse trouve des bugs qui n'existent pas.
+
+**Ce qui a été laissé volontairement**, parce que la bonne réponse est de sous-estimer : le journal
+du profil, dont une page fait vingt événements et près de neuf cents pixels — un pavé gris de cette
+taille pèse plus que le saut qu'il éviterait. Et la grille du planning, passée d'une case par jour à
+deux : c'est le jour le plus chargé qui décide de sa hauteur, et on ne le connaît qu'après la
+réponse. Aucune valeur fixe ne peut faire mieux qu'une espérance.
+
+**Le filet automatique n'existe pas ici.** `instant = false` sur `(app)/layout.tsx` désactive la
+validation de coquille statique pour **toute** l'application — c'est la règle du `false` le plus
+haut dans l'arbre, et elle est justifiée par la garde d'accès. Next ne signalera donc jamais une
+frontière manquante sous `(app)`. Relire à la main est le seul filet, ce qui est précisément ce
+qu'on vient de faire.
+
 ## 14 septembre 2026 — la cloche, et la différence entre « rien » et « on ne sait pas »
 
 La cloche de l'en-tête tenait un tableau vide écrit en dur depuis le 8 août. La remplir n'a

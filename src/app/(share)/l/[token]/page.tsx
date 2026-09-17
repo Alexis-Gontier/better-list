@@ -32,8 +32,8 @@ export const metadata: Metadata = {
    * dans l'aperçu du lien, que seul un destinataire déjà en possession de l'adresse peut demander
    * (`opengraph-image.tsx`).
    *
-   * Le gabarit du layout racine préfixe ce titre : l'onglet affiche « Better-List · Liste
-   * partagée », et `og:title` avec lui. C'est voulu — un lien reçu dit alors d'où il vient — et
+   * Le gabarit du layout racine suffixe ce titre : l'onglet affiche « Liste partagée ·
+   * Better-List », et `og:title` avec lui. C'est voulu — un lien reçu dit alors d'où il vient — et
    * **ça ne divulgue rien de plus** : le nom de la liste reste hors du titre, ici comme ailleurs.
    */
   robots: { index: false, follow: false },

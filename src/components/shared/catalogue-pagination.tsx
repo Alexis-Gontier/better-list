@@ -7,6 +7,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -37,6 +38,37 @@ type CataloguePaginationProps = {
    */
   hrefFor: (page: number) => string;
 };
+
+/**
+ * Le double de la pagination, pour les squelettes de grille.
+ *
+ * Il vit ici parce que la rangée qu'il imite est ici : `/search` et `/library` la suspendent tous
+ * les deux avec leur grille — même lecture, donc même frontière —, et un squelette qui s'arrête à
+ * la grille annonce une page plus courte de trente-six pixels que celle qui arrive.
+ *
+ * **Il l'affiche toujours**, là où la vraie s'efface sous deux pages. C'est le pari le moins cher :
+ * les deux écrans paginent par vingt et un, donc une seule page est le cas rare — et sous-estimer
+ * la hauteur fait sauter le pied de page, alors que la surestimer ne fait que le descendre.
+ */
+export function CataloguePaginationSkeleton() {
+  return (
+    <div className="mx-auto flex w-full justify-center">
+      <div className="flex flex-row items-center gap-1">
+        <Skeleton className="h-9 w-28" />
+        {PAGE_SKELETON_KEYS.map((key) => (
+          <Skeleton className="size-9" key={key} />
+        ))}
+        <Skeleton className="h-9 w-24" />
+      </div>
+    </div>
+  );
+}
+
+/** Cinq crans : la fenêtre que `pageWindow` ouvre au milieu d'un catalogue. */
+const PAGE_SKELETON_KEYS = Array.from(
+  { length: 5 },
+  (_, index) => `cran-${index}`,
+);
 
 export function CataloguePagination({
   page,

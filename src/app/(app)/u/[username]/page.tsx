@@ -19,6 +19,7 @@ import {
 } from "@/app/(app)/u/[username]/_lib/profile-params";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -116,7 +117,7 @@ export default function ProfilePage({
         <ProfileIdentityBlock params={params} />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-56 w-full" />}>
+      <Suspense fallback={<SectionSkeleton contentClassName="h-44" />}>
         <ProfileActivityBlock params={params} />
       </Suspense>
 
@@ -124,7 +125,13 @@ export default function ProfilePage({
         <ProfileStatsBlock params={params} />
       </Suspense>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      {/*
+        **Le journal est le seul repli qui annonce moins que ce qui vient, et c'est délibéré.** Une
+        page en fait vingt, soit près de neuf cents pixels sur écran large et le double sur
+        téléphone : un pavé gris de cette taille pèse plus que le saut qu'il éviterait. Il tient
+        donc le plancher — la carte, son en-tête, et de quoi ne pas laisser un trou.
+      */}
+      <Suspense fallback={<SectionSkeleton contentClassName="h-96" />}>
         <ProfileJournalBlock params={params} searchParams={searchParams} />
       </Suspense>
     </div>
@@ -394,24 +401,83 @@ function HeaderSkeleton() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
           <Skeleton className="size-16 rounded-full" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-7 w-44" />
-            <Skeleton className="h-4 w-56" />
+          <div className="flex flex-col gap-0.5">
+            <Skeleton className="h-8 w-44" />
+            <Skeleton className="h-5 w-56" />
           </div>
         </div>
-        <Skeleton className="h-26 w-full" />
+
+        {/*
+          **Les quatre tuiles, et pas un pavé d'une hauteur figée.** Elles passent en deux colonnes
+          sous `sm` : à `h-26`, la coquille annonçait 104 px là où le bloc replié en fait 171, et
+          tout le profil remontait de soixante-sept pixels sur téléphone. Rendue avec la grille du
+          bloc, elle se replie avec lui.
+        */}
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border sm:grid-cols-4">
+          {TILE_SKELETON_KEYS.map((key) => (
+            <div
+              className="flex flex-col-reverse gap-1 bg-background p-4"
+              key={key}
+            >
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-8 w-14" />
+            </div>
+          ))}
+        </div>
       </div>
       <Separator />
     </div>
   );
 }
 
-/** La répartition, puis la rangée notes / genres — deux pavés, comme le bloc rendu. */
+/** Les quatre chiffres de l'en-tête. */
+const TILE_SKELETON_KEYS = Array.from(
+  { length: 4 },
+  (_, index) => `tuile-${index}`,
+);
+
+/**
+ * La répartition, puis la rangée notes / genres.
+ *
+ * **La rangée est une grille, pas un pavé.** Les deux cartes ne passent côte à côte qu'à partir de
+ * `lg` ; en dessous elles s'empilent, et un repli d'une seule hauteur annonçait la moitié du bloc
+ * sur tout ce qui est plus étroit. La grille reprise ici se replie avec lui.
+ *
+ * Les hauteurs de contenu ne sont pas estimées : l'histogramme des notes est en `h-72`, et le
+ * graphe des genres fait `2.25rem` par genre, huit au plus — les deux valent 288 px.
+ */
 function StatsSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <Skeleton className="h-40 w-full" />
-      <Skeleton className="h-80 w-full" />
+      {/* Barre empilée (28 px), puis six statuts sur deux rangées : 92 px de contenu. */}
+      <SectionSkeleton contentClassName="h-23" />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SectionSkeleton contentClassName="h-72" />
+        <SectionSkeleton contentClassName="h-72" />
+      </div>
     </div>
+  );
+}
+
+/**
+ * Le double d'un bloc du profil : la carte, son en-tête, et un contenu de la hauteur annoncée.
+ *
+ * **Il compose le vrai `Card`** plutôt que d'en recopier les marges. La coquille est alors juste par
+ * construction — et le reste juste le jour où la carte changera de rembourrage —, si bien que le
+ * seul chiffre à tenir est la hauteur du contenu, que chaque appelant connaît.
+ */
+function SectionSkeleton({ contentClassName }: { contentClassName: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        {/* `CardTitle` est en `text-base` (24 px d'interligne), `CardDescription` en `text-sm` (20). */}
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-5 w-72 max-w-full" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className={contentClassName} />
+      </CardContent>
+    </Card>
   );
 }
