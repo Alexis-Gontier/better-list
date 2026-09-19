@@ -97,6 +97,31 @@ existantes ne disaient déjà pas la même chose du même état. Elles sont main
 composant, ni client ni `server-only`, parce que deux appelants sont serveur et le troisième est
 l'îlot qui la recalcule à chaque clic.
 
+**La lecture regardait le miroir, la fiche regardait AniList — et personne ne l'avait remarqué.**
+Signalé par Alexis une demi-heure après la fusion : cliquer « Ma collection » sur un manga donnait
+« Série introuvable ». La cause est une asymétrie qu'on ne voit pas en développement, parce que la
+graine importe soixante œuvres et que les tests portent sur des modules purs : `getSeriesShelf`
+cherchait l'œuvre dans `Media`, or le miroir ne contient que ce que quelqu'un a **déjà suivi**.
+Toute série qu'on vient d'acheter sans la suivre — exactement celle qu'on veut poser sur l'étagère
+— répondait 404 pendant que sa fiche s'affichait juste à côté.
+
+Le motif du dépôt était déjà écrit ailleurs : **les lectures vont chez AniList, les écritures
+appellent `ensureMediaMirror`**. La collection n'en appliquait que la seconde moitié. L'ordre des
+deux sources y est l'inverse de celui de la fiche, et volontairement : là-bas AniList fait
+autorité et le miroir est le repli de panne ; ici le miroir passe d'abord parce qu'il est gratuit
+et qu'une série qu'on possède y est presque toujours.
+
+Deux leçons pour la suite. La première : **une nouvelle route qui lit une œuvre doit dire laquelle
+des deux sources fait autorité**, et le dire dans son commentaire — les deux existent depuis
+longtemps et le choix n'est pas neutre. La seconde : vérifier un écran sur les données de la
+graine, c'est le vérifier sur le cas le plus favorable. Le cas qui casse était à un clic, sur
+n'importe quel manga que personne du cercle ne suit.
+
+Trouvé dans la foulée : `Number("abc")` vaut `NaN`, et Prisma **lève** sur un `NaN` passé à une
+colonne entière — donc `/collection/abc` rendait une erreur là où il devait être introuvable. La
+borne est posée à l'entrée de la lecture plutôt que dans la page, pour couvrir aussi
+`generateMetadata`, qui appelait avec le même `NaN`.
+
 **Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
 développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
 `PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.
