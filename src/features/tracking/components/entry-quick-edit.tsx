@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
@@ -33,9 +32,15 @@ import {
 } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TIMEZONE } from "@/config/locale";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryRemoveButton } from "@/features/tracking/components/entry-remove-button";
+import { EntryRepeatStepper } from "@/features/tracking/components/entry-repeat-stepper";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
 import { EntryStatusSelect } from "@/features/tracking/components/entry-status-select";
 import {
@@ -125,6 +130,20 @@ type EntryQuickEditProps = {
    * que le choix qu'il a vraiment à faire.
    */
   compact?: boolean;
+  /**
+   * Doubler l'icône d'une infobulle. **Pour la rangée de la fiche, pas pour une vignette.**
+   *
+   * Demandé par Alexis le 19 septembre 2026, en même temps que le passage en icône seule des deux
+   * boutons voisins : trois icônes de suite ne se devinent pas, et l'`aria-label` ne parle qu'aux
+   * lecteurs d'écran.
+   *
+   * **Elle n'est pas posée par défaut**, et c'est le point de cette propriété. En coin de
+   * jaquette, ce bouton ne paraît qu'au survol de la carte — le survol qui ouvre déjà le panneau
+   * d'aperçu de `MediaCard`. Une infobulle s'y superposerait à ce panneau, sur vingt et une
+   * cartes, pour redire ce que le panneau montre en grand. L'appelant qui a des voisins à
+   * expliquer la demande ; les autres s'en passent.
+   */
+  tooltip?: boolean;
 };
 
 export function EntryQuickEdit({
@@ -135,6 +154,7 @@ export function EntryQuickEdit({
   unit,
   total,
   compact = false,
+  tooltip = false,
 }: EntryQuickEditProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<EntryDraft>(() => entryDraftFrom(entry));
@@ -192,55 +212,73 @@ export function EntryQuickEdit({
    */
   const today = TODAY_IN_PARIS.format(new Date());
 
+  const trigger = (
+    <DialogTrigger asChild>
+      {/*
+        **Une icône seule, et deux tailles selon l'endroit** (voir `compact`) : 36 px dans la
+        rangée de la fiche, où elle s'aligne sur ses voisins ; 32 px en coin de jaquette, où elle
+        n'a personne à qui s'aligner et où chaque pixel est pris à l'illustration.
+
+        Sur une vignette, elle remplace une barre pleine largeur portant « Modifier », montée
+        depuis le bas au survol : celle-ci marchait, mais elle demandait un tiers de la jaquette et
+        ne se transposait pas au catalogue, où la plupart des cartes ne sont pas encore suivies.
+
+        **Deux icônes et pas une, parce que ce ne sont pas deux fois le même geste** : un crayon
+        modifie ce qui existe, un signet crée ce qui n'existe pas. Sur `/search`, où la plupart des
+        résultats ne sont dans aucune bibliothèque, c'est **la seule information de la carte qui
+        dise « celle-là, tu ne l'as pas »** en dehors de la pastille absente. Le nom accessible dit
+        déjà la même chose, en toutes lettres ; l'icône la donne à l'œil.
+
+        **Un signet et non un plus, et c'est un correctif du 17 septembre 2026** (relevé par
+        Alexis). Le plus était déjà pris : `EntryQuickActions` en pose un juste au-dessus, sur les
+        œuvres suivies, pour avancer d'un épisode. Le même dessin portait donc deux gestes sans
+        rapport — « +1 » ici, « ajouter à ma bibliothèque » là —, et rien ne les distinguait d'une
+        carte à sa voisine. `BookmarkPlus` dit ce que ce bouton-ci fait vraiment : ranger une œuvre
+        chez soi, pas incrémenter quoi que ce soit.
+
+        **Et il est plein, quand celui d'une œuvre suivie reste en `outline`** (même décision).
+        C'est le renversement d'une règle écrite ici le 6 septembre : « un bouton plein tire l'œil
+        plus que la jaquette ». Elle visait une grille entière de boutons pleins — or l'action ne
+        paraît qu'au survol à partir de `sm`, donc un seul est à l'écran à la fois, et c'est
+        précisément celui qu'on vise. La hiérarchie qui en sort est juste : **plein pour entrer
+        dans la bibliothèque, discret pour ajuster ce qui y est déjà.**
+
+        ⚠️ Sous `sm`, en revanche, l'action est posée en permanence sur chaque jaquette
+        (`MediaCard`) : la grille de trois colonnes d'un téléphone y porte donc autant de boutons
+        pleins que de cartes non suivies. C'est le coût connu de ce choix, et il se verra d'abord
+        sur `/search`.
+      */}
+      <Button
+        aria-label={
+          entry
+            ? `Modifier le suivi de ${title}`
+            : `Ajouter ${title} à ma bibliothèque`
+        }
+        size={compact ? "icon-sm" : "icon"}
+        variant={entry ? "outline" : "default"}
+      >
+        {entry ? <PencilIcon /> : <BookmarkPlusIcon />}
+      </Button>
+    </DialogTrigger>
+  );
+
   return (
     <Dialog onOpenChange={openChange} open={open}>
-      <DialogTrigger asChild>
-        {/*
-          **Une icône seule, et deux tailles selon l'endroit** (voir `compact`) : 36 px dans la
-          rangée de la fiche, où elle s'aligne sur ses voisins ; 32 px en coin de jaquette, où elle
-          n'a personne à qui s'aligner et où chaque pixel est pris à l'illustration.
-
-          Sur une vignette, elle remplace une barre pleine largeur portant « Modifier », montée
-          depuis le bas au survol : celle-ci marchait, mais elle demandait un tiers de la jaquette et
-          ne se transposait pas au catalogue, où la plupart des cartes ne sont pas encore suivies.
-
-          **Deux icônes et pas une, parce que ce ne sont pas deux fois le même geste** : un crayon
-          modifie ce qui existe, un signet crée ce qui n'existe pas. Sur `/search`, où la plupart des
-          résultats ne sont dans aucune bibliothèque, c'est **la seule information de la carte qui
-          dise « celle-là, tu ne l'as pas »** en dehors de la pastille absente. Le nom accessible dit
-          déjà la même chose, en toutes lettres ; l'icône la donne à l'œil.
-
-          **Un signet et non un plus, et c'est un correctif du 17 septembre 2026** (relevé par
-          Alexis). Le plus était déjà pris : `EntryQuickActions` en pose un juste au-dessus, sur les
-          œuvres suivies, pour avancer d'un épisode. Le même dessin portait donc deux gestes sans
-          rapport — « +1 » ici, « ajouter à ma bibliothèque » là —, et rien ne les distinguait d'une
-          carte à sa voisine. `BookmarkPlus` dit ce que ce bouton-ci fait vraiment : ranger une œuvre
-          chez soi, pas incrémenter quoi que ce soit.
-
-          **Et il est plein, quand celui d'une œuvre suivie reste en `outline`** (même décision).
-          C'est le renversement d'une règle écrite ici le 6 septembre : « un bouton plein tire l'œil
-          plus que la jaquette ». Elle visait une grille entière de boutons pleins — or l'action ne
-          paraît qu'au survol à partir de `sm`, donc un seul est à l'écran à la fois, et c'est
-          précisément celui qu'on vise. La hiérarchie qui en sort est juste : **plein pour entrer
-          dans la bibliothèque, discret pour ajuster ce qui y est déjà.**
-
-          ⚠️ Sous `sm`, en revanche, l'action est posée en permanence sur chaque jaquette
-          (`MediaCard`) : la grille de trois colonnes d'un téléphone y porte donc autant de boutons
-          pleins que de cartes non suivies. C'est le coût connu de ce choix, et il se verra d'abord
-          sur `/search`.
-        */}
-        <Button
-          aria-label={
-            entry
-              ? `Modifier le suivi de ${title}`
-              : `Ajouter ${title} à ma bibliothèque`
-          }
-          size={compact ? "icon-sm" : "icon"}
-          variant={entry ? "outline" : "default"}
-        >
-          {entry ? <PencilIcon /> : <BookmarkPlusIcon />}
-        </Button>
-      </DialogTrigger>
+      {tooltip ? (
+        <Tooltip>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          {/*
+            Sans le titre de l'œuvre, contrairement à l'`aria-label` : sur la fiche, le titre est
+            en gros juste au-dessus, et le répéter sous le curseur n'apprend rien. Ce qu'on vient
+            chercher ici, c'est le **geste**.
+          */}
+          <TooltipContent>
+            {entry ? "Modifier le suivi" : "Ajouter à ma bibliothèque"}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        trigger
+      )}
 
       {/*
         **Plus large que le défaut, parce que le contenu l'est.** `sm:max-w-md` tient trois contrôles
@@ -354,19 +392,15 @@ export function EntryQuickEdit({
 
             <Field label="Relectures">
               {/*
-                Un champ nu plutôt qu'un pas à deux boutons : on ne relit pas une série assez souvent
-                pour avoir besoin d'un « +1 », et le compteur monte de toute façon **tout seul**
-                quand une relecture se termine (`entry-transition.ts`). Ce champ est là pour
-                rattraper un historique, pas pour compter au fil de l'eau.
+                **Deux crans depuis le 19 septembre 2026** (décision d'Alexis). Ce champ était nu,
+                au motif qu'on ne relit pas assez souvent pour avoir besoin d'un « +1 ». L'argument
+                tenait sur la fréquence et pas sur la forme : dans une grille où la progression
+                juste au-dessus porte ses deux boutons, un champ seul se lit comme un contrôle
+                d'une autre nature, alors que les deux ajustent le même genre d'entier.
               */}
-              <Input
-                aria-label="Nombre de relectures"
-                autoComplete="off"
-                className="w-full font-mono tabular-nums"
-                inputMode="numeric"
-                onChange={(event) =>
-                  edit({ repeatCount: event.target.value.replace(/\D/g, "") })
-                }
+              <EntryRepeatStepper
+                className="w-full"
+                onValueChange={(repeatCount) => edit({ repeatCount })}
                 value={draft.repeatCount}
               />
             </Field>

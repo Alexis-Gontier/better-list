@@ -14,10 +14,13 @@ import { routes } from "@/config/routes";
  * dans l'en-tête. Une entrée de nav de plus pour la même chose aurait fait hésiter entre deux portes
  * qui mènent au même endroit.
  *
- * **« Ma collection » n'est pas ici tant que `/collection` n'existe pas.** `routes.collection` reste
- * déclaré — c'est le chemin que PRODUCT.md §5 fixe pour V1.5 —, mais une entrée de nav qui répond
- * 404 est pire qu'une entrée absente : elle se lit comme une panne, pas comme un chantier. Elle
- * revient avec l'écran.
+ * **« Ma collection » est revenue le 19 septembre 2026, avec son écran.** Elle en était partie à
+ * la mise à blanc, sous la règle qu'une entrée de nav qui répond 404 est pire qu'une entrée
+ * absente — elle se lit comme une panne, pas comme un chantier. La condition posée alors est
+ * remplie : `/collection` existe.
+ *
+ * Elle rejoint « Ma bibliothèque » et non « Découvrir », et c'est le sens de la section : ce qu'on
+ * y trouve est à soi. L'étagère est le troisième espace personnel, après le suivi et les listes.
  */
 
 export type NavLink = {
@@ -63,6 +66,11 @@ export const mainNav: NavSection[] = [
         href: routes.lists.root,
         label: "Mes listes",
         description: "Classements, tier lists, sélections en tout genre.",
+      },
+      {
+        href: routes.collection.root,
+        label: "Ma collection",
+        description: "Mon étagère : les tomes que j'ai, et ceux qui manquent.",
       },
     ],
   },

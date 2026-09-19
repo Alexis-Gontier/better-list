@@ -327,6 +327,16 @@ const NOTES = [
   "Doublage à éviter, la VO porte tout.",
 ];
 
+/**
+ * Le libellé de l'édition créée en silence à la première saisie (§4.5).
+ *
+ * **Recopié** depuis `features/collection/server/collection.queries.ts` et non importé : ce script
+ * tourne sous `tsx`, hors de Next, et importer un module marqué `server-only` le ferait échouer
+ * avant sa première ligne utile. Un écart entre les deux créerait une seconde édition fantôme au
+ * premier clic — c'est la même contrainte que pour les énumérations recopiées dans les schémas.
+ */
+const DEFAULT_EDITION_LABEL = "Édition standard";
+
 type MirroredMedia = {
   id: number;
   type: "ANIME" | "MANGA";
@@ -613,6 +623,113 @@ async function seedLists(userId: string, catalogue: MirroredMedia[]) {
   return { listCount: LIST_PLAN.length, itemCount };
 }
 
+// --- Collection physique -----------------------------------------------------
+
+/**
+ * Combien de séries de l'étagère, et comment elles sont trouées.
+ *
+ * **Le jeu est choisi pour que l'écran ait quelque chose à dire.** Une étagère entièrement
+ * complète ne montrerait jamais la phrase des manquants, qui est la raison d'être de
+ * `/collection` (docs/PRODUCT.md §8 item 8) ; une étagère entièrement trouée ne montrerait jamais
+ * la pastille « Complète » ni l'onglet qui les regroupe. On veut les deux, et le cas limite entre
+ * les deux — une série où il ne manque qu'un tome au milieu.
+ */
+const SHELF_SERIES_COUNT = 9;
+
+/** Une série sur trois est complète : assez pour remplir l'onglet sans vider l'autre. */
+const COMPLETE_RATIO = 3;
+
+/**
+ * Le nombre de tomes saisi à la main, pour une série qu'AniList ne compte pas encore.
+ *
+ * Il ne compte que les séries **terminées**, et sans notion d'édition (§9). Le seed n'en saisit
+ * donc **qu'une sur deux** parmi les séries en cours : l'autre moitié reste à `null`, et c'est
+ * exprès — c'est l'état réel d'une série qu'on vient d'ajouter, celui où la grille se termine par
+ * la case « tome suivant ». Tout remplir cacherait en développement le cas le plus fréquent en
+ * production.
+ */
+function manualVolumesTotal() {
+  return randomInt(12, 42);
+}
+
+/**
+ * Les tomes possédés d'une série, avec des trous plausibles.
+ *
+ * Un rayon qui s'arrête quelque part, moins quelques tomes : c'est la forme d'une vraie étagère,
+ * parce qu'on achète dans l'ordre et qu'on saute ce qu'on ne trouve pas. Un tirage uniforme sur
+ * la série entière donnerait un damier, qui n'arrive jamais et qui rendrait la réglette
+ * illisible.
+ *
+ * Les manques tombent n'importe où dans ce rayon, **le tome 1 compris** : c'est le cas qu'on veut
+ * voir à l'écran au moins une fois, parce qu'il est le seul où la phrase des manquants commence
+ * par un petit numéro et qu'il vérifie que le repli d'intervalle ne triche pas sur les bords.
+ */
+function ownedNumbersFor(total: number, complete: boolean): number[] {
+  if (complete) return Array.from({ length: total }, (_, index) => index + 1);
+
+  // Jusqu'où va le rayon : entre un cinquième et la totalité, jamais zéro.
+  const reach = randomInt(Math.max(1, Math.ceil(total / 5)), total);
+  const owned = Array.from({ length: reach }, (_, index) => index + 1);
+
+  // Puis on retire quelques tomes au milieu — les trous qu'on part chercher en librairie.
+  const holes = randomInt(0, Math.min(4, Math.max(0, reach - 1)));
+
+  return shuffle(owned)
+    .slice(holes)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * L'étagère de démonstration.
+ *
+ * `Edition` est **partagée entre les comptes** (§4.5) : le seed l'`upsert` sur `(mediaId, label)`
+ * plutôt que de la créer, pour retomber sur la ligne existante si un autre compte a déjà commencé
+ * la même série. Seuls les `OwnedVolume` sont personnels.
+ */
+async function seedCollection(userId: string, manga: AniListMedia[]) {
+  const chosen = shuffle(manga).slice(0, SHELF_SERIES_COUNT);
+  let volumeCount = 0;
+
+  for (const [index, media] of chosen.entries()) {
+    const volumesTotal =
+      media.volumes ?? (index % 2 === 0 ? manualVolumesTotal() : null);
+    const complete = volumesTotal !== null && index % COMPLETE_RATIO === 0;
+
+    const edition = await prisma.edition.upsert({
+      where: {
+        mediaId_label: { mediaId: media.id, label: DEFAULT_EDITION_LABEL },
+      },
+      create: {
+        mediaId: media.id,
+        label: DEFAULT_EDITION_LABEL,
+        volumesTotal,
+        isDefault: true,
+      },
+      update: { volumesTotal },
+      select: { id: true },
+    });
+
+    /*
+      Sans total, on ne peut pas tirer « une série complète » — il n'y a pas de fin connue. On
+      pose alors un rayon de longueur plausible, comme une étagère de série en cours.
+    */
+    const numbers = ownedNumbersFor(volumesTotal ?? randomInt(3, 20), complete);
+
+    await prisma.ownedVolume.createMany({
+      data: numbers.map((number) => ({
+        userId,
+        editionId: edition.id,
+        number,
+      })),
+      skipDuplicates: true,
+    });
+
+    volumeCount += numbers.length;
+  }
+
+  return { seriesCount: chosen.length, volumeCount };
+}
+
 // --- Orchestration -----------------------------------------------------------
 
 async function main() {
@@ -635,27 +752,38 @@ async function main() {
     );
   }
 
-  const [entries, lists] = await Promise.all([
+  const [entries, lists, volumes] = await Promise.all([
     prisma.entry.count({ where: { userId: user.id } }),
     prisma.list.count({ where: { ownerId: user.id } }),
+    prisma.ownedVolume.count({ where: { userId: user.id } }),
   ]);
 
-  if ((entries > 0 || lists > 0) && !reset) {
+  const existing = entries > 0 || lists > 0 || volumes > 0;
+
+  if (existing && !reset) {
     throw new Error(
-      `@${user.username} a déjà ${entries} suivi(s) et ${lists} liste(s).\n` +
+      `@${user.username} a déjà ${entries} suivi(s), ${lists} liste(s) et ${volumes} tome(s).\n` +
         "Relancer avec `pnpm db:seed --reset` pour les supprimer et repartir de zéro.",
     );
   }
 
-  if (reset && (entries > 0 || lists > 0)) {
+  if (reset && existing) {
     console.log(
-      `Suppression de ${entries} suivi(s) — journal compris — et ${lists} liste(s) de @${user.username}.`,
+      `Suppression de ${entries} suivi(s) — journal compris —, ${lists} liste(s) et ${volumes} tome(s) de @${user.username}.`,
     );
 
     // `EntryEvent` et `ListItem` partent en cascade (`onDelete: Cascade`). `Media` ne bouge pas :
     // c'est le catalogue partagé, pas une donnée de compte.
     await prisma.entry.deleteMany({ where: { userId: user.id } });
     await prisma.list.deleteMany({ where: { ownerId: user.id } });
+    await prisma.ownedVolume.deleteMany({ where: { userId: user.id } });
+
+    /*
+      `Edition` n'appartient à personne (§4.5) : la supprimer parce qu'un compte s'en va serait
+      arracher l'étagère des trois autres. On ne retire donc que celles que **plus personne** ne
+      garnit — sans quoi une relance du seed retomberait sur le `volumesTotal` de la veille.
+    */
+    await prisma.edition.deleteMany({ where: { volumes: { none: {} } } });
   }
 
   console.log("Lecture du catalogue AniList (une requête)…");
@@ -684,6 +812,11 @@ async function main() {
 
   const { listCount, itemCount } = await seedLists(user.id, catalogue);
   console.log(`Listes : ${listCount} listes, ${itemCount} œuvres rangées.`);
+
+  const shelf = await seedCollection(user.id, manga);
+  console.log(
+    `Collection : ${shelf.seriesCount} séries sur l'étagère, ${shelf.volumeCount} tomes.`,
+  );
 
   console.log(`\nTerminé pour @${user.username}.`);
 }

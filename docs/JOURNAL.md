@@ -27,6 +27,81 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 19 septembre 2026 — l'étagère, choisie à l'écran plutôt que sur le papier
+
+`/collection` et `/collection/[mediaId]`, les deux dernières adresses déclarées sans écran. Trois
+choses valent d'être notées, et aucune n'est une décision de produit.
+
+**Les questions posées par écrit n'ont pas été tranchées par écrit.** J'ai ouvert la séance avec
+quatre arbitrages en maquettes ASCII, forme qui marchait très bien jusqu'ici. Réponse d'Alexis sur
+trois d'entre eux : « propose plusieurs choses et je choisirai après avoir vu ». On a donc dessiné
+les candidats pour de vrai — trois formes de racine empilées sur la même étagère factice, puis
+deux gestes de saisie côte à côte — et il a choisi en dix secondes à chaque fois. Ce qui a changé
+par rapport aux passes précédentes : l'arbitrage portait sur des **interactions**, pas sur des
+dispositions. Un glissé ne se dessine pas en ASCII. À retenir pour la suite : maquette écrite pour
+une mise en page, maquette jouable pour un geste.
+
+**La planche de maquettes a coûté trois fichiers et en a fait gagner plus.** Les trois variantes
+vivaient dans le `_components/` de la route, empilées sous des étiquettes en pointillés qui
+disaient la promesse **et** le prix de chacune. Deux sont parties à la validation, avec la page
+d'aiguillage et le décor. Ce qui a survécu, et c'est le point : `volume-ranges.ts`, un module pur
+avec ses tests, écrit dès la première passe parce qu'il servait aux trois formes. Écrire d'abord
+ce que toutes les variantes partagent rend l'arbitrage gratuit.
+
+**Deux défauts trouvés à l'écran, invisibles à la relecture.**
+
+Le premier : la jaquette d'une rangée s'allongeait quand la réglette passait à trois lignes en
+390 px. `aspect-2/3` calcule une hauteur, et `align-items: stretch` — le défaut du flex — l'écrase.
+`self-start` règle, et le piège vaut pour toute vignette posée à côté d'un bloc de hauteur
+variable. Il est commenté aux deux endroits où il pourrait revenir.
+
+Le second est plus intéressant, parce que le code avait l'air juste. Le glissé peignait case par
+case au `pointerenter`, ce qui marche tant que la grille tient sur une ligne. Dès qu'elle
+enveloppe, passer du dernier tome d'une rangée au premier de la suivante fait balayer au curseur
+toute la rangée **à rebours** : un test Playwright a coché un tome que je n'avais jamais visé.
+Corrigé en repartant d'une ancre — on ne retient que les deux bornes, et ce que la souris traverse
+cesse d'avoir un sens. L'aperçu y a gagné au passage : on voit la plage qu'on obtiendra.
+
+**Le troisième défaut est venu d'une question, pas d'un test.** « Ça se passe comment si le manga
+est en cours et qu'un nouveau tome sort ? » — et la réponse était : mal. Une série terminée
+demandait d'ouvrir le menu, taper un nouveau total, enregistrer, puis cliquer la case. Une série
+**en cours** était pire : AniList ne donne `volumes` que pour les séries terminées, donc elle
+arrive sans total, donc la grille s'arrête au dernier tome possédé, donc il n'y a **aucune case à
+cliquer** au-delà. Vérifié sur One Piece : zéro tome, une seule case ; je coche la première, il y
+a toujours une seule case. Les neuf séries du seed masquaient le trou parce que le seed leur
+invente un total.
+
+La leçon est moins le bug que ce qui l'avait caché : le jeu d'essai était **trop complet**. Il
+remplissait un champ que l'application, elle, laisse vide dans le cas le plus courant. Un seed qui
+ne reproduit pas l'état par défaut de la vraie vie teste un produit qui n'existe pas.
+
+**Le total des tomes ne se recopie pas, il se résout.** Première version : à la création de
+l'édition, on semait `volumesTotal` depuis le `volumes` du miroir. Ça paraissait raisonnable et
+c'était un piège — AniList ne remplit `volumes` qu'à la **fin** de la parution, donc toute série
+en cours naissait avec `null` et y restait pour toujours, même une fois terminée. La correction
+n'est pas un cron : la colonne ne porte plus que la saisie manuelle, et la lecture fait
+`déclaré ?? AniList`. Le jour où One Piece se termine, l'étagère prend ses 110 tomes au
+rechargement suivant, sans écriture, sans migration et sans tâche de fond. Une colonne qui
+recopie une source finit toujours par la contredire ; une règle de résolution, non.
+
+Corollaire trouvé en vérifiant : la grille s'arrêtait au dernier tome possédé quand le total était
+inconnu — donc sur une série en cours, le tome suivant était **inatteignable**. Un cul-de-sac que
+ni le typecheck ni les tests ne pouvaient voir, seulement un clic. D'où la case en pointillés en
+fin de grille, et la règle que la grille ne cache jamais un tome possédé, même si le total déclaré
+est plus court que l'étagère.
+
+**Trois fois la même phrase, déjà divergentes.** « Il me manque : … » était écrite dans la rangée
+de l'étagère, dans l'en-tête d'une série et dans le tableau des tomes. Au moment d'ajouter le cas
+« l'étagère déborde du total », il aurait fallu l'écrire une quatrième fois — et les trois
+existantes ne disaient déjà pas la même chose du même état. Elles sont maintenant un seul
+composant, ni client ni `server-only`, parce que deux appelants sont serveur et le troisième est
+l'îlot qui la recalcule à chaque clic.
+
+**Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
+développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
+`PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.
+Plus court qu'un redémarrage.
+
 ## 17 septembre 2026 — l'onglet, puis un audit des squelettes
 
 Deux choses ce jour-là, et la seconde est née d'une question d'Alexis : « est-ce que tous les
