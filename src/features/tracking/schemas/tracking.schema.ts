@@ -57,6 +57,16 @@ export const entryDateSchema = z
  * Les deux ne peuvent pas être confondus, sinon toute date posée automatiquement serait effacée
  * au premier clic sur un bouton voisin.
  */
+/**
+ * Le plafond des relectures.
+ *
+ * Un relecteur acharné plafonne bien avant mille ; au-delà, c'est une saisie erronée. Il est
+ * **exporté** parce que le pas de relecture du formulaire s'arrête au même nombre : deux bornes
+ * écrites séparément finiraient par diverger, et le client offrirait un cran que le serveur
+ * refuserait.
+ */
+export const MAX_REPEAT_COUNT = 1000;
+
 export const saveEntrySchema = z.object({
   mediaId: z.number().int().positive(),
   status: entryStatusSchema.optional(),
@@ -67,8 +77,7 @@ export const saveEntrySchema = z.object({
   notes: z.string().max(5000).nullable().optional(),
   startedAt: entryDateSchema.optional(),
   finishedAt: entryDateSchema.optional(),
-  /** Un relecteur acharné plafonne bien avant 1000 ; au-delà, c'est une saisie erronée. */
-  repeatCount: z.number().int().min(0).max(1000).optional(),
+  repeatCount: z.number().int().min(0).max(MAX_REPEAT_COUNT).optional(),
 });
 export type SaveEntryInput = z.infer<typeof saveEntrySchema>;
 

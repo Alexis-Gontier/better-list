@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
@@ -41,6 +40,7 @@ import {
 import { TIMEZONE } from "@/config/locale";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryRemoveButton } from "@/features/tracking/components/entry-remove-button";
+import { EntryRepeatStepper } from "@/features/tracking/components/entry-repeat-stepper";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
 import { EntryStatusSelect } from "@/features/tracking/components/entry-status-select";
 import {
@@ -392,19 +392,15 @@ export function EntryQuickEdit({
 
             <Field label="Relectures">
               {/*
-                Un champ nu plutôt qu'un pas à deux boutons : on ne relit pas une série assez souvent
-                pour avoir besoin d'un « +1 », et le compteur monte de toute façon **tout seul**
-                quand une relecture se termine (`entry-transition.ts`). Ce champ est là pour
-                rattraper un historique, pas pour compter au fil de l'eau.
+                **Deux crans depuis le 19 septembre 2026** (décision d'Alexis). Ce champ était nu,
+                au motif qu'on ne relit pas assez souvent pour avoir besoin d'un « +1 ». L'argument
+                tenait sur la fréquence et pas sur la forme : dans une grille où la progression
+                juste au-dessus porte ses deux boutons, un champ seul se lit comme un contrôle
+                d'une autre nature, alors que les deux ajustent le même genre d'entier.
               */}
-              <Input
-                aria-label="Nombre de relectures"
-                autoComplete="off"
-                className="w-full font-mono tabular-nums"
-                inputMode="numeric"
-                onChange={(event) =>
-                  edit({ repeatCount: event.target.value.replace(/\D/g, "") })
-                }
+              <EntryRepeatStepper
+                className="w-full"
+                onValueChange={(repeatCount) => edit({ repeatCount })}
                 value={draft.repeatCount}
               />
             </Field>
