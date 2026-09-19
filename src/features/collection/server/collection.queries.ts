@@ -11,6 +11,9 @@ import {
   MIRRORED_MEDIA_SELECT,
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import { getMediaDetailFromMirror } from "@/features/media/server/media.mirror";
+import { getMediaById } from "@/features/media/server/media.queries";
+import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -213,37 +216,33 @@ export function summarizeShelf(shelf: ShelfSeries[]): ShelfSummary {
 /**
  * Une série, pour `/collection/[mediaId]`.
  *
- * **Elle répond même sur une œuvre absente de l'étagère**, et c'est ce qui rend l'écran
- * utilisable : arriver sur `/collection/<id>` d'un manga qu'on vient d'acheter doit donner une
- * grille vide où cocher, pas une page introuvable. L'édition par défaut est alors créée à la
- * première case cochée (§4.5), par l'action et non par cette lecture — une lecture n'écrit pas.
- *
- * `null` est donc réservé à l'œuvre qui n'existe **pas du tout** dans le miroir, ou qui n'est pas
- * un imprimé : on ne collectionne pas les tomes d'un anime.
+ * **Elle répond même sur une œuvre absente de l'étagère — et même absente du miroir.** C'est ce
+ * qui rend l'écran utilisable : arriver sur `/collection/<id>` d'un manga qu'on vient d'acheter
+ * doit donner une grille vide où cocher, pas une page introuvable. L'édition par défaut est créée
+ * à la première case cochée (§4.5), par l'action et non par cette lecture — une lecture n'écrit
+ * pas, et c'est l'action qui appelle `ensureMediaMirror`.
  */
 export async function getSeriesShelf(
   mediaId: number,
 ): Promise<ShelfSeries | null> {
+  /*
+    **Le segment d'URL est borné ici, avant toute requête.** `Number("abc")` rend `NaN`, et Prisma
+    **lève** sur un `NaN` passé à une colonne entière — une exception, donc une page d'erreur, là
+    où `/collection/abc` doit simplement être introuvable. Le garder au bord de la lecture protège
+    tous les appelants d'un coup, `generateMetadata` compris, qui appelait aussi avec `NaN`.
+  */
+  if (!Number.isInteger(mediaId) || mediaId <= 0) return null;
+
   const userId = await currentUserId();
-
-  const media = await prisma.media.findUnique({
-    where: { id: mediaId },
-    /*
-      `volumes` s'ajoute au select partagé, et n'y entre pas : c'est le nombre de tomes qu'AniList
-      donne pour la série — sans notion d'édition, et seulement quand elle est terminée (§9). Il
-      ne sert qu'ici, comme **première proposition** de `volumesTotal` sur une étagère vide, et
-      l'alourdir partout ailleurs n'apprendrait rien aux quatre autres écrans qui lisent le miroir.
-    */
-    select: { ...MIRRORED_MEDIA_SELECT, volumes: true },
-  });
-
-  if (media?.type !== "MANGA") return null;
 
   /*
     L'édition par défaut, ou celle où j'ai des tomes. Il n'y en a qu'une dans les faits — le
     sélecteur multi-éditions n'est pas construit (docs/STATE.md) —, d'où le `findFirst` plutôt
-    qu'une liste : la première suffit, et `isDefault` d'abord garantit qu'on prend toujours la
-    même tant qu'il n'y a pas de choix à offrir.
+    qu'une liste : `isDefault` d'abord garantit qu'on prend toujours la même.
+
+    Elle peut exister sans que je possède un seul tome : `Edition` est **partagée** (§4.5), donc
+    un autre membre du cercle a pu la créer. Le `where` imbriqué ne ramène alors aucun tome, et
+    l'écran affiche une grille vide — ce qui est exact.
   */
   const edition = await prisma.edition.findFirst({
     where: { mediaId },
@@ -258,28 +257,50 @@ export async function getSeriesShelf(
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
 
-  if (!edition) {
-    /*
-      Aucune édition n'existe encore sur cette œuvre : l'étagère est vide, et c'est un état
-      normal, pas une absence. On rend une série sans édition en base — `id` vide — que l'écran
-      affiche comme une grille à remplir. L'action créera la vraie ligne au premier tome.
-    */
-    return {
-      media: compactFromMirror(media),
-      edition: {
-        id: "",
-        label: DEFAULT_EDITION_LABEL,
-        publisher: null,
-        volumesTotal: resolveVolumesTotal(null, media.volumes),
-      },
-      ownedNumbers: [],
-      ownedCount: 0,
-      missing: [],
-      missingLabel: "",
-      extra: [],
-      isComplete: false,
-    };
-  }
+  if (edition) return toShelfSeries(edition);
 
-  return toShelfSeries({ ...edition, media });
+  /*
+    **Aucune édition : l'œuvre peut n'être nulle part en local, et c'est le cas normal.**
+
+    Corrigé le 19 septembre 2026, après un « Série introuvable » rapporté par Alexis. Cette
+    lecture ne regardait que le miroir, or le miroir ne contient que ce que quelqu'un a déjà
+    suivi ou que la graine a importé. Toute série qu'on vient d'acheter sans la suivre — donc
+    précisément celle qu'on veut poser sur l'étagère — répondait 404, alors que sa fiche
+    s'affichait très bien juste à côté.
+
+    L'ordre des deux sources est **l'inverse de celui de la fiche**, et c'est délibéré : là-bas
+    AniList fait autorité et le miroir est le repli de panne ; ici le miroir passe d'abord parce
+    qu'il est gratuit et qu'une série qu'on possède y est presque toujours. AniList n'est
+    interrogé que pour l'œuvre qu'on découvre, une fois, et sa réponse est mémorisée.
+
+    La préférence de contenu adulte est passée aux deux : une œuvre refusée par l'une doit l'être
+    par l'autre, sinon le repli devient un contournement.
+  */
+  const { includeAdult } = await getPreferences();
+
+  const media =
+    (await getMediaDetailFromMirror(mediaId, { includeAdult })) ??
+    (await getMediaById(mediaId, { includeAdult }));
+
+  /*
+    `null` est donc réservé à l'œuvre qu'aucune des deux sources ne connaît, et à celle qui n'est
+    pas un imprimé : on ne collectionne pas les tomes d'un anime.
+  */
+  if (media?.type !== "MANGA") return null;
+
+  return {
+    media,
+    edition: {
+      id: "",
+      label: DEFAULT_EDITION_LABEL,
+      publisher: null,
+      volumesTotal: resolveVolumesTotal(null, media.volumes),
+    },
+    ownedNumbers: [],
+    ownedCount: 0,
+    missing: [],
+    missingLabel: "",
+    extra: [],
+    isComplete: false,
+  };
 }
