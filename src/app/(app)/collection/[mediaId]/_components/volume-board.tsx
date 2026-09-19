@@ -6,15 +6,12 @@ import { startTransition, useEffect, useOptimistic, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ShelfStatusLine } from "@/features/collection/components/shelf-status-line";
 import {
   applyVolumeRange,
-  formatVolumeRanges,
   volumeGaps,
 } from "@/features/collection/lib/volume-ranges";
-import {
-  addNextVolume,
-  setOwnedRange,
-} from "@/features/collection/server/collection.actions";
+import { setOwnedRange } from "@/features/collection/server/collection.actions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -86,10 +83,6 @@ export function VolumeBoard({
     onError: () => toast.error("Les tomes n'ont pas pu être enregistrés."),
   });
 
-  const { executeAsync: executeNext } = useAction(addNextVolume, {
-    onError: () => toast.error("Le tome n'a pas pu être ajouté."),
-  });
-
   function commit(from: number, to: number, isOwned: boolean) {
     startTransition(async () => {
       addOptimistic({ from, to, owned: isOwned });
@@ -124,14 +117,26 @@ export function VolumeBoard({
   });
 
   /**
-   * Jusqu'où la grille va — **le plus grand des deux, jamais le seul total.**
+   * Jusqu'où la grille va.
    *
-   * Le total borne la série, mais un tome possédé au-delà existe quand même : c'est le cas après
-   * une correction du total à la baisse, et pendant le battement optimiste du bouton « tome
-   * suivant », qui pose le tome avant que le serveur ne remonte le total. S'en tenir au total
-   * masquerait ces tomes — donc les rendrait impossibles à décocher.
+   * **Le maximum des trois, et pas simplement le total** : un tome possédé au-delà du total
+   * déclaré doit rester visible, sinon il devient impossible à décocher tout en continuant de
+   * compter. Le cas arrive pour de vrai — on saisit les tomes d'une série en cours, puis AniList
+   * publie un `volumes` plus court que ce qu'on a sur l'étagère, parce qu'il ne compte pas la même
+   * édition (docs/PRODUCT.md §9).
+   *
+   * Et au moins une case, pour qu'une série vierge ait quelque chose à cliquer.
    */
-  const lastNumber = Math.max(total ?? 0, ...shelf, 0);
+  const lastNumber = Math.max(total ?? 0, ...shelf, 1);
+
+  /**
+   * Le tome que la case d'après ajoutera.
+   *
+   * Le suivant du **dernier possédé**, et non de la dernière case : sur une étagère vierge, la
+   * grille affiche déjà une case 1, et repartir de là ferait poser le tome 2 en laissant un trou
+   * au tome 1 dès le premier clic.
+   */
+  const nextNumber = Math.max(0, ...shelf) + 1;
   const present = new Set(shelf);
 
   /** Ce que la case affiche : l'aperçu du glissé s'il la couvre, sinon l'étagère. */
@@ -145,30 +150,14 @@ export function VolumeBoard({
   }
 
   const numbers = Array.from({ length: lastNumber }, (_, index) => index + 1);
-  const { missing, isComplete } = volumeGaps(numbers.filter(isFilled), total);
-
-  /**
-   * La case en pointillés du bout de grille — « le tome suivant est paru, et je l'ai ».
-   *
-   * Elle ne paraît que quand il **n'y a plus rien à combler à l'intérieur** : total inconnu, ou
-   * série complète. Sur une série de 110 tomes dont on en possède 59, la fin est connue et les
-   * cases manquantes sont déjà là — une case de plus au bout ne voudrait rien dire.
-   *
-   * C'est la réponse à « ça se passe comment si un nouveau tome sort ? » (19 septembre 2026).
-   * Sans elle, une série **en cours** — donc sans total, AniList ne le donnant que pour les
-   * séries terminées — n'offrait aucune case au-delà du dernier tome possédé : un cul-de-sac.
-   */
-  const showNext = total === null || isComplete;
-  const nextNumber = lastNumber + 1;
+  const filled = numbers.filter(isFilled);
+  const { missing, extra, isComplete } = volumeGaps(filled, total);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground text-sm">
           Cliquez un tome, ou glissez pour une plage.
-          {showNext
-            ? " La case « + » ajoute le tome qui vient de paraître."
-            : null}
         </p>
 
         {/*
@@ -250,31 +239,23 @@ export function VolumeBoard({
           );
         })}
 
-        {showNext ? (
+        {/*
+          **La case d'après, quand la série est en cours.**
+
+          AniList ne donne un nombre de volumes que pour les séries **terminées** (§9) : One Piece
+          et Berserk répondent `null`. Sans cette case, la grille s'arrêtait au dernier tome
+          possédé et le tome suivant était inatteignable — il fallait passer par le menu saisir un
+          total à la main, sur une série qui n'en a pas encore. C'était un cul-de-sac, relevé le
+          19 septembre 2026.
+
+          Elle ne paraît que lorsque le total est inconnu : dès qu'il est su, la grille contient
+          déjà toutes les cases et il n'y a plus de « suite » à ouvrir.
+        */}
+        {total === null ? (
           <button
-            aria-label={`Ajouter le tome ${nextNumber}, paru depuis`}
-            /*
-              **Un « + », et non le numéro du tome.** En pointillés avec son numéro, la case se
-              lisait exactement comme un tome manquant — même fond, même teinte — et sur une série
-              complète elle ressemblait à un trou en bout de rangée. Le signe dit le geste ; le
-              numéro, lui, est dans l'étiquette d'accessibilité et dans la phrase au-dessus.
-            */
-            className="inline-flex size-11 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground sm:size-9"
-            /*
-              Hors du glissé, délibérément : elle n'a ni `onPointerDown` ni `onPointerEnter`. Une
-              plage qui s'étendrait jusqu'à une case qui n'existe pas encore n'a pas de sens, et
-              laisser le curseur la traverser en peignant ferait naître un tome par accident.
-            */
-            onClick={() => {
-              startTransition(async () => {
-                addOptimistic({
-                  from: nextNumber,
-                  to: nextNumber,
-                  owned: true,
-                });
-                await executeNext({ mediaId });
-              });
-            }}
+            aria-label={`Ajouter le tome ${nextNumber}`}
+            className="inline-flex size-11 items-center justify-center rounded-md border border-dashed text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground sm:size-9"
+            onClick={() => commit(nextNumber, nextNumber, true)}
             type="button"
           >
             <PlusIcon className="size-4" />
@@ -282,24 +263,19 @@ export function VolumeBoard({
         ) : null}
       </div>
 
-      <p className="text-sm">
-        {isComplete ? (
-          <span className="text-muted-foreground">
-            Série complète, {total} tomes.
-          </span>
-        ) : missing.length > 0 ? (
-          <>
-            <span className="text-muted-foreground">Il me manque : </span>
-            <span className="tabular-nums">{formatVolumeRanges(missing)}</span>
-          </>
-        ) : (
-          <span className="text-muted-foreground">
-            {total === null
-              ? "Renseignez le nombre de tomes de l'édition pour voir ce qui manque."
-              : "Rien ne manque."}
-          </span>
-        )}
-      </p>
+      {/*
+        La même phrase que la rangée de `/collection` et que l'en-tête, au mot près : elle vit
+        dans `shelf-status-line.tsx`. Ici elle est recalculée à chaque clic sur l'état optimiste,
+        donc elle bouge avant même que le serveur ait répondu.
+      */}
+      <ShelfStatusLine
+        className="text-sm"
+        extra={extra}
+        isComplete={isComplete}
+        missing={missing}
+        ownedCount={filled.length}
+        volumesTotal={total}
+      />
     </div>
   );
 }

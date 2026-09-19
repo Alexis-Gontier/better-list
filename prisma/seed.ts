@@ -640,15 +640,15 @@ const SHELF_SERIES_COUNT = 9;
 const COMPLETE_RATIO = 3;
 
 /**
- * Le nombre de tomes quand AniList ne le donne pas.
+ * Le nombre de tomes saisi à la main, pour une série qu'AniList ne compte pas encore.
  *
- * Il ne le donne que pour les séries **terminées**, et sans notion d'édition (§9) — c'est
- * exactement la limite que la saisie manuelle existe pour combler. Une valeur tirée au sort est
- * donc plus fidèle qu'un `null` sur la plupart des séries : en vrai, quelqu'un l'aurait saisie.
- *
- * **Sur la plupart, pas sur toutes** — voir `seedCollection`.
+ * Il ne compte que les séries **terminées**, et sans notion d'édition (§9). Le seed n'en saisit
+ * donc **qu'une sur deux** parmi les séries en cours : l'autre moitié reste à `null`, et c'est
+ * exprès — c'est l'état réel d'une série qu'on vient d'ajouter, celui où la grille se termine par
+ * la case « tome suivant ». Tout remplir cacherait en développement le cas le plus fréquent en
+ * production.
  */
-function fallbackVolumesTotal() {
+function manualVolumesTotal() {
   return randomInt(12, 42);
 }
 
@@ -690,27 +690,9 @@ async function seedCollection(userId: string, manga: AniListMedia[]) {
   const chosen = shuffle(manga).slice(0, SHELF_SERIES_COUNT);
   let volumeCount = 0;
 
-  /**
-   * **Une série reste sans nombre de tomes, et c'est le cas le plus important du jeu.**
-   *
-   * C'est l'état par **défaut** d'une série en cours dans la vraie application : AniList ne donne
-   * `volumes` que pour les séries terminées (§9), donc une édition créée par un premier clic
-   * arrive avec `volumesTotal = null`. Un seed qui remplit ce champ partout montre un produit qui
-   * n'existe pas — et il a effectivement caché, le 19 septembre 2026, le fait que la grille
-   * n'offrait alors aucune case au-delà du dernier tome possédé (docs/JOURNAL.md).
-   *
-   * Une seule, parce que les autres doivent montrer ce que l'écran sait faire quand le total est
-   * connu : les manquants, et la pastille « complète ».
-   */
-  const unknownTotalId = chosen.find(
-    (media) => media.status === "RELEASING",
-  )?.id;
-
   for (const [index, media] of chosen.entries()) {
-    const published = media.volumes ?? fallbackVolumesTotal();
-    const volumesTotal = media.id === unknownTotalId ? null : published;
-
-    // Une série dont on ignore la fin ne peut pas être dite complète.
+    const volumesTotal =
+      media.volumes ?? (index % 2 === 0 ? manualVolumesTotal() : null);
     const complete = volumesTotal !== null && index % COMPLETE_RATIO === 0;
 
     const edition = await prisma.edition.upsert({
@@ -727,7 +709,11 @@ async function seedCollection(userId: string, manga: AniListMedia[]) {
       select: { id: true },
     });
 
-    const numbers = ownedNumbersFor(published, complete);
+    /*
+      Sans total, on ne peut pas tirer « une série complète » — il n'y a pas de fin connue. On
+      pose alors un rayon de longueur plausible, comme une étagère de série en cours.
+    */
+    const numbers = ownedNumbersFor(volumesTotal ?? randomInt(3, 20), complete);
 
     await prisma.ownedVolume.createMany({
       data: numbers.map((number) => ({

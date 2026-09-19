@@ -75,6 +75,28 @@ La leçon est moins le bug que ce qui l'avait caché : le jeu d'essai était **t
 remplissait un champ que l'application, elle, laisse vide dans le cas le plus courant. Un seed qui
 ne reproduit pas l'état par défaut de la vraie vie teste un produit qui n'existe pas.
 
+**Le total des tomes ne se recopie pas, il se résout.** Première version : à la création de
+l'édition, on semait `volumesTotal` depuis le `volumes` du miroir. Ça paraissait raisonnable et
+c'était un piège — AniList ne remplit `volumes` qu'à la **fin** de la parution, donc toute série
+en cours naissait avec `null` et y restait pour toujours, même une fois terminée. La correction
+n'est pas un cron : la colonne ne porte plus que la saisie manuelle, et la lecture fait
+`déclaré ?? AniList`. Le jour où One Piece se termine, l'étagère prend ses 110 tomes au
+rechargement suivant, sans écriture, sans migration et sans tâche de fond. Une colonne qui
+recopie une source finit toujours par la contredire ; une règle de résolution, non.
+
+Corollaire trouvé en vérifiant : la grille s'arrêtait au dernier tome possédé quand le total était
+inconnu — donc sur une série en cours, le tome suivant était **inatteignable**. Un cul-de-sac que
+ni le typecheck ni les tests ne pouvaient voir, seulement un clic. D'où la case en pointillés en
+fin de grille, et la règle que la grille ne cache jamais un tome possédé, même si le total déclaré
+est plus court que l'étagère.
+
+**Trois fois la même phrase, déjà divergentes.** « Il me manque : … » était écrite dans la rangée
+de l'étagère, dans l'en-tête d'une série et dans le tableau des tomes. Au moment d'ajouter le cas
+« l'étagère déborde du total », il aurait fallu l'écrire une quatrième fois — et les trois
+existantes ne disaient déjà pas la même chose du même état. Elles sont maintenant un seul
+composant, ni client ni `server-only`, parce que deux appelants sont serveur et le troisième est
+l'îlot qui la recalcule à chaque clic.
+
 **Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
 développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
 `PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.

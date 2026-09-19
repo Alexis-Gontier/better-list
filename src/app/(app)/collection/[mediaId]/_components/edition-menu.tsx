@@ -136,8 +136,8 @@ function VolumesTotalDialog({
         <DialogHeader>
           <DialogTitle>Nombre de tomes</DialogTitle>
           <DialogDescription>
-            AniList ne le connaît pas : il ne compte les volumes que des séries
-            terminées, et ignore les éditions.
+            Laisser vide pour suivre AniList — qui ne compte les volumes qu'une
+            fois la parution terminée, et ignore les éditions.
           </DialogDescription>
         </DialogHeader>
 
@@ -148,7 +148,7 @@ function VolumesTotalDialog({
             max={MAX_VOLUME_NUMBER}
             min={1}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="Laisser vide si la série est en cours"
+            placeholder="Vide : on suit AniList"
             type="number"
             value={value}
           />

@@ -4,6 +4,7 @@ import { EditionMenu } from "@/app/(app)/collection/[mediaId]/_components/editio
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
+import { ShelfStatusLine } from "@/features/collection/components/shelf-status-line";
 import type { ShelfSeries } from "@/features/collection/server/collection.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
@@ -67,7 +68,7 @@ export function SeriesHeader({
                 ? `${series.ownedCount} tomes`
                 : `${series.ownedCount} / ${series.edition.volumesTotal}`}
             </span>
-            {series.isComplete ? (
+            {series.isComplete && series.extra.length === 0 ? (
               <Badge variant="secondary">Complète</Badge>
             ) : null}
             <EditionMenu
@@ -77,29 +78,14 @@ export function SeriesHeader({
           </div>
         </div>
 
-        <p className="text-sm">
-          {series.isComplete ? (
-            <span className="text-muted-foreground">
-              Série complète, {series.edition.volumesTotal} tomes.
-            </span>
-          ) : series.missing.length > 0 ? (
-            <>
-              <span className="text-muted-foreground">Il me manque : </span>
-              <span className="tabular-nums">{series.missingLabel}</span>
-            </>
-          ) : (
-            /*
-              Ni complète, ni trouée : c'est le total qui manque, ou l'étagère qui est vierge. Le
-              tableau juste en dessous dit quoi faire, donc cette ligne se tait plutôt que
-              d'affirmer que rien ne manque — on n'en sait rien.
-            */
-            <span className="text-muted-foreground">
-              {series.ownedCount === 0
-                ? "Aucun tome sur l'étagère."
-                : "Nombre de tomes à renseigner."}
-            </span>
-          )}
-        </p>
+        <ShelfStatusLine
+          className="text-sm"
+          extra={series.extra}
+          isComplete={series.isComplete}
+          missing={series.missing}
+          ownedCount={series.ownedCount}
+          volumesTotal={series.edition.volumesTotal}
+        />
 
         <div>
           {/*

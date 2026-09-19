@@ -3,6 +3,7 @@ import "server-only";
 import type { CollectionState } from "@/features/collection/lib/collection-params";
 import {
   formatVolumeRanges,
+  resolveVolumesTotal,
   volumeGaps,
 } from "@/features/collection/lib/volume-ranges";
 import {
@@ -67,7 +68,11 @@ export type ShelfSeries = {
     id: string;
     label: string;
     publisher: string | null;
-    /** `null` tant que personne ne l'a saisi — AniList ne le donne pas (§9). */
+    /**
+     * Le total **résolu** : la saisie manuelle, sinon le `volumes` d'AniList
+     * (`resolveVolumesTotal`). `null` quand ni l'un ni l'autre ne sait — le cas d'une série en
+     * cours de parution, qu'AniList ne compte qu'une fois terminée (§9).
+     */
     volumesTotal: number | null;
   };
   ownedNumbers: number[];
@@ -75,6 +80,8 @@ export type ShelfSeries = {
   missing: number[];
   /** Les manquants en une phrase : `11, 12, 29, 63 → 110`. */
   missingLabel: string;
+  /** Les tomes possédés au-delà du total déclaré — voir `volumeGaps`. */
+  extra: number[];
   isComplete: boolean;
 };
 
@@ -89,7 +96,13 @@ const SHELF_EDITION_SELECT = {
   label: true,
   publisher: true,
   volumesTotal: true,
-  media: { select: MIRRORED_MEDIA_SELECT },
+  /*
+    `volumes` s'ajoute au select partagé du miroir : c'est le nombre de tomes qu'AniList donne pour
+    la série, et il sert de valeur de repli au total de l'édition (`resolveVolumesTotal`). Il n'est
+    pas ajouté à `MIRRORED_MEDIA_SELECT` lui-même — les quatre autres écrans qui lisent le miroir
+    n'en ont rien à faire.
+  */
+  media: { select: { ...MIRRORED_MEDIA_SELECT, volumes: true } },
 } as const;
 
 function toShelfSeries(edition: {
@@ -97,14 +110,21 @@ function toShelfSeries(edition: {
   label: string;
   publisher: string | null;
   volumesTotal: number | null;
-  media: Parameters<typeof compactFromMirror>[0];
+  media: Parameters<typeof compactFromMirror>[0] & { volumes: number | null };
   volumes: { number: number }[];
 }): ShelfSeries {
   const ownedNumbers = edition.volumes.map((volume) => volume.number);
-  const { missing, isComplete } = volumeGaps(
-    ownedNumbers,
+
+  /*
+    Le total est **résolu ici, à chaque lecture**, et jamais recopié en base : c'est ce qui fait
+    qu'une série en cours — pour laquelle AniList répond `null` — prend son vrai nombre de tomes
+    toute seule le jour où la parution se termine.
+  */
+  const volumesTotal = resolveVolumesTotal(
     edition.volumesTotal,
+    edition.media.volumes,
   );
+  const { missing, extra, isComplete } = volumeGaps(ownedNumbers, volumesTotal);
 
   return {
     media: compactFromMirror(edition.media),
@@ -112,12 +132,13 @@ function toShelfSeries(edition: {
       id: edition.id,
       label: edition.label,
       publisher: edition.publisher,
-      volumesTotal: edition.volumesTotal,
+      volumesTotal,
     },
     ownedNumbers,
     ownedCount: ownedNumbers.length,
     missing,
     missingLabel: formatVolumeRanges(missing),
+    extra,
     isComplete,
   };
 }
@@ -249,12 +270,13 @@ export async function getSeriesShelf(
         id: "",
         label: DEFAULT_EDITION_LABEL,
         publisher: null,
-        volumesTotal: media.volumes,
+        volumesTotal: resolveVolumesTotal(null, media.volumes),
       },
       ownedNumbers: [],
       ownedCount: 0,
       missing: [],
       missingLabel: "",
+      extra: [],
       isComplete: false,
     };
   }

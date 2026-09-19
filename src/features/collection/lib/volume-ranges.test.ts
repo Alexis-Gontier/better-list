@@ -4,6 +4,7 @@ import {
   applyVolumeRange,
   formatVolumeRanges,
   missingVolumes,
+  resolveVolumesTotal,
   volumeGaps,
 } from "@/features/collection/lib/volume-ranges";
 
@@ -53,12 +54,17 @@ describe("formatVolumeRanges", () => {
 
 describe("volumeGaps", () => {
   it("dit complète quand le total est connu et sans trou", () => {
-    expect(volumeGaps([1, 2, 3], 3)).toEqual({ missing: [], isComplete: true });
+    expect(volumeGaps([1, 2, 3], 3)).toEqual({
+      missing: [],
+      extra: [],
+      isComplete: true,
+    });
   });
 
   it("rend la traîne quand le total est connu", () => {
     expect(volumeGaps([1, 2], 5)).toEqual({
       missing: [3, 4, 5],
+      extra: [],
       isComplete: false,
     });
   });
@@ -67,6 +73,7 @@ describe("volumeGaps", () => {
     // Le 5 et au-delà sont peut-être à paraître : on n'en dit rien.
     expect(volumeGaps([1, 3, 4], null)).toEqual({
       missing: [2],
+      extra: [],
       isComplete: false,
     });
   });
@@ -74,16 +81,34 @@ describe("volumeGaps", () => {
   it("sans total, n'affirme jamais qu'une série est complète", () => {
     expect(volumeGaps([1, 2, 3], null)).toEqual({
       missing: [],
+      extra: [],
       isComplete: false,
     });
   });
 
   it("sans total et sans tome, ne rend rien", () => {
-    expect(volumeGaps([], null)).toEqual({ missing: [], isComplete: false });
+    expect(volumeGaps([], null)).toEqual({
+      missing: [],
+      extra: [],
+      isComplete: false,
+    });
+  });
+
+  it("signale les tomes au-delà d'un total plus court que l'étagère", () => {
+    // AniList publie 2 volumes, mais l'édition qu'on possède en compte 3.
+    expect(volumeGaps([1, 2, 3], 2)).toEqual({
+      missing: [],
+      extra: [3],
+      isComplete: true,
+    });
   });
 
   it("un total à zéro n'est pas une collection achevée", () => {
-    expect(volumeGaps([], 0)).toEqual({ missing: [], isComplete: false });
+    expect(volumeGaps([], 0)).toEqual({
+      missing: [],
+      extra: [],
+      isComplete: false,
+    });
   });
 });
 
@@ -104,5 +129,24 @@ describe("applyVolumeRange", () => {
     expect(applyVolumeRange([9, 1], { from: 5, to: 5, owned: true })).toEqual([
       1, 5, 9,
     ]);
+  });
+});
+
+describe("resolveVolumesTotal", () => {
+  it("préfère la saisie manuelle à AniList", () => {
+    // AniList ignore les éditions : 27 tomes en perfect edition contre 72 en simple.
+    expect(resolveVolumesTotal(27, 72)).toBe(27);
+  });
+
+  it("retombe sur AniList quand rien n'est saisi", () => {
+    expect(resolveVolumesTotal(null, 24)).toBe(24);
+  });
+
+  it("rend null quand personne ne sait — le cas d'une série en cours", () => {
+    expect(resolveVolumesTotal(null, null)).toBeNull();
+  });
+
+  it("garde un zéro saisi plutôt que de le confondre avec une absence", () => {
+    expect(resolveVolumesTotal(0, 72)).toBe(0);
   });
 });

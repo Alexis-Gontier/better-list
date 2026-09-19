@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { routes } from "@/config/routes";
+import { resolveVolumesTotal } from "@/features/collection/lib/volume-ranges";
 import {
-  addNextVolumeSchema,
-  MAX_VOLUME_NUMBER,
   setEditionVolumesTotalSchema,
   setOwnedRangeSchema,
 } from "@/features/collection/schemas/collection.schema";
@@ -17,10 +16,9 @@ import { authActionClient } from "@/lib/safe-action";
 /**
  * Les écritures de l'étagère physique (docs/PRODUCT.md §4.5).
  *
- * Trois gestes, et trois seulement : poser ou retirer une plage de tomes, poser le tome suivant
- * d'une série en cours, et corriger le nombre de tomes d'une édition. C'est tout ce que l'écran
- * offre, et c'est délibéré — prix, date d'acquisition, état et prêt ont été retirés du produit le
- * 19 septembre 2026.
+ * Deux gestes, et deux seulement : poser ou retirer une plage de tomes, et corriger le nombre de
+ * tomes d'une édition. C'est tout ce que l'écran offre, et c'est délibéré — prix, date
+ * d'acquisition, état et prêt ont été retirés du produit le 19 septembre 2026.
  *
  * **La garde du layout `(app)` ne protège pas une Server Action** : c'est un endpoint POST à part
  * entière, appelable directement. D'où `authActionClient`, et l'utilisateur pris dans `ctx`.
@@ -56,9 +54,10 @@ function revalidateCollection(mediaId: number) {
  * se disputeraient la contrainte d'unicité. L'`upsert` les fait tomber sur la même ligne, ce qui
  * est exactement l'intention du modèle partagé.
  *
- * `volumesTotal` est semé depuis le miroir quand AniList le connaît — il ne le donne que pour les
- * séries terminées, et sans notion d'édition (§9). C'est une **proposition**, pas une vérité : le
- * menu de l'en-tête existe pour la corriger.
+ * **`volumesTotal` naît à `null`, et on ne recopie pas celui d'AniList.** La colonne ne porte que
+ * la saisie manuelle ; le chiffre d'AniList est ajouté à la lecture (`resolveVolumesTotal`). Le
+ * recopier ici figerait la valeur du jour : une série en cours, pour laquelle AniList répond
+ * `null`, resterait sans total pour toujours — même une fois sa parution terminée.
  */
 async function defaultEditionId(mediaId: number): Promise<string> {
   const existing = await prisma.edition.findFirst({
@@ -69,19 +68,9 @@ async function defaultEditionId(mediaId: number): Promise<string> {
 
   if (existing) return existing.id;
 
-  const media = await prisma.media.findUnique({
-    where: { id: mediaId },
-    select: { volumes: true },
-  });
-
   const edition = await prisma.edition.upsert({
     where: { mediaId_label: { mediaId, label: DEFAULT_EDITION_LABEL } },
-    create: {
-      mediaId,
-      label: DEFAULT_EDITION_LABEL,
-      volumesTotal: media?.volumes ?? null,
-      isDefault: true,
-    },
+    create: { mediaId, label: DEFAULT_EDITION_LABEL, isDefault: true },
     update: {},
     select: { id: true },
   });
@@ -129,12 +118,19 @@ export const setOwnedRange = authActionClient
     */
     const edition = await prisma.edition.findUnique({
       where: { id: editionId },
-      select: { volumesTotal: true },
+      select: { volumesTotal: true, media: { select: { volumes: true } } },
     });
 
-    const ceiling = owned
-      ? (edition?.volumesTotal ?? parsedInput.to)
-      : parsedInput.to;
+    /*
+      Le plafond suit la **même règle que l'écran** (`resolveVolumesTotal`) : la saisie manuelle,
+      sinon AniList. Les deux doivent s'accorder, sans quoi la grille offrirait une case que
+      l'action refuserait d'écrire.
+    */
+    const total = edition
+      ? resolveVolumesTotal(edition.volumesTotal, edition.media.volumes)
+      : null;
+
+    const ceiling = owned ? (total ?? parsedInput.to) : parsedInput.to;
     const to = Math.min(parsedInput.to, ceiling);
 
     if (to < from) return { written: 0 };
@@ -193,74 +189,4 @@ export const setEditionVolumesTotal = authActionClient
 
     revalidateCollection(mediaId);
     return { volumesTotal };
-  });
-
-/**
- * Poser le tome suivant, et pousser la fin de l'édition d'un cran si elle était connue.
- *
- * **C'est le geste d'une série en cours**, et il répond à une question posée le 19 septembre
- * 2026 : « ça se passe comment si un nouveau tome sort ? » Mal, jusqu'ici. Deux cas se
- * présentaient, et aucun n'était bon :
- *
- * - **Total renseigné** (23 tomes, série complète) : il fallait ouvrir le menu, taper 24,
- *   enregistrer, puis cliquer la case. Deux gestes et une saisie pour un achat.
- * - **Total inconnu** — le cas par **défaut** d'une série en cours, AniList ne donnant `volumes`
- *   que pour les séries terminées (§9) — : la grille s'arrêtait au dernier tome possédé, donc
- *   elle n'offrait aucune case à cliquer. Un cul-de-sac : on ne pouvait pas dépasser le tome 1.
- *
- * Le numéro se déduit ici et **jamais du client** : le plus grand entre le total de l'édition et
- * le dernier tome possédé, plus un. Le total, lui, ne bouge que s'il était déjà renseigné —
- * « je ne sais pas combien il y en a » reste une réponse valable, et l'inventer transformerait
- * une série en cours en série qu'on croit finie.
- */
-export const addNextVolume = authActionClient
-  .metadata({ actionName: "addNextVolume" })
-  .inputSchema(addNextVolumeSchema)
-  .action(async ({ parsedInput, ctx }) => {
-    const { mediaId } = parsedInput;
-
-    await ensureMediaMirror(mediaId);
-    const editionId = await defaultEditionId(mediaId);
-
-    const [edition, owned] = await Promise.all([
-      prisma.edition.findUnique({
-        where: { id: editionId },
-        select: { volumesTotal: true },
-      }),
-      prisma.ownedVolume.aggregate({
-        where: { userId: ctx.user.id, editionId },
-        _max: { number: true },
-      }),
-    ]);
-
-    const number =
-      Math.max(edition?.volumesTotal ?? 0, owned._max.number ?? 0) + 1;
-
-    /*
-      La même borne que le schéma applique aux plages. Elle ne juge pas d'un catalogue — aucune
-      série publiée n'en approche — mais empêche qu'un clic répété sans fin remplisse la table.
-    */
-    if (number > MAX_VOLUME_NUMBER) return { number: null };
-
-    await prisma.$transaction([
-      /*
-        `createMany` avec `skipDuplicates` plutôt qu'un `create` : deux clics rapides, ou deux
-        onglets, calculent le même numéro et le second échouerait sur la contrainte d'unicité.
-      */
-      prisma.ownedVolume.createMany({
-        data: [{ userId: ctx.user.id, editionId, number }],
-        skipDuplicates: true,
-      }),
-      ...(edition?.volumesTotal === null
-        ? []
-        : [
-            prisma.edition.update({
-              where: { id: editionId },
-              data: { volumesTotal: number },
-            }),
-          ]),
-    ]);
-
-    revalidateCollection(mediaId);
-    return { number };
   });

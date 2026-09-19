@@ -108,12 +108,14 @@ export function formatVolumeRanges(numbers: readonly number[]): string {
 export function volumeGaps(
   owned: readonly number[],
   volumesTotal: number | null,
-): { missing: number[]; isComplete: boolean } {
+): { missing: number[]; extra: number[]; isComplete: boolean } {
   if (volumesTotal === null) {
-    if (owned.length === 0) return { missing: [], isComplete: false };
+    if (owned.length === 0)
+      return { missing: [], extra: [], isComplete: false };
 
     return {
       missing: missingVolumes(owned, Math.max(...owned)),
+      extra: [],
       isComplete: false,
     };
   }
@@ -121,10 +123,25 @@ export function volumeGaps(
   const missing = missingVolumes(owned, volumesTotal);
 
   /*
+    **Les tomes au-delà du total, et pourquoi ils comptent.** Le cas paraît absurde — posséder le
+    tome 25 d'une série qui en compte 23 — et il arrive pourtant de deux façons : AniList publie
+    enfin son `volumes`, plus court que l'édition qu'on a sur l'étagère parce qu'il ignore les
+    éditions (§9) ; ou le total a été saisi trop bas à la main. Les signaler vaut mieux que de les
+    ignorer, parce qu'ils rendent « complète » faux sans qu'on voie pourquoi.
+  */
+  const extra = owned
+    .filter((number) => number > volumesTotal)
+    .sort((a, b) => a - b);
+
+  /*
     Une étagère vide sur une édition de zéro tome n'est pas « complète » : `volumesTotal` à 0 est
     une saisie qui n'a pas encore eu lieu, pas une collection achevée.
   */
-  return { missing, isComplete: volumesTotal > 0 && missing.length === 0 };
+  return {
+    missing,
+    extra,
+    isComplete: volumesTotal > 0 && missing.length === 0,
+  };
 }
 
 /**
@@ -146,4 +163,25 @@ export function applyVolumeRange(
   }
 
   return [...next].sort((a, b) => a - b);
+}
+
+/**
+ * Le nombre de tomes d'une édition — **ce que l'utilisateur a déclaré, sinon ce qu'AniList sait.**
+ *
+ * `Edition.volumesTotal` ne porte donc **que la saisie manuelle**, jamais une copie : recopier le
+ * `volumes` d'AniList à la création de l'édition figerait la valeur du jour, et une série en cours
+ * — pour laquelle AniList répond `null` — resterait sans total pour toujours, même une fois
+ * terminée. En le résolvant à la lecture, le jour où AniList publie « 110 volumes », l'étagère
+ * l'affiche au rechargement suivant. Aucun cron, aucune écriture, aucune migration.
+ *
+ * L'ordre est celui-là et pas l'inverse parce qu'AniList **ignore la notion d'édition**
+ * (docs/PRODUCT.md §9) : son chiffre vaut pour « la série », pas pour la perfect edition qu'on a
+ * sur l'étagère. Une valeur saisie à la main est donc toujours plus juste que la sienne, et
+ * l'effacer revient à redemander la sienne.
+ */
+export function resolveVolumesTotal(
+  declared: number | null,
+  fromAniList: number | null,
+): number | null {
+  return declared ?? fromAniList;
 }

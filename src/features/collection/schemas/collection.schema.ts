@@ -62,20 +62,3 @@ export const setEditionVolumesTotalSchema = z.object({
   mediaId: z.number().int().positive(),
   volumesTotal: z.number().int().min(1).max(MAX_VOLUME_NUMBER).nullable(),
 });
-
-/**
- * Poser le tome suivant — « il vient de paraître, et je l'ai ».
- *
- * **Le numéro n'est pas dans l'entrée, et c'est le point.** Il se déduit en base, du plus grand
- * entre le total de l'édition et le dernier tome possédé : le client ne peut donc pas demander le
- * tome 400 d'une série qui en compte douze, et deux onglets qui cliquent en même temps tombent
- * sur le même numéro plutôt que sur deux.
- *
- * Ce geste existe parce qu'une série **en cours** n'a pas de fin connue : AniList ne donne un
- * nombre de volumes que pour les séries terminées (docs/PRODUCT.md §9), donc la grille s'arrête
- * au dernier tome possédé et il faut bien un moyen d'aller plus loin. Sans lui, poser le tome
- * suivant demandait d'ouvrir le menu et de saisir un total à la main.
- */
-export const addNextVolumeSchema = z.object({
-  mediaId: z.number().int().positive(),
-});

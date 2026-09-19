@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
+import { ShelfStatusLine } from "@/features/collection/components/shelf-status-line";
 import type { ShelfSeries } from "@/features/collection/server/collection.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
@@ -101,7 +102,11 @@ function ShelfRow({
                 ? `${series.ownedCount} tomes`
                 : `${series.ownedCount} / ${total}`}
             </span>
-            {series.isComplete ? (
+            {/*
+              La pastille se tait quand l'étagère déborde du total : « complète » et « 25 / 23 »
+              sur la même ligne se contredisent, et c'est la phrase en dessous qui explique.
+            */}
+            {series.isComplete && series.extra.length === 0 ? (
               <Badge className="text-[10px]" variant="secondary">
                 Complète
               </Badge>
@@ -112,38 +117,27 @@ function ShelfRow({
         <VolumeStrip
           owned={series.ownedNumbers}
           /*
-            Sans total saisi, la réglette s'arrête au dernier tome possédé : on ne dessine pas des
-            cases vides pour une fin de série qu'on ignore.
+            Le maximum des deux : sans total saisi la réglette s'arrête au dernier tome possédé —
+            on ne dessine pas des cases vides pour une fin de série qu'on ignore —, et un tome
+            au-delà d'un total trop court reste visible plutôt que d'être effacé du dessin.
           */
-          total={total ?? Math.max(...series.ownedNumbers, 0)}
+          total={Math.max(total ?? 0, ...series.ownedNumbers, 0)}
         />
 
         {/*
           La phrase, et pas seulement la réglette. Une bande de cases dit *combien* de trous, jamais
           *lesquels* : c'est en la lisant qu'on saurait qu'il manque le 29, et personne ne compte
           vingt-neuf cases dans une librairie. La réglette montre la forme de l'étagère, la phrase
-          donne la réponse.
+          donne la réponse — et elle n'est écrite qu'une fois, dans `shelf-status-line.tsx`.
         */}
-        <p className="text-xs">
-          {series.isComplete ? (
-            <span className="text-muted-foreground">
-              Série complète, {total} tomes.
-            </span>
-          ) : series.missing.length > 0 ? (
-            <>
-              <span className="text-muted-foreground">Il me manque : </span>
-              <span className="tabular-nums">{series.missingLabel}</span>
-            </>
-          ) : (
-            /*
-              Ni complète ni trouée : c'est le total qui manque. On le dit, parce que c'est la
-              seule chose à faire pour que cette ligne réponde un jour à la question de l'écran.
-            */
-            <span className="text-muted-foreground">
-              Nombre de tomes à renseigner.
-            </span>
-          )}
-        </p>
+        <ShelfStatusLine
+          className="text-xs"
+          extra={series.extra}
+          isComplete={series.isComplete}
+          missing={series.missing}
+          ownedCount={series.ownedCount}
+          volumesTotal={total}
+        />
       </div>
     </Link>
   );

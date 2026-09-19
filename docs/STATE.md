@@ -1029,14 +1029,23 @@ Trois manques, tous décidés plutôt que subis — et le premier est le seul qu
    menu « … » n'offre **qu'une** entrée — « Nombre de tomes » —, parce qu'une entrée de menu qui
    n'ouvre rien est pire qu'une entrée absente. C'est la même règle qui avait sorti « Ma
    collection » de la nav.
-2. **Prix, date d'acquisition, état et notes n'ont plus d'écran** (décision d'Alexis,
+2. **La saisie du nombre de tomes reste manuelle pour une série en cours.** AniList ne remplit
+   `volumes` qu'à la **fin** de la parution — vérifié en direct : One Piece et Berserk répondent
+   `null`, Chainsaw Man répond 24. Le total n'est donc **jamais recopié en base** : il se résout à
+   la lecture (`resolveVolumesTotal`), saisie manuelle d'abord, AniList sinon. Le jour où une
+   série se termine, l'étagère prend son vrai total au rechargement suivant, sans cron ni
+   migration. D'ici là, la grille se termine par une case « tome suivant ».
+3. **Prix, date d'acquisition, état et notes n'ont plus d'écran** (décision d'Alexis,
    19 septembre). Ils ne vivaient que dans la fenêtre de saisie par plage, écartée au profit du
    clic ; les emporter était le prix de ce choix. Le **budget cumulé** de §8 item 12 tombe avec :
    une somme toujours nulle serait un chiffre faux, donc les chiffres d'étagère s'arrêtent à
    quatre.
-3. **Le prêt entre membres est abandonné**, pas reporté (décision d'Alexis, 19 septembre). §8
+4. **Le prêt entre membres est abandonné**, pas reporté (décision d'Alexis, 19 septembre). §8
    item 10 est rayé dans PRODUCT.md.
 
 Et une porte qui reste provisoire : `/media/[id]` ne porte qu'un **lien** « Ma collection », pas le
 bloc de tomes possédés qu'attend [fiche-media.md](./fiche-media.md). Le lien existe parce que sans
 lui `/collection` serait un écran qu'aucun chemin n'atteint ; il ne préempte pas la forme du bloc.
+Il est dans la rangée d'actions de la fiche, en icône seule avec le bouton de liste, et **il ne
+dépend pas du suivi** : posséder les douze tomes d'une série qu'on n'a jamais ajoutée à sa
+bibliothèque est un état normal (§4.5), vérifié en base.

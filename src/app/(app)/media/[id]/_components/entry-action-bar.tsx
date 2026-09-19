@@ -7,6 +7,11 @@ import { toast } from "sonner";
 import { AddToListDialog } from "@/app/(app)/media/[id]/_components/add-to-list-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
@@ -53,6 +58,17 @@ import { saveEntry } from "@/features/tracking/server/tracking.actions";
  */
 
 type EntryActionBarProps = {
+  /**
+   * Le lien vers `/collection/[mediaId]`, rendu par le serveur et posé en fin de rangée.
+   *
+   * Un emplacement, pas une notion : cette barre parle du **suivi**, et la collection est l'autre
+   * axe (docs/PRODUCT.md §4.5 — posséder et avoir lu sont indépendants). Lui faire connaître
+   * l'étagère pour un lien serait le même couplage que celui que `MediaCard` refuse avec ses
+   * `marker` et `action`.
+   *
+   * Absent sur un anime : on ne collectionne pas des épisodes, et c'est la fiche qui le décide.
+   */
+  collection?: React.ReactNode;
   mediaId: number;
   /**
    * Le titre et la bannière ne servent **qu'à la fenêtre d'édition** : celle-ci les affiche en
@@ -107,6 +123,7 @@ export function EntryActionBar({
   unit,
   total,
   lists,
+  collection,
 }: EntryActionBarProps) {
   /**
    * Le brouillon est **local et optimiste**, et il le faut.
@@ -256,18 +273,29 @@ export function EntryActionBar({
           qui est la valeur par défaut du modèle : c'est le statut qui fait naître la ligne
           (`entry-draft.ts`), et l'affiner est le geste suivant, une fois les contrôles à l'écran.
         */
-        <Button
-          disabled={save.isPending}
-          onClick={() => save.execute({ mediaId, status: "PLANNING" })}
-          variant="secondary"
-        >
-          {save.isPending ? (
-            <Spinner />
-          ) : (
-            <BookmarkPlusIcon data-icon="inline-start" />
-          )}
-          Ajouter à ma bibliothèque
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              disabled={save.isPending}
+              onClick={() => save.execute({ mediaId, status: "PLANNING" })}
+              variant="secondary"
+            >
+              {save.isPending ? (
+                <Spinner />
+              ) : (
+                <BookmarkPlusIcon data-icon="inline-start" />
+              )}
+              Ajouter à ma bibliothèque
+            </Button>
+          </TooltipTrigger>
+          {/*
+            L'infobulle dit ce que le libellé ne dit pas : **quel** statut ce clic pose. « Prévu »
+            est la valeur par défaut du modèle, et c'est elle qui fait naître la ligne.
+          */}
+          <TooltipContent>
+            Crée le suivi au statut « Prévu ». Le reste s'affine ensuite.
+          </TooltipContent>
+        </Tooltip>
       )}
 
       {/*
@@ -276,6 +304,8 @@ export function EntryActionBar({
         libellé : c'est le geste qu'il annonçait, il le tient enfin.
       */}
       <AddToListDialog lists={lists} mediaId={mediaId} title={title} />
+
+      {collection}
     </div>
   );
 }

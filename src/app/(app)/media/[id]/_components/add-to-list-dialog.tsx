@@ -26,6 +26,11 @@ import {
 } from "@/components/ui/empty";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { routes } from "@/config/routes";
 import {
   addToList,
@@ -65,16 +70,26 @@ export function AddToListDialog({
 }) {
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        {/*
-          Le bouton qui existait depuis la refonte et ne faisait rien. Il garde son icône et son
-          libellé — c'est le même geste qu'il annonçait, il le tient enfin.
-        */}
-        <Button aria-label={`Ajouter ${title} à une liste`} variant="outline">
-          <ListPlusIcon data-icon="inline-start" />
-          Ajouter à une liste
-        </Button>
-      </DialogTrigger>
+      {/*
+        **Une icône seule depuis le 19 septembre 2026** (décision d'Alexis), avec « Ma collection »
+        à côté. Deux boutons pleine largeur pour deux gestes secondaires écrasaient le seul qui
+        compte sur cette rangée — celui du suivi. L'infobulle rend ce que le libellé emportait,
+        et l'`aria-label` porte déjà le titre de l'œuvre pour un lecteur d'écran.
+      */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DialogTrigger asChild>
+            <Button
+              aria-label={`Ajouter ${title} à une liste`}
+              size="icon"
+              variant="outline"
+            >
+              <ListPlusIcon />
+            </Button>
+          </DialogTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Ajouter à une liste</TooltipContent>
+      </Tooltip>
 
       <DialogContent>
         <DialogHeader>

@@ -7,6 +7,11 @@ import { MediaBanner } from "@/app/(app)/media/[id]/_components/media-banner";
 import { MediaFacts } from "@/app/(app)/media/[id]/_components/media-facts";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { routes } from "@/config/routes";
 import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
@@ -149,32 +154,47 @@ export function MediaHero({
             lists={lists}
             mediaId={media.id}
             title={title}
+            collection={
+              /*
+                **La porte de l'étagère** (19 septembre 2026), posée dans la rangée du suivi mais
+                sans en faire partie : `EntryActionBar` la reçoit comme un emplacement et n'en sait
+                rien de plus.
+
+                **Elle ne dépend pas du suivi**, et c'est le §4.5 à la lettre : posséder et avoir lu
+                sont deux axes indépendants. On peut avoir les douze tomes d'une série qu'on n'a
+                jamais ajoutée à sa bibliothèque — le lien est donc là que l'œuvre soit suivie ou
+                non, et l'étagère se remplit sans qu'aucune `Entry` existe.
+
+                **Sur les imprimés seulement** : on ne collectionne pas les épisodes d'un anime.
+                C'est la même borne que `getSeriesShelf`, qui refuse tout ce qui n'est pas un
+                `MANGA`.
+
+                Une icône seule, comme le bouton de liste à côté : docs/fiche-media.md attend ici un
+                bloc de tomes possédés, et ce lien ne fait qu'ouvrir le passage en attendant.
+              */
+              media.type === "MANGA" ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      aria-label={`Les tomes de ${title} que je possède`}
+                      asChild
+                      size="icon"
+                      variant="outline"
+                    >
+                      <Link href={routes.collection.detail(media.id)}>
+                        <LibraryBigIcon />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Ma collection — les tomes que je possède
+                  </TooltipContent>
+                </Tooltip>
+              ) : null
+            }
             total={media.type === "ANIME" ? media.episodes : media.chapters}
             unit={media.type === "ANIME" ? "episode" : "chapitre"}
           />
-
-          {/*
-            **La porte de l'étagère, et pour l'instant la seule** (19 septembre 2026).
-
-            Un lien, pas un bloc : docs/fiche-media.md attend ici les tomes possédés, et ce n'est
-            pas ce que cette ligne livre. Mais sans elle `/collection` serait un écran qu'aucun
-            chemin n'atteint — on ne pourrait y ajouter une série qu'en tapant son adresse. Elle
-            ouvre le passage sans préempter la forme que prendra le bloc.
-
-            **Sur les imprimés seulement** : posséder se compte en tomes, et on ne collectionne pas
-            les épisodes d'un anime. C'est la même borne que `getSeriesShelf`, qui refuse tout ce
-            qui n'est pas un `MANGA`.
-          */}
-          {media.type === "MANGA" ? (
-            <div>
-              <Button asChild size="sm" variant="ghost">
-                <Link href={routes.collection.detail(media.id)}>
-                  <LibraryBigIcon />
-                  Ma collection
-                </Link>
-              </Button>
-            </div>
-          ) : null}
         </div>
       </div>
     </section>
