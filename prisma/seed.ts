@@ -644,7 +644,9 @@ const COMPLETE_RATIO = 3;
  *
  * Il ne le donne que pour les séries **terminées**, et sans notion d'édition (§9) — c'est
  * exactement la limite que la saisie manuelle existe pour combler. Une valeur tirée au sort est
- * donc plus fidèle qu'un `null` : en vrai, quelqu'un l'aurait saisie.
+ * donc plus fidèle qu'un `null` sur la plupart des séries : en vrai, quelqu'un l'aurait saisie.
+ *
+ * **Sur la plupart, pas sur toutes** — voir `seedCollection`.
  */
 function fallbackVolumesTotal() {
   return randomInt(12, 42);
@@ -688,9 +690,28 @@ async function seedCollection(userId: string, manga: AniListMedia[]) {
   const chosen = shuffle(manga).slice(0, SHELF_SERIES_COUNT);
   let volumeCount = 0;
 
+  /**
+   * **Une série reste sans nombre de tomes, et c'est le cas le plus important du jeu.**
+   *
+   * C'est l'état par **défaut** d'une série en cours dans la vraie application : AniList ne donne
+   * `volumes` que pour les séries terminées (§9), donc une édition créée par un premier clic
+   * arrive avec `volumesTotal = null`. Un seed qui remplit ce champ partout montre un produit qui
+   * n'existe pas — et il a effectivement caché, le 19 septembre 2026, le fait que la grille
+   * n'offrait alors aucune case au-delà du dernier tome possédé (docs/JOURNAL.md).
+   *
+   * Une seule, parce que les autres doivent montrer ce que l'écran sait faire quand le total est
+   * connu : les manquants, et la pastille « complète ».
+   */
+  const unknownTotalId = chosen.find(
+    (media) => media.status === "RELEASING",
+  )?.id;
+
   for (const [index, media] of chosen.entries()) {
-    const volumesTotal = media.volumes ?? fallbackVolumesTotal();
-    const complete = index % COMPLETE_RATIO === 0;
+    const published = media.volumes ?? fallbackVolumesTotal();
+    const volumesTotal = media.id === unknownTotalId ? null : published;
+
+    // Une série dont on ignore la fin ne peut pas être dite complète.
+    const complete = volumesTotal !== null && index % COMPLETE_RATIO === 0;
 
     const edition = await prisma.edition.upsert({
       where: {
@@ -706,7 +727,7 @@ async function seedCollection(userId: string, manga: AniListMedia[]) {
       select: { id: true },
     });
 
-    const numbers = ownedNumbersFor(volumesTotal, complete);
+    const numbers = ownedNumbersFor(published, complete);
 
     await prisma.ownedVolume.createMany({
       data: numbers.map((number) => ({

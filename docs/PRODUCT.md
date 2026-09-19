@@ -451,6 +451,12 @@ Autour de la collection physique (§4.5) :
    la plage. Le critère d'arbitrage était « un seul clic pour ajouter » — ce qu'une fenêtre à
    ouvrir, remplir et refermer ne pouvait pas tenir. La plage n'est donc pas un mode à part, c'est
    le même geste tenu plus longtemps.
+
+   **Et une case « + » au bout de la grille**, pour le cas que le modèle rendait pénible : une
+   série **en cours** n'a pas de `volumesTotal`, puisqu'AniList ne le donne que pour les séries
+   terminées (§9). Elle pose le tome suivant d'un clic et pousse la fin de l'édition d'un cran si
+   elle était renseignée. Elle ne paraît que quand il n'y a plus rien à combler à l'intérieur —
+   sur une série de 110 tomes dont on en possède 59, la fin est connue.
 10. ~~**Bibliothèque partagée du cercle.** Qui possède quel tome, et le prêt (`lentTo`) : à
     quatre, l'app devient une petite bibliothèque de prêt.~~ **Abandonné le 19 septembre 2026,
     décision d'Alexis**, au moment de construire l'étagère. Le différenciateur était réel, mais il

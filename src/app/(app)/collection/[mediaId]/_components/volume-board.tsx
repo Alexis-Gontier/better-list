@@ -1,5 +1,6 @@
 "use client";
 
+import { PlusIcon } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { startTransition, useEffect, useOptimistic, useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +11,10 @@ import {
   formatVolumeRanges,
   volumeGaps,
 } from "@/features/collection/lib/volume-ranges";
-import { setOwnedRange } from "@/features/collection/server/collection.actions";
+import {
+  addNextVolume,
+  setOwnedRange,
+} from "@/features/collection/server/collection.actions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -82,6 +86,10 @@ export function VolumeBoard({
     onError: () => toast.error("Les tomes n'ont pas pu être enregistrés."),
   });
 
+  const { executeAsync: executeNext } = useAction(addNextVolume, {
+    onError: () => toast.error("Le tome n'a pas pu être ajouté."),
+  });
+
   function commit(from: number, to: number, isOwned: boolean) {
     startTransition(async () => {
       addOptimistic({ from, to, owned: isOwned });
@@ -116,12 +124,14 @@ export function VolumeBoard({
   });
 
   /**
-   * Jusqu'où la grille va.
+   * Jusqu'où la grille va — **le plus grand des deux, jamais le seul total.**
    *
-   * Le total quand il est saisi ; sinon le dernier tome possédé, et au moins une case pour qu'une
-   * série vierge ait quelque chose à cliquer.
+   * Le total borne la série, mais un tome possédé au-delà existe quand même : c'est le cas après
+   * une correction du total à la baisse, et pendant le battement optimiste du bouton « tome
+   * suivant », qui pose le tome avant que le serveur ne remonte le total. S'en tenir au total
+   * masquerait ces tomes — donc les rendrait impossibles à décocher.
    */
-  const lastNumber = total ?? Math.max(...shelf, 1);
+  const lastNumber = Math.max(total ?? 0, ...shelf, 0);
   const present = new Set(shelf);
 
   /** Ce que la case affiche : l'aperçu du glissé s'il la couvre, sinon l'étagère. */
@@ -137,11 +147,28 @@ export function VolumeBoard({
   const numbers = Array.from({ length: lastNumber }, (_, index) => index + 1);
   const { missing, isComplete } = volumeGaps(numbers.filter(isFilled), total);
 
+  /**
+   * La case en pointillés du bout de grille — « le tome suivant est paru, et je l'ai ».
+   *
+   * Elle ne paraît que quand il **n'y a plus rien à combler à l'intérieur** : total inconnu, ou
+   * série complète. Sur une série de 110 tomes dont on en possède 59, la fin est connue et les
+   * cases manquantes sont déjà là — une case de plus au bout ne voudrait rien dire.
+   *
+   * C'est la réponse à « ça se passe comment si un nouveau tome sort ? » (19 septembre 2026).
+   * Sans elle, une série **en cours** — donc sans total, AniList ne le donnant que pour les
+   * séries terminées — n'offrait aucune case au-delà du dernier tome possédé : un cul-de-sac.
+   */
+  const showNext = total === null || isComplete;
+  const nextNumber = lastNumber + 1;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground text-sm">
           Cliquez un tome, ou glissez pour une plage.
+          {showNext
+            ? " La case « + » ajoute le tome qui vient de paraître."
+            : null}
         </p>
 
         {/*
@@ -222,6 +249,37 @@ export function VolumeBoard({
             </button>
           );
         })}
+
+        {showNext ? (
+          <button
+            aria-label={`Ajouter le tome ${nextNumber}, paru depuis`}
+            /*
+              **Un « + », et non le numéro du tome.** En pointillés avec son numéro, la case se
+              lisait exactement comme un tome manquant — même fond, même teinte — et sur une série
+              complète elle ressemblait à un trou en bout de rangée. Le signe dit le geste ; le
+              numéro, lui, est dans l'étiquette d'accessibilité et dans la phrase au-dessus.
+            */
+            className="inline-flex size-11 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground sm:size-9"
+            /*
+              Hors du glissé, délibérément : elle n'a ni `onPointerDown` ni `onPointerEnter`. Une
+              plage qui s'étendrait jusqu'à une case qui n'existe pas encore n'a pas de sens, et
+              laisser le curseur la traverser en peignant ferait naître un tome par accident.
+            */
+            onClick={() => {
+              startTransition(async () => {
+                addOptimistic({
+                  from: nextNumber,
+                  to: nextNumber,
+                  owned: true,
+                });
+                await executeNext({ mediaId });
+              });
+            }}
+            type="button"
+          >
+            <PlusIcon className="size-4" />
+          </button>
+        ) : null}
       </div>
 
       <p className="text-sm">

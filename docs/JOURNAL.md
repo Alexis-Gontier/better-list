@@ -62,6 +62,19 @@ toute la rangée **à rebours** : un test Playwright a coché un tome que je n'a
 Corrigé en repartant d'une ancre — on ne retient que les deux bornes, et ce que la souris traverse
 cesse d'avoir un sens. L'aperçu y a gagné au passage : on voit la plage qu'on obtiendra.
 
+**Le troisième défaut est venu d'une question, pas d'un test.** « Ça se passe comment si le manga
+est en cours et qu'un nouveau tome sort ? » — et la réponse était : mal. Une série terminée
+demandait d'ouvrir le menu, taper un nouveau total, enregistrer, puis cliquer la case. Une série
+**en cours** était pire : AniList ne donne `volumes` que pour les séries terminées, donc elle
+arrive sans total, donc la grille s'arrête au dernier tome possédé, donc il n'y a **aucune case à
+cliquer** au-delà. Vérifié sur One Piece : zéro tome, une seule case ; je coche la première, il y
+a toujours une seule case. Les neuf séries du seed masquaient le trou parce que le seed leur
+invente un total.
+
+La leçon est moins le bug que ce qui l'avait caché : le jeu d'essai était **trop complet**. Il
+remplissait un champ que l'application, elle, laisse vide dans le cas le plus courant. Un seed qui
+ne reproduit pas l'état par défaut de la vraie vie teste un produit qui n'existe pas.
+
 **Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
 développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
 `PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.

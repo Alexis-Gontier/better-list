@@ -33,6 +33,13 @@ Relevé le **14 septembre 2026**.
 > toutes lettres — « il me manque 11, 12, 29, 63 → 110 » est la liste de courses, et c'est la
 > raison d'être de l'écran (§8 item 8).
 >
+> **Une série en cours n'a pas de fin, et l'écran le prend au sérieux.** AniList ne donne un
+> nombre de volumes que pour les séries **terminées** : Berserk, One Piece, Hunter×Hunter et
+> Vagabond arrivent tous à `volumes = null`. L'édition n'a donc pas de total, la grille s'arrête
+> au dernier tome possédé, et une case « + » au bout pose le suivant — d'un clic, en poussant la
+> fin de l'édition d'un cran si elle était connue. Sans elle, une série en cours était un
+> cul-de-sac : aucune case à cliquer au-delà du tome 1.
+>
 > **L'accueil ne montre que ce qui vient de quelque part.** Trois zones, chacune avec sa frontière :
 > un carrousel de tendances en pleine largeur — qui dit « Reprendre à l'épisode 12 » sur une œuvre
 > déjà suivie plutôt que son synopsis —, « En cours » où **les séries dont un épisode est sorti
@@ -179,7 +186,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/calendar` (`calendar`) | Planning de diffusion, tout ou filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — grille 7 colonnes, navigation de semaine, portée réglable, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **livré** (19 septembre) — rangées avec réglette, trois états, chiffres d'étagère |
-| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes possédés, saisie par plage | `Edition`, `OwnedVolume` | **livré** (19 septembre) — grille qu'on peint, nombre de tomes réglable |
+| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes possédés, saisie par plage | `Edition`, `OwnedVolume` | **livré** (19 septembre) — grille qu'on peint, case « + » pour le tome qui vient de paraître, nombre de tomes réglable |
 | `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
 
 La colonne « Features consommées » avait disparu de ce tableau quand plus aucune route ne consommait
