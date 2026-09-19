@@ -30,6 +30,7 @@ export function VolumeBoard({
   mediaId,
   total,
   owned,
+  isReleasing,
 }: {
   mediaId: number;
   /**
@@ -41,6 +42,11 @@ export function VolumeBoard({
    */
   total: number | null;
   owned: number[];
+  /**
+   * La parution continue-t-elle ? La phrase d'état en a besoin pour dire « à jour » plutôt que
+   * « complète » — un total saisi sur une série qui paraît encore vieillit en silence.
+   */
+  isReleasing: boolean;
 }) {
   /**
    * L'étagère telle qu'elle s'affiche — **optimiste, adossée à ce que le serveur a rendu.**
@@ -272,6 +278,12 @@ export function VolumeBoard({
         className="text-sm"
         extra={extra}
         isComplete={isComplete}
+        isReleasing={isReleasing}
+        /*
+          Recalculé sur l'état optimiste, pas reçu du serveur : la phrase doit suivre le clic,
+          comme les trous juste à côté.
+        */
+        lastOwned={filled.length > 0 ? Math.max(...filled) : null}
         missing={missing}
         ownedCount={filled.length}
         volumesTotal={total}

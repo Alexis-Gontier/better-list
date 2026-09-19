@@ -6,10 +6,15 @@ import { cn } from "@/lib/utils";
  * endroits qui la posaient.
  *
  * Elle était écrite trois fois le 19 septembre 2026 : dans la rangée de `/collection`, dans
- * l'en-tête d'une série, et dans le tableau des tomes. Les trois avaient déjà divergé — l'une
- * disait « Rien ne manque », l'autre « Nombre de tomes à renseigner » sur le même état —, et
- * aucune ne savait dire le cas des tomes au-delà du total. C'est la phrase, pas la réglette, qui
- * porte la réponse de l'écran (docs/PRODUCT.md §8 item 8) : elle mérite un seul endroit.
+ * l'en-tête d'une série, et dans le tableau des tomes. Les trois avaient déjà divergé, et aucune
+ * ne savait dire le cas des tomes au-delà du total. C'est la phrase, pas la réglette, qui porte la
+ * réponse de l'écran (docs/PRODUCT.md §8 item 8) : elle mérite un seul endroit.
+ *
+ * **Elle est écrite pour être lue debout dans un rayon** (décision d'Alexis, 19 septembre 2026).
+ * Le retournement qui la gouverne : en librairie, le présentoir dit déjà quels tomes existent, donc
+ * l'app n'a pas besoin de connaître le total pour être utile. Ce qu'elle doit dire, c'est **où je
+ * me suis arrêté** et **quels trous j'ai au milieu** — deux choses qui se calculent sans aucune
+ * source, y compris sur une série en cours dont AniList ignore tout (§9).
  *
  * **Ni client, ni server-only** : le tableau des tomes est un îlot client qui recalcule ses trous
  * à chaque clic pour son état optimiste, les deux autres appelants sont des Server Components.
@@ -21,6 +26,8 @@ export function ShelfStatusLine({
   missing,
   extra,
   isComplete,
+  lastOwned,
+  isReleasing,
   className,
 }: {
   ownedCount: number;
@@ -30,6 +37,10 @@ export function ShelfStatusLine({
   /** Les tomes possédés au-delà du total déclaré — voir `volumeGaps`. */
   extra: number[];
   isComplete: boolean;
+  /** Le plus haut tome possédé. C'est l'information de la librairie. */
+  lastOwned: number | null;
+  /** La parution continue-t-elle ? Décide entre « complète » et « à jour ». */
+  isReleasing: boolean;
   className?: string;
 }) {
   /*
@@ -47,9 +58,17 @@ export function ShelfStatusLine({
   }
 
   if (isComplete) {
+    /*
+      **« À jour » et non « complète » sur une série en cours.** Le total d'une série qui paraît
+      encore est une photo qui vieillit : saisi à vingt tomes l'an dernier, il fait dire à l'écran
+      qu'il ne manque rien alors que le trente et unième est en rayon. Le mot doit porter ce
+      doute, sinon c'est l'écran qui ment à la place de la donnée.
+    */
     return (
       <p className={cn("text-muted-foreground", className)}>
-        Série complète, {volumesTotal} tomes.
+        {isReleasing
+          ? `À jour au tome ${volumesTotal} — la parution continue.`
+          : `Série complète, ${volumesTotal} tomes.`}
       </p>
     );
   }
@@ -59,6 +78,17 @@ export function ShelfStatusLine({
       <p className={className}>
         <span className="text-muted-foreground">Il me manque : </span>
         <span className="tabular-nums">{formatVolumeRanges(missing)}</span>
+        {/*
+          Le dernier tome possédé n'est ajouté **que** lorsque le total est inconnu. Quand il est
+          connu, la liste des manquants se termine déjà par la traîne — « 63 → 110 » dit où l'on
+          s'est arrêté, et le répéter allongerait la seule ligne qu'on lit d'un coup d'œil.
+        */}
+        {volumesTotal === null && lastOwned !== null ? (
+          <span className="text-muted-foreground">
+            {" · j'ai jusqu'au "}
+            <span className="tabular-nums">{lastOwned}</span>
+          </span>
+        ) : null}
       </p>
     );
   }
@@ -73,12 +103,15 @@ export function ShelfStatusLine({
 
   /*
     Il reste un seul état : des tomes sans trou, et aucun total connu. Ce n'est pas « rien ne
-    manque » — on n'en sait rien —, c'est une série dont la parution continue. AniList donnera le
-    total à la fin (§9), et d'ici là c'est la case « tome suivant » du tableau qui sert.
+    manque » — on n'en sait rien —, et ce n'est pas non plus « parution en cours », qui était vrai
+    et sans usage devant un présentoir. C'est **où je me suis arrêté**, la seule chose dont on ait
+    besoin quand le rayon en face dit le reste.
   */
   return (
     <p className={cn("text-muted-foreground", className)}>
-      Parution en cours — le total viendra d'AniList quand elle se terminera.
+      J'ai jusqu'au tome{" "}
+      <span className="tabular-nums text-foreground">{lastOwned}</span>, sans
+      trou.
     </p>
   );
 }

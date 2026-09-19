@@ -480,8 +480,21 @@ Autour de la collection physique (§4.5) :
   ni notion d'édition. Toute la collection physique (§4.5) repose donc sur de la saisie
   manuelle : le nombre de tomes d'une édition, son éditeur, son libellé.
 
-  La sortie de secours est une **seconde source bibliographique** — Google Books couvre les
-  éditions françaises avec ISBN, éditeur et date. Elle débloquerait le scan de code-barres,
+  **Et ce manque a un coût mesuré depuis le 19 septembre 2026** : AniList ne remplit `volumes`
+  qu'à la **fin** de la parution. One Piece et Berserk répondent `null`, Chainsaw Man répond 24.
+  Une série en cours n'a donc aucun total, et l'écran de l'étagère ne peut pas dire ce qui manque
+  au-delà du dernier tome possédé. Il dit alors « j'ai jusqu'au 28 », ce qui suffit en librairie —
+  le rayon en face dit le reste.
+
+  **Deux candidats ont été sondés le même jour, et c'est la BnF qui gagne.** Son API SRU est
+  gratuite, sans clé, et le dépôt légal français catalogue chaque tome dès sa parution : elle
+  connaît « One Piece. 112 » quand AniList ne connaît rien. Google Books, nommé ci-dessous depuis
+  l'origine, répond `429` sans clé d'API — quota partagé. Le coût de la BnF est ailleurs :
+  l'appariement titre + éditeur est flou (240 notices pour « One Piece / Glénat », artbooks
+  compris), il faut extraire le numéro de tome des titres et écarter le bruit.
+
+  La sortie de secours est donc une **seconde source bibliographique** — la BnF pour les éditions
+  françaises, avec ISBN, éditeur et date. Elle débloquerait le scan de code-barres,
   et accessoirement les titres français (voir le point précédent). À évaluer avant la V2, pas
   avant : elle ajoute une deuxième API à cacher et à réconcilier avec AniList, et l'appariement
   série AniList ↔ édition papier n'a rien d'automatique.

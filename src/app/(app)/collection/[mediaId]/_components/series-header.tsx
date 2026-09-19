@@ -69,7 +69,9 @@ export function SeriesHeader({
                 : `${series.ownedCount} / ${series.edition.volumesTotal}`}
             </span>
             {series.isComplete && series.extra.length === 0 ? (
-              <Badge variant="secondary">Complète</Badge>
+              <Badge variant="secondary">
+                {series.isReleasing ? "À jour" : "Complète"}
+              </Badge>
             ) : null}
             <EditionMenu
               mediaId={series.media.id}
@@ -82,6 +84,8 @@ export function SeriesHeader({
           className="text-sm"
           extra={series.extra}
           isComplete={series.isComplete}
+          isReleasing={series.isReleasing}
+          lastOwned={series.lastOwned}
           missing={series.missing}
           ownedCount={series.ownedCount}
           volumesTotal={series.edition.volumesTotal}
