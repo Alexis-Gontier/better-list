@@ -263,6 +263,13 @@ export function EntryActionBar({
             entry={entry}
             mediaId={mediaId}
             title={title}
+            /*
+              L'infobulle est demandée **ici et pas sur les vignettes** : cette rangée aligne
+              maintenant trois icônes de suite — crayon, liste, collection — et trois icônes sans
+              mot ne se devinent pas. En coin de jaquette, le bouton n'a pas ce problème et son
+              survol appartient déjà au panneau d'aperçu.
+            */
+            tooltip
             total={total}
             unit={unit}
           />
