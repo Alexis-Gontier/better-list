@@ -105,10 +105,13 @@ function ShelfRow({
             {/*
               La pastille se tait quand l'étagère déborde du total : « complète » et « 25 / 23 »
               sur la même ligne se contredisent, et c'est la phrase en dessous qui explique.
+
+              Et elle dit « À jour » sur une série qui paraît encore : son total est une photo qui
+              vieillit, donc « complète » y serait une affirmation qu'on ne peut pas tenir.
             */}
             {series.isComplete && series.extra.length === 0 ? (
               <Badge className="text-[10px]" variant="secondary">
-                Complète
+                {series.isReleasing ? "À jour" : "Complète"}
               </Badge>
             ) : null}
           </div>
@@ -134,6 +137,8 @@ function ShelfRow({
           className="text-xs"
           extra={series.extra}
           isComplete={series.isComplete}
+          isReleasing={series.isReleasing}
+          lastOwned={series.lastOwned}
           missing={series.missing}
           ownedCount={series.ownedCount}
           volumesTotal={total}

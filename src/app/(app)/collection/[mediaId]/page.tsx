@@ -92,6 +92,7 @@ async function Series({
       <Separator />
 
       <VolumeBoard
+        isReleasing={series.isReleasing}
         mediaId={series.media.id}
         owned={series.ownedNumbers}
         total={series.edition.volumesTotal}

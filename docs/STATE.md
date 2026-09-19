@@ -1034,7 +1034,13 @@ Trois manques, tous décidés plutôt que subis — et le premier est le seul qu
    `null`, Chainsaw Man répond 24. Le total n'est donc **jamais recopié en base** : il se résout à
    la lecture (`resolveVolumesTotal`), saisie manuelle d'abord, AniList sinon. Le jour où une
    série se termine, l'étagère prend son vrai total au rechargement suivant, sans cron ni
-   migration. D'ici là, la grille se termine par une case « tome suivant ».
+   migration. D'ici là, la grille se termine par une case « tome suivant », et la phrase de la
+   série dit **« j'ai jusqu'au 28 »** plutôt que d'avouer qu'elle ignore le total : devant un
+   présentoir, le rayon dit déjà ce qui existe, et la seule chose qu'on attend de l'app est où
+   l'on s'est arrêté. C'est ce qui fait de l'onglet « Incomplètes » une liste de courses.
+   Corollaire : sur une série qui paraît encore, l'écran dit **« à jour »** et jamais
+   « complète » — un total saisi vieillit en silence, et « complète » deviendrait faux sans que
+   rien ne bouge.
 3. **Prix, date d'acquisition, état et notes n'ont plus d'écran** (décision d'Alexis,
    19 septembre). Ils ne vivaient que dans la fenêtre de saisie par plage, écartée au profit du
    clic ; les emporter était le prix de ce choix. Le **budget cumulé** de §8 item 12 tombe avec :

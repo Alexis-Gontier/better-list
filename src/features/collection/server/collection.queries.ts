@@ -86,6 +86,23 @@ export type ShelfSeries = {
   /** Les tomes possédés au-delà du total déclaré — voir `volumeGaps`. */
   extra: number[];
   isComplete: boolean;
+  /**
+   * Le plus haut tome possédé, ou `null` sur une étagère vierge.
+   *
+   * **C'est l'information de la librairie.** Devant un présentoir, le rayon dit déjà quels tomes
+   * existent ; ce que l'app doit dire, c'est où l'on s'est arrêté. Sur une série en cours, dont
+   * aucune source ne connaît le total (§9), c'est même la **seule** chose utile qu'on puisse
+   * afficher — et elle ne coûte rien.
+   */
+  lastOwned: number | null;
+  /**
+   * La parution continue-t-elle ?
+   *
+   * Sur une série en cours, « complète » est un mensonge à retardement : un total saisi l'an
+   * dernier vieillit en silence, et l'écran finit par affirmer qu'il ne manque rien alors qu'un
+   * tome est paru depuis. On dit donc « à jour » plutôt que « complète ».
+   */
+  isReleasing: boolean;
 };
 
 /**
@@ -143,6 +160,8 @@ function toShelfSeries(edition: {
     missingLabel: formatVolumeRanges(missing),
     extra,
     isComplete,
+    lastOwned: ownedNumbers.length > 0 ? Math.max(...ownedNumbers) : null,
+    isReleasing: edition.media.status === "RELEASING",
   };
 }
 
@@ -302,5 +321,7 @@ export async function getSeriesShelf(
     missingLabel: "",
     extra: [],
     isComplete: false,
+    lastOwned: null,
+    isReleasing: media.status === "RELEASING",
   };
 }

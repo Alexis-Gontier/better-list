@@ -122,6 +122,20 @@ colonne entière — donc `/collection/abc` rendait une erreur là où il devait
 borne est posée à l'entrée de la lecture plutôt que dans la page, pour couvrir aussi
 `generateMetadata`, qui appelait avec le même `NaN`.
 
+**La bonne question n'était pas celle qu'on se posait.** Alexis voulait une liste de courses pour
+le marchand de mangas, et butait sur ce qui semblait bloquant : pas de total pour les séries en
+cours, donc pas de manquants calculables. Le retournement est venu en imaginant la scène —
+**devant un présentoir, le rayon dit déjà quels tomes existent.** L'app n'a pas besoin du total ;
+elle doit dire où l'on s'est arrêté et quels trous on a au milieu. Les deux se calculent sans
+aucune source. La fonctionnalité qui paraissait demander une seconde base de données a tenu en
+une phrase réécrite.
+
+Second effet, trouvé en écrivant cette phrase : sur une série qui paraît encore, **« complète »
+est un mensonge à retardement**. L'étagère de test affichait One-Punch Man à 20/20 « complète »
+alors que le tome 31 est en rayon — un total saisi une fois, qui a vieilli sans bruit. Le mot doit
+porter le doute : « à jour » sur une série en cours, « complète » seulement sur une série
+terminée.
+
 **Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
 développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
 `PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.
