@@ -3,6 +3,7 @@
 import {
   ArrowRightIcon,
   CalendarDaysIcon,
+  LibraryBigIcon,
   LibraryIcon,
   ListIcon,
   SearchIcon,
@@ -357,6 +358,19 @@ export function CommandSearch() {
               >
                 <ListIcon />
                 Mes listes
+              </CommandItem>
+              {/*
+                « Ma collection » est revenue le 19 septembre 2026, avec son écran — elle avait
+                quitté la palette en même temps que la nav, pour la même raison : une commande qui
+                répond 404 se lit comme une panne.
+              */}
+              <CommandItem
+                className={ITEM_CLASS}
+                onSelect={() => go(routes.collection.root)}
+                value="collection"
+              >
+                <LibraryBigIcon />
+                Ma collection
               </CommandItem>
               <CommandItem
                 className={ITEM_CLASS}

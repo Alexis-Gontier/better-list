@@ -1,9 +1,13 @@
+import { LibraryBigIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { EntryActionBar } from "@/app/(app)/media/[id]/_components/entry-action-bar";
 import { MediaBanner } from "@/app/(app)/media/[id]/_components/media-banner";
 import { MediaFacts } from "@/app/(app)/media/[id]/_components/media-facts";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { routes } from "@/config/routes";
 import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
@@ -148,6 +152,29 @@ export function MediaHero({
             total={media.type === "ANIME" ? media.episodes : media.chapters}
             unit={media.type === "ANIME" ? "episode" : "chapitre"}
           />
+
+          {/*
+            **La porte de l'étagère, et pour l'instant la seule** (19 septembre 2026).
+
+            Un lien, pas un bloc : docs/fiche-media.md attend ici les tomes possédés, et ce n'est
+            pas ce que cette ligne livre. Mais sans elle `/collection` serait un écran qu'aucun
+            chemin n'atteint — on ne pourrait y ajouter une série qu'en tapant son adresse. Elle
+            ouvre le passage sans préempter la forme que prendra le bloc.
+
+            **Sur les imprimés seulement** : posséder se compte en tomes, et on ne collectionne pas
+            les épisodes d'un anime. C'est la même borne que `getSeriesShelf`, qui refuse tout ce
+            qui n'est pas un `MANGA`.
+          */}
+          {media.type === "MANGA" ? (
+            <div>
+              <Button asChild size="sm" variant="ghost">
+                <Link href={routes.collection.detail(media.id)}>
+                  <LibraryBigIcon />
+                  Ma collection
+                </Link>
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

@@ -248,8 +248,15 @@ se fait **par plage** : personne ne créera 300 lignes à la main.
 C'est la différence de nature avec la progression de lecture (§4.2) : on lit dans l'ordre, on
 achète dans le désordre. Un curseur là-bas, un ensemble ici.
 
-`lentTo` couvre le prêt à un autre membre du cercle — pertinent précisément parce qu'on est
-quatre.
+~~`lentTo` couvre le prêt à un autre membre du cercle — pertinent précisément parce qu'on est
+quatre.~~ **Abandonné le 19 septembre 2026, décision d'Alexis** : pas reporté, écarté. Les colonnes
+`lentToId` et `lentAt` restent au schéma — les retirer coûterait une migration pour rien — mais
+aucun écran ne les lit ni ne les écrit.
+
+**Trois autres colonnes sont dans le même cas, et pour une autre raison** : `price`, `acquiredAt`,
+`condition` et `notes` ne vivaient que dans une fenêtre « du tome … au tome … », écartée le même
+jour au profit d'un geste à un seul clic (§8 item 9). Poser un tome coûte désormais un clic et
+n'écrit que son numéro.
 
 Ce modèle n'est pas limité au papier : un coffret Blu-ray d'un anime est une `Edition` avec des
 `OwnedVolume`. On commence par l'imprimé, la structure n'interdit rien.
@@ -322,7 +329,8 @@ profil, préférences.
 **V1.5 — les listes deviennent manipulables, et l'étagère entre dans l'app.** Vues : classements,
 tier lists en drag & drop, grilles. Partage par lien non listé avec image OG. Modèles et fork.
 Ordre de visionnage d'une franchise (voir §8). Collection physique : saisie par plage, écran des
-tomes manquants, prêts entre membres.
+tomes manquants. **Faite le 19 septembre 2026**, sans les prêts entre membres — abandonnés (§8
+item 10).
 
 **Les vues (§4.4) sont reportées, et les tier lists avec elles** — décision d'Alexis, 11 août 2026.
 Le raisonnement tient en une ligne : une liste **est déjà** un classement (`rank` en index
@@ -433,17 +441,28 @@ Autour de la collection physique (§4.5) :
 
 8. **L'écran « il me manque ».** Les trous de chaque série, consultable sur téléphone en
    librairie. C'est la raison d'être du modèle par tome, et la fonctionnalité qu'on utilisera le
-   plus souvent.
+   plus souvent. **Livré le 19 septembre 2026** : une rangée par série, la réglette des tomes, et
+   les manquants en toutes lettres — c'est cette phrase, et non la réglette, qui répond à la
+   question. La forme a été choisie contre une grille de jaquettes, qui ne sait montrer que ce
+   qu'on possède déjà.
 9. **Saisie par plage.** « J'ai les tomes 1 à 12 » en une action. Sans ça, personne ne saisira
-   une étagère de 300 tomes et la fonctionnalité restera vide.
-10. **Bibliothèque partagée du cercle.** Qui possède quel tome, et le prêt (`lentTo`) : à quatre,
-    l'app devient une petite bibliothèque de prêt. Différenciateur réel, impossible à faire sur
-    AniList ou MAL.
+   une étagère de 300 tomes et la fonctionnalité restera vide. **Livré le 19 septembre 2026, et
+   sans formulaire** : la grille des tomes est le contrôle, un clic pose un tome et un glissé pose
+   la plage. Le critère d'arbitrage était « un seul clic pour ajouter » — ce qu'une fenêtre à
+   ouvrir, remplir et refermer ne pouvait pas tenir. La plage n'est donc pas un mode à part, c'est
+   le même geste tenu plus longtemps.
+10. ~~**Bibliothèque partagée du cercle.** Qui possède quel tome, et le prêt (`lentTo`) : à
+    quatre, l'app devient une petite bibliothèque de prêt.~~ **Abandonné le 19 septembre 2026,
+    décision d'Alexis**, au moment de construire l'étagère. Le différenciateur était réel, mais il
+    demandait un second écran symétrique — « ce qu'on m'a prêté » — et la liste des membres du
+    cercle dans un produit qui n'a par ailleurs aucune surface sociale (§2).
 11. **Scan de code-barres ISBN** (V2). L'ISBN identifie exactement le tome **et** l'édition, ce
     qu'aucune recherche par titre ne fait. Cataloguer une étagère devient un geste par livre.
     Nécessite une source ISBN (Google Books) — voir §9.
-12. **Statistiques d'étagère** : nombre de tomes, séries complètes contre séries en cours, budget
-    cumulé si les prix sont saisis.
+12. **Statistiques d'étagère** : nombre de tomes, séries complètes contre séries en cours.
+    **Livré le 19 septembre 2026**, en tête de `/collection` — quatre nombres sur une ligne. Le
+    **budget cumulé** en est retiré : `price` n'a plus d'écran qui le remplisse (§4.5), et une
+    somme toujours nulle serait un chiffre faux.
 
 ## 9. Limites connues
 

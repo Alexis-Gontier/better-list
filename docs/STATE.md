@@ -10,7 +10,7 @@ l'intention.
 
 Relevé le **14 septembre 2026**.
 
-> ### En un mot : dix écrans sur onze — l'accueil est fait, et la refonte des routes est finie.
+> ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
 > dix routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
@@ -21,8 +21,17 @@ Relevé le **14 septembre 2026**.
 > **`/search` et `/library` en entier** — barre, facettes, grille, pagination, et le repli sur le
 > miroir local quand AniList tombe —, puis **`/lists`, `/lists/[id]` et `/l/[token]`**, le
 > 7 septembre **`/settings`**, le 8 septembre **`/calendar`**, et le 12 septembre
-> **`/u/[username]`**, et le 14 septembre **l'accueil `/`**, dernier de l'ordre. Il ne reste que
-> les placeholders de `/collection`.
+> **`/u/[username]`**, et le 14 septembre **l'accueil `/`**, dernier de l'ordre. **Le 19 septembre,
+> `/collection` et `/collection/[mediaId]` sont entrées** — les deux dernières adresses déclarées
+> sans écran derrière. Plus aucune route de PRODUCT.md §5 n'est un placeholder, à l'exception de
+> `/lists/[id]/[viewId]`, que la roadmap reporte explicitement.
+>
+> **L'étagère physique est le premier écran du produit qui ne parle à personne d'autre que la
+> base.** AniList n'a aucune donnée au niveau du tome (§9) : pas d'ISBN, pas de date de parution,
+> pas de notion d'édition. Tout y est saisi à la main, donc aucun quota, aucun repli de panne, et
+> aucune requête nouvelle. Une rangée par série, la réglette des tomes, et les manquants écrits en
+> toutes lettres — « il me manque 11, 12, 29, 63 → 110 » est la liste de courses, et c'est la
+> raison d'être de l'écran (§8 item 8).
 >
 > **L'accueil ne montre que ce qui vient de quelque part.** Trois zones, chacune avec sa frontière :
 > un carrousel de tendances en pleine largeur — qui dit « Reprendre à l'épisode 12 » sur une œuvre
@@ -169,8 +178,8 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **livré** (12 septembre) — calendrier d'activité sur un an, répartition par statut, notes, genres, journal paginé |
 | `/calendar` (`calendar`) | Planning de diffusion, tout ou filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — grille 7 colonnes, navigation de semaine, portée réglable, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
-| `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **déclaré, non construit** |
-| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes, plages, prêts | `Edition`, `OwnedVolume` | **déclaré, non construit** |
+| `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **livré** (19 septembre) — rangées avec réglette, trois états, chiffres d'étagère |
+| `/collection/[mediaId]` (`collection.detail`) | Une série : tomes possédés, saisie par plage | `Edition`, `OwnedVolume` | **livré** (19 septembre) — grille qu'on peint, nombre de tomes réglable |
 | `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
 
 La colonne « Features consommées » avait disparu de ce tableau quand plus aucune route ne consommait
@@ -181,9 +190,18 @@ n'apprenant rien. **`/settings` est la première à ne pas lire ça** : elle ne 
 reviendra à la prochaine passe qui touche ce tableau — la remettre aujourd'hui demanderait de
 relire les onze lignes pour une seule qui change.
 
-Les tables `ListView`, `ListViewItem`, `Edition` et `OwnedVolume` existent au schéma depuis la
-migration initiale et ne sont employées par aucun écran. C'était déjà vrai avant la mise à blanc, et
-c'est voulu — PRODUCT.md §6 dit pourquoi.
+`Edition` et `OwnedVolume` **ont trouvé leurs écrans le 19 septembre 2026**, quatre mois après
+avoir été posées au schéma : le pari de PRODUCT.md §6 — « ajouter deux tables plus tard ne coûte
+rien, mais découvrir tardivement que la collection ne rentre pas dans le modèle du suivi en
+coûterait beaucoup » — s'est vérifié sans qu'une seule colonne ait à bouger.
+
+Quatre colonnes d'`OwnedVolume` restent pourtant sans écran, et **par décision** : `price`,
+`acquiredAt`, `condition` et `notes` ont été retirés du produit le 19 septembre (voir « Ce que la
+collection ne fait pas »). `lentTo` / `lentAt` aussi. Elles restent au schéma parce que les
+retirer coûterait une migration pour rien.
+
+`ListView` et `ListViewItem`, elles, ne sont toujours employées par aucun écran. C'est voulu —
+PRODUCT.md §6 dit pourquoi.
 
 ### La mise à blanc du 5 septembre 2026
 
@@ -669,8 +687,9 @@ prétend s'y fier.**
   — voir plus bas. Ce qui reste dû à sa place est plus étroit : la passe n'est **vérifiée par aucun
   test de bout en bout**, seulement par des doubles. Elle a en revanche été **appelée pour de vrai**
   (94 lignes reprises en 2 requêtes), et la sélection des lots est couverte, elle, par 14 tests.
-- `/collection` est déclarée dans `routes.ts` sans écran derrière, comme avant la mise à blanc.
-  `routes.ts` le dit lui-même dans son commentaire.
+- ~~`/collection` est déclarée dans `routes.ts` sans écran derrière.~~ **Fait le 19 septembre
+  2026** : les deux routes existent, « Ma collection » est revenue dans `navigation.ts` et dans le
+  groupe « Aller à » de la palette, et la fiche d'un manga porte le lien qui y mène.
 
 ### L'audit du 17 septembre 2026 — les squelettes, à la hauteur près
 
@@ -989,5 +1008,28 @@ Quand la dernière part, le bloc entier part avec elle.
 ### Ensuite, peut-être
 
 Sans engagement, et sans ordre : Playwright et le repli de panne AniList (à re-poser de toute façon
-pendant la reconstruction), la collection physique (`/collection`, V1.5), l'ordre de visionnage
-d'une franchise (PRODUCT.md §8, meilleur rapport valeur/effort du projet).
+pendant la reconstruction), l'ordre de visionnage d'une franchise (PRODUCT.md §8, meilleur rapport
+valeur/effort du projet), et les trois chantiers que la collection laisse ouverts ci-dessous.
+
+### Ce que la collection ne fait pas
+
+Trois manques, tous décidés plutôt que subis — et le premier est le seul qui gêne.
+
+1. **Le cas multi-éditions n'a pas d'écran.** Le modèle le porte depuis toujours (`Edition` est
+   partagée, `@@unique([mediaId, label])`), la lecture prend déjà la bonne — `isDefault` d'abord —,
+   et l'action `upsert` sur le libellé par défaut. Ce qui manque est la présentation : un sélecteur
+   en tête de série, et une rangée par édition sur `/collection`. Tant qu'elle n'existe pas, le
+   menu « … » n'offre **qu'une** entrée — « Nombre de tomes » —, parce qu'une entrée de menu qui
+   n'ouvre rien est pire qu'une entrée absente. C'est la même règle qui avait sorti « Ma
+   collection » de la nav.
+2. **Prix, date d'acquisition, état et notes n'ont plus d'écran** (décision d'Alexis,
+   19 septembre). Ils ne vivaient que dans la fenêtre de saisie par plage, écartée au profit du
+   clic ; les emporter était le prix de ce choix. Le **budget cumulé** de §8 item 12 tombe avec :
+   une somme toujours nulle serait un chiffre faux, donc les chiffres d'étagère s'arrêtent à
+   quatre.
+3. **Le prêt entre membres est abandonné**, pas reporté (décision d'Alexis, 19 septembre). §8
+   item 10 est rayé dans PRODUCT.md.
+
+Et une porte qui reste provisoire : `/media/[id]` ne porte qu'un **lien** « Ma collection », pas le
+bloc de tomes possédés qu'attend [fiche-media.md](./fiche-media.md). Le lien existe parce que sans
+lui `/collection` serait un écran qu'aucun chemin n'atteint ; il ne préempte pas la forme du bloc.

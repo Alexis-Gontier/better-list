@@ -27,6 +27,46 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 19 septembre 2026 — l'étagère, choisie à l'écran plutôt que sur le papier
+
+`/collection` et `/collection/[mediaId]`, les deux dernières adresses déclarées sans écran. Trois
+choses valent d'être notées, et aucune n'est une décision de produit.
+
+**Les questions posées par écrit n'ont pas été tranchées par écrit.** J'ai ouvert la séance avec
+quatre arbitrages en maquettes ASCII, forme qui marchait très bien jusqu'ici. Réponse d'Alexis sur
+trois d'entre eux : « propose plusieurs choses et je choisirai après avoir vu ». On a donc dessiné
+les candidats pour de vrai — trois formes de racine empilées sur la même étagère factice, puis
+deux gestes de saisie côte à côte — et il a choisi en dix secondes à chaque fois. Ce qui a changé
+par rapport aux passes précédentes : l'arbitrage portait sur des **interactions**, pas sur des
+dispositions. Un glissé ne se dessine pas en ASCII. À retenir pour la suite : maquette écrite pour
+une mise en page, maquette jouable pour un geste.
+
+**La planche de maquettes a coûté trois fichiers et en a fait gagner plus.** Les trois variantes
+vivaient dans le `_components/` de la route, empilées sous des étiquettes en pointillés qui
+disaient la promesse **et** le prix de chacune. Deux sont parties à la validation, avec la page
+d'aiguillage et le décor. Ce qui a survécu, et c'est le point : `volume-ranges.ts`, un module pur
+avec ses tests, écrit dès la première passe parce qu'il servait aux trois formes. Écrire d'abord
+ce que toutes les variantes partagent rend l'arbitrage gratuit.
+
+**Deux défauts trouvés à l'écran, invisibles à la relecture.**
+
+Le premier : la jaquette d'une rangée s'allongeait quand la réglette passait à trois lignes en
+390 px. `aspect-2/3` calcule une hauteur, et `align-items: stretch` — le défaut du flex — l'écrase.
+`self-start` règle, et le piège vaut pour toute vignette posée à côté d'un bloc de hauteur
+variable. Il est commenté aux deux endroits où il pourrait revenir.
+
+Le second est plus intéressant, parce que le code avait l'air juste. Le glissé peignait case par
+case au `pointerenter`, ce qui marche tant que la grille tient sur une ligne. Dès qu'elle
+enveloppe, passer du dernier tome d'une rangée au premier de la suivante fait balayer au curseur
+toute la rangée **à rebours** : un test Playwright a coché un tome que je n'avais jamais visé.
+Corrigé en repartant d'une ancre — on ne retient que les deux bornes, et ce que la souris traverse
+cesse d'avoir un sens. L'aperçu y a gagné au passage : on voit la plage qu'on obtiendra.
+
+**Et une chose apprise sur l'outillage** : `pnpm exec next typegen` existe. Le serveur de
+développement n'avait pas régénéré `.next/types/routes.d.ts` après l'ajout du segment, donc
+`PageProps<"/collection">` ne typait pas — quatre erreurs qui n'avaient rien à voir avec le code.
+Plus court qu'un redémarrage.
+
 ## 17 septembre 2026 — l'onglet, puis un audit des squelettes
 
 Deux choses ce jour-là, et la seconde est née d'une question d'Alexis : « est-ce que tous les
