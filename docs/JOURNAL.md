@@ -27,6 +27,20 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 26 septembre 2026 — `.default()` ne rattrape pas un `null`
+
+Les fiches 217330 et 217331 (deux saisons annoncées de *Tensei Shitara Slime Datta Ken*) tombaient
+en erreur. AniList rend `stats.scoreDistribution` et `stats.statusDistribution` à **`null`** pour
+une œuvre que personne n'a encore notée ni suivie. Or `z.array(…).default([])` ne s'applique qu'à un
+champ **absent**, jamais à un `null`. La validation échouait, et le repli ne prenait pas le relais :
+une `ZodError` n'est pas une panne. Donc toute œuvre à venir sans audience était exposée, pas
+seulement ces deux-là.
+
+Trouvé en rejouant la vraie requête de fiche contre AniList et en passant la réponse au schéma du
+dépôt, plutôt qu'en lisant le code. Corrigé par `.nullish().transform(v => v ?? [])`, qui garde le
+type en tableau pour les lecteurs. **Les autres `.default()` de `mediaDetailSchema` ont la même
+faiblesse** : un champ qu'AniList rendrait à `null` ferait tomber la fiche de la même façon.
+
 ## 19 septembre 2026 — l'étagère, choisie à l'écran plutôt que sur le papier
 
 `/collection` et `/collection/[mediaId]`, les deux dernières adresses déclarées sans écran. Trois
