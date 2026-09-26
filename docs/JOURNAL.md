@@ -53,7 +53,12 @@ entier, plus lourde mais toujours unique.
 Deux frictions d'outillage : le hook de sécurité du poste bloque l'écriture de la méthode
 d'exécution des regex (il la confond avec celle de `child_process`), d'où des `texte.match(regex)`
 partout ; et la vérification à l'écran demande une session que le navigateur piloté n'a pas — la
-connexion est GitHub seul, et fabriquer un cookie depuis la base est refusé par le mode auto.
+connexion est GitHub seul, et fabriquer un cookie depuis la base est refusé par le mode auto. Alexis
+a lancé lui-même un script jetable qui écrit un *storage state* Playwright depuis sa session.
+
+La vérification a trouvé un bug **antérieur** à ces pages : `MediaStaff` indexait ses cartes par
+l'id de la personne, or une même personne revient avec plusieurs postes (One Piece en a deux) —
+React signalait des clés en double. Corrigé par l'id et le poste, uniques ensemble.
 
 ## 19 septembre 2026 — l'étagère, choisie à l'écran plutôt que sur le papier
 

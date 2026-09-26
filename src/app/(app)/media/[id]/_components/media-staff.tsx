@@ -37,7 +37,10 @@ export function MediaStaff({ staff: edges }: { staff: StaffEdge[] }) {
   return (
     <ul className="grid gap-2 sm:grid-cols-2 sm:gap-x-4 lg:grid-cols-3">
       {staff.map((edge) => (
-        <StaffCard edge={edge} key={edge.node.id} />
+        // Une même personne revient avec plusieurs postes (réalisation **et** storyboard) : son id
+        // seul ne suffit pas comme clé, et React le signalait sur One Piece. AniList rend une arête
+        // par couple personne-poste, donc les deux ensemble sont uniques.
+        <StaffCard edge={edge} key={`${edge.node.id}-${edge.role}`} />
       ))}
     </ul>
   );
