@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { PersonPortrait } from "@/app/(app)/media/[id]/_components/person-portrait";
+import { routes } from "@/config/routes";
 import { formatStaffRole } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 
@@ -50,8 +53,14 @@ function StaffCard({ edge }: { edge: StaffEdge }) {
         Même matière et même hauteur que la carte d'un personnage : liseré interne, coins arrondis,
         `overflow-hidden` pour que le portrait vienne mourir exactement dessus, et `h-20` pour que
         les deux onglets aient la même respiration quand on passe de l'un à l'autre.
+
+        La carte entière mène à la page de la personne (26 septembre 2026).
       */}
-      <div className="flex h-20 items-stretch gap-3 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <Link
+        className="flex h-20 items-stretch gap-3 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors hover:bg-muted/40"
+        href={routes.staff(edge.node.id)}
+        prefetch={false}
+      >
         <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
 
         {/*
@@ -76,7 +85,7 @@ function StaffCard({ edge }: { edge: StaffEdge }) {
             </p>
           ) : null}
         </div>
-      </div>
+      </Link>
     </li>
   );
 }

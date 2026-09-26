@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { PersonPortrait } from "@/app/(app)/media/[id]/_components/person-portrait";
+import { routes } from "@/config/routes";
 import {
   formatCharacterRole,
   formatVoiceLanguage,
@@ -36,8 +39,11 @@ type MediaCharactersProps = {
  * même règle que la ligne de faits du hero, où une colonne sans valeur s'efface au lieu d'afficher
  * un tiret.
  *
- * La requête trie `[ROLE, RELEVANCE]` : les principaux arrivent d'abord, aucun tri à refaire ici. Aucun lien non plus — un personnage n'a pas de page dans ce projet, et n'en aura
- * pas ; une vignette qui ne mène nulle part vaut mieux qu'un lien mort.
+ * La requête trie `[ROLE, RELEVANCE]` : les principaux arrivent d'abord, aucun tri à refaire ici.
+ *
+ * **Chaque moitié est un lien** depuis le 26 septembre 2026 : le personnage mène à sa page, le
+ * doubleur à la sienne. `prefetch={false}` pour ne pas dépenser de quota AniList sur une grille
+ * qu'on fait défiler.
  *
  * Composant serveur : des images et du texte.
  */
@@ -107,7 +113,11 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
           s'accumulait après le dernier enfant et décollait le portrait de droite du bord de la
           carte. Ce sont les noms qui doivent s'étaler, jamais les portraits qui doivent flotter.
         */}
-        <div className="flex min-w-0 flex-1 items-stretch gap-3">
+        <Link
+          className="flex min-w-0 flex-1 items-stretch gap-3 transition-colors hover:bg-muted/40"
+          href={routes.character(edge.node.id)}
+          prefetch={false}
+        >
           <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
 
           <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-1">
@@ -126,10 +136,14 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
               </p>
             ) : null}
           </div>
-        </div>
+        </Link>
 
         {voice ? (
-          <div className="flex min-w-0 flex-1 items-stretch gap-3">
+          <Link
+            className="flex min-w-0 flex-1 items-stretch gap-3 transition-colors hover:bg-muted/40"
+            href={routes.staff(voice.id)}
+            prefetch={false}
+          >
             <div className="flex min-w-0 flex-1 flex-col items-end justify-between py-2 pl-1 text-right">
               <p
                 className="line-clamp-2 text-sm font-medium"
@@ -148,7 +162,7 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
               name={voice.name.full}
               src={voice.image?.large ?? null}
             />
-          </div>
+          </Link>
         ) : null}
       </div>
     </li>
