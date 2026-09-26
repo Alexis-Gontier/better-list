@@ -25,6 +25,7 @@ export function MainNav() {
               size="button-sm"
               className="text-muted-foreground"
             >
+              <section.icon aria-hidden className="size-4" />
               {section.label}
             </NavigationMenuTrigger>
 
