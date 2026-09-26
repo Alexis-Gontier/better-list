@@ -166,10 +166,21 @@ export type StatusDistribution = z.infer<typeof statusDistributionSchema>;
 /**
  * AniList laisse des `null` **dans** ces tableaux, pas seulement autour : d'où le `nullable()` sur
  * l'élément, filtré à la lecture plutôt que rejeté à la validation.
+ *
+ * Et **autour** aussi : une œuvre que personne n'a encore notée ni suivie rend les deux tableaux à
+ * `null` (relevé le 26 septembre 2026 sur 217330 et 217331, deux saisons annoncées). `.default()`
+ * ne couvre que l'absence, jamais `null` — d'où le `transform`, qui garde le type en tableau pour
+ * les lecteurs.
  */
 export const mediaStatsSchema = z.object({
-  scoreDistribution: z.array(scoreDistributionSchema.nullable()).default([]),
-  statusDistribution: z.array(statusDistributionSchema.nullable()).default([]),
+  scoreDistribution: z
+    .array(scoreDistributionSchema.nullable())
+    .nullish()
+    .transform((distribution) => distribution ?? []),
+  statusDistribution: z
+    .array(statusDistributionSchema.nullable())
+    .nullish()
+    .transform((distribution) => distribution ?? []),
 });
 
 /** Un épisode chez un diffuseur. Les quatre champs sont facultatifs côté AniList. */
