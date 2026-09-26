@@ -41,6 +41,25 @@ dépôt, plutôt qu'en lisant le code. Corrigé par `.nullish().transform(v => v
 type en tableau pour les lecteurs. **Les autres `.default()` de `mediaDetailSchema` ont la même
 faiblesse** : un champ qu'AniList rendrait à `null` ferait tomber la fiche de la même façon.
 
+**Puis les pages Personnage et Staff.** Quatre faits de l'API relevés en l'interrogeant avant
+d'écrire le schéma, et chacun aurait coûté une page d'erreur : `Character.age` est une **chaîne**
+(« 17- » veut dire « 17 ans au début ») quand `Staff.age` est un nombre ; `pageInfo.total` des listes
+paginées **plafonne à 500**, cousin du 5000 de la recherche ; `dateOfDeath` d'une personne vivante
+est un objet aux trois champs nuls, pas `null` ; et `staffMedia(type: MANGA)` rend `total: 0` quand
+il n'y a rien — c'est ce qui décide des onglets sans requête de plus. Quand l'onglet n'est pas dans
+l'URL, on ne sait pas lequel ouvrir avant la réponse : la requête demande alors les trois listes en
+entier, plus lourde mais toujours unique.
+
+Deux frictions d'outillage : le hook de sécurité du poste bloque l'écriture de la méthode
+d'exécution des regex (il la confond avec celle de `child_process`), d'où des `texte.match(regex)`
+partout ; et la vérification à l'écran demande une session que le navigateur piloté n'a pas — la
+connexion est GitHub seul, et fabriquer un cookie depuis la base est refusé par le mode auto. Alexis
+a lancé lui-même un script jetable qui écrit un *storage state* Playwright depuis sa session.
+
+La vérification a trouvé un bug **antérieur** à ces pages : `MediaStaff` indexait ses cartes par
+l'id de la personne, or une même personne revient avec plusieurs postes (One Piece en a deux) —
+React signalait des clés en double. Corrigé par l'id et le poste, uniques ensemble.
+
 ## 19 septembre 2026 — l'étagère, choisie à l'écran plutôt que sur le papier
 
 `/collection` et `/collection/[mediaId]`, les deux dernières adresses déclarées sans écran. Trois

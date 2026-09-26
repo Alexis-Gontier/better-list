@@ -67,8 +67,11 @@ const MEDIA_FIELDS = /* GraphQL */ `
  * intact.** C'est ce qui a fait préférer cette voie à une lecture déclenchée au survol : trente
  * requêtes par minute sont partagées entre tous les visiteurs, et survoler une rangée de sept
  * jaquettes en aurait dépensé sept.
+ *
+ * Exporté le 26 septembre 2026 pour les grilles des pages Personnage et Staff
+ * (`features/people/`), qui montrent la même carte.
  */
-const MEDIA_COMPACT_FIELDS = /* GraphQL */ `
+export const MEDIA_COMPACT_FIELDS = /* GraphQL */ `
   fragment MediaCompactFields on Media {
     id
     type

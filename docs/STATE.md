@@ -8,9 +8,17 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **14 septembre 2026**.
+Relevé le **26 septembre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
+>
+> **Le 26 septembre, deux routes de plus : `/character/[id]` et `/staff/[id]`.** Les cartes
+> Personnages et Équipe de la fiche ne menaient nulle part ; elles mènent maintenant à une page par
+> personne, calquée sur AniList — en-tête, faits, biographie (spoilers masqués, liens AniList
+> réécrits vers nos routes), puis une grille de `MediaCard` avec pastille et « +1 ». Le staff a ses
+> rôles en onglets (`?onglet=doublage|anime|manga`) groupés par année. Une requête AniList par
+> affichage, cachée un jour ; aucun repli de panne, rien n'étant stocké en base. Nouvelle feature
+> `features/people/`. Spec et plan dans `docs/superpowers/`.
 >
 > La mise à blanc du 5 septembre avait supprimé **toute** la présentation. Depuis le 6 septembre,
 > dix routes ont de nouveau un écran réel : `/media/[id]` (hero, suivi, et depuis le 11 septembre
@@ -177,6 +185,8 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel pleine largeur, « En cours » mené par les épisodes sortis, tendances, saison. « À reprendre » et « Mes listes » retirées le 17 septembre |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
+| `/character/[id]` (`character`) | Un personnage : faits, biographie, apparitions | AniList seul | **livré** (26 septembre) — en-tête, faits, biographie, grille paginée avec rôle et doubleur |
+| `/staff/[id]` (`staff`) | Un membre du staff : doublage, rôles d'équipe | AniList seul | **livré** (26 septembre) — onglets Doublage / Anime / Manga, rôles groupés par année |
 | `/library` (`library`) | Ma bibliothèque, filtrée par statut et type | `Entry`, `Media` | **livré** — rangée de statuts, barre, grille Prisma, pagination |
 | `/lists` (`lists.root`) | Mes listes | `List`, `ListItem` | **livré** — grille de cartes, mosaïque, création, état vide |
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
@@ -541,6 +551,7 @@ composante : `entry-status-dot`, la pastille de statut, posée dans le slot `mar
 | **`media`** | `lib/` : `media-format`, `media-freshness`, `media-season`, `search-params` (tous testés). `schemas/` : `media.schema`, `search-media.schema`. `server/` : `media.documents` (les documents GraphQL), `media.queries` (`getMediaById` et `searchMedia`, cachées un jour), `media.mirror` (le repli de panne fiche **et** recherche, `ensureMediaMirror`, et
 **`refreshStaleMirror` — le corps du cron** depuis le 7 septembre). `components/` : `media-card`, promue de `/search` quand `/library` l'a demandée. |
 | **`tracking`** | `lib/` : `entry-draft`, `entry-format`, `entry-transition` (testés), `library-params`. `schemas/tracking.schema`. `server/` : `library.queries` — cinq lectures sans aucun cache, parce que tout y dépend du visiteur — et **`tracking.actions`, les deux premières Server Actions du dépôt**. `components/` : `entry-status-select`, `entry-progress-stepper`, `entry-score-rating`, `entry-status-dot`, et `entry-quick-edit` — la fenêtre d'édition rapide, promue de `/library` quand `/search` l'a demandée. |
+| **`people`** | *créée le 26 septembre 2026* avec `/character/[id]` et `/staff/[id]`. `schemas/people.schema`. `lib/` : `people-bio` (le markdown AniList en segments, liens réécrits), `people-format` (faits, groupement par année, fusion des rôles), `people-params` (le contrat d'URL) — testés tous les trois. `server/` : `people.documents` et `people.queries` (`getCharacter`, `getStaff`, cachées un jour). `components/` : en-tête, faits, biographie, la feuille cliente des spoilers, la grille d'œuvres et le squelette. |
 | **`preferences`** | `schemas/preferences.schema` et `server/preferences.queries` — les préférences du compte courant, sans cache, parce qu'elles dépendent du visiteur. |
 | **`lists`** | `lib/` : `list-reorder` (fractional-indexing), `share-token` — testés tous les deux. `schemas/lists.schema`. |
 | **`command`** | *supprimée en entier le 12 septembre 2026* — son schéma était le dernier reste, et la règle du « +1 » qu'il gardait vit désormais dans `entry-progress-stepper`. Reconstruite puis retirée le même jour (§ la palette, plus bas). |

@@ -91,9 +91,9 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 
 - [x] `studios` — le studio principal, en cinquième colonne de la ligne de faits, **sur les animes**
 - [x] `staff` — l'auteur (« Story & Art »), même colonne, **sur les mangas** ; AniList n'a aucun éditeur (§9)
-- [x] `characters` — au format AniList : personnage ancré à gauche, doubleur à droite, chacun tourné vers l'extérieur de la carte. **Six dans l'aperçu, vingt-cinq dans l'onglet**, qui a sa propre requête (`MEDIA_CHARACTERS_QUERY`)
+- [x] `characters` — au format AniList : personnage ancré à gauche, doubleur à droite, chacun tourné vers l'extérieur de la carte. **Six dans l'aperçu, vingt-cinq dans l'onglet**, qui a sa propre requête (`MEDIA_CHARACTERS_QUERY`). **Depuis le 26 septembre 2026, chaque moitié est un lien** : le personnage vers `/character/[id]`, le doubleur vers `/staff/[id]`
 - [x] `characters.voiceActors` — le doubleur japonais, à droite de son personnage, avec sa langue (`languageV2`). Le premier de la liste triée `[RELEVANCE]`, pas tous : un rôle redistribué entre deux saisons en compte plusieurs. Le côté droit **disparaît** quand il est vide — c'est le cas de tous les mangas
-- [x] `staff` en entier — **quatre dans l'aperçu, vingt-cinq dans l'onglet** (`MEDIA_STAFF_QUERY`), avec leur rôle. Les rôles courants sont traduits et **la portée entre parenthèses est détachée puis raccrochée** (« Director (eps 1-278) » → « Réalisation (eps 1-278) ») : sans ça l'onglet d'une série longue restait presque tout en anglais
+- [x] `staff` en entier — **quatre dans l'aperçu, vingt-cinq dans l'onglet** (`MEDIA_STAFF_QUERY`), avec leur rôle. Les rôles courants sont traduits et **la portée entre parenthèses est détachée puis raccrochée** (« Director (eps 1-278) » → « Réalisation (eps 1-278) ») : sans ça l'onglet d'une série longue restait presque tout en anglais. Chaque carte mène à `/staff/[id]` depuis le 26 septembre 2026
 
 **Les liens vers d'autres œuvres**
 
