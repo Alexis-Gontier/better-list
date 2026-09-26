@@ -279,6 +279,8 @@ jour est dans [STATE.md](./STATE.md).
 | `/` | Accueil : en cours, à reprendre, mes listes, catalogue du moment, activité récente | V1 |
 | `/search` | Recherche du catalogue (filtres en URL via nuqs) ; sans terme, les tendances | V0 |
 | `/media/[id]` | Fiche d'une œuvre + actions de suivi | V0 |
+| `/character/[id]` | Un personnage : faits, biographie, apparitions | V1 |
+| `/staff/[id]` | Un membre du staff : doublage, rôles d'équipe anime et manga | V1 |
 | `/library` | Ma bibliothèque, filtrée par statut / type / genre | V1 |
 | `/lists` · `/lists/[id]` | Mes listes, et une liste | V1 |
 | `/lists/[id]/[viewId]` | Une vue (classement, tier list) | V1.5 |
