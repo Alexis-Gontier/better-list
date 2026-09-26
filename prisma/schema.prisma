@@ -139,6 +139,8 @@ model User {
   sessions    Session[]
   accounts    Account[]
   preferences UserPreferences?
+  /// Où pousser les épisodes sortis, s'il le souhaite — un salon Discord à lui.
+  discordWebhook DiscordWebhook?
 
   entries      Entry[]
   entryEvents  EntryEvent[]
@@ -261,6 +263,30 @@ model UserPreferences {
   updatedAt DateTime @updatedAt
 
   @@map("user_preferences")
+}
+
+/// Le webhook Discord d'un compte : la cloche de l'en-tête, poussée dans un salon.
+///
+/// Un par compte au plus, d'où `userId` en clé. L'URL **est** le secret — qui la connaît poste dans
+/// le salon —, donc elle n'est jamais renvoyée au navigateur une fois enregistrée.
+///
+/// Aucune table de notifications envoyées : `notifiedUntil` est une ligne de flottaison. Tout
+/// épisode diffusé avant elle est réputé annoncé, ou antérieur au branchement ; le cron annonce ce
+/// qui est passé depuis, puis la remonte. Un envoi raté ne la remonte pas — il sera retenté.
+model DiscordWebhook {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  url           String
+  /// Le nom que Discord donne au webhook, relu à l'enregistrement — ce que l'écran affiche à la
+  /// place de l'URL.
+  name          String
+  notifiedUntil DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("discord_webhook")
 }
 
 // =============================================================================

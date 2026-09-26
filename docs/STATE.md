@@ -12,6 +12,14 @@ Relevé le **26 septembre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
 >
+> **Le 26 septembre au soir, la cloche sort de l'en-tête** : chaque compte peut brancher un webhook
+> Discord dans `/settings`, et `api/cron/discord` y poste les épisodes sortis, une fois par heure
+> au plus, appelé par `.github/workflows/discord-notifications.yml` (Vercel Hobby n'autorise qu'un
+> cron quotidien). Table `DiscordWebhook`, feature `features/notifications/`. **À faire pour que ça
+> tourne** : appliquer la migration, et déclarer les secrets `APP_URL` et `CRON_SECRET` du dépôt.
+> Chaque épisode porte une **carte générée** (`api/og/episode/…`, signée, lue dans le miroir). La
+> nav a aussi ses icônes.
+>
 > **Le 26 septembre, deux routes de plus : `/character/[id]` et `/staff/[id]`.** Les cartes
 > Personnages et Équipe de la fiche ne menaient nulle part ; elles mènent maintenant à une page par
 > personne, calquée sur AniList — en-tête, faits, biographie (spoilers masqués, liens AniList
@@ -503,7 +511,9 @@ porte donc sa propre garde, et c'est la seule qu'il ait.
 | Handler | Rôle | Sa garde |
 | --- | --- | --- |
 | `api/auth/[...all]` | Better Auth | celle de Better Auth |
-| `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** |
+| `api/cron/refresh-media` | Rafraîchit le miroir `Media` (§4.1) | `Authorization: Bearer $CRON_SECRET`, comparé **en temps constant** (`lib/security/cron-auth.ts`) |
+| `api/og/episode/[mediaId]/[episode]` | La carte 1200×630 d'un épisode sorti, affichée en grand dans le message Discord | **aucune session** (Discord la demande) — une signature HMAC dans l'URL, sinon 404 ; ne lit que le miroir, jamais AniList |
+| `api/cron/discord` | Poste dans Discord les épisodes sortis, pour chaque compte branché — appelé toutes les heures par GitHub Actions | idem `refresh-media` |
 | `api/search` | La recherche de la palette de l'en-tête, à la frappe | session **approuvée**, sinon 401 — jamais de redirection, un `fetch` attend du JSON |
 | `api/notifications` | Les épisodes sortis que je n'ai pas vus, pour la cloche de l'en-tête | idem `api/search` — approuvée, sinon 401 |
 

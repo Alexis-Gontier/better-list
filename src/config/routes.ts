@@ -106,5 +106,21 @@ export const routes = {
     notifications: "/api/notifications",
     /** La recherche de la palette, à la frappe (`features/command/`). */
     search: "/api/search",
+    /**
+     * La carte d'un épisode sorti, que Discord va chercher sans session (`features/notifications/`).
+     * `sig` est obligatoire : sans lui la route répond 404 — voir `episode-card-signature.ts`.
+     */
+    episodeCard: ({
+      mediaId,
+      episode,
+      lang,
+      sig,
+    }: {
+      mediaId: number;
+      episode: number;
+      lang: "ROMAJI" | "ENGLISH";
+      sig: string;
+    }) =>
+      `/api/og/episode/${mediaId}/${episode}?${new URLSearchParams({ lang, sig })}` as const,
   },
 } as const;

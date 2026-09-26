@@ -503,7 +503,10 @@ export async function getHomeTracking({
  * Le cas « je prévois de la regarder et je veux savoir qu'elle sort » est réel, mais il demande un
  * autre traitement que le retard — il est noté dans docs/STATE.md plutôt que tranché ici.
  */
-const AIRING_ENTRY_STATUSES = ["CURRENT", "REPEATING"] satisfies EntryStatus[];
+export const AIRING_ENTRY_STATUSES = [
+  "CURRENT",
+  "REPEATING",
+] satisfies EntryStatus[];
 
 /** Une série suivie susceptible d'avoir un épisode cette semaine. */
 export type AiringWatchlistItem = {
