@@ -86,6 +86,14 @@ type MediaCardProps = {
    * passe donc **à toutes les cartes de sa rangée**, avec le même nombre de lignes.
    */
   details?: string[];
+  /**
+   * Un contenu **sous la carte, hors du lien** — ajouté le 26 septembre 2026 pour les pages
+   * Personnage et Staff, qui y posent le doubleur ou le personnage, eux-mêmes cliquables.
+   *
+   * Hors du `<Link>` pour la même raison qu'`action` : une ancre dans une ancre est du HTML
+   * invalide. Même règle que `details` : un appelant le passe à toutes les cartes de sa grille.
+   */
+  footer?: React.ReactNode;
 };
 
 export function MediaCard({
@@ -95,6 +103,7 @@ export function MediaCard({
   marker,
   action,
   details,
+  footer,
 }: MediaCardProps) {
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
   const title = mediaTitle(media.title, titleLanguage);
@@ -200,6 +209,10 @@ export function MediaCard({
           </div>
         </Link>
       </MediaHoverCard>
+
+      {footer ? (
+        <div className="flex min-w-0 flex-col gap-0.5">{footer}</div>
+      ) : null}
 
       {action ? (
         /*
