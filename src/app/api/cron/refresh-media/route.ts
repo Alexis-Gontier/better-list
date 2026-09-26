@@ -1,9 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
-
 import type { NextRequest } from "next/server";
 
-import { env } from "@/config/env";
 import { refreshStaleMirror } from "@/features/media/server/media.mirror";
+import { isAuthorizedCron } from "@/lib/security/cron-auth";
 
 /**
  * Cron de rafraîchissement du miroir AniList (docs/PRODUCT.md §4.1).
@@ -44,23 +42,6 @@ import { refreshStaleMirror } from "@/features/media/server/media.mirror";
  * rien. Soixante secondes est le maximum du plan Hobby, comme la cadence quotidienne.
  */
 export const maxDuration = 60;
-
-/**
- * Comparaison à temps constant du jeton porteur.
- *
- * Un `===` sur une chaîne s'arrête au premier caractère différent, ce qui rend le temps de réponse
- * dépendant du préfixe fourni et permet, en principe, de deviner le secret octet par octet. Le coût
- * de faire les choses correctement étant de trois lignes, il n'y a pas d'arbitrage à faire.
- *
- * La comparaison de longueur en amont n'affaiblit rien : `timingSafeEqual` exige deux tampons de
- * même taille, et la longueur de l'en-tête n'est pas le secret.
- */
-function isAuthorizedCron(header: string | null): boolean {
-  const expected = `Bearer ${env.CRON_SECRET}`;
-  if (!header || header.length !== expected.length) return false;
-
-  return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
-}
 
 export async function GET(request: NextRequest) {
   /*

@@ -27,6 +27,39 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 26 septembre 2026 — la cloche sort de l'en-tête, jusque dans Discord
+
+**Un webhook par compte, réglé dans `/settings`, et toujours pas de table de notifications.** La
+cloche n'en a pas parce que le retard *est* l'état non-lu ; Discord ne peut pas faire pareil — un
+message posté ne se retire pas au « +1 » —, il lui faut donc se souvenir de ce qu'il a dit. Une
+seule date y suffit : `DiscordWebhook.notifiedUntil`, une ligne de flottaison qui ne monte que sur
+un envoi réussi. Pas de doublon (une ligne montée est une ligne livrée), pas de perte (un échec la
+laisse où elle est). La seule fuite connue : au-delà de dix épisodes dans l'heure, deux messages
+partent, et si le second échoue le premier sera renvoyé.
+
+**Le cron n'est pas chez Vercel.** Le plan Hobby n'accorde qu'une passe par jour — une notification
+du lendemain n'en est pas une. Un workflow GitHub Actions horaire appelle `api/cron/discord` avec le
+même `CRON_SECRET`. La garde en temps constant est donc montée dans `lib/security/cron-auth.ts` :
+deux routes, deux copies, et un jour deux façons de comparer.
+
+**L'URL d'un webhook est un secret, et une URL que le serveur appellera.** Elle ne revient jamais au
+navigateur (l'écran montre le nom que Discord lui donne et les quatre derniers chiffres de l'id), et
+elle est fermée à `discord.com` et ses variantes par une expression rationnelle — sinon le champ
+ferait du serveur un relais vers n'importe quelle adresse. `allowed_mentions: { parse: [] }` pour
+qu'un titre ne pinge jamais le salon.
+
+**Une carte par épisode, et une route publique qui ne dit rien.** L'embed porte une image 1200×630
+dessinée par `next/og` — jaquette, bannière éteinte, « Épisode N ». Discord la demande sans cookie,
+donc la route ne peut pas avoir de session ; sans garde, elle aurait dit à qui l'interroge quelles
+œuvres le cercle suit (le miroir ne contient que celles-là). L'URL porte donc un HMAC de
+`BETTER_AUTH_SECRET`, préfixé par domaine, et tout ce qui ne le porte pas répond 404. Elle ne lit que
+le miroir : une lecture AniList par image aurait mis le quota entre les mains de n'importe qui.
+Limite : la police par défaut de `next/og` n'a ni gras ni kana — `NATIVE` retombe sur le romaji.
+
+Et la nav a enfin des icônes, sur ses deux sections seulement : un champ `icon` obligatoire sur
+`NavSection`, rendu par le déclencheur desktop et le
+titre de groupe du tiroir mobile. Les liens eux-mêmes n'en ont pas — essayé, et retiré à l'écran.
+
 ## 26 septembre 2026 — `.default()` ne rattrape pas un `null`
 
 Les fiches 217330 et 217331 (deux saisons annoncées de *Tensei Shitara Slime Datta Ken*) tombaient

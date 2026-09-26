@@ -1,3 +1,5 @@
+import { LibraryBigIcon, type LucideIcon, TelescopeIcon } from "lucide-react";
+
 import { routes } from "@/config/routes";
 
 /**
@@ -32,6 +34,8 @@ export type NavLink = {
 export type NavSection = {
   href: string;
   label: string;
+  /** Celle de l'intitulé : le déclencheur du menu desktop, le titre de groupe du tiroir mobile. */
+  icon: LucideIcon;
   links: NavLink[];
 };
 
@@ -39,6 +43,7 @@ export const mainNav: NavSection[] = [
   {
     href: routes.search,
     label: "Découvrir",
+    icon: TelescopeIcon,
     links: [
       {
         href: routes.search,
@@ -56,6 +61,7 @@ export const mainNav: NavSection[] = [
   {
     href: routes.library,
     label: "Ma bibliothèque",
+    icon: LibraryBigIcon,
     links: [
       {
         href: routes.library,

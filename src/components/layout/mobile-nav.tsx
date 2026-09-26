@@ -87,7 +87,8 @@ export function MobileNav() {
                 ses `links`, et deux cibles identiques à une ligne d'écart font hésiter sans rien
                 offrir de plus.
               */}
-              <p className="px-2 pb-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+              <p className="flex items-center gap-2 px-2 pb-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                <section.icon aria-hidden className="size-3.5" />
                 {section.label}
               </p>
 

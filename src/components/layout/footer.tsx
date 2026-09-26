@@ -1,3 +1,4 @@
+import { UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { Logo } from "@/components/layout/logo";
@@ -24,6 +25,7 @@ const footerNav: NavSection[] = [
   {
     href: routes.settings,
     label: "Compte",
+    icon: UserIcon,
     links: [
       {
         href: routes.settings,

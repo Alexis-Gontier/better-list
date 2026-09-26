@@ -5,16 +5,18 @@ import {
   AccountSection,
   AccountSectionSkeleton,
 } from "@/app/(app)/settings/_components/account-section";
+import { DiscordSettings } from "@/app/(app)/settings/_components/discord-settings";
 import { DisplaySettings } from "@/app/(app)/settings/_components/display-settings";
 import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDiscordWebhookStatus } from "@/features/notifications/server/discord.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 
 export const metadata: Metadata = {
   title: "Paramètres",
-  description: "Langue des titres, contenu adulte.",
+  description: "Langue des titres, contenu adulte, notifications Discord.",
 };
 
 /**
@@ -66,6 +68,12 @@ export default function SettingsPage() {
       <Suspense fallback={<DisplaySectionSkeleton />}>
         <DisplaySection />
       </Suspense>
+
+      <Separator />
+
+      <Suspense fallback={<NotificationsSectionSkeleton />}>
+        <NotificationsSection />
+      </Suspense>
     </div>
   );
 }
@@ -87,6 +95,35 @@ async function DisplaySection() {
     >
       <DisplaySettings preferences={preferences} />
     </SettingsSection>
+  );
+}
+
+/**
+ * Le webhook Discord : même raccord qu'au-dessus, derrière sa propre frontière — la lecture est une
+ * autre table, elle n'a pas à attendre les préférences ni à les faire attendre.
+ */
+async function NotificationsSection() {
+  const status = await getDiscordWebhookStatus();
+
+  return (
+    <SettingsSection
+      description="Les épisodes des animes que vous suivez, postés dans un salon Discord à vous — une fois par heure au plus."
+      title="Notifications Discord"
+    >
+      <DiscordSettings status={status} />
+    </SettingsSection>
+  );
+}
+
+function NotificationsSectionSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-7 w-52" />
+        <Skeleton className="h-5 w-96 max-w-full" />
+      </div>
+      <Skeleton className="h-9 w-full" />
+    </div>
   );
 }
 
