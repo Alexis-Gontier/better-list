@@ -29,6 +29,14 @@ export const routes = {
    */
   media: (id: number) => `/media/${id}` as const,
 
+  /**
+   * Un personnage, et les œuvres où il apparaît. Un seul segment, l'id AniList — comme `media`.
+   */
+  character: (id: number) => `/character/${id}` as const,
+
+  /** Un membre du staff : doublage, réalisation, écriture. Même contrat que `character`. */
+  staff: (id: number) => `/staff/${id}` as const,
+
   /** Ma bibliothèque. Le statut et le type sont des `searchParams`, pas des segments. */
   library: "/library",
 
