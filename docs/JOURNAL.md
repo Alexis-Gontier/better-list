@@ -1419,3 +1419,24 @@ Puis, le même soir, **toute la bibliothèque** : en pause, abandonné, terminé
 le retard n'a de sens que pour ce que je regarde, le reste dit son statut. Le vrai coût était
 ailleurs : toute la bibliothèque, c'est des centaines de séries finies dont les ids partiraient chez
 AniList pour rien. Le miroir sait lesquelles ne diffuseront plus ; elles restent à la maison.
+
+## 29 septembre 2026 — des pages de personnes qui ressemblent à des profils
+
+Les pages `/character` et `/staff` ont été reprises. Trois choses les faisaient paraître inachevées :
+aucune identité visuelle à côté d'une fiche d'œuvre qui ouvre sur sa bannière, quinze autres noms
+en une phrase à virgules, et une biographie qui commençait par un bloc de gras — « Height: 172 cm »,
+« Devil Fruit: … ». Ce bloc, ce sont des faits écrits en prose : `splitBioFacts` les en sort et les
+range avec les autres, en tuiles. La leçon tient au-delà des personnes : quand un contributeur a
+structuré sa saisie à la main, le motif se relit — à condition de ne le prendre qu'en tête, et
+seulement quand **toutes** les lignes du paragraphe s'y plient.
+
+Le survol des cartes Personnages et Équipe de la fiche ne coûte aucune requête : les champs du
+panneau sont ajoutés aux fragments que la fiche lit déjà. Une lecture par survol aurait vidé le
+quota de trente par minute en parcourant un seul casting. Le `HoverCard` de shadcn cette fois, pas le
+panneau accroché au curseur des jaquettes : une carte de personne est une bande basse, et un panneau
+ancré dessous ne cache rien.
+
+Même soir : la pastille de suivi arrive sur « Œuvres liées » et « À voir ensuite ». La carte qui
+la portait vivait dans le `_components/` de l'accueil, et la grille des pages de personnes en
+tenait une copie ; la fiche étant la deuxième route à la vouloir, `CatalogueMediaCard` est montée
+dans `features/tracking/components/`, et la copie a disparu avec.
