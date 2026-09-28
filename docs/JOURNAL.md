@@ -1414,3 +1414,8 @@ principale — la même leçon que la rangée de points, retenue à moitié.
 Et le planning montre désormais les séries **prévues**, avec « prévu » à la place du retard. La
 décision de les écarter tenait au retard maximal qu'elles auraient affiché ; il suffisait de ne
 pas le calculer pour elles. Les notifications, elles, les ignorent toujours.
+
+Puis, le même soir, **toute la bibliothèque** : en pause, abandonné, terminé. Même raisonnement —
+le retard n'a de sens que pour ce que je regarde, le reste dit son statut. Le vrai coût était
+ailleurs : toute la bibliothèque, c'est des centaines de séries finies dont les ids partiraient chez
+AniList pour rien. Le miroir sait lesquelles ne diffuseront plus ; elles restent à la maison.
