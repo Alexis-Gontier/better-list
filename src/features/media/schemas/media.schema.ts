@@ -205,31 +205,43 @@ export const studioEdgeSchema = z.object({
   node: z.object({ id: z.number().int(), name: z.string() }),
 });
 
+/** Un champ qu'AniList peut omettre **ou** renvoyer à `null` : les deux deviennent `null`. */
+function optional<T extends z.ZodType>(schema: T) {
+  return schema.nullish().transform((value) => value ?? null);
+}
+
+/**
+ * Une personne attachée à une œuvre — personnage, doubleur ou membre de l'équipe —, **avec ce que
+ * dit son survol** : nom natif, biographie, favoris, genre, âge, anniversaire.
+ *
+ * Tous facultatifs, pour deux raisons : AniList en laisse la moitié vides sur un second rôle, et
+ * une fiche mise en cache avant l'ajout de ces champs doit encore se lire.
+ */
+export const personPreviewSchema = z.object({
+  id: z.number().int(),
+  name: nameSchema.extend({ native: optional(z.string()) }),
+  image: personImageSchema,
+  description: optional(z.string()),
+  favourites: optional(z.number().int()),
+  gender: optional(z.string()),
+  /** Un nombre chez un staff, du texte libre chez un personnage (« 17- »). */
+  age: optional(z.union([z.string(), z.number()])),
+  dateOfBirth: optional(fuzzyDateSchema),
+});
+export type PersonPreviewData = z.infer<typeof personPreviewSchema>;
+
 export const characterEdgeSchema = z.object({
   role: z.string().nullable(),
-  node: z.object({
-    id: z.number().int(),
-    name: nameSchema,
-    image: personImageSchema,
-  }),
+  node: personPreviewSchema,
   voiceActors: z
-    .array(
-      z.object({
-        id: z.number().int(),
-        name: nameSchema,
-        image: personImageSchema,
-        languageV2: z.string().nullable(),
-      }),
-    )
+    .array(personPreviewSchema.extend({ languageV2: z.string().nullable() }))
     .default([]),
 });
 
 export const staffEdgeSchema = z.object({
   role: z.string().nullable(),
-  node: z.object({
-    id: z.number().int(),
-    name: nameSchema,
-    image: personImageSchema,
+  node: personPreviewSchema.extend({
+    primaryOccupations: optional(z.array(z.string().nullable())),
   }),
 });
 

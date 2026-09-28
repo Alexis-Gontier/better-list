@@ -10,7 +10,20 @@ function studio(id: number, name: string, isMain: boolean) {
 }
 
 function staff(id: number, full: string | null, role: string | null) {
-  return { role, node: { id, name: { full }, image: null } };
+  return {
+    role,
+    node: {
+      id,
+      name: { full, native: null },
+      image: null,
+      description: null,
+      favourites: null,
+      gender: null,
+      age: null,
+      dateOfBirth: null,
+      primaryOccupations: null,
+    },
+  };
 }
 
 function source(overrides: Partial<CreditSource> = {}): CreditSource {

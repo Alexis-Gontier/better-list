@@ -7,6 +7,7 @@ import {
   formatVoiceLanguage,
 } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
+import { PersonHoverCard } from "@/features/people/components/person-hover-card";
 
 type CharacterEdge = MediaDetail["characters"]["edges"][number];
 
@@ -44,6 +45,10 @@ type MediaCharactersProps = {
  * **Chaque moitié est un lien** depuis le 26 septembre 2026 : le personnage mène à sa page, le
  * doubleur à la sienne. `prefetch={false}` pour ne pas dépenser de quota AniList sur une grille
  * qu'on fait défiler.
+ *
+ * **Et chaque moitié a son survol** depuis le 29 septembre 2026 (`PersonHoverCard`) : portrait
+ * lisible, nom natif, âge, début de biographie. Le panneau du personnage s'aligne sur le bord gauche
+ * de la carte, celui du doubleur sur le bord droit — chacun du côté de son portrait.
  *
  * Composant serveur : des images et du texte.
  */
@@ -99,10 +104,17 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
         mourir exactement sur les coins arrondis. Sans lui, deux angles droits dépasseraient aux
         deux bouts de la carte.
 
+        **Surlignée au survol** (demande d'Alexis, 29 septembre 2026) : le liseré passe à la couleur
+        d'accent dès qu'une des deux moitiés est visée, et la moitié visée se teinte, son nom avec.
+        La carte dit ainsi à la fois « c'est cette paire » et « c'est ce côté-là qui s'ouvrira » —
+        deux liens dans une même boîte, que l'ancien `bg-muted/40` laissait presque invisibles.
+        Le liseré d'accent est dessiné par un `::after` **au-dessus** des portraits : posé en ombre
+        interne sur la carte elle-même, il passait sous les images et disparaissait aux deux bouts.
+
         Hauteur fixe, et elle est ce qui tient la rangée : les deux portraits sont en `h-full`, donc
         sans elle une carte dont un côté manque serait plus basse que sa voisine.
       */}
-      <div className="flex h-20 items-stretch justify-between gap-2 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <div className="flex h-20 items-stretch justify-between gap-2 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none">
         {/*
           `flex-1` sur les deux moitiés, et c'est ce qui a suivi le passage des noms à deux
           lignes. Sans lui, flex partage la largeur d'après ce que chaque colonne *voudrait*
@@ -113,56 +125,64 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
           s'accumulait après le dernier enfant et décollait le portrait de droite du bord de la
           carte. Ce sont les noms qui doivent s'étaler, jamais les portraits qui doivent flotter.
         */}
-        <Link
-          className="flex min-w-0 flex-1 items-stretch gap-3 transition-colors hover:bg-muted/40"
-          href={routes.character(edge.node.id)}
-          prefetch={false}
-        >
-          <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
-
-          <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-1">
-            <p
-              className="line-clamp-2 text-sm font-medium"
-              title={name ?? undefined}
-            >
-              {name}
-            </p>
-            {role ? (
-              // Même graisse et même chasse que les intitulés de la ligne de faits : c'est le seul
-              // autre rôle typographique de ce genre sur la page, et deux échelles pour une même
-              // étiquette se verraient.
-              <p className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                {role}
-              </p>
-            ) : null}
-          </div>
-        </Link>
-
-        {voice ? (
+        <PersonHoverCard person={edge.node} subtitle={role}>
           <Link
-            className="flex min-w-0 flex-1 items-stretch gap-3 transition-colors hover:bg-muted/40"
-            href={routes.staff(voice.id)}
+            className="flex min-w-0 flex-1 items-stretch gap-3 group/half transition-colors duration-200 hover:bg-primary/10 focus-visible:bg-primary/10 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+            href={routes.character(edge.node.id)}
             prefetch={false}
           >
-            <div className="flex min-w-0 flex-1 flex-col items-end justify-between py-2 pl-1 text-right">
+            <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
+
+            <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-1">
               <p
-                className="line-clamp-2 text-sm font-medium"
-                title={voice.name.full ?? undefined}
+                className="line-clamp-2 text-sm font-medium transition-colors duration-200 group-hover/half:text-primary group-focus-visible/half:text-primary motion-reduce:transition-none"
+                title={name ?? undefined}
               >
-                {voice.name.full}
+                {name}
               </p>
-              {language ? (
+              {role ? (
+                // Même graisse et même chasse que les intitulés de la ligne de faits : c'est le seul
+                // autre rôle typographique de ce genre sur la page, et deux échelles pour une même
+                // étiquette se verraient.
                 <p className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                  {language}
+                  {role}
                 </p>
               ) : null}
             </div>
-
-            <PersonPortrait
-              name={voice.name.full}
-              src={voice.image?.large ?? null}
-            />
           </Link>
+        </PersonHoverCard>
+
+        {voice ? (
+          <PersonHoverCard
+            align="end"
+            person={voice}
+            subtitle={language ? `Voix · ${language}` : "Voix"}
+          >
+            <Link
+              className="flex min-w-0 flex-1 items-stretch gap-3 group/half transition-colors duration-200 hover:bg-primary/10 focus-visible:bg-primary/10 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+              href={routes.staff(voice.id)}
+              prefetch={false}
+            >
+              <div className="flex min-w-0 flex-1 flex-col items-end justify-between py-2 pl-1 text-right">
+                <p
+                  className="line-clamp-2 text-sm font-medium transition-colors duration-200 group-hover/half:text-primary group-focus-visible/half:text-primary motion-reduce:transition-none"
+                  title={voice.name.full ?? undefined}
+                >
+                  {voice.name.full}
+                </p>
+                {language ? (
+                  <p className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                    {language}
+                  </p>
+                ) : null}
+              </div>
+
+              <PersonPortrait
+                name={voice.name.full}
+                src={voice.image?.large ?? null}
+              />
+            </Link>
+          </PersonHoverCard>
         ) : null}
       </div>
     </li>

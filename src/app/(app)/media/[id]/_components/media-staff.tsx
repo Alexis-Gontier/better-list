@@ -4,6 +4,7 @@ import { PersonPortrait } from "@/app/(app)/media/[id]/_components/person-portra
 import { routes } from "@/config/routes";
 import { formatStaffRole } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
+import { PersonHoverCard } from "@/features/people/components/person-hover-card";
 
 type StaffEdge = MediaDetail["staff"]["edges"][number];
 
@@ -57,38 +58,42 @@ function StaffCard({ edge }: { edge: StaffEdge }) {
         `overflow-hidden` pour que le portrait vienne mourir exactement dessus, et `h-20` pour que
         les deux onglets aient la même respiration quand on passe de l'un à l'autre.
 
-        La carte entière mène à la page de la personne (26 septembre 2026).
+        La carte entière mène à la page de la personne (26 septembre 2026), et son survol montre
+        qui elle est (29 septembre 2026, `PersonHoverCard`). Surlignée au survol comme la carte d'un
+        personnage : liseré d'accent, fond teinté, nom en couleur.
       */}
-      <Link
-        className="flex h-20 items-stretch gap-3 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors hover:bg-muted/40"
-        href={routes.staff(edge.node.id)}
-        prefetch={false}
-      >
-        <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
+      <PersonHoverCard person={edge.node} subtitle={role}>
+        <Link
+          className="flex h-20 items-stretch gap-3 overflow-hidden group/half rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-200 hover:bg-primary/10 focus-visible:bg-primary/10 motion-reduce:transition-none relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+          href={routes.staff(edge.node.id)}
+          prefetch={false}
+        >
+          <PersonPortrait name={name} src={edge.node.image?.large ?? null} />
 
-        {/*
+          {/*
           **La typographie est celle de la carte d'un personnage** (décision d'Alexis du
           13 septembre 2026) : nom sur deux lignes au plus, poste en capitales espacées, calés en
           haut et en bas. Le poste d'équipe est du texte libre et plus long qu'un « Principal » —
           il est donc tronqué sur une ligne, et l'infobulle rend l'entier.
         */}
-        <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-3">
-          <p
-            className="line-clamp-2 text-sm font-medium"
-            title={name ?? undefined}
-          >
-            {name}
-          </p>
-          {role ? (
+          <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-3">
             <p
-              className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase"
-              title={role}
+              className="line-clamp-2 text-sm font-medium transition-colors duration-200 group-hover/half:text-primary group-focus-visible/half:text-primary motion-reduce:transition-none"
+              title={name ?? undefined}
             >
-              {role}
+              {name}
             </p>
-          ) : null}
-        </div>
-      </Link>
+            {role ? (
+              <p
+                className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase"
+                title={role}
+              >
+                {role}
+              </p>
+            ) : null}
+          </div>
+        </Link>
+      </PersonHoverCard>
     </li>
   );
 }
