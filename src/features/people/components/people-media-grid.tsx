@@ -2,13 +2,9 @@ import {
   CatalogueGrid,
   WIDEST_COLUMN_COUNT,
 } from "@/components/shared/catalogue-grid";
-import { MediaCard } from "@/features/media/components/media-card";
-import { mediaTitle } from "@/features/media/lib/media-format";
 import type { PeopleMedia } from "@/features/people/schemas/people.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
-import { EntryQuickActions } from "@/features/tracking/components/entry-quick-actions";
-import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
-import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
+import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-media-card";
 import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 /**
@@ -38,43 +34,16 @@ export async function PeopleMediaGrid({
 
   return (
     <CatalogueGrid>
-      {items.map(({ media, footer }, index) => {
-        const entry = entries.get(media.id) ?? null;
-        const unit = media.type === "ANIME" ? "episode" : "chapitre";
-        const total = media.type === "ANIME" ? media.episodes : media.chapters;
-
-        return (
-          <MediaCard
-            action={
-              <EntryQuickActions
-                mediaId={media.id}
-                progress={entry?.progress ?? 0}
-                total={total}
-                tracked={entry !== null}
-                unit={unit}
-              >
-                <EntryQuickEdit
-                  banner={null}
-                  compact
-                  entry={entry}
-                  mediaId={media.id}
-                  title={mediaTitle(media.title, titleLanguage)}
-                  total={total}
-                  unit={unit}
-                />
-              </EntryQuickActions>
-            }
-            footer={footer}
-            key={media.id}
-            marker={
-              entry ? <EntryStatusDot status={entry.status} /> : undefined
-            }
-            media={media}
-            priority={priority && index < WIDEST_COLUMN_COUNT}
-            titleLanguage={titleLanguage}
-          />
-        );
-      })}
+      {items.map(({ media, footer }, index) => (
+        <CatalogueMediaCard
+          entry={entries.get(media.id) ?? null}
+          footer={footer}
+          key={media.id}
+          media={media}
+          priority={priority && index < WIDEST_COLUMN_COUNT}
+          titleLanguage={titleLanguage}
+        />
+      ))}
     </CatalogueGrid>
   );
 }

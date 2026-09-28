@@ -1,7 +1,8 @@
 import { MediaSection } from "@/app/(app)/media/[id]/_components/media-section";
-import { MediaCard } from "@/features/media/components/media-card";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
+import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-media-card";
+import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 type MediaRecommendationsProps = {
   /**
@@ -25,19 +26,25 @@ type MediaRecommendationsProps = {
  * l'œuvre qu'on regarde ; celui-ci propose d'en regarder une autre, donc il vient après que la
  * question posée a reçu sa réponse.
  *
- * Il réutilise `MediaCard` **telle quelle**, sans slot ni variante. C'est exactement son emploi —
- * une jaquette, un titre, un lien vers une fiche —, et c'est ce qui fait rimer la fiche avec
- * `/search` et `/library` : trois écrans, une seule carte.
+ * Il réutilise la carte du catalogue, **avec mon statut** depuis le 29 septembre 2026 (demande
+ * d'Alexis) : pastille et « +1 », comme sur `/search`, `/library` et l'accueil. Une recommandation
+ * que je suis déjà doit se voir d'un coup d'œil — sans quoi on ouvre une fiche pour découvrir
+ * qu'on l'a finie l'an dernier.
  *
  * Les deux requêtes trient `[RATING_DESC]` : les premières sont celles que la communauté recommande
  * le plus, aucun tri à refaire ici.
  */
-export function MediaRecommendations({
+export async function MediaRecommendations({
   recommendations,
   titleLanguage,
   href,
 }: MediaRecommendationsProps) {
   if (recommendations.length === 0) return null;
+
+  // Une requête Prisma pour la rangée, comme les œuvres liées au-dessus.
+  const entries = await getLibraryEntriesFor(
+    recommendations.map((recommended) => recommended.id),
+  );
 
   return (
     <MediaSection href={href} title="À voir ensuite">
@@ -49,7 +56,8 @@ export function MediaRecommendations({
       */}
       <div className="grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-7">
         {recommendations.map((recommended) => (
-          <MediaCard
+          <CatalogueMediaCard
+            entry={entries.get(recommended.id) ?? null}
             key={recommended.id}
             media={recommended}
             titleLanguage={titleLanguage}

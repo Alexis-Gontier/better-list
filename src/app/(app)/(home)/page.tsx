@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import { FeaturedSpotlight } from "@/app/(app)/(home)/_components/home-cards";
 import {
-  CatalogueMediaCard,
   TrackedMediaCard,
   trackingDetails,
 } from "@/app/(app)/(home)/_components/home-media-card";
@@ -32,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
+import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-media-card";
 import { serializeLibraryFilters } from "@/features/tracking/lib/library-params";
 
 export const metadata: Metadata = {

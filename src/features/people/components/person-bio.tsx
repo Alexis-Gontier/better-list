@@ -1,34 +1,41 @@
 import Link from "next/link";
 
 import { BioSpoiler } from "@/features/people/components/bio-spoiler";
-import { type BioSegment, parseBio } from "@/features/people/lib/people-bio";
+import type {
+  BioParagraph,
+  BioSegment,
+} from "@/features/people/lib/people-bio";
 
 /** Deux paragraphes : de quoi reconnaître la personne sans pousser la grille hors de l'écran. */
 const VISIBLE_PARAGRAPHS = 2;
 
 /**
- * La biographie d'une personne, lue par `parseBio` et rendue en éléments — jamais en HTML brut.
+ * La biographie d'une personne, **déjà analysée** (`parseBio`, puis `splitBioFacts` qui en a sorti
+ * la fiche technique) et rendue en éléments — jamais en HTML brut.
  *
  * **Repliée après deux paragraphes**, dans un `<details>` natif : pas de JavaScript pour un geste
  * que le navigateur sait faire, et le texte replié reste trouvable par la recherche de la page.
  * Une biographie absente ne rend rien.
+ *
+ * **Largeur de lecture bornée** (`max-w-prose`) : sur un écran large, une ligne de biographie
+ * courait sur toute la colonne — cent quarante signes, deux fois ce qui se lit sans perdre la
+ * ligne suivante.
  */
-export function PersonBio({ text }: { text: string | null }) {
-  const paragraphs = parseBio(text);
+export function PersonBio({ paragraphs }: { paragraphs: BioParagraph[] }) {
   if (paragraphs.length === 0) return null;
 
   const visible = paragraphs.slice(0, VISIBLE_PARAGRAPHS);
   const folded = paragraphs.slice(VISIBLE_PARAGRAPHS);
 
   return (
-    <section className="flex flex-col gap-3 text-muted-foreground text-sm/6">
+    <div className="flex max-w-prose flex-col gap-3 text-muted-foreground text-sm/6">
       {visible.map((paragraph, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: texte figé, jamais réordonné
         <p key={index}>{renderSegments(paragraph)}</p>
       ))}
       {folded.length > 0 ? (
         <details className="group flex flex-col gap-3">
-          <summary className="cursor-pointer text-foreground text-sm group-open:hidden">
+          <summary className="w-fit cursor-pointer rounded-sm font-medium text-foreground text-sm transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-ring group-open:hidden">
             Lire la suite
           </summary>
           <div className="flex flex-col gap-3">
@@ -39,8 +46,13 @@ export function PersonBio({ text }: { text: string | null }) {
           </div>
         </details>
       ) : null}
-    </section>
+    </div>
   );
+}
+
+/** Des segments de biographie en éléments — pour les valeurs de la fiche technique. */
+export function BioSegments({ segments }: { segments: BioSegment[] }) {
+  return <>{renderSegments(segments)}</>;
 }
 
 function renderSegments(segments: BioSegment[]): React.ReactNode[] {

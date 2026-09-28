@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { parseBio, resolveBioHref } from "@/features/people/lib/people-bio";
+import {
+  bioExcerpt,
+  bioText,
+  parseBio,
+  resolveBioHref,
+  splitBioFacts,
+} from "@/features/people/lib/people-bio";
 
 describe("resolveBioHref", () => {
   it("réécrit les liens AniList vers nos routes", () => {
@@ -115,5 +121,64 @@ describe("parseBio", () => {
         { kind: "text", text: "b & c" },
       ],
     ]);
+  });
+});
+
+describe("splitBioFacts", () => {
+  const LUFFY =
+    "__Height:__ 172 cm\n__Affiliations:__ ~!Straw Hat Grand Fleet!~\n__Devil Fruit__: Gomu Gomu no Mi\n~!__Former Bounty:__ 3 000 000 000!~\n\nLuffy is the captain.";
+
+  it("sort les lignes « __Intitulé:__ valeur » de tête, traduites", () => {
+    const { facts, body } = splitBioFacts(parseBio(LUFFY));
+
+    expect(facts.map((fact) => fact.label)).toEqual([
+      "Taille",
+      "Affiliations",
+      "Fruit du démon",
+      null,
+    ]);
+    expect(bioText(facts[0]?.value ?? [])).toBe("172 cm");
+    expect(bioText(facts[2]?.value ?? [])).toBe("Gomu Gomu no Mi");
+    expect(facts[1]?.value[0]?.kind).toBe("spoiler");
+    expect(body).toEqual([[{ kind: "text", text: "Luffy is the captain." }]]);
+  });
+
+  it("laisse la prose tranquille, même quand elle commence par du gras", () => {
+    const paragraphs = parseBio("__Luffy__ is the captain.\n__Age:__ 17");
+    expect(splitBioFacts(paragraphs)).toEqual({ facts: [], body: paragraphs });
+  });
+
+  it("garde les intitulés inconnus tels quels", () => {
+    const { facts } = splitBioFacts(
+      parseBio("__Agency:__ Aoni\n__Twitter:__ x"),
+    );
+    expect(facts.map((fact) => fact.label)).toEqual(["Agence", "Twitter"]);
+  });
+});
+
+describe("bioExcerpt", () => {
+  it("prend la première prose, sans fiche ni spoiler", () => {
+    expect(
+      bioExcerpt("__Height:__ 172 cm\n\nLuffy ~!dies!~ is the __captain__."),
+    ).toBe("Luffy is the captain.");
+  });
+
+  it("coupe sur un mot, avec une ellipse", () => {
+    expect(bioExcerpt("un deux trois quatre cinq six", 16)).toBe(
+      "un deux trois…",
+    );
+  });
+
+  it("saute un paragraphe fait seulement de liens", () => {
+    expect(
+      bioExcerpt(
+        "__Agency:__ Aoni\n\n[Profile](https://example.com)\n\nA Japanese actress.",
+      ),
+    ).toBe("A Japanese actress.");
+  });
+
+  it("rend null sans texte", () => {
+    expect(bioExcerpt(null)).toBeNull();
+    expect(bioExcerpt("__Height:__ 172 cm")).toBeNull();
   });
 });

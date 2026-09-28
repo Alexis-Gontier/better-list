@@ -399,6 +399,12 @@ export const FILTER_VOCABULARY_QUERY = /* GraphQL */ `
  * Un personnage et sa voix. Partagé entre l'échantillon de l'aperçu et l'onglet complet, pour que
  * les deux rendent exactement la même carte — un champ ajouté d'un côté seulement produirait une
  * vignette différente selon l'onglet où on la regarde.
+ *
+ * **Le nom natif, la biographie, les favoris, le genre, l'âge et l'anniversaire** sont là pour le
+ * survol de la carte (`person-preview.tsx`, 29 septembre 2026). Les demander ici plutôt qu'au
+ * survol coûte zéro requête : une lecture par personne survolée aurait vidé le quota de trente par
+ * minute en parcourant un casting de vingt-cinq. Le prix est dans le poids de la réponse — les
+ * biographies —, mise en cache un jour comme le reste de la fiche.
  */
 const CHARACTER_EDGE_FIELDS = /* GraphQL */ `
   fragment CharacterEdgeFields on CharacterEdge {
@@ -407,25 +413,45 @@ const CHARACTER_EDGE_FIELDS = /* GraphQL */ `
       id
       name {
         full
+        native
       }
       image {
         large
+      }
+      description(asHtml: false)
+      favourites
+      gender
+      age
+      dateOfBirth {
+        year
+        month
+        day
       }
     }
     voiceActors(language: JAPANESE, sort: [RELEVANCE]) {
       id
       name {
         full
+        native
       }
       image {
         large
+      }
+      description(asHtml: false)
+      favourites
+      gender
+      age
+      dateOfBirth {
+        year
+        month
+        day
       }
       languageV2
     }
   }
 `;
 
-/** Un membre de l'équipe et son poste. Même rôle partagé que `CharacterEdgeFields`. */
+/** Un membre de l'équipe et son poste. Même rôle partagé que `CharacterEdgeFields`, même survol. */
 const STAFF_EDGE_FIELDS = /* GraphQL */ `
   fragment StaffEdgeFields on StaffEdge {
     role
@@ -433,10 +459,21 @@ const STAFF_EDGE_FIELDS = /* GraphQL */ `
       id
       name {
         full
+        native
       }
       image {
         large
       }
+      description(asHtml: false)
+      favourites
+      gender
+      age
+      dateOfBirth {
+        year
+        month
+        day
+      }
+      primaryOccupations
     }
   }
 `;

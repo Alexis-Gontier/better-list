@@ -1,8 +1,10 @@
 import { MediaSection } from "@/app/(app)/media/[id]/_components/media-section";
-import { MediaCard } from "@/features/media/components/media-card";
 import { formatRelationType } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
+import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-media-card";
+import type { EntryState } from "@/features/tracking/lib/entry-transition";
+import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 type RelationEdge = MediaDetail["relations"]["edges"][number];
 
@@ -38,12 +40,22 @@ type MediaRelationsProps = {
  *
  * Composant serveur : le défilement est du CSS, la navigation est dans `MediaCard`.
  */
-export function MediaRelations({
+export async function MediaRelations({
   relations,
   titleLanguage,
   href,
 }: MediaRelationsProps) {
   if (relations.length === 0) return null;
+
+  /*
+    **Mon statut sur chaque œuvre liée** (demande d'Alexis, 29 septembre 2026) : la pastille et le
+    « +1 », comme partout ailleurs. C'est la rangée où il compte le plus — « ai-je vu la saison 2 ? »
+    est la question qu'on vient poser ici. Une requête Prisma pour toute la rangée, sur l'index
+    `[userId, mediaId]` ; rien ne part chez AniList.
+  */
+  const entries = await getLibraryEntriesFor(
+    relations.map((edge) => edge.node.id),
+  );
 
   return (
     <MediaSection href={href} title="Œuvres liées">
@@ -59,7 +71,11 @@ export function MediaRelations({
           // La clé est l'id de l'œuvre liée, pas celui de l'arête : AniList n'expose pas d'id
           // d'arête dans cette sélection, et une même œuvre n'apparaît qu'une fois par fiche.
           <li className="min-w-0" key={edge.node.id}>
-            <RelationCard edge={edge} titleLanguage={titleLanguage} />
+            <RelationCard
+              edge={edge}
+              entry={entries.get(edge.node.id) ?? null}
+              titleLanguage={titleLanguage}
+            />
           </li>
         ))}
       </ul>
@@ -84,16 +100,22 @@ export function MediaRelations({
  */
 function RelationCard({
   edge,
+  entry,
   titleLanguage,
 }: {
   edge: RelationEdge;
+  entry: EntryState | null;
   titleLanguage: TitleLanguage;
 }) {
   const label = formatRelationType(edge.relationType) ?? "Autre";
 
   return (
     <div className="flex flex-col gap-1">
-      <MediaCard media={edge.node} titleLanguage={titleLanguage} />
+      <CatalogueMediaCard
+        entry={entry}
+        media={edge.node}
+        titleLanguage={titleLanguage}
+      />
       <p
         className="truncate text-[0.6875rem] font-medium tracking-[0.12em] text-muted-foreground uppercase"
         title={label}

@@ -1,7 +1,17 @@
-import { Heart } from "lucide-react";
+import { HeartIcon } from "lucide-react";
 import Image from "next/image";
 
+import { Badge } from "@/components/ui/badge";
 import { BioSpoiler } from "@/features/people/components/bio-spoiler";
+import {
+  BioSegments,
+  PersonBio,
+} from "@/features/people/components/person-bio";
+import {
+  type PersonFact,
+  PersonFacts,
+} from "@/features/people/components/person-facts";
+import { parseBio, splitBioFacts } from "@/features/people/lib/people-bio";
 
 type PersonHeaderProps = {
   image: string | null;
@@ -11,13 +21,32 @@ type PersonHeaderProps = {
   /** Les surnoms qui trahissent l'intrigue (« Joy Boy ») : masqués comme un spoiler de biographie. */
   spoilerAlternatives?: (string | null)[];
   favourites: number | null;
-  /** Les faits et la biographie, rendus à droite du portrait sous le nom. */
-  children?: React.ReactNode;
+  /** Les faits qu'AniList donne en champs : anniversaire, âge, genre… */
+  facts: PersonFact[];
+  /** La biographie brute. Sa fiche technique de tête rejoint `facts`, le reste est rendu à droite. */
+  description: string | null;
 };
 
 /**
- * L'en-tête d'une page Personnage ou Staff : portrait, nom, autres noms, favoris, puis ce que la
- * page y glisse. Deux appelants dès sa création, donc dans `features/people/components/`.
+ * Le profil d'une page Personnage ou Staff : bande, portrait, nom, autres noms, favoris, puis les
+ * faits en colonne et la biographie à côté. Deux appelants dès sa création, donc dans
+ * `features/people/components/`.
+ *
+ * **Reprise le 29 septembre 2026** (demande d'Alexis), sur trois constats relevés à l'écran :
+ *
+ * - **La page n'avait pas d'identité visuelle.** Portrait et texte sur fond nu, là où la fiche d'une
+ *   œuvre ouvre sur sa bannière. Une personne n'a pas de bannière chez AniList ; son portrait,
+ *   agrandi et flouté, en fait une — la même bande pleine largeur que `MediaBanner`, pour que
+ *   passer d'une œuvre à un personnage garde la même charpente.
+ * - **Les autres noms tenaient en une phrase de quinze virgules.** En pastilles, chacun se lit seul.
+ * - **La biographie commençait par un bloc de gras** — « Height: 172 cm », « Devil Fruit: … » —,
+ *   des faits écrits en prose. `splitBioFacts` les rend à la liste des faits, et la biographie
+ *   commence enfin par une phrase.
+ *
+ * **Deux colonnes, comme sur AniList** : le portrait à gauche, tout le reste à droite — nom, faits
+ * en tuiles, biographie. Les faits ont d'abord vécu en colonne sous le portrait ; Luffy en compte
+ * douze, et la colonne descendait deux écrans plus bas que la biographie, laissant un trou à sa
+ * droite. En tuiles, ils tiennent en trois rangées.
  */
 export function PersonHeader({
   image,
@@ -26,58 +55,129 @@ export function PersonHeader({
   alternatives,
   spoilerAlternatives = [],
   favourites,
-  children,
+  facts,
+  description,
 }: PersonHeaderProps) {
-  const others = [native, ...alternatives].filter((value): value is string =>
+  const others = alternatives.filter((value): value is string =>
     Boolean(value),
   );
   const hidden = spoilerAlternatives.filter((value): value is string =>
     Boolean(value),
   );
 
+  const { facts: bioFacts, body } = splitBioFacts(parseBio(description));
+  const allFacts: PersonFact[] = [
+    ...facts,
+    ...bioFacts.map((fact) => ({
+      label: fact.label,
+      value: <BioSegments segments={fact.value} />,
+    })),
+  ];
+
   return (
-    <header className="flex flex-col gap-6 sm:flex-row">
-      <div className="relative aspect-2/3 w-40 shrink-0 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] sm:w-48">
-        {image ? (
-          <Image
-            alt=""
-            className="object-cover"
-            fill
-            priority
-            sizes="192px"
-            src={image}
-          />
-        ) : null}
-      </div>
+    <header className="flex flex-col gap-8">
+      <PersonBackdrop image={image} />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="font-semibold text-2xl">{name ?? "Sans nom"}</h1>
-            {others.length > 0 || hidden.length > 0 ? (
-              <p className="text-muted-foreground text-sm">
-                {others.join(", ")}
-                {hidden.length > 0 ? (
-                  <>
-                    {others.length > 0 ? ", " : null}
-                    <BioSpoiler>{hidden.join(", ")}</BioSpoiler>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-          </div>
-
-          {favourites ? (
-            <p className="flex shrink-0 items-center gap-1.5 text-muted-foreground text-sm tabular-nums">
-              <Heart aria-hidden className="size-4" />
-              {new Intl.NumberFormat("fr-FR").format(favourites)}
-              <span className="sr-only">favoris sur AniList</span>
-            </p>
+      <div className="-mt-24 relative grid gap-5 sm:-mt-32 sm:grid-cols-[10rem_1fr] sm:items-start sm:gap-8 lg:grid-cols-[12rem_1fr] lg:gap-10">
+        <div className="relative aspect-2/3 w-32 overflow-hidden rounded-lg bg-muted shadow-lg ring-4 ring-background sm:w-full">
+          {image ? (
+            <Image
+              alt=""
+              className="object-cover"
+              fill
+              priority
+              sizes="(min-width: 1024px) 192px, 160px"
+              src={image}
+            />
           ) : null}
         </div>
 
-        {children}
+        {/*
+          `sm:pt-36` : la colonne commence 128 px au-dessus du bas de la bande (`-mt-32`), et le nom
+          doit se poser **dessous**, sur le fond de la page, plutôt que par-dessus le flou où il
+          perdrait son contraste.
+        */}
+        <div className="flex min-w-0 flex-col gap-6 sm:pt-36">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-balance font-bold font-heading text-3xl tracking-tight sm:text-4xl">
+                {name ?? "Sans nom"}
+              </h1>
+              {native ? (
+                <p className="text-lg text-muted-foreground">{native}</p>
+              ) : null}
+            </div>
+
+            {favourites || others.length > 0 || hidden.length > 0 ? (
+              <ul
+                aria-label="Autres noms"
+                className="flex flex-wrap items-center gap-1.5"
+              >
+                {favourites ? (
+                  <li>
+                    <Badge variant="default">
+                      <HeartIcon data-icon="inline-start" />
+                      {new Intl.NumberFormat("fr-FR").format(favourites)}
+                      <span className="sr-only">favoris sur AniList</span>
+                    </Badge>
+                  </li>
+                ) : null}
+                {others.map((other) => (
+                  <li key={other}>
+                    <Badge variant="secondary">{other}</Badge>
+                  </li>
+                ))}
+                {hidden.length > 0 ? (
+                  <li>
+                    <BioSpoiler>
+                      <span className="inline-flex flex-wrap gap-1.5">
+                        {hidden.map((other) => (
+                          <Badge key={other} variant="outline">
+                            {other}
+                          </Badge>
+                        ))}
+                      </span>
+                    </BioSpoiler>
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
+          </div>
+
+          <PersonFacts facts={allFacts} />
+          <PersonBio paragraphs={body} />
+        </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * La bande de tête : le portrait, agrandi et flouté, pleine largeur de fenêtre — même débord que
+ * `MediaBanner` (`left-1/2 w-screen -translate-x-1/2`, sous l'`overflow-x-clip` du layout).
+ *
+ * Le flou n'est pas un effet : un portrait de 230 px de large étiré sur un écran entier serait une
+ * bouillie de pixels. Flouté, il ne garde que ses couleurs, et c'est tout ce qu'on lui demande.
+ */
+function PersonBackdrop({ image }: { image: string | null }) {
+  return (
+    <div
+      aria-hidden
+      className="-mt-6 relative left-1/2 h-40 w-screen -translate-x-1/2 overflow-hidden sm:h-52"
+    >
+      {image ? (
+        <Image
+          alt=""
+          className="scale-125 object-cover opacity-60 blur-2xl"
+          fill
+          // Flouté à ce point, une petite image suffit — inutile d'en demander une pleine largeur.
+          sizes="256px"
+          src={image}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-surface-raised" />
+      )}
+      <div className="absolute inset-0 bg-linear-to-b from-background/40 via-background/30 to-background" />
+    </div>
   );
 }
