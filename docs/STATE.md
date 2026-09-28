@@ -1017,7 +1017,9 @@ vocabulaire de tous les autres.
    (décision d'Alexis) : « Recommandé pour vous » part des six premières séries d'« En cours »,
    additionne leurs recommandations AniList (`getMediaRecommendations`, mémorisée des jours et
    partagée avec la fiche), retire tout ce qui est déjà en bibliothèque, et chaque carte nomme la
-   série qui l'a amenée. Classement pur et testé dans `(home)/_lib/home-recommendations.ts`.
+   série qui l'a amenée. **La rangée est tirée, pas classée** : chaque série y a au moins une
+   place, le reste vient d'un hasard pondéré par le score, donc elle change à chaque visite.
+   Tirage pur et testé dans `(home)/_lib/home-recommendations.ts`.
    **Limite connue** : AniList recommande aussi des suites — « Code Geass R2 » à côté de
    « Code Geass » —, que `MediaCompact` ne permet pas de reconnaître. **Ce qui reste sur cet
    écran** : le choix ouvert sur `BROWSE_CATALOGUE_QUERY` ci-dessus.
