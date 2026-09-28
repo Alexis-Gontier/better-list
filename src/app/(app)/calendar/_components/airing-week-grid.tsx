@@ -15,6 +15,7 @@ import {
   formatLag,
   hasAired,
 } from "@/features/tracking/lib/airing-lag";
+import { ENTRY_STATUS_LABELS } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import { cn } from "@/lib/utils";
 
@@ -166,12 +167,13 @@ function AiringCard({
   const title = mediaTitle(media.title, titleLanguage);
 
   /*
-    Une série **prévue** n'a pas de retard : sa progression vaut zéro, et chaque épisode s'y lirait
-    comme un reproche. Elle dit « prévu » à la place — ce qui est la raison de la montrer ici.
+    **Le retard ne vaut que pour ce que je regarde** — en cours ou en relecture. Une série prévue a
+    une progression nulle, une série en pause ou abandonnée ne se rattrape pas : un retard y serait
+    un reproche. Elles disent leur statut à la place, ce qui est la raison de les montrer ici.
   */
-  const planned = entry?.status === "PLANNING";
+  const watching = entry?.status === "CURRENT" || entry?.status === "REPEATING";
   const lag =
-    entry && !planned
+    entry && watching
       ? episodeLag({
           episode: cell.episode,
           progress: entry.progress,
@@ -259,8 +261,10 @@ function AiringCard({
         au survol et au lecteur d'écran : la couleur et le signe ne portent jamais l'information
         seuls. Sur une série non suivie, rien du tout plutôt qu'un zéro qui n'a pas de sens.
       */}
-      {planned ? (
-        <p className="text-[11px] text-status-planning">prévu</p>
+      {entry && !watching ? (
+        <p className={cn("text-[11px]", STATUS_TONES[entry.status])}>
+          {ENTRY_STATUS_LABELS[entry.status]}
+        </p>
       ) : entry && lag !== null ? (
         <p
           className={cn("text-[11px] tabular-nums", lagTone(lag))}
@@ -288,6 +292,16 @@ function shortDayLabel(label: string): string {
 
   return `${weekday?.slice(0, 3) ?? label} ${dayNumber ?? ""}`.trim();
 }
+
+/** La teinte de chaque statut hors visionnage, celle de `globals.css` — la même que partout. */
+const STATUS_TONES: Record<EntryState["status"], string> = {
+  CURRENT: "text-status-current",
+  REPEATING: "text-status-repeating",
+  PLANNING: "text-status-planning",
+  COMPLETED: "text-status-completed",
+  PAUSED: "text-status-paused",
+  DROPPED: "text-status-dropped",
+};
 
 /**
  * La couleur du retard — ambre jusqu'à cinq épisodes, rouge au-delà.

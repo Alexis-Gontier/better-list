@@ -500,9 +500,10 @@ export async function getHomeTracking({
  * suis » : sa progression vaut zéro, donc chacun de ses épisodes s'afficherait en retard maximal.
  * Une saison entière de « 24 épisodes de retard » noierait les trois lignes qui comptent.
  *
- * Le cas « je prévois de la regarder et je veux savoir qu'elle sort » est réel, et il a son autre
- * traitement : `/calendar` demande `PLANNING` en plus (`includePlanned`), et ses cases disent
- * « prévu » au lieu d'un retard. Les notifications, elles, restent sur ces deux statuts.
+ * Le cas « je veux savoir qu'elle sort » vaut pourtant pour toute la bibliothèque, et il a son
+ * autre traitement : `/calendar` demande tous les statuts (`wholeLibrary`), et ses cases disent le
+ * statut — « Prévu », « En pause », « Abandonné » — au lieu d'un retard. Les notifications, elles,
+ * restent sur ces deux statuts.
  */
 export const AIRING_ENTRY_STATUSES = [
   "CURRENT",
@@ -538,25 +539,22 @@ export type AiringWatchlistItem = {
  */
 export async function getAiringWatchlist({
   includeAdult,
-  includePlanned = false,
+  wholeLibrary = false,
 }: {
   includeAdult: boolean;
   /**
-   * Ajouter les séries **prévues** — pour le planning seulement, qui sait les montrer sans retard.
-   * Une notification « épisode dispo » sur une série qu'on n'a pas commencée n'aurait pas de sens.
+   * **Toute la bibliothèque**, quel que soit le statut — pour le planning seulement, qui sait
+   * montrer une série sans retard. Une notification « épisode dispo » sur une série abandonnée
+   * n'aurait pas de sens.
    */
-  includePlanned?: boolean;
+  wholeLibrary?: boolean;
 }): Promise<AiringWatchlistItem[]> {
   const userId = await currentUserId();
 
   const rows = await prisma.entry.findMany({
     where: {
       userId,
-      status: {
-        in: includePlanned
-          ? [...AIRING_ENTRY_STATUSES, "PLANNING"]
-          : AIRING_ENTRY_STATUSES,
-      },
+      ...(wholeLibrary ? {} : { status: { in: AIRING_ENTRY_STATUSES } }),
       /*
         Le filtre 18+ est posé **dans la requête**, comme partout ailleurs
         (docs/recherche-filtres.md §2.5) : une ligne écartée à l'affichage a quand même traversé le
@@ -566,6 +564,19 @@ export async function getAiringWatchlist({
       media: {
         type: "ANIME",
         ...(includeAdult ? {} : { isAdult: false }),
+        /*
+          Toute la bibliothèque, c'est aussi des centaines de séries terminées depuis longtemps :
+          leurs ids iraient chez AniList pour rien, et allongeraient la clé de cache. Le miroir
+          sait lesquelles ne diffuseront plus. `null` est gardé : un statut inconnu n'exclut rien.
+        */
+        ...(wholeLibrary
+          ? {
+              OR: [
+                { status: null },
+                { status: { notIn: ["FINISHED", "CANCELLED"] } },
+              ],
+            }
+          : {}),
       },
     },
     select: {

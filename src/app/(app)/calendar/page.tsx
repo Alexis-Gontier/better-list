@@ -154,10 +154,11 @@ async function AiringWeekContent({
   const { week, scope } = await resolveWeek(searchParams);
 
   const { includeAdult, titleLanguage } = await getPreferences();
-  // Les séries prévues aussi : savoir qu'elles sortent est la moitié de les prévoir.
+  // Toute ma bibliothèque, pas seulement ce qui est en cours : prévu, en pause, abandonné — savoir
+  // qu'une série sort vaut quel que soit l'endroit où je l'ai rangée.
   const watching = await getAiringWatchlist({
     includeAdult,
-    includePlanned: true,
+    wholeLibrary: true,
   });
 
   // En « suivis » seulement : ne rien suivre n'est pas une semaine vide, c'est un écran sans objet.
@@ -253,11 +254,11 @@ function NothingFollowed() {
   return (
     <Empty>
       <EmptyHeader>
-        <EmptyTitle>Rien en cours de visionnage</EmptyTitle>
+        <EmptyTitle>Rien en diffusion dans votre bibliothèque</EmptyTitle>
         <EmptyDescription>
-          Le planning suit les séries marquées « en cours », « en relecture » ou
-          « prévu ». Reprenez-en une depuis votre bibliothèque, ou trouvez-en
-          une nouvelle dans le catalogue.
+          Le planning montre les séries de votre bibliothèque encore en
+          diffusion, quel que soit leur statut. Trouvez-en une dans le
+          catalogue, ou rouvrez votre bibliothèque.
         </EmptyDescription>
       </EmptyHeader>
 
