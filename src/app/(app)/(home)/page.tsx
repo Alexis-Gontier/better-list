@@ -12,6 +12,7 @@ import {
 import { HomeRail } from "@/app/(app)/(home)/_components/home-rail";
 import { SpotlightCarousel } from "@/app/(app)/(home)/_components/spotlight-carousel";
 import {
+  loadRecommendations,
   loadSeason,
   loadSeasonEntries,
   loadTracking,
@@ -29,6 +30,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { mediaTitle } from "@/features/media/lib/media-format";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
 import { serializeLibraryFilters } from "@/features/tracking/lib/library-params";
 
@@ -46,6 +48,7 @@ export const metadata: Metadata = {
  * 2. En cours, **ce qui vient de sortir en tête**.
  * 3. — un trait —
  * 4. Tendances, puis Cette saison.
+ * 5. Recommandé pour vous, tiré de ce que je regarde en ce moment.
  *
  * **Toutes les jaquettes sont la `MediaCard` du catalogue**, aux paliers de `CatalogueGrid` : une
  * œuvre a la même apparence et le même geste — pastille de statut, fenêtre d'édition au survol —
@@ -116,6 +119,11 @@ export default function HomePage() {
 
       <Suspense fallback={<RailSkeleton />}>
         <SeasonRail />
+      </Suspense>
+
+      {/* `details` : chaque carte nomme la série en cours qui l'a amenée. */}
+      <Suspense fallback={<RailSkeleton details />}>
+        <RecommendationsRail />
       </Suspense>
     </div>
   );
@@ -286,6 +294,35 @@ async function SeasonRail() {
   );
 }
 
+/**
+ * « Recommandé pour vous » — **en bas de page** (décision d'Alexis du 28 septembre 2026), après
+ * les deux rangées du catalogue plutôt qu'à la place de « Cette saison », comme docs/STATE.md
+ * l'envisageait.
+ *
+ * Chaque carte dit **d'où elle vient** : une recommandation qu'on ne sait pas expliquer est une
+ * jaquette de plus parmi quarante. La ligne nomme la série en cours qui a le plus pesé pour elle.
+ *
+ * Pas de lien sur le titre : aucun écran ne montre cette liste en entier.
+ */
+async function RecommendationsRail() {
+  const { recommendations, titleLanguage } = await loadRecommendations();
+  if (recommendations.length === 0) return null;
+
+  return (
+    <HomeRail title="Recommandé pour vous">
+      {recommendations.map(({ media, because }) => (
+        <CatalogueMediaCard
+          details={[`Comme ${mediaTitle(because.title, titleLanguage)}`]}
+          entry={null}
+          key={media.id}
+          media={media}
+          titleLanguage={titleLanguage}
+        />
+      ))}
+    </HomeRail>
+  );
+}
+
 // --- Squelettes --------------------------------------------------------------------
 
 const RAIL_SKELETON_KEYS = Array.from({ length: 7 }, (_, i) => `rail-${i}`);
@@ -301,13 +338,13 @@ const DOT_SKELETON_KEYS = Array.from(
  *
  * Le repli s'arrêtait à la diapositive, alors que `SpotlightCarousel` empile les deux avec un
  * `gap-4` : vingt-deux pixels de moins que ce qui arrive, et tout l'accueil descendait d'autant au
- * remplacement. La largeur, elle, tombe juste sans rien faire — la diapositive reprend exactement
- * la boîte de contenu du `main`, que ce squelette occupe déjà.
+ * remplacement. La largeur suit celle de la diapositive : toute la boîte de contenu sous `lg`, ses
+ * trois quarts, centrés, au-dessus.
  */
 function SpotlightSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <Skeleton className="h-72 w-full rounded-xl sm:h-96" />
+      <Skeleton className="mx-auto h-72 w-full rounded-xl sm:h-96 lg:w-3/4" />
       <div className="flex items-center justify-center">
         <div className="flex items-center gap-1.5">
           <Skeleton className="h-1.5 w-6 rounded-full" />

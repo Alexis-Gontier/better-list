@@ -2,8 +2,12 @@ import "server-only";
 
 import { cache } from "react";
 
+import { rankRecommendations } from "@/app/(app)/(home)/_lib/home-recommendations";
 import { currentSeason } from "@/features/media/lib/media-season";
-import { searchMedia } from "@/features/media/server/media.queries";
+import {
+  getMediaRecommendations,
+  searchMedia,
+} from "@/features/media/server/media.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import {
   type AiringLag,
@@ -14,6 +18,7 @@ import {
   getLibraryEntriesFor,
   type LibraryItem,
 } from "@/features/tracking/server/library.queries";
+import { tryAniList } from "@/lib/http/anilist";
 
 /**
  * Les lectures de l'accueil, **une par zone suspendue**.
@@ -155,4 +160,65 @@ export const loadSeasonEntries = cache(async () => {
   const { seasonal } = await loadSeason();
 
   return getLibraryEntriesFor(seasonal.map((media) => media.id));
+});
+
+// --- Recommandé pour vous ----------------------------------------------------------
+
+/**
+ * Combien de séries en cours servent de point de départ.
+ *
+ * Les premières d'« En cours », donc celles qui viennent d'avoir un épisode puis les plus récemment
+ * touchées : ce que je regarde **en ce moment** (décision d'Alexis du 28 septembre 2026). Six
+ * lectures AniList au pire, et le plus souvent aucune — voir `loadRecommendations`.
+ */
+const RECOMMENDATION_SEEDS = 6;
+
+/**
+ * Des œuvres proches de ce que je regarde en ce moment, **que je ne suis pas encore**.
+ *
+ * AniList n'a pas de « recommandé pour vous » lisible sans le compte AniList du membre ; il a en
+ * revanche, pour chaque œuvre, les recommandations votées par sa communauté. On les lit pour les
+ * séries en cours, et `rankRecommendations` en fait une seule rangée.
+ *
+ * **Le coût est celui de l'onglet Œuvres liées de la fiche**, et il est partagé :
+ * `getMediaRecommendations` est mémorisée des jours, clé sur l'id de l'œuvre seul. Une série que
+ * quelqu'un a ouverte sur sa fiche, ou que deux membres regardent, ne coûte donc rien de plus.
+ *
+ * **Une panne ne vide que ce qu'elle touche** : chaque série passe par son propre `tryAniList`, si
+ * bien qu'une lecture perdue retire ses recommandations et laisse celles des autres. Toutes
+ * perdues, la rangée est vide et l'écran la retire.
+ *
+ * Tout ce qui est déjà dans la bibliothèque est retiré, quel qu'en soit le statut : une œuvre
+ * « prévue » ou abandonnée n'est pas à découvrir. Une seule lecture en base pour le savoir.
+ */
+export const loadRecommendations = cache(async () => {
+  const [{ includeAdult }, { active, titleLanguage }] = await Promise.all([
+    getPreferences(),
+    loadTracking(),
+  ]);
+  const seeds = active.slice(0, RECOMMENDATION_SEEDS);
+
+  const lists = await Promise.all(
+    seeds.map(async (item) => ({
+      seed: item.media,
+      recommendations:
+        (await tryAniList(() =>
+          getMediaRecommendations(item.media.id, { includeAdult }),
+        )) ?? [],
+    })),
+  );
+
+  const candidates = lists.flatMap((list) =>
+    list.recommendations.map((media) => media.id),
+  );
+  const tracked = await getLibraryEntriesFor([...new Set(candidates)]);
+
+  const recommendations = rankRecommendations(lists, {
+    exclude: new Set([
+      ...tracked.keys(),
+      ...seeds.map((item) => item.media.id),
+    ]),
+  }).slice(0, RAIL_COUNT);
+
+  return { titleLanguage, recommendations };
 });

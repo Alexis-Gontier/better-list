@@ -74,7 +74,9 @@ function spotlightTracking(entry: EntryState, episodes: number | null): string {
 /**
  * Une tendance à la une : l'image en fond, **le texte centré en bas**.
  *
- * **La hauteur est fixe**, ce qui empêche le carrousel de sauter d'une diapositive à l'autre.
+ * **La hauteur est fixe**, ce qui empêche le carrousel de sauter d'une diapositive à l'autre. **Le
+ * texte s'éteint hors du centre** (`data-current` posé par `SpotlightCarousel`) : une voisine ne
+ * montre que son image.
  *
  * **Une œuvre que je suis parle de moi, pas d'elle** (décision d'Alexis du 14 septembre 2026) : sa
  * pastille et son geste prennent la place du synopsis — dont je n'ai plus besoin, je la regarde
@@ -119,7 +121,7 @@ export function FeaturedSpotlight({
       ) : null}
       <div className="absolute inset-0 -z-10 bg-linear-to-t from-background via-background/40 to-transparent" />
 
-      <div className="flex h-full flex-col items-center justify-end gap-2 px-6 pb-6 text-center sm:pb-8">
+      <div className="flex h-full flex-col items-center justify-end gap-2 px-6 pb-6 text-center transition-opacity duration-500 group-data-[current=false]/spotlight:opacity-0 sm:pb-8 motion-reduce:transition-none">
         <h3 className="line-clamp-2 max-w-2xl text-balance font-bold font-heading text-2xl sm:text-3xl">
           {mediaTitle(media.title, titleLanguage)}
         </h3>

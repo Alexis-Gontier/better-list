@@ -27,8 +27,8 @@ const SLIDE_DURATION = 45;
  * Le carrousel de tête, **centré** : la diapositive active au milieu, ses voisines qui dépassent de
  * part et d'autre, atténuées.
  *
- * **La diapositive active reste dans la largeur du contenu ; ses voisines débordent** jusqu'aux
- * bords de la fenêtre.
+ * **Tout reste dans la largeur du contenu** : la diapositive active en occupe les trois quarts,
+ * ses voisines se partagent le reste.
  *
  * Construit sur le motif de la doc shadcn — `setApi` pour suivre la diapositive courante, le
  * plugin `Autoplay` d'Embla pour le défilement. Il se met en pause au survol et ne défile pas du
@@ -70,7 +70,7 @@ export function SpotlightCarousel({ children }: { children: React.ReactNode }) {
   return (
     <Carousel
       aria-label="À la une"
-      className="relative left-1/2 flex w-screen -translate-x-1/2 flex-col gap-4"
+      className="flex flex-col gap-4"
       opts={{
         align: "center",
         loop: slides.length > 2,
@@ -80,25 +80,29 @@ export function SpotlightCarousel({ children }: { children: React.ReactNode }) {
       setApi={setApi}
     >
       {/*
-        **La diapositive fait la largeur du contenu, le carrousel celle de la fenêtre.**
+        **Le carrousel reste dans la boîte de contenu ; la diapositive en prend les trois quarts.**
 
-        Le carrousel sort du conteneur central (`w-screen`) pour que les voisines aillent jusqu'aux
-        bords ; la diapositive, elle, reprend exactement la boîte de contenu du `main` de
-        `(app)/layout.tsx` — `max-w-6xl` moins sa marge `px-6`, soit 69rem, ou la fenêtre moins
-        cette marge en dessous. Si ce layout change de largeur, ces deux valeurs le suivent.
+        Centrée, elle laisse un huitième de la largeur à chaque voisine, rognées par le conteneur
+        plutôt que débordant jusqu'aux bords de la fenêtre. Sous `lg`, la diapositive reprend toute
+        la largeur : les trois quarts d'une tablette donnent une diapositive presque carrée, où une
+        bannière AniList — cinq fois plus large que haute — ne montre plus que son centre.
 
-        L'écart est porté par un `px-2` **symétrique** plutôt que le `pl-4` par défaut : centrée, une
-        diapositive à marge gauche seule serait décalée de huit pixels vers la droite du contenu.
-        D'où le `+ 1rem` sur la base, et le `ml-0` qui annule le `-ml-4` du conteneur.
+        `data-current` et le groupe `spotlight` laissent la diapositive éteindre son texte quand elle
+        n'est pas au centre : sans quoi un bout de titre dépasse dans la marge d'une voisine.
+
+        L'écart est porté par un `px-1` **symétrique** plutôt que le `pl-4` par défaut : centrée, une
+        diapositive à marge gauche seule serait décalée vers la droite. D'où le `ml-0`, qui annule
+        le `-ml-4` du conteneur.
       */}
       <CarouselContent className="ml-0">
         {slides.map((slide, index) => (
           <CarouselItem
             aria-label={`${index + 1} sur ${slides.length}`}
             className={cn(
-              "basis-[calc(100vw-1rem)] px-2 transition-opacity duration-700 ease-out sm:basis-[calc(min(100vw-3rem,69rem)+1rem)] motion-reduce:transition-none",
+              "group/spotlight basis-full px-1 transition-opacity duration-700 ease-out lg:basis-3/4 motion-reduce:transition-none",
               index !== current && "opacity-40",
             )}
+            data-current={index === current}
             // biome-ignore lint/suspicious/noArrayIndexKey: l'ordre des diapositives est figé au rendu serveur.
             key={index}
           >

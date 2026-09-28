@@ -57,9 +57,10 @@ Relevé le **26 septembre 2026**.
 > cul-de-sac : aucune case à cliquer au-delà du tome 1.
 >
 > **L'accueil ne montre que ce qui vient de quelque part.** Trois zones, chacune avec sa frontière :
-> un carrousel de tendances en pleine largeur — qui dit « Reprendre à l'épisode 12 » sur une œuvre
-> déjà suivie plutôt que son synopsis —, « En cours » où **les séries dont un épisode est sorti
-> passent en tête avec leur retard**, puis les tendances et la saison. **Un trait sépare les deux
+> un carrousel de tendances centré (la diapositive active sur les trois quarts du contenu depuis le
+> 28 septembre) — qui dit « Reprendre à l'épisode 12 » sur une œuvre déjà suivie plutôt que son
+> synopsis —, « En cours » où **les séries dont un épisode est sorti passent en tête avec leur
+> retard**, puis les tendances, la saison et, depuis le 28 septembre, « Recommandé pour vous ». **Un trait sépare les deux
 > moitiés** — mon suivi au-dessus, la découverte en dessous : c'est la seule frontière de l'écran
 > que l'ordre seul ne rendait pas lisible, les rangées se ressemblant toutes.
 >
@@ -190,7 +191,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 
 | Route | Rôle | Modèles | État |
 | --- | --- | --- | --- |
-| `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel pleine largeur, « En cours » mené par les épisodes sortis, tendances, saison. « À reprendre » et « Mes listes » retirées le 17 septembre |
+| `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel centré, « En cours » mené par les épisodes sortis, tendances, saison, puis « Recommandé pour vous » (28 septembre). « À reprendre » et « Mes listes » retirées le 17 septembre |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
 | `/character/[id]` (`character`) | Un personnage : faits, biographie, apparitions | AniList seul | **livré** (26 septembre) — en-tête, faits, biographie, grille paginée avec rôle et doubleur |
@@ -1011,10 +1012,15 @@ vocabulaire de tous les autres.
    `/search` et `/library`. Deux passes de plus que prévu, et elles ont toutes deux retiré quelque
    chose : la rangée « Du moment » et ses quatre onglets (un second catalogue au milieu de l'accueil,
    que `/search` fait mieux), puis la rangée « Nouveaux épisodes », fusionnée dans « En cours » —
-   elle montrait les mêmes jaquettes que celle du dessous, à trois près. **Ce qui reste sur cet
-   écran** : la recommandation personnelle à la place de « Cette saison » (`getMediaRecommendations`
-   existe déjà, une requête, mémorisée en jours), et le choix ouvert sur `BROWSE_CATALOGUE_QUERY`
-   ci-dessus.
+   elle montrait les mêmes jaquettes que celle du dessous, à trois près. **La recommandation
+   personnelle est arrivée le 28 septembre**, mais **en plus** de « Cette saison », en bas de page
+   (décision d'Alexis) : « Recommandé pour vous » part des six premières séries d'« En cours »,
+   additionne leurs recommandations AniList (`getMediaRecommendations`, mémorisée des jours et
+   partagée avec la fiche), retire tout ce qui est déjà en bibliothèque, et chaque carte nomme la
+   série qui l'a amenée. Classement pur et testé dans `(home)/_lib/home-recommendations.ts`.
+   **Limite connue** : AniList recommande aussi des suites — « Code Geass R2 » à côté de
+   « Code Geass » —, que `MediaCompact` ne permet pas de reconnaître. **Ce qui reste sur cet
+   écran** : le choix ouvert sur `BROWSE_CATALOGUE_QUERY` ci-dessus.
 
 Hors de cet ordre : **la palette de recherche est revenue le 13 septembre 2026**, repartie d'une
 page blanche. Un bouton discret dans l'en-tête (`Ctrl K`, loupe seule sous `md`), cinq résultats
