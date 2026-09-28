@@ -1403,3 +1403,14 @@ que l'accident du 19 août — les fins de ligne ne devraient jamais passer par 
 
 Reste ouvert : ces cinq chemins de repli ne sont vérifiés par aucun test, et ils ont ceci de
 particulier qu'on ne les voit jamais tourner. C'est le prochain pas dans STATE.md.
+
+## 28 septembre 2026 — un squelette qui oublie ses voisines
+
+Le repli de la une ne dessinait que la diapositive centrale. Le carrousel, lui, montre dès `lg` un
+huitième de chaque voisine de part et d'autre : à l'arrivée, deux blocs surgissaient dans des marges
+vides. Un squelette doit copier la **géométrie** de ce qu'il remplace, pas seulement sa pièce
+principale — la même leçon que la rangée de points, retenue à moitié.
+
+Et le planning montre désormais les séries **prévues**, avec « prévu » à la place du retard. La
+décision de les écarter tenait au retard maximal qu'elles auraient affiché ; il suffisait de ne
+pas le calculer pour elles. Les notifications, elles, les ignorent toujours.

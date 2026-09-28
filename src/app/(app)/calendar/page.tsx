@@ -154,7 +154,11 @@ async function AiringWeekContent({
   const { week, scope } = await resolveWeek(searchParams);
 
   const { includeAdult, titleLanguage } = await getPreferences();
-  const watching = await getAiringWatchlist({ includeAdult });
+  // Les séries prévues aussi : savoir qu'elles sortent est la moitié de les prévoir.
+  const watching = await getAiringWatchlist({
+    includeAdult,
+    includePlanned: true,
+  });
 
   // En « suivis » seulement : ne rien suivre n'est pas une semaine vide, c'est un écran sans objet.
   // En « tout », la grille a tout à montrer même sans une seule ligne `Entry`.
@@ -251,9 +255,9 @@ function NothingFollowed() {
       <EmptyHeader>
         <EmptyTitle>Rien en cours de visionnage</EmptyTitle>
         <EmptyDescription>
-          Le planning suit les séries marquées « en cours » ou « en relecture ».
-          Reprenez-en une depuis votre bibliothèque, ou trouvez-en une nouvelle
-          dans le catalogue.
+          Le planning suit les séries marquées « en cours », « en relecture » ou
+          « prévu ». Reprenez-en une depuis votre bibliothèque, ou trouvez-en
+          une nouvelle dans le catalogue.
         </EmptyDescription>
       </EmptyHeader>
 

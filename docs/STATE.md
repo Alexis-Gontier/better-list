@@ -989,10 +989,10 @@ vocabulaire de tous les autres.
    a enfin son écran, cinq mois après avoir été écrite. **Ce qui reste sur cet écran**, et que le
    relevé a désigné dans cet ordre : (a) un réglage de **portée** — Aujourd'hui / Semaine / Mois —,
    l'axe que trois produits sur douze offrent contre un seul pour la disposition ; (b) une densité
-   **compacte** sans jaquette, qui ferait tenir la semaine entière dans un écran ; (c) la question
-   des séries **planifiées**, aujourd'hui écartées du planning parce que leur progression nulle les
-   ferait toutes afficher en retard maximal — le besoin « je veux savoir qu'elle sort » est réel
-   mais demande autre chose que le retard.
+   **compacte** sans jaquette, qui ferait tenir la semaine entière dans un écran. Les séries
+   **planifiées** y sont depuis le 28 septembre (demande d'Alexis) : « Ce que je suis » les inclut,
+   et leurs cases disent « prévu » au lieu d'un retard, que leur progression nulle rendrait maximal.
+   Les notifications restent sur `CURRENT` et `REPEATING`.
 4. `/lists`, `/lists/[id]` et `/l/[token]` — **faits** (6 septembre). `@dnd-kit` est sorti du gel avec le mode
    réorganisation, et `rankAfterMove` fait enfin le calcul pour lequel il avait été isolé et testé.
    La fenêtre « Ajouter à une liste » de la fiche et le partage par jeton sont livrés avec : **le

@@ -340,11 +340,26 @@ const DOT_SKELETON_KEYS = Array.from(
  * `gap-4` : vingt-deux pixels de moins que ce qui arrive, et tout l'accueil descendait d'autant au
  * remplacement. La largeur suit celle de la diapositive : toute la boîte de contenu sous `lg`, ses
  * trois quarts, centrés, au-dessus.
+ *
+ * **Avec ses deux voisines dès `lg`**, rognées et atténuées comme dans `SpotlightCarousel` : sans
+ * elles, le repli laissait deux marges vides de part et d'autre, que le carrousel remplissait d'un
+ * coup en arrivant. La géométrie est la même — trois éléments aux trois quarts, `px-1`, et une
+ * marge négative de cinq huitièmes sur le premier pour que le deuxième tombe au centre.
  */
 function SpotlightSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <Skeleton className="mx-auto h-72 w-full rounded-xl sm:h-96 lg:w-3/4" />
+      <div className="flex overflow-hidden">
+        <div className="-ml-[62.5%] hidden shrink-0 basis-3/4 px-1 opacity-40 lg:block">
+          <Skeleton className="h-72 rounded-xl sm:h-96" />
+        </div>
+        <div className="shrink-0 basis-full px-1 lg:basis-3/4">
+          <Skeleton className="h-72 rounded-xl sm:h-96" />
+        </div>
+        <div className="hidden shrink-0 basis-3/4 px-1 opacity-40 lg:block">
+          <Skeleton className="h-72 rounded-xl sm:h-96" />
+        </div>
+      </div>
       <div className="flex items-center justify-center">
         <div className="flex items-center gap-1.5">
           <Skeleton className="h-1.5 w-6 rounded-full" />
