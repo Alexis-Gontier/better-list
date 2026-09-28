@@ -27,6 +27,23 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 28 septembre 2026 — un carrousel centré, et des recommandations pour moi
+
+**Le carrousel a été recopié sur mesures, pas à l'œil.** Le modèle (un site tiers désigné par
+Alexis) a été relevé au navigateur : conteneur à la largeur du contenu, diapositive à 75 %, huit
+pixels d'écart, pleine largeur sur mobile. Deux défauts sont apparus en mesurant le nôtre, et
+aucun ne se voyait sur une capture prise au hasard : le titre d'une voisine dépassait dans la marge
+(672 px de texte sur une diapositive de 820, pour 138 px de voisine visibles), et sous `lg` les
+trois quarts donnaient une diapositive presque carrée, où une bannière AniList — cinq fois plus
+large que haute — ne montre que son centre. Le modèle échappe au premier par un bloc de texte
+étroit ; on a préféré éteindre le texte hors du centre, qui tient à toutes les largeurs.
+
+**AniList n'a pas de « recommandé pour vous » public**, seulement les recommandations votées par
+œuvre. La rangée les additionne donc sur mes six séries en cours, pondérées par leur rang. Mesuré
+au premier affichage : vingt cartes, aucune déjà en bibliothèque, chacune avec sa raison. Ce qui
+reste imparfait se voit dans la même mesure — des suites (« Code Geass R2 », « 86 Part 2 ») à côté
+de leur première saison.
+
 ## 26 septembre 2026 — la cloche sort de l'en-tête, jusque dans Discord
 
 **Un webhook par compte, réglé dans `/settings`, et toujours pas de table de notifications.** La
