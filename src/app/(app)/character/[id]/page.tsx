@@ -16,8 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { routes } from "@/config/routes";
 import { formatCharacterRole } from "@/features/media/lib/media-format";
 import { PeopleMediaGrid } from "@/features/people/components/people-media-grid";
-import { PersonBio } from "@/features/people/components/person-bio";
-import { PersonFacts } from "@/features/people/components/person-facts";
 import { PersonHeader } from "@/features/people/components/person-header";
 import { PersonPageSkeleton } from "@/features/people/components/person-page-skeleton";
 import {
@@ -119,30 +117,29 @@ async function CharacterContent({
 
       <PersonHeader
         alternatives={character.name.alternative}
+        description={character.description}
+        facts={[
+          {
+            label: "Anniversaire",
+            value: formatFuzzyDate(character.dateOfBirth),
+          },
+          { label: "Âge", value: formatAge(character.age) },
+          { label: "Genre", value: formatGender(character.gender) },
+          { label: "Groupe sanguin", value: character.bloodType },
+        ]}
         favourites={character.favourites}
         image={character.image?.large ?? null}
         name={character.name.full}
         native={character.name.native}
         spoilerAlternatives={character.name.alternativeSpoiler}
-      >
-        <PersonFacts
-          facts={[
-            {
-              label: "Anniversaire",
-              value: formatFuzzyDate(character.dateOfBirth),
-            },
-            { label: "Âge", value: formatAge(character.age) },
-            { label: "Genre", value: formatGender(character.gender) },
-            { label: "Groupe sanguin", value: character.bloodType },
-          ]}
-        />
-        <PersonBio text={character.description} />
-      </PersonHeader>
+      />
 
       <Separator />
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-semibold text-lg">Apparitions</h2>
+        <h2 className="font-heading font-semibold text-xl tracking-tight">
+          Apparitions
+        </h2>
 
         {appearances.length === 0 ? (
           <Empty>

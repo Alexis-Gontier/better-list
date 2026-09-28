@@ -6,6 +6,7 @@ import * as z from "zod";
 
 import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
+import { Badge } from "@/components/ui/badge";
 import {
   Empty,
   EmptyDescription,
@@ -17,8 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { routes } from "@/config/routes";
 import { formatStaffRole } from "@/features/media/lib/media-format";
 import { PeopleMediaGrid } from "@/features/people/components/people-media-grid";
-import { PersonBio } from "@/features/people/components/person-bio";
-import { PersonFacts } from "@/features/people/components/person-facts";
 import { PersonHeader } from "@/features/people/components/person-header";
 import { PersonPageSkeleton } from "@/features/people/components/person-page-skeleton";
 import {
@@ -128,28 +127,25 @@ async function StaffContent({
 
       <PersonHeader
         alternatives={staff.name.alternative}
+        description={staff.description}
+        facts={[
+          { label: "Naissance", value: formatFuzzyDate(staff.dateOfBirth) },
+          { label: "Décès", value: died },
+          // AniList calcule l'âge à aujourd'hui : à côté d'un décès, ce serait faux.
+          { label: "Âge", value: died ? null : formatAge(staff.age) },
+          { label: "Genre", value: formatGender(staff.gender) },
+          { label: "Activité", value: formatYearsActive(staff.yearsActive) },
+          { label: "Ville natale", value: staff.homeTown },
+          {
+            label: "Métiers",
+            value: formatOccupations(staff.primaryOccupations),
+          },
+        ]}
         favourites={staff.favourites}
         image={staff.image?.large ?? null}
         name={staff.name.full}
         native={staff.name.native}
-      >
-        <PersonFacts
-          facts={[
-            { label: "Naissance", value: formatFuzzyDate(staff.dateOfBirth) },
-            { label: "Décès", value: died },
-            // AniList calcule l'âge à aujourd'hui : à côté d'un décès, ce serait faux.
-            { label: "Âge", value: died ? null : formatAge(staff.age) },
-            { label: "Genre", value: formatGender(staff.gender) },
-            { label: "Activité", value: formatYearsActive(staff.yearsActive) },
-            { label: "Ville natale", value: staff.homeTown },
-            {
-              label: "Métiers",
-              value: formatOccupations(staff.primaryOccupations),
-            },
-          ]}
-        />
-        <PersonBio text={staff.description} />
-      </PersonHeader>
+      />
 
       {active ? (
         <>
@@ -293,7 +289,23 @@ function StaffRoles({
     <>
       {groups.map((group, index) => (
         <section className="flex flex-col gap-4" key={group.year ?? "a-venir"}>
-          <h2 className="font-semibold text-lg">{group.year ?? "À venir"}</h2>
+          {/*
+            L'année, puis un filet jusqu'au bord : sur une carrière de quarante ans, c'est lui qui
+            fait lire la page comme une frise plutôt que comme une suite de titres isolés. Le compte
+            dit d'un coup d'œil les années chargées.
+          */}
+          <div className="flex items-center gap-3">
+            <h2 className="font-heading font-semibold text-xl tabular-nums tracking-tight">
+              {group.year ?? "À venir"}
+            </h2>
+            <Badge variant="secondary">
+              {group.items.length}
+              <span className="sr-only">
+                {group.items.length > 1 ? " œuvres" : " œuvre"}
+              </span>
+            </Badge>
+            <Separator className="flex-1" />
+          </div>
           <PeopleMediaGrid
             items={group.items}
             priority={index === 0}
