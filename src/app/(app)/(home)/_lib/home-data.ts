@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { rankRecommendations } from "@/app/(app)/(home)/_lib/home-recommendations";
+import { drawRecommendations } from "@/app/(app)/(home)/_lib/home-recommendations";
 import { currentSeason } from "@/features/media/lib/media-season";
 import {
   getMediaRecommendations,
@@ -178,7 +178,9 @@ const RECOMMENDATION_SEEDS = 6;
  *
  * AniList n'a pas de « recommandé pour vous » lisible sans le compte AniList du membre ; il a en
  * revanche, pour chaque œuvre, les recommandations votées par sa communauté. On les lit pour les
- * séries en cours, et `rankRecommendations` en fait une seule rangée.
+ * séries en cours, et `drawRecommendations` en tire une seule rangée — au hasard pondéré, une
+ * place par série. Le tirage change donc à chaque visite ; `cache` le garde le même le temps d'un
+ * rendu.
  *
  * **Le coût est celui de l'onglet Œuvres liées de la fiche**, et il est partagé :
  * `getMediaRecommendations` est mémorisée des jours, clé sur l'id de l'œuvre seul. Une série que
@@ -213,12 +215,13 @@ export const loadRecommendations = cache(async () => {
   );
   const tracked = await getLibraryEntriesFor([...new Set(candidates)]);
 
-  const recommendations = rankRecommendations(lists, {
+  const recommendations = drawRecommendations(lists, {
     exclude: new Set([
       ...tracked.keys(),
       ...seeds.map((item) => item.media.id),
     ]),
-  }).slice(0, RAIL_COUNT);
+    count: RAIL_COUNT,
+  });
 
   return { titleLanguage, recommendations };
 });
