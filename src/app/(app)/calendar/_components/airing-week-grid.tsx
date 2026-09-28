@@ -165,13 +165,19 @@ function AiringCard({
   const { media, entry } = cell;
   const title = mediaTitle(media.title, titleLanguage);
 
-  const lag = entry
-    ? episodeLag({
-        episode: cell.episode,
-        progress: entry.progress,
-        aired: hasAired(cell.airingAt, now),
-      })
-    : null;
+  /*
+    Une série **prévue** n'a pas de retard : sa progression vaut zéro, et chaque épisode s'y lirait
+    comme un reproche. Elle dit « prévu » à la place — ce qui est la raison de la montrer ici.
+  */
+  const planned = entry?.status === "PLANNING";
+  const lag =
+    entry && !planned
+      ? episodeLag({
+          episode: cell.episode,
+          progress: entry.progress,
+          aired: hasAired(cell.airingAt, now),
+        })
+      : null;
 
   return (
     <div className="flex flex-col gap-1">
@@ -253,7 +259,9 @@ function AiringCard({
         au survol et au lecteur d'écran : la couleur et le signe ne portent jamais l'information
         seuls. Sur une série non suivie, rien du tout plutôt qu'un zéro qui n'a pas de sens.
       */}
-      {entry && lag !== null ? (
+      {planned ? (
+        <p className="text-[11px] text-status-planning">prévu</p>
+      ) : entry && lag !== null ? (
         <p
           className={cn("text-[11px] tabular-nums", lagTone(lag))}
           title={formatLag(lag)}

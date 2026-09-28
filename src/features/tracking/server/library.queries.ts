@@ -500,8 +500,9 @@ export async function getHomeTracking({
  * suis » : sa progression vaut zéro, donc chacun de ses épisodes s'afficherait en retard maximal.
  * Une saison entière de « 24 épisodes de retard » noierait les trois lignes qui comptent.
  *
- * Le cas « je prévois de la regarder et je veux savoir qu'elle sort » est réel, mais il demande un
- * autre traitement que le retard — il est noté dans docs/STATE.md plutôt que tranché ici.
+ * Le cas « je prévois de la regarder et je veux savoir qu'elle sort » est réel, et il a son autre
+ * traitement : `/calendar` demande `PLANNING` en plus (`includePlanned`), et ses cases disent
+ * « prévu » au lieu d'un retard. Les notifications, elles, restent sur ces deux statuts.
  */
 export const AIRING_ENTRY_STATUSES = [
   "CURRENT",
@@ -537,15 +538,25 @@ export type AiringWatchlistItem = {
  */
 export async function getAiringWatchlist({
   includeAdult,
+  includePlanned = false,
 }: {
   includeAdult: boolean;
+  /**
+   * Ajouter les séries **prévues** — pour le planning seulement, qui sait les montrer sans retard.
+   * Une notification « épisode dispo » sur une série qu'on n'a pas commencée n'aurait pas de sens.
+   */
+  includePlanned?: boolean;
 }): Promise<AiringWatchlistItem[]> {
   const userId = await currentUserId();
 
   const rows = await prisma.entry.findMany({
     where: {
       userId,
-      status: { in: AIRING_ENTRY_STATUSES },
+      status: {
+        in: includePlanned
+          ? [...AIRING_ENTRY_STATUSES, "PLANNING"]
+          : AIRING_ENTRY_STATUSES,
+      },
       /*
         Le filtre 18+ est posé **dans la requête**, comme partout ailleurs
         (docs/recherche-filtres.md §2.5) : une ligne écartée à l'affichage a quand même traversé le
