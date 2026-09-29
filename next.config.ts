@@ -13,9 +13,15 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
 
   images: {
+    // Pas d'optimiseur : sur Vercel Hobby, chaque couple (image, largeur) est une transformation
+    // facturée, et le catalogue en épuise le quota — au-delà, `/_next/image` répond 402 et plus
+    // aucune image ne s'affiche. Le CDN d'AniList sert déjà des tailles prêtes (`medium`, `large`,
+    // `extraLarge`) : le navigateur les charge directement.
+    unoptimized: true,
     // Jaquettes, bannières et portraits viennent tous du CDN d'AniList. Sans cette autorisation
     // explicite, `next/image` refuse l'URL — Next n'optimise que des hôtes déclarés, pour qu'on ne
-    // puisse pas transformer l'optimiseur en proxy d'images ouvert.
+    // puisse pas transformer l'optimiseur en proxy d'images ouvert. Sans effet tant que
+    // `unoptimized` tient, mais prêt si l'optimiseur revient.
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co", pathname: "/file/**" },
       // Vignettes de bandes-annonces. AniList ne référence que ces deux plateformes dans
