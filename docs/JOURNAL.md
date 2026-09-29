@@ -1440,3 +1440,12 @@ Même soir : la pastille de suivi arrive sur « Œuvres liées » et « À voir 
 la portait vivait dans le `_components/` de l'accueil, et la grille des pages de personnes en
 tenait une copie ; la fiche étant la deuxième route à la vouloir, `CatalogueMediaCard` est montée
 dans `features/tracking/components/`, et la copie a disparu avec.
+
+## 29 septembre 2026 — les images coupées en production
+
+Sur Vercel, toutes les images de la fiche répondaient `402 Payment Required`, alors qu'en local
+tout s'affichait. Ce n'était pas le code : `/_next/image` compte chaque couple (image, largeur)
+comme une transformation, et le quota du plan Hobby était épuisé — un seul casting, une grille de
+recommandations, et le catalogue en demande des centaines de distinctes. `images.unoptimized`
+coupe l'optimiseur : le navigateur charge directement les tailles que le CDN d'AniList sert déjà.
+On perd le WebP et le redimensionnement au pixel ; pour quatre comptes, c'est sans importance.
