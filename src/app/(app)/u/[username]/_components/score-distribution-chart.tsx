@@ -59,7 +59,7 @@ export function ScoreDistributionChart({ data }: { data: ScoreBar[] }) {
   }));
 
   return (
-    <ChartContainer className="h-72 w-full" config={CHART_CONFIG}>
+    <ChartContainer className="h-56 w-full" config={CHART_CONFIG}>
       <BarChart accessibilityLayer data={rows} margin={{ top: 4 }}>
         <XAxis
           axisLine={false}
@@ -90,7 +90,7 @@ export function ScoreDistributionChart({ data }: { data: ScoreBar[] }) {
             <Cell
               fill={
                 bar.stars === peak?.stars
-                  ? "var(--chart-1)"
+                  ? "var(--foreground)"
                   : "color-mix(in oklch, var(--muted-foreground) 45%, transparent)"
               }
               key={bar.stars}

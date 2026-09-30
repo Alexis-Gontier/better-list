@@ -18,6 +18,7 @@ import {
   loadProfileFilters,
   serializeProfileFilters,
 } from "@/app/(app)/u/[username]/_lib/profile-params";
+import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
 import { CataloguePagination } from "@/components/shared/catalogue-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -31,7 +32,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import { isEmptyFavorites } from "@/features/favorites/lib/favorites-groups";
-import { getProfileFavorites } from "@/features/favorites/server/favorites.queries";
+import {
+  getLatestFavoriteCover,
+  getProfileFavorites,
+} from "@/features/favorites/server/favorites.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import {
   getProfileActivity,
@@ -111,39 +115,51 @@ export default function ProfilePage({
 }: PageProps<"/u/[username]">) {
   return (
     /*
-      **Un seul écart pour toute la colonne, et c'est un correctif.** La page mélangeait deux
-      rythmes : 32 px entre les blocs suspendus, 16 px entre les cartes d'un même bloc — mesuré à
-      l'écran le 12 septembre 2026, « Activité → Répartition : 32, Répartition → Notes : 16,
-      Genres → Historique : 32 ». Rien ne justifiait cette hiérarchie : les cinq cartes sont de
-      même rang, et deux d'entre elles se trouvaient simplement partager une frontière de
-      suspension. Un espacement qui suit le découpage technique plutôt que le contenu se voit.
+      **Deux colonnes dès `lg`, refaites le 30 septembre 2026** (demande d'Alexis). La page était une
+      seule colonne de six cartes de même poids, haute de 4 300 px : rien n'y hiérarchisait rien.
+      Elle reprend la coupe du profil AniList — **à gauche ce qui dit le goût** (favoris, puis la
+      bibliothèque en coupe), **à droite ce qui s'est passé** (le calendrier, puis le journal). Le
+      calendrier et le journal restent l'un au-dessus de l'autre : c'est la décision du 12
+      septembre, la même donnée à deux échelles.
+
+      Sur téléphone les colonnes s'empilent dans l'ordre du balisage : identité, favoris,
+      statistiques, puis activité et journal — le plus long en dernier.
+
+      **Un seul écart, 16 px, partout** : entre les colonnes comme entre les cartes. C'est le
+      correctif du 12 septembre, qui avait mesuré deux rythmes mêlés sans raison.
     */
     <div className="flex flex-col gap-4">
       <Suspense fallback={<HeaderSkeleton />}>
         <ProfileIdentityBlock params={params} />
       </Suspense>
 
-      <Suspense fallback={<SectionSkeleton contentClassName="h-44" />}>
-        <ProfileActivityBlock params={params} />
-      </Suspense>
+      <div className="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <aside className="flex flex-col gap-4">
+          <Suspense fallback={<SectionSkeleton contentClassName="h-40" />}>
+            <ProfileFavoritesBlock params={params} />
+          </Suspense>
 
-      <Suspense fallback={<StatsSkeleton />}>
-        <ProfileStatsBlock params={params} />
-      </Suspense>
+          <Suspense fallback={<StatsSkeleton />}>
+            <ProfileStatsBlock params={params} />
+          </Suspense>
+        </aside>
 
-      <Suspense fallback={<SectionSkeleton contentClassName="h-40" />}>
-        <ProfileFavoritesBlock params={params} />
-      </Suspense>
+        <div className="flex min-w-0 flex-col gap-4">
+          <Suspense fallback={<SectionSkeleton contentClassName="h-36" />}>
+            <ProfileActivityBlock params={params} />
+          </Suspense>
 
-      {/*
-        **Le journal est le seul repli qui annonce moins que ce qui vient, et c'est délibéré.** Une
-        page en fait vingt, soit près de neuf cents pixels sur écran large et le double sur
-        téléphone : un pavé gris de cette taille pèse plus que le saut qu'il éviterait. Il tient
-        donc le plancher — la carte, son en-tête, et de quoi ne pas laisser un trou.
-      */}
-      <Suspense fallback={<SectionSkeleton contentClassName="h-96" />}>
-        <ProfileJournalBlock params={params} searchParams={searchParams} />
-      </Suspense>
+          {/*
+            **Le journal est le seul repli qui annonce moins que ce qui vient, et c'est délibéré.**
+            Une page en fait vingt : un pavé gris de cette taille pèse plus que le saut qu'il
+            éviterait. Il tient donc le plancher — la carte, son en-tête, et de quoi ne pas laisser
+            un trou.
+          */}
+          <Suspense fallback={<SectionSkeleton contentClassName="h-96" />}>
+            <ProfileJournalBlock params={params} searchParams={searchParams} />
+          </Suspense>
+        </div>
+      </div>
     </div>
   );
 }
@@ -176,11 +192,14 @@ async function ProfileIdentityBlock({
   const profile = await resolveProfile(params);
   const { includeAdult } = await getPreferences();
 
-  const { tiles } = await getProfileStats({
-    userId: profile.id,
-    isOwner: profile.isOwner,
-    includeAdult,
-  });
+  const [{ tiles }, banner] = await Promise.all([
+    getProfileStats({
+      userId: profile.id,
+      isOwner: profile.isOwner,
+      includeAdult,
+    }),
+    getLatestFavoriteCover({ userId: profile.id, includeAdult }),
+  ]);
 
   return (
     /*
@@ -189,6 +208,7 @@ async function ProfileIdentityBlock({
     */
     <div className="flex flex-col gap-4">
       <ProfileHeader
+        banner={banner}
         image={profile.image}
         memberSince={profile.memberSince}
         name={profile.name}
@@ -277,11 +297,10 @@ async function ProfileStatsBlock({
       </ProfileSection>
 
       {/*
-        Deux colonnes à partir de `lg` seulement. En `md`, l'histogramme des notes tombe sous
-        380 px de large et ses dix graduations se chevauchent — une échelle illisible vaut moins
-        qu'une rangée de plus à faire défiler.
+        Côte à côte sur tablette, empilées dans la colonne latérale : à 22 rem, deux graphes de front
+        ne tiendraient pas leurs graduations.
       */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
         <ProfileSection
           aside={
             tiles.meanScore === null ? undefined : (
@@ -429,34 +448,26 @@ async function ProfileJournalBlock({
 function HeaderSkeleton() {
   return (
     /*
-      **Le trait est dans le squelette, et ce n'est pas un détail.** Sans lui, la coquille annonçait
-      dix-sept pixels de moins que le bloc réel — l'écart plus l'épaisseur du trait —, et tout
-      l'écran sautait d'autant à l'arrivée des données. La structure est donc celle du bloc rendu,
-      écart pour écart.
+      **La structure est celle du bloc rendu, écart pour écart** — bande, avatar qui mord dessus,
+      rangée de chiffres, puis le trait. Un squelette approximatif déplace tout l'écran à l'arrivée
+      des données.
     */
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-16 rounded-full" />
-          <div className="flex flex-col gap-0.5">
-            <Skeleton className="h-8 w-44" />
-            <Skeleton className="h-5 w-56" />
+        <BlurredBackdrop image={null} />
+
+        <div className="-mt-20 relative flex flex-col gap-4 sm:-mt-24 sm:flex-row sm:items-end sm:gap-6">
+          <Skeleton className="size-24 rounded-full ring-4 ring-background sm:size-28" />
+          <div className="flex flex-col gap-1 sm:pb-2">
+            <Skeleton className="h-9 w-56 sm:h-10" />
+            <Skeleton className="h-5 w-64" />
           </div>
         </div>
 
-        {/*
-          **Les quatre tuiles, et pas un pavé d'une hauteur figée.** Elles passent en deux colonnes
-          sous `sm` : à `h-26`, la coquille annonçait 104 px là où le bloc replié en fait 171, et
-          tout le profil remontait de soixante-sept pixels sur téléphone. Rendue avec la grille du
-          bloc, elle se replie avec lui.
-        */}
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border sm:grid-cols-4">
-          {TILE_SKELETON_KEYS.map((key) => (
-            <div
-              className="flex flex-col-reverse gap-1 bg-background p-4"
-              key={key}
-            >
-              <Skeleton className="h-4 w-20" />
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
+          {STAT_SKELETON_KEYS.map((key) => (
+            <div className="flex flex-col-reverse gap-0.5" key={key}>
+              <Skeleton className="h-4 w-24" />
               <Skeleton className="h-8 w-14" />
             </div>
           ))}
@@ -468,9 +479,9 @@ function HeaderSkeleton() {
 }
 
 /** Les quatre chiffres de l'en-tête. */
-const TILE_SKELETON_KEYS = Array.from(
+const STAT_SKELETON_KEYS = Array.from(
   { length: 4 },
-  (_, index) => `tuile-${index}`,
+  (_, index) => `chiffre-${index}`,
 );
 
 /**
@@ -489,8 +500,8 @@ function StatsSkeleton() {
       {/* Barre empilée (28 px), puis six statuts sur deux rangées : 92 px de contenu. */}
       <SectionSkeleton contentClassName="h-23" />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionSkeleton contentClassName="h-72" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+        <SectionSkeleton contentClassName="h-56" />
         <SectionSkeleton contentClassName="h-72" />
       </div>
     </div>

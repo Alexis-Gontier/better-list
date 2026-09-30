@@ -70,15 +70,12 @@ export function ProfileTimeline({
           </h3>
 
           {/*
-            Une grille, et non des colonnes CSS : à l'intérieur d'une journée, l'ordre de lecture
-            naturel est **de gauche à droite puis à la ligne**, ce que la grille fait par défaut.
-            Des colonnes CSS rempliraient la gauche de haut en bas, et la deuxième entrée de la
-            journée se retrouverait au milieu de l'écran.
-
-            `gap-x-8` sépare franchement les deux colonnes : sans ça, l'heure d'une entrée de gauche
-            colle au titre de celle de droite, et les deux se lisent comme une seule ligne.
+            **Une seule colonne depuis le 30 septembre 2026.** Le journal vit maintenant dans la
+            colonne principale du profil, à côté des favoris et des statistiques : à cette largeur,
+            deux entrées de front coupaient les titres, et la seconde colonne laissait des trous les
+            jours d'une seule entrée.
           */}
-          <ol className="grid gap-x-8 lg:grid-cols-2">
+          <ol className="flex flex-col">
             {day.events.map((event) => (
               <TimelineRow event={event} key={event.id} />
             ))}

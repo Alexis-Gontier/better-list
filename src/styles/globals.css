@@ -129,8 +129,9 @@
        (`u/[username]/_components/status-breakdown.tsx`). Le motif du garde-fou est que ces teintes
        doivent perdre *face à une jaquette* ; là où il n'y en a pas, il ne protège plus rien, et il
        coûtait cher — la barre affichait les six mêmes statuts que `/library` avec des carrés gris,
-       donc un second code couleur à retenir pour la même notion. C'est la même exception que la
-       rampe `--activity-*` ci-dessous s'accorde, pour la même raison.
+       donc un second code couleur à retenir pour la même notion. La rampe `--activity-*` ci-dessous
+       en a joui jusqu'au 30 septembre 2026 ; elle est revenue aux gris quand le profil a montré des
+       jaquettes.
 
        Ce qui reste interdit n'a pas bougé : le fond d'une carte, la bordure d'un panneau, et toute
        surface colorée sur un écran qui montre des œuvres.
@@ -157,17 +158,18 @@
     indiscernables sur le quasi-noir : au-dessous de 0,30 de luminosité, tout se confond avec le
     fond de la carte.
 
-    Les valeurs montent donc **par pas de luminosité réguliers** (0,30 → 0,40 → 0,49 → 0,59) et non
-    par pas d'opacité, ce qui est la seule manière d'obtenir des crans perçus comme égaux. Le cran
-    le plus haut **est** l'accent : une grosse journée, c'est ce que l'écran a de plus vif.
+    Les valeurs montent donc **par pas de luminosité réguliers** et non par pas d'opacité, ce qui
+    est la seule manière d'obtenir des crans perçus comme égaux.
 
-    Ce n'est pas un écart au principe directeur — le calendrier n'a aucune jaquette à côté de qui
-    perdre, et c'est le seul bloc de l'écran dans ce cas.
+    **Des gris depuis le 30 septembre 2026.** La rampe montait vers l'accent iris tant que le
+    calendrier n'avait aucune jaquette à côté ; le profil en montre désormais (bande, favoris,
+    journal), et la couleur de l'écran leur revient. Le cran le plus haut est le plus proche du
+    texte : une grosse journée reste ce que le graphe a de plus vif.
   */
-  --activity-1: oklch(0.9 0.05 277);
-  --activity-2: oklch(0.79 0.11 277);
-  --activity-3: oklch(0.66 0.17 277);
-  --activity-4: oklch(0.5106 0.2301 276.97);
+  --activity-1: oklch(0.87 0 0);
+  --activity-2: oklch(0.72 0 0);
+  --activity-3: oklch(0.52 0 0);
+  --activity-4: oklch(0.3 0 0);
 }
 
 /* « Obsidienne » — quasi-noir neutre, accent iris. Le mode canon. */
@@ -236,10 +238,10 @@
     le fond de carte est à 0,18 et `--muted` — le vide — à 0,21, donc un premier cran en dessous de
     0,28 ne se distinguerait pas d'une journée sans rien.
   */
-  --activity-1: oklch(0.3 0.07 277);
-  --activity-2: oklch(0.4 0.12 277);
-  --activity-3: oklch(0.49 0.17 277);
-  --activity-4: oklch(0.5854 0.2041 277.12);
+  --activity-1: oklch(0.36 0 0);
+  --activity-2: oklch(0.52 0 0);
+  --activity-3: oklch(0.7 0 0);
+  --activity-4: oklch(0.9 0 0);
 }
 
 /*

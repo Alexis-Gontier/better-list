@@ -2,6 +2,7 @@ import { HeartIcon } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
 import { Badge } from "@/components/ui/badge";
 import { BioSpoiler } from "@/features/people/components/bio-spoiler";
 import {
@@ -80,7 +81,7 @@ export function PersonHeader({
 
   return (
     <header className="flex flex-col gap-8">
-      <PersonBackdrop image={image} />
+      <BlurredBackdrop image={image} />
 
       <div className="-mt-24 relative grid gap-5 sm:-mt-32 sm:grid-cols-[10rem_1fr] sm:items-start sm:gap-8 lg:grid-cols-[12rem_1fr] lg:gap-10">
         <div className="relative aspect-2/3 w-32 overflow-hidden rounded-lg bg-muted shadow-lg ring-4 ring-background sm:w-full">
@@ -156,35 +157,5 @@ export function PersonHeader({
         </div>
       </div>
     </header>
-  );
-}
-
-/**
- * La bande de tête : le portrait, agrandi et flouté, pleine largeur de fenêtre — même débord que
- * `MediaBanner` (`left-1/2 w-screen -translate-x-1/2`, sous l'`overflow-x-clip` du layout).
- *
- * Le flou n'est pas un effet : un portrait de 230 px de large étiré sur un écran entier serait une
- * bouillie de pixels. Flouté, il ne garde que ses couleurs, et c'est tout ce qu'on lui demande.
- */
-function PersonBackdrop({ image }: { image: string | null }) {
-  return (
-    <div
-      aria-hidden
-      className="-mt-6 relative left-1/2 h-40 w-screen -translate-x-1/2 overflow-hidden sm:h-52"
-    >
-      {image ? (
-        <Image
-          alt=""
-          className="scale-125 object-cover opacity-60 blur-2xl"
-          fill
-          // Flouté à ce point, une petite image suffit — inutile d'en demander une pleine largeur.
-          sizes="256px"
-          src={image}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-surface-raised" />
-      )}
-      <div className="absolute inset-0 bg-linear-to-b from-background/40 via-background/30 to-background" />
-    </div>
   );
 }

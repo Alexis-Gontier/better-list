@@ -81,3 +81,33 @@ export async function getProfileFavorites({
 
   return groupFavorites(rows, titleLanguage);
 }
+
+/**
+ * La jaquette du dernier favori, pour la bande floutée du profil. `null` sans favori.
+ *
+ * Une lecture à part plutôt qu'un morceau de `getProfileFavorites` : l'en-tête est sa propre
+ * frontière de suspension, et le faire attendre la liste complète retarderait l'identité pour une
+ * seule image.
+ */
+export async function getLatestFavoriteCover({
+  userId,
+  includeAdult,
+}: {
+  userId: string;
+  includeAdult: boolean;
+}): Promise<string | null> {
+  const row = await prisma.favorite.findFirst({
+    where: {
+      userId,
+      kind: "MEDIA",
+      media: {
+        coverImage: { not: null },
+        ...(includeAdult ? {} : { isAdult: false }),
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { media: { select: { coverImage: true } } },
+  });
+
+  return row?.media?.coverImage ?? null;
+}

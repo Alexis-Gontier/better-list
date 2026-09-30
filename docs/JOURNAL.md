@@ -1465,3 +1465,12 @@ ligne.
 `prisma migrate dev` refuse de tourner hors d'un terminal interactif dès qu'une colonne non vide
 disparaît : la migration a été écrite à partir de `prisma migrate diff --from-config-datasource`,
 puis appliquée par `migrate deploy`.
+
+Même soir : **le profil refait.** Six cartes de même poids sur une colonne de 4 300 px se lisaient
+comme un tableau de bord. Il prend la coupe du profil AniList : un en-tête à bande floutée (tirée de
+la jaquette du dernier favori, avec `BlurredBackdrop`, promue de `features/people/` dans
+`components/shared/`), puis deux colonnes — à gauche le goût (favoris en vignettes serrées,
+répartition, notes, genres), à droite ce qui s'est passé (calendrier, journal d'une seule colonne).
+Le calendrier et le journal restent ensemble, selon la décision du 12 septembre. La rampe
+`--activity-*` et la barre la plus haute des notes passent aux gris : elles profitaient de l'exception
+« graphe sans jaquette à côté », que les favoris et la bande ont fait tomber.
