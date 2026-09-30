@@ -8,9 +8,18 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **26 septembre 2026**.
+Relevé le **30 septembre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
+>
+> **Le 30 septembre, les favoris.** Un cœur sur la fiche d'une œuvre, sur `/character/[id]` et sur
+> `/staff/[id]` ; le profil gagne une section « Favoris » en quatre rangées — Anime, Manga,
+> Personnages, Staff —, les plus récents d'abord. Table `Favorite`, indépendante du suivi (on peut
+> aimer une œuvre qu'on ne suit pas) ; une œuvre pointe vers le miroir, une personne garde un
+> instantané nom + portrait pris au like, donc le profil ne lit rien chez AniList. `Entry.favorite`,
+> que rien n'écrivait, est supprimé ; la migration `20260930120000_favoris` recopie ses valeurs.
+> Feature `features/favorites/`, spec et plan dans `docs/superpowers/`. **À faire** : appliquer la
+> migration en production.
 >
 > **Le 26 septembre au soir, la cloche sort de l'en-tête** : chaque compte peut brancher un webhook
 > Discord dans `/settings`, et `api/cron/discord` y poste les épisodes sortis, une fois par heure
@@ -148,7 +157,8 @@ Relevé le **26 septembre 2026**.
 > garde, et c'est la seule page du produit dans ce cas. Révoquer met la colonne à `null`, donc le
 > lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
 >
-> Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
+> Ce qui **n'écrit toujours pas** : les tomes possédés — leur écran n'existe pas. (Le favori écrit
+> depuis le 30 septembre, dans sa propre table.)
 >
 > **Et les réglages se règlent.** `/settings` porte deux sections : un bloc « Compte » en lecture
 > seule — tout y vient de GitHub, et le `username` est verrouillé après l'inscription — et les deux
