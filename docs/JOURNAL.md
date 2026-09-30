@@ -1474,3 +1474,16 @@ répartition, notes, genres), à droite ce qui s'est passé (calendrier, journal
 Le calendrier et le journal restent ensemble, selon la décision du 12 septembre. La rampe
 `--activity-*` et la barre la plus haute des notes passent aux gris : elles profitaient de l'exception
 « graphe sans jaquette à côté », que les favoris et la bande ont fait tomber.
+
+## 1er octobre 2026 — les fiches tombées en production
+
+**Toutes les fiches répondaient « Une erreur est survenue »**, avec l'erreur React #441 en console,
+qui ne dit rien de plus qu'« une erreur serveur, message masqué ». La cause : la migration
+`20260930120000_favoris` n'avait jamais été appliquée en production, alors que la fiche lit
+désormais la table `favorites` à chaque rendu (`isFavorite`). Le « À faire » de STATE.md l'annonçait.
+
+Le build Vercel passe maintenant par un script `vercel-build`, que Vercel préfère à `build` :
+`prisma migrate deploy` avant `next build`, **en production seulement** (`VERCEL_ENV`), pour qu'une
+preview n'applique pas la migration d'une PR à la base de prod avant le merge. `build` ne bouge pas :
+la CI le lance avec une base factice. Une migration qui échoue fait échouer le déploiement, et
+Vercel garde l'ancienne version en ligne : jamais de code neuf sur un schéma ancien.

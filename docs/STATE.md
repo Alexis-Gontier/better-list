@@ -18,8 +18,9 @@ Relevé le **30 septembre 2026**.
 > aimer une œuvre qu'on ne suit pas) ; une œuvre pointe vers le miroir, une personne garde un
 > instantané nom + portrait pris au like, donc le profil ne lit rien chez AniList. `Entry.favorite`,
 > que rien n'écrivait, est supprimé ; la migration `20260930120000_favoris` recopie ses valeurs.
-> Feature `features/favorites/`, spec et plan dans `docs/superpowers/`. **À faire** : appliquer la
-> migration en production.
+> Feature `features/favorites/`, spec et plan dans `docs/superpowers/`. La migration n'avait pas été
+> appliquée en production et toutes les fiches tombaient : depuis le 1er octobre, le build de
+> production la passe lui-même (`vercel-build`, voir JOURNAL.md).
 >
 > **Le 26 septembre au soir, la cloche sort de l'en-tête** : chaque compte peut brancher un webhook
 > Discord dans `/settings`, et `api/cron/discord` y poste les épisodes sortis, une fois par heure
