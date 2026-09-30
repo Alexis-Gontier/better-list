@@ -65,15 +65,14 @@ async function currentUserId(): Promise<string> {
  * (docs/PRODUCT.md §4.2). Ramener moins obligerait la fenêtre à inventer les champs manquants — et
  * un champ inventé qu'on renvoie au serveur est une modification qu'on n'a pas demandée.
  *
- * `private` et `favorite` : seul le second est dans `EntryState`. Le premier ne concerne que la
- * visibilité auprès du cercle, qui n'a pas d'écran.
+ * `private` n'y est pas : il ne concerne que la visibilité auprès du cercle, qui n'a pas d'écran.
+ * Les favoris ont leur propre table (`features/favorites/`).
  */
 const ENTRY_STATE_SELECT = {
   status: true,
   progress: true,
   progressVolumes: true,
   score: true,
-  favorite: true,
   notes: true,
   repeatCount: true,
   startedAt: true,

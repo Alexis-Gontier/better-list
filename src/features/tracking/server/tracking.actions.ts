@@ -124,7 +124,6 @@ export const saveEntry = authActionClient
           progress: true,
           progressVolumes: true,
           score: true,
-          favorite: true,
           notes: true,
           repeatCount: true,
           startedAt: true,

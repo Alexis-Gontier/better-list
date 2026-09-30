@@ -35,7 +35,6 @@ export type EntryDraft = {
   status: EntryState["status"];
   progress: string;
   score: number | null;
-  favorite: boolean;
   repeatCount: string;
   /** Format `AAAA-MM-JJ`, celui d'un `<input type="date">`. Chaîne vide = pas de date. */
   startedAt: string;
@@ -63,7 +62,6 @@ export function entryDraftFrom(entry: EntryState | null): EntryDraft {
     status: base.status,
     progress: String(base.progress),
     score: base.score,
-    favorite: base.favorite,
     repeatCount: String(base.repeatCount),
     startedAt: toDateInputValue(base.startedAt),
     finishedAt: toDateInputValue(base.finishedAt),
@@ -108,7 +106,6 @@ export function entryDraftChanges(
   }
 
   if (draft.score !== base.score) changes.score = draft.score;
-  if (draft.favorite !== base.favorite) changes.favorite = draft.favorite;
 
   if (draft.startedAt !== toDateInputValue(base.startedAt)) {
     changes.startedAt = draft.startedAt || null;

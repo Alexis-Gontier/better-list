@@ -51,12 +51,13 @@ Même migration : `Entry.favorite` disparaît, avec ses traces dans `tracking.sc
 
 ## 2. Feature `src/features/favorites/`
 
-- `schemas/favorites.schema.ts` — `toggleFavoriteInput` : union discriminée sur `kind`.
+- `schemas/favorites.schema.ts` — `setFavoriteSchema` : union discriminée sur `kind`.
   `MEDIA` → `{ kind, anilistId }` ; `CHARACTER | STAFF` → `{ kind, anilistId, name, image }`,
   `image` étant une URL `https://…anili.st/…` ou nulle. Types dérivés par `z.infer`.
-- `server/favorites.actions.ts` (`"use server"`) — `toggleFavoriteAction` via `authActionClient` :
-  si la ligne existe, la supprime ; sinon `ensureMediaMirror` (pour `MEDIA`) puis la crée.
-  Renvoie `{ favorite: boolean }`. Revalide le profil de l'auteur.
+- `server/favorites.actions.ts` (`"use server"`) — `setFavorite` via `authActionClient`, entrée
+  `{ target, favorite }` : pose l'état voulu (idempotent) plutôt que de basculer — un double clic
+  ou deux onglets ne peuvent pas inverser deux fois. `ensureMediaMirror` avant d'écrire une œuvre.
+  Renvoie `{ favorite }`. Revalide la page cliquée et le profil de l'auteur.
 - `server/favorites.queries.ts` (`import "server-only"`) —
   - `isFavorite(userId, kind, anilistId)` : l'état initial du bouton ;
   - `getProfileFavorites(userId, { includeAdult })` : les lignes, jointure `media`, triées par

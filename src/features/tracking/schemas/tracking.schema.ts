@@ -73,7 +73,6 @@ export const saveEntrySchema = z.object({
   progress: progressSchema.optional(),
   progressVolumes: progressSchema.nullable().optional(),
   score: entryScoreSchema.optional(),
-  favorite: z.boolean().optional(),
   notes: z.string().max(5000).nullable().optional(),
   startedAt: entryDateSchema.optional(),
   finishedAt: entryDateSchema.optional(),

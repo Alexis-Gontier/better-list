@@ -116,6 +116,13 @@ enum VolumeCondition {
   DAMAGED
 }
 
+/// Ce qu'on peut mettre en favori — les trois cibles qu'AniList propose, studios exclus.
+enum FavoriteKind {
+  MEDIA
+  CHARACTER
+  STAFF
+}
+
 // =============================================================================
 // Better Auth
 // =============================================================================
@@ -136,9 +143,9 @@ model User {
   /// Liste d'attente : la garde du layout `(app)` refuse tout ce qui n'est pas APPROVED.
   status UserStatus @default(PENDING)
 
-  sessions    Session[]
-  accounts    Account[]
-  preferences UserPreferences?
+  sessions       Session[]
+  accounts       Account[]
+  preferences    UserPreferences?
   /// Où pousser les épisodes sortis, s'il le souhaite — un salon Discord à lui.
   discordWebhook DiscordWebhook?
 
@@ -148,6 +155,7 @@ model User {
   ownedVolumes OwnedVolume[]
   /// Tomes qu'on m'a prêtés — l'inverse de `OwnedVolume.lentTo`.
   borrowed     OwnedVolume[] @relation("VolumeBorrower")
+  favorites    Favorite[]
 
   @@index([status])
   @@map("user")
@@ -339,6 +347,7 @@ model Media {
   entries   Entry[]
   listItems ListItem[]
   editions  Edition[]
+  favorites Favorite[]
 
   @@index([type, status])
   @@index([seasonYear, season])
@@ -375,7 +384,6 @@ model Entry {
   startedAt   DateTime?
   finishedAt  DateTime?
   notes       String?
-  favorite    Boolean   @default(false)
   private     Boolean   @default(false)
 
   createdAt DateTime @default(now())
@@ -387,6 +395,42 @@ model Entry {
   @@index([userId, status])
   @@index([userId, updatedAt])
   @@map("entries")
+}
+
+/// Mes coups de cœur : une œuvre, un personnage, un membre du staff — comme les favoris d'AniList.
+///
+/// **Indépendant d'`Entry`** : on peut aimer une œuvre qu'on ne suit pas. L'ancien booléen
+/// `Entry.favorite`, que rien n'écrivait, a été retiré au profit de cette table le 30 septembre
+/// 2026.
+///
+/// **Une œuvre pointe vers le miroir, une personne garde un instantané.** Les personnages et le
+/// staff ne sont pas en base (PRODUCT.md §4.1) : le nom et le portrait sont recopiés au moment du
+/// like, pour que le profil ne fasse aucune requête AniList et reste lisible pendant une panne.
+model Favorite {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  kind      FavoriteKind
+  /// L'id AniList de la cible, quel que soit son type.
+  anilistId Int
+
+  /// Rempli pour `MEDIA` seulement, égal à `anilistId` : la clé étrangère qui donne titre,
+  /// jaquette et type (anime ou manga) depuis le miroir.
+  mediaId Int?
+  media   Media? @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  /// Instantané pris au like, pour `CHARACTER` et `STAFF`. Nul pour `MEDIA`.
+  name  String?
+  image String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, kind, anilistId])
+  /// Sert au profil : les favoris d'un membre, par type, les plus récents d'abord.
+  @@index([userId, kind, createdAt])
+  @@map("favorites")
 }
 
 /// Ce qui s'est passé, et quand. **Append-only : on insère, on ne modifie jamais.**

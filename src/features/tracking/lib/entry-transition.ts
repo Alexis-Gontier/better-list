@@ -40,7 +40,6 @@ export type EntryState = {
   progress: number;
   progressVolumes: number | null;
   score: number | null;
-  favorite: boolean;
   notes: string | null;
   repeatCount: number;
   startedAt: Date | null;
@@ -64,7 +63,6 @@ export const INITIAL_ENTRY: EntryState = {
   progress: 0,
   progressVolumes: null,
   score: null,
-  favorite: false,
   notes: null,
   repeatCount: 0,
   startedAt: null,
@@ -94,7 +92,6 @@ export function applyEntryChanges({
       progressVolumes: input.progressVolumes,
     }),
     ...(input.score !== undefined && { score: input.score }),
-    ...(input.favorite !== undefined && { favorite: input.favorite }),
     ...(input.notes !== undefined && { notes: input.notes }),
     ...(input.startedAt !== undefined && { startedAt: input.startedAt }),
     ...(input.finishedAt !== undefined && { finishedAt: input.finishedAt }),
