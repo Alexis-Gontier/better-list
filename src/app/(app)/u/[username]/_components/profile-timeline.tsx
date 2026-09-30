@@ -75,7 +75,7 @@ export function ProfileTimeline({
 
             **Deux colonnes dès `sm`** (demande d'Alexis, 30 septembre 2026). Une seule colonne avait
             été essayée quand le journal a rejoint la colonne principale ; elle doublait la hauteur
-            de la carte pour des lignes à moitié vides. L'heure étant désormais collée au titre, deux
+            de la carte pour des lignes à moitié vides. L'heure étant désormais sous l'entrée, deux
             entrées de front ne se confondent plus.
           */}
           <ol className="grid gap-x-6 sm:grid-cols-2">
@@ -89,7 +89,7 @@ export function ProfileTimeline({
   );
 }
 
-/** Une ligne : la jaquette, le titre et son heure, puis ce qui s'est passé. */
+/** Une entrée : la jaquette, puis le titre, ce qui s'est passé et l'heure, sur trois lignes. */
 function TimelineRow({ event }: { event: ProfileEvent }) {
   const line = describeEntryEvent(event, event.unit);
 
@@ -112,25 +112,24 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
             Le titre de l'œuvre au-dessus de l'événement, et pas l'inverse : on parcourt cette
             colonne en cherchant une série, pas en cherchant un type d'événement.
           */}
-          {/*
-            **L'heure est collée au titre**, et non rejetée au bout de la ligne : à droite d'une
-            colonne, elle se lisait comme appartenant à l'entrée voisine.
-          */}
-          <span className="flex min-w-0 items-baseline gap-2">
-            <span className="truncate text-sm">{event.title}</span>
-            <time
-              className="shrink-0 text-muted-foreground text-xs tabular-nums"
-              dateTime={event.createdAt.toISOString()}
-            >
-              {formatEventTime(event.createdAt)}
-            </time>
-          </span>
+          <span className="truncate text-sm">{event.title}</span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground text-xs">
             <span className="truncate">{line.label}</span>
             {line.detail ? (
               <span className="shrink-0 tabular-nums">{line.detail}</span>
             ) : null}
           </span>
+          {/*
+            **L'heure en troisième ligne, sous ce qui s'est passé** (demande d'Alexis, 30 septembre
+            2026). Au bout de la ligne, elle se lisait comme appartenant à l'entrée voisine ; collée
+            au titre, elle le concurrençait. Dessous, elle se lit comme ce qu'elle est : un détail.
+          */}
+          <time
+            className="text-muted-foreground text-xs tabular-nums"
+            dateTime={event.createdAt.toISOString()}
+          >
+            {formatEventTime(event.createdAt)}
+          </time>
         </div>
       </Link>
     </li>
