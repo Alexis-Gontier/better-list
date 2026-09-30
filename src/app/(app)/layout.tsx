@@ -1,4 +1,5 @@
 import { AniListOutageNotice } from "@/components/layout/anilist-outage-notice";
+import { BackToTop } from "@/components/layout/back-to-top";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { requireApprovedUser } from "@/lib/auth/session";
@@ -64,6 +65,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         propre bordure d'un bord à l'autre.
       */}
       <Footer withNavigation />
+      <BackToTop />
     </div>
   );
 }
