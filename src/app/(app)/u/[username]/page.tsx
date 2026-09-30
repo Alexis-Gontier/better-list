@@ -52,11 +52,11 @@ import {
 /**
  * La longueur d'une page de journal.
  *
- * Vingt et non cinquante : au-delà, l'historique occupe à lui seul plus de hauteur que les blocs de
- * statistiques réunis, et le profil cesse d'être un profil pour devenir un journal avec des graphes
- * en chapeau.
+ * **Douze depuis le 30 septembre 2026** (demande d'Alexis) : à vingt, la carte descendait bien
+ * au-dessous de la colonne latérale et le profil redevenait un journal avec des graphes en chapeau.
+ * Douze entrées, soit six rangées à deux de front, tiennent à peu près à hauteur de la colonne voisine.
  */
-const TIMELINE_PAGE_SIZE = 20;
+const TIMELINE_PAGE_SIZE = 12;
 
 export const metadata: Metadata = {
   title: "Profil",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
  *
  * 1. **l'identité et ses compteurs** — six agrégats menés de front sur `Entry` ;
  * 2. **le calendrier** — un an de `EntryEvent`, la lecture la plus volumineuse de l'écran ;
- * 3. **le journal** — une page de vingt lignes, jointe au miroir pour les jaquettes.
+ * 3. **le journal** — une page de douze lignes, jointe au miroir pour les jaquettes.
  *
  * Les favoris ont la leur : une lecture indexée sur `Favorite`, jointe au miroir pour les jaquettes.
  *
@@ -151,7 +151,7 @@ export default function ProfilePage({
 
           {/*
             **Le journal est le seul repli qui annonce moins que ce qui vient, et c'est délibéré.**
-            Une page en fait vingt : un pavé gris de cette taille pèse plus que le saut qu'il
+            Une page en fait douze : un pavé gris de cette taille pèse plus que le saut qu'il
             éviterait. Il tient donc le plancher — la carte, son en-tête, et de quoi ne pas laisser
             un trou.
           */}

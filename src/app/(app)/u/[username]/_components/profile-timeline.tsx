@@ -52,7 +52,7 @@ export function ProfileTimeline({
       l'intérieur d'une journée n'a aucun de ces deux défauts : chaque en-tête garde sa ligne, et
       les colonnes se remplissent toujours également à une entrée près.
     */
-    <ol className="flex flex-col gap-6">
+    <ol className="flex flex-col gap-4">
       {days.map((day) => (
         <li className="flex flex-col gap-2" key={day.key}>
           {/*
@@ -102,7 +102,7 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
         le contenu.
       */}
       <Link
-        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-accent"
+        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-accent"
         href={routes.media(event.mediaId)}
       >
         <Cover cover={event.cover} title={event.title} />
