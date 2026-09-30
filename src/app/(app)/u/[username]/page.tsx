@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { ActivityCalendar } from "@/app/(app)/u/[username]/_components/activity-calendar";
 import { GenreChart } from "@/app/(app)/u/[username]/_components/genre-chart";
+import { ProfileFavorites } from "@/app/(app)/u/[username]/_components/profile-favorites";
 import { ProfileHeader } from "@/app/(app)/u/[username]/_components/profile-header";
 import {
   ProfileSection,
@@ -29,6 +30,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { isEmptyFavorites } from "@/features/favorites/lib/favorites-groups";
+import { getProfileFavorites } from "@/features/favorites/server/favorites.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import {
   getProfileActivity,
@@ -67,6 +70,7 @@ export const metadata: Metadata = {
  * **Qui** — le nom, et les quatre chiffres qui disent l'ampleur du suivi.
  * **Quand** — le calendrier de l'année.
  * **Quoi** — la bibliothèque en coupe : statuts, notes, genres.
+ * **Ce qu'on aime** — les favoris : œuvres, personnages, staff.
  * **Le détail** — le journal, jour par jour.
  *
  * Un seul défilement, pas d'onglets, et c'est une décision. La fiche d'œuvre voisine en a cinq, ce
@@ -88,6 +92,8 @@ export const metadata: Metadata = {
  * 1. **l'identité et ses compteurs** — six agrégats menés de front sur `Entry` ;
  * 2. **le calendrier** — un an de `EntryEvent`, la lecture la plus volumineuse de l'écran ;
  * 3. **le journal** — une page de vingt lignes, jointe au miroir pour les jaquettes.
+ *
+ * Les favoris ont la leur : une lecture indexée sur `Favorite`, jointe au miroir pour les jaquettes.
  *
  * Les trois zones **relisent l'adresse chacune de leur côté** plutôt que de recevoir un pseudonyme
  * déjà décodé : `await params` au niveau de la page rendrait le composant de page entier dynamique,
@@ -123,6 +129,10 @@ export default function ProfilePage({
 
       <Suspense fallback={<StatsSkeleton />}>
         <ProfileStatsBlock params={params} />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton contentClassName="h-40" />}>
+        <ProfileFavoritesBlock params={params} />
       </Suspense>
 
       {/*
@@ -295,6 +305,33 @@ async function ProfileStatsBlock({
         </ProfileSection>
       </div>
     </div>
+  );
+}
+
+/** Les coups de cœur : œuvres, personnages, staff. Absent tant qu'il n'y en a aucun. */
+async function ProfileFavoritesBlock({
+  params,
+}: {
+  params: PageProps<"/u/[username]">["params"];
+}) {
+  const profile = await resolveProfile(params);
+  const { includeAdult, titleLanguage } = await getPreferences();
+
+  const groups = await getProfileFavorites({
+    userId: profile.id,
+    includeAdult,
+    titleLanguage,
+  });
+
+  if (isEmptyFavorites(groups)) return null;
+
+  return (
+    <ProfileSection
+      description="Les œuvres, personnages et membres du staff mis en favori, les plus récents d'abord."
+      title="Favoris"
+    >
+      <ProfileFavorites groups={groups} />
+    </ProfileSection>
   );
 }
 

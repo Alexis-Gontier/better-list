@@ -1,5 +1,6 @@
 import { HeartIcon } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { BioSpoiler } from "@/features/people/components/bio-spoiler";
@@ -25,6 +26,8 @@ type PersonHeaderProps = {
   facts: PersonFact[];
   /** La biographie brute. Sa fiche technique de tête rejoint `facts`, le reste est rendu à droite. */
   description: string | null;
+  /** Le geste posé à côté du nom — le cœur des favoris. Rendu par la page, qui connaît la cible. */
+  action?: ReactNode;
 };
 
 /**
@@ -57,6 +60,7 @@ export function PersonHeader({
   favourites,
   facts,
   description,
+  action,
 }: PersonHeaderProps) {
   const others = alternatives.filter((value): value is string =>
     Boolean(value),
@@ -99,13 +103,16 @@ export function PersonHeader({
         */}
         <div className="flex min-w-0 flex-col gap-6 sm:pt-36">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-balance font-bold font-heading text-3xl tracking-tight sm:text-4xl">
-                {name ?? "Sans nom"}
-              </h1>
-              {native ? (
-                <p className="text-lg text-muted-foreground">{native}</p>
-              ) : null}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex min-w-0 flex-col gap-1">
+                <h1 className="text-balance font-bold font-heading text-3xl tracking-tight sm:text-4xl">
+                  {name ?? "Sans nom"}
+                </h1>
+                {native ? (
+                  <p className="text-lg text-muted-foreground">{native}</p>
+                ) : null}
+              </div>
+              {action}
             </div>
 
             {favourites || others.length > 0 || hidden.length > 0 ? (

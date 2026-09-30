@@ -12,8 +12,8 @@ import {
 /**
  * La coquille d'un bloc du profil : un titre, la phrase qui dit ce qu'il montre, et le contenu.
  *
- * Elle existe parce que l'écran compte **cinq** blocs bâtis à l'identique, et que recopier la même
- * composition de `Card` cinq fois est exactement la manière dont un écran finit par avoir quatre
+ * Elle existe parce que l'écran compte **six** blocs bâtis à l'identique, et que recopier la même
+ * composition de `Card` six fois est exactement la manière dont un écran finit par avoir quatre
  * espacements différents.
  *
  * Elle naît dans le `_components/` de la route et n'en sortira que si un deuxième écran en veut —

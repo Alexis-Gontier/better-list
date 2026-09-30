@@ -46,5 +46,3 @@ export const setFavoriteSchema = z.object({
   target: favoriteTargetSchema,
   favorite: z.boolean(),
 });
-
-export type SetFavoriteInput = z.infer<typeof setFavoriteSchema>;
