@@ -19,7 +19,6 @@ import {
   serializeProfileFilters,
 } from "@/app/(app)/u/[username]/_lib/profile-params";
 import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
-import { CataloguePagination } from "@/components/shared/catalogue-pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -50,13 +49,19 @@ import {
 } from "@/features/tracking/lib/entry-format";
 
 /**
- * La longueur d'une page de journal.
+ * Ce que le journal ajoute à chaque « Voir plus ».
  *
  * **Douze depuis le 30 septembre 2026** (demande d'Alexis) : à vingt, la carte descendait bien
  * au-dessous de la colonne latérale et le profil redevenait un journal avec des graphes en chapeau.
  * Douze entrées, soit six rangées à deux de front, tiennent à peu près à hauteur de la colonne voisine.
  */
 const TIMELINE_PAGE_SIZE = 12;
+
+/**
+ * Le plafond du « Voir plus » : six cents entrées. Chaque clic relit le journal depuis le début, et
+ * une adresse `?page=100000` ne doit pas pouvoir demander toute la table d'un coup.
+ */
+const TIMELINE_MAX_PAGES = 50;
 
 export const metadata: Metadata = {
   title: "Profil",
@@ -354,7 +359,19 @@ async function ProfileFavoritesBlock({
   );
 }
 
-/** Le journal, une page à la fois. */
+/**
+ * Le journal, qui s'allonge à la demande.
+ *
+ * **« Voir plus » plutôt qu'une pagination** (demande d'Alexis, 30 septembre 2026) : un journal se
+ * lit en remontant le temps, et changer de page faisait perdre ce qu'on venait de lire. `?page=n`
+ * veut désormais dire « les n premiers paquets de douze », rendus d'un seul tenant.
+ *
+ * **Un lien, pas un îlot client.** Le bouton pointe vers `?page=n+1` sans remonter en haut
+ * (`scroll={false}`) : le serveur rend la liste allongée, et React garde l'ancienne affichée
+ * pendant la transition. Charger la suite côté client aurait demandé un route handler avec sa
+ * propre garde (CLAUDE.md) pour quatre comptes et quelques dizaines de lignes — et l'adresse n'aurait
+ * plus dit ce qu'on voit.
+ */
 async function ProfileJournalBlock({
   params,
   searchParams,
@@ -366,51 +383,26 @@ async function ProfileJournalBlock({
   const { page } = await loadProfileFilters(searchParams);
   const { includeAdult, titleLanguage } = await getPreferences();
 
-  /*
-    `skip` part de la page demandée **avant** de connaître le total : on ne peut pas borner ce qu'on
-    n'a pas encore compté. Une page au-delà de la fin rend une liste vide, que le bloc ci-dessous
-    traite comme telle — et `CataloguePagination` reçoit ensuite un numéro serré.
-  */
+  const pages = Math.min(Math.max(page, 1), TIMELINE_MAX_PAGES);
+
   const { events, total } = await getProfileJournal({
     userId: profile.id,
     isOwner: profile.isOwner,
     includeAdult,
     titleLanguage,
-    skip: (Math.max(page, 1) - 1) * TIMELINE_PAGE_SIZE,
-    take: TIMELINE_PAGE_SIZE,
+    skip: 0,
+    take: pages * TIMELINE_PAGE_SIZE,
   });
 
-  const pageCount = Math.max(1, Math.ceil(total / TIMELINE_PAGE_SIZE));
-  const boundedPage = Math.min(Math.max(page, 1), pageCount);
+  const remaining = total - events.length;
+  const canLoadMore = remaining > 0 && pages < TIMELINE_MAX_PAGES;
 
   return (
     <ProfileSection
       description="Chaque progression, chaque note, chaque changement de statut — dans l'ordre."
       title="Historique"
     >
-      {/*
-        **Deux vides qui ne disent pas la même chose**, et les confondre laissait un cul-de-sac : à
-        `?page=999`, la liste était vide *et* la pagination disparaissait avec elle, donc plus aucun
-        moyen de revenir au journal autrement qu'en corrigeant l'adresse à la main. Un journal qui
-        n'a jamais rien eu est un état ; une page au-delà de la fin est une erreur d'adresse, et
-        elle doit porter sa sortie.
-      */}
-      {events.length === 0 && total > 0 ? (
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>Cette page n'existe pas</EmptyTitle>
-            <EmptyDescription>
-              Le journal compte {pageCount} pages ; celle-ci est au-delà.
-            </EmptyDescription>
-          </EmptyHeader>
-
-          <Button asChild variant="outline">
-            <Link href={routes.profile(profile.username)}>
-              Revenir au début du journal
-            </Link>
-          </Button>
-        </Empty>
-      ) : events.length === 0 ? (
+      {events.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyTitle>Aucun événement</EmptyTitle>
@@ -424,15 +416,25 @@ async function ProfileJournalBlock({
         <div className="flex flex-col gap-6">
           <ProfileTimeline events={events} now={new Date()} />
 
-          <CataloguePagination
-            hrefFor={(target) =>
-              serializeProfileFilters(routes.profile(profile.username), {
-                page: target,
-              })
-            }
-            page={boundedPage}
-            pageCount={pageCount}
-          />
+          {canLoadMore ? (
+            <Button asChild className="self-center" variant="outline">
+              <Link
+                href={serializeProfileFilters(
+                  routes.profile(profile.username),
+                  {
+                    page: pages + 1,
+                  },
+                )}
+                prefetch={false}
+                scroll={false}
+              >
+                Voir plus
+                <span className="text-muted-foreground tabular-nums">
+                  {remaining} restant{remaining > 1 ? "s" : ""}
+                </span>
+              </Link>
+            </Button>
+          ) : null}
         </div>
       )}
     </ProfileSection>
