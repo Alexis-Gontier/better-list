@@ -70,12 +70,15 @@ export function ProfileTimeline({
           </h3>
 
           {/*
-            **Une seule colonne depuis le 30 septembre 2026.** Le journal vit maintenant dans la
-            colonne principale du profil, à côté des favoris et des statistiques : à cette largeur,
-            deux entrées de front coupaient les titres, et la seconde colonne laissait des trous les
-            jours d'une seule entrée.
+            Une grille, et non des colonnes CSS : à l'intérieur d'une journée, l'ordre de lecture
+            naturel est **de gauche à droite puis à la ligne**, ce que la grille fait par défaut.
+
+            **Deux colonnes dès `sm`** (demande d'Alexis, 30 septembre 2026). Une seule colonne avait
+            été essayée quand le journal a rejoint la colonne principale ; elle doublait la hauteur
+            de la carte pour des lignes à moitié vides. L'heure étant désormais collée au titre, deux
+            entrées de front ne se confondent plus.
           */}
-          <ol className="flex flex-col">
+          <ol className="grid gap-x-6 sm:grid-cols-2">
             {day.events.map((event) => (
               <TimelineRow event={event} key={event.id} />
             ))}
@@ -86,7 +89,7 @@ export function ProfileTimeline({
   );
 }
 
-/** Une ligne : la jaquette, ce qui s'est passé, et l'heure. */
+/** Une ligne : la jaquette, le titre et son heure, puis ce qui s'est passé. */
 function TimelineRow({ event }: { event: ProfileEvent }) {
   const line = describeEntryEvent(event, event.unit);
 
@@ -109,7 +112,19 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
             Le titre de l'œuvre au-dessus de l'événement, et pas l'inverse : on parcourt cette
             colonne en cherchant une série, pas en cherchant un type d'événement.
           */}
-          <span className="truncate text-sm">{event.title}</span>
+          {/*
+            **L'heure est collée au titre**, et non rejetée au bout de la ligne : à droite d'une
+            colonne, elle se lisait comme appartenant à l'entrée voisine.
+          */}
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate text-sm">{event.title}</span>
+            <time
+              className="shrink-0 text-muted-foreground text-xs tabular-nums"
+              dateTime={event.createdAt.toISOString()}
+            >
+              {formatEventTime(event.createdAt)}
+            </time>
+          </span>
           <span className="flex items-baseline gap-1.5 text-muted-foreground text-xs">
             <span className="truncate">{line.label}</span>
             {line.detail ? (
@@ -117,13 +132,6 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
             ) : null}
           </span>
         </div>
-
-        <time
-          className="ml-auto shrink-0 text-muted-foreground text-xs tabular-nums"
-          dateTime={event.createdAt.toISOString()}
-        >
-          {formatEventTime(event.createdAt)}
-        </time>
       </Link>
     </li>
   );
