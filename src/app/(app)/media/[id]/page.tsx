@@ -30,6 +30,7 @@ import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { isFavorite } from "@/features/favorites/server/favorites.queries";
 import { getListMembership } from "@/features/lists/server/lists.queries";
 import {
   cleanDescription,
@@ -182,7 +183,7 @@ async function MediaDetailContent({
   const { includeAdult, titleLanguage } = await getPreferences();
 
   /*
-    Les trois lectures partent ensemble : mon suivi et mes listes sont en base, la fiche chez
+    Les quatre lectures partent ensemble : mon suivi et mes listes sont en base, la fiche chez
     AniList, et aucune ne dépend des autres. Les enchaîner ferait attendre la barre de suivi après
     une requête réseau qui peut prendre une seconde — ou ne jamais répondre, un jour de coupure,
     alors que ce que je sais de l'œuvre, lui, est toujours là.
@@ -192,10 +193,11 @@ async function MediaDetailContent({
     Elle n'a rien à aller chercher — quelques lignes voyagent avec le rendu, et la fenêtre les reçoit
     déjà remplies au premier clic.
   */
-  const [{ media, isPartial }, entry, lists] = await Promise.all([
+  const [{ media, isPartial }, entry, lists, favorite] = await Promise.all([
     loadMediaDetail(id, includeAdult),
     getEntryFor(id),
     getListMembership(id),
+    isFavorite("MEDIA", id),
   ]);
 
   // `null` couvre deux cas volontairement confondus : l'id n'existe pas, ou l'œuvre est classée
@@ -281,6 +283,7 @@ async function MediaDetailContent({
 
       <MediaHero
         entry={entry}
+        favorite={favorite}
         lists={lists}
         media={media}
         titleLanguage={titleLanguage}

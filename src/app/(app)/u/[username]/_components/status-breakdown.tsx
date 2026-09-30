@@ -126,7 +126,7 @@ export function StatusBreakdown({ data }: { data: StatusSlice[] }) {
         « Abandonné » « Abando… ». Tronquer le nom d'un statut dans la légende qui existe justement
         pour le nommer revient à n'avoir plus de légende du tout.
       */}
-      <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 md:grid-cols-3 lg:grid-cols-2">
         {STATUS_ORDER.map((status) => {
           const count = byStatus.get(status) ?? 0;
 

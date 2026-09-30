@@ -219,19 +219,8 @@ describe("note et journal", () => {
   it("ne journalise rien quand rien ne change", () => {
     const { events } = apply(state({ status: "CURRENT", progress: 5 }), {
       progress: 5,
-      favorite: false,
     });
 
-    expect(events).toEqual([]);
-  });
-
-  /** Le favori est un état, pas un événement : il se coche et se décoche sans laisser de trace. */
-  it("ne journalise pas le favori", () => {
-    const { next, events } = apply(state({ status: "CURRENT" }), {
-      favorite: true,
-    });
-
-    expect(next.favorite).toBe(true);
     expect(events).toEqual([]);
   });
 });

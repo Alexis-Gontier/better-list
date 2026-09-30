@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { routes } from "@/config/routes";
+import { FavoriteButton } from "@/features/favorites/components/favorite-button";
+import { isFavorite } from "@/features/favorites/server/favorites.queries";
 import { formatCharacterRole } from "@/features/media/lib/media-format";
 import { PeopleMediaGrid } from "@/features/people/components/people-media-grid";
 import { PersonHeader } from "@/features/people/components/person-header";
@@ -89,9 +91,12 @@ async function CharacterContent({
     Le `null` de `tryAniList` veut dire « AniList ne répond pas » ; celui de `getCharacter`,
     « ce personnage n'existe pas ». L'emballage garde les deux distincts, comme sur la fiche.
   */
-  const result = await tryAniList(async () => ({
-    view: await getCharacter(id, page, { includeAdult }),
-  }));
+  const [result, favorite] = await Promise.all([
+    tryAniList(async () => ({
+      view: await getCharacter(id, page, { includeAdult }),
+    })),
+    isFavorite("CHARACTER", id),
+  ]);
 
   if (!result) {
     // Aucun repli : rien de ce qui fait cette page n'est stocké en base (PRODUCT.md §4.1).
@@ -116,6 +121,17 @@ async function CharacterContent({
       <ReportAniListStatus down={false} />
 
       <PersonHeader
+        action={
+          <FavoriteButton
+            initial={favorite}
+            target={{
+              kind: "CHARACTER",
+              anilistId: id,
+              name: character.name.full ?? "Sans nom",
+              image: character.image?.large ?? null,
+            }}
+          />
+        }
         alternatives={character.name.alternative}
         description={character.description}
         facts={[

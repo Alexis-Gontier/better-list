@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { routes } from "@/config/routes";
+import { FavoriteButton } from "@/features/favorites/components/favorite-button";
 import type { ListMembership } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
@@ -32,6 +33,8 @@ type MediaHeroProps = {
   entry: EntryState | null;
   /** Mes listes, et lesquelles contiennent déjà cette œuvre. Même trajet que `entry` : la barre est cliente. */
   lists: ListMembership[];
+  /** L'œuvre est-elle dans mes favoris ? Même trajet que `entry`. */
+  favorite: boolean;
 };
 
 /**
@@ -53,6 +56,7 @@ export function MediaHero({
   titleLanguage,
   entry,
   lists,
+  favorite,
 }: MediaHeroProps) {
   const title = mediaTitle(media.title, titleLanguage);
   const cover = media.coverImage?.extraLarge ?? media.coverImage?.large ?? null;
@@ -149,6 +153,12 @@ export function MediaHero({
           <Separator />
 
           <EntryActionBar
+            favorite={
+              <FavoriteButton
+                initial={favorite}
+                target={{ kind: "MEDIA", anilistId: media.id }}
+              />
+            }
             banner={media.bannerImage}
             entry={entry}
             lists={lists}

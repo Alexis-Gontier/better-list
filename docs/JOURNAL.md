@@ -1449,3 +1449,28 @@ comme une transformation, et le quota du plan Hobby était épuisé — un seul 
 recommandations, et le catalogue en demande des centaines de distinctes. `images.unoptimized`
 coupe l'optimiseur : le navigateur charge directement les tailles que le CDN d'AniList sert déjà.
 On perd le WebP et le redimensionnement au pixel ; pour quatre comptes, c'est sans importance.
+
+## 30 septembre 2026 — les favoris
+
+On peut aimer une œuvre, un personnage ou un membre du staff, et le profil les montre comme AniList.
+Trois choix, tranchés avec Alexis. **Une table à part plutôt que `Entry.favorite`** : le booléen
+obligeait à suivre une œuvre pour l'aimer, et il ne couvrait ni les personnages ni le staff — il
+est supprimé, et sa migration recopie les valeurs du jeu d'essai. **Un instantané pour les
+personnes** : elles ne sont pas en base, et relire nom et portrait chez AniList à chaque profil
+aurait coûté une requête et une section vide un jour de panne ; le portrait peut vieillir, il se
+rafraîchit au like suivant. **`setFavorite` pose un état, il ne bascule pas** : deux clics rapides
+ou deux onglets envoyaient deux bascules qui s'annulent, alors que deux « oui » laissent la même
+ligne.
+
+`prisma migrate dev` refuse de tourner hors d'un terminal interactif dès qu'une colonne non vide
+disparaît : la migration a été écrite à partir de `prisma migrate diff --from-config-datasource`,
+puis appliquée par `migrate deploy`.
+
+Même soir : **le profil refait.** Six cartes de même poids sur une colonne de 4 300 px se lisaient
+comme un tableau de bord. Il prend la coupe du profil AniList : un en-tête à bande floutée (tirée de
+la jaquette du dernier favori, avec `BlurredBackdrop`, promue de `features/people/` dans
+`components/shared/`), puis deux colonnes — à gauche le goût (favoris en vignettes serrées,
+répartition, notes, genres), à droite ce qui s'est passé (calendrier, journal d'une seule colonne).
+Le calendrier et le journal restent ensemble, selon la décision du 12 septembre. La rampe
+`--activity-*` et la barre la plus haute des notes passent aux gris : elles profitaient de l'exception
+« graphe sans jaquette à côté », que les favoris et la bande ont fait tomber.

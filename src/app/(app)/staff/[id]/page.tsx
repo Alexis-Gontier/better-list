@@ -16,6 +16,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { routes } from "@/config/routes";
+import { FavoriteButton } from "@/features/favorites/components/favorite-button";
+import { isFavorite } from "@/features/favorites/server/favorites.queries";
 import { formatStaffRole } from "@/features/media/lib/media-format";
 import { PeopleMediaGrid } from "@/features/people/components/people-media-grid";
 import { PersonHeader } from "@/features/people/components/person-header";
@@ -99,9 +101,12 @@ async function StaffContent({
   const { includeAdult, titleLanguage } = await getPreferences();
 
   // Même emballage que la page d'un personnage : le `null` de `tryAniList` ne dit que la panne.
-  const result = await tryAniList(async () => ({
-    view: await getStaff(id, onglet, toPage(page), { includeAdult }),
-  }));
+  const [result, favorite] = await Promise.all([
+    tryAniList(async () => ({
+      view: await getStaff(id, onglet, toPage(page), { includeAdult }),
+    })),
+    isFavorite("STAFF", id),
+  ]);
 
   if (!result) {
     return (
@@ -126,6 +131,17 @@ async function StaffContent({
       <ReportAniListStatus down={false} />
 
       <PersonHeader
+        action={
+          <FavoriteButton
+            initial={favorite}
+            target={{
+              kind: "STAFF",
+              anilistId: id,
+              name: staff.name.full ?? "Sans nom",
+              image: staff.image?.large ?? null,
+            }}
+          />
+        }
         alternatives={staff.name.alternative}
         description={staff.description}
         facts={[

@@ -8,9 +8,18 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **26 septembre 2026**.
+Relevé le **30 septembre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
+>
+> **Le 30 septembre, les favoris.** Un cœur sur la fiche d'une œuvre, sur `/character/[id]` et sur
+> `/staff/[id]` ; le profil gagne une section « Favoris » en quatre rangées — Anime, Manga,
+> Personnages, Staff —, les plus récents d'abord. Table `Favorite`, indépendante du suivi (on peut
+> aimer une œuvre qu'on ne suit pas) ; une œuvre pointe vers le miroir, une personne garde un
+> instantané nom + portrait pris au like, donc le profil ne lit rien chez AniList. `Entry.favorite`,
+> que rien n'écrivait, est supprimé ; la migration `20260930120000_favoris` recopie ses valeurs.
+> Feature `features/favorites/`, spec et plan dans `docs/superpowers/`. **À faire** : appliquer la
+> migration en production.
 >
 > **Le 26 septembre au soir, la cloche sort de l'en-tête** : chaque compte peut brancher un webhook
 > Discord dans `/settings`, et `api/cron/discord` y poste les épisodes sortis, une fois par heure
@@ -148,7 +157,8 @@ Relevé le **26 septembre 2026**.
 > garde, et c'est la seule page du produit dans ce cas. Révoquer met la colonne à `null`, donc le
 > lien meurt sans purge de cache. Le partage a aussi son image d'aperçu.
 >
-> Ce qui **n'écrit toujours pas** : le favori et les tomes possédés — leurs écrans n'existent pas.
+> Ce qui **n'écrit toujours pas** : les tomes possédés — leur écran n'existe pas. (Le favori écrit
+> depuis le 30 septembre, dans sa propre table.)
 >
 > **Et les réglages se règlent.** `/settings` porte deux sections : un bloc « Compte » en lecture
 > seule — tout y vient de GitHub, et le `username` est verrouillé après l'inscription — et les deux
@@ -201,7 +211,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/lists/[id]` (`lists.detail`) | Une liste, réordonnable | `List`, `ListItem`, `Media` | **livré** — grille du catalogue, mode réorganisation, renommage, suppression |
 | `/lists/[id]/[viewId]` (`lists.view`) | Une vue posée sur une liste | `ListView`, `ListViewItem` | **déclaré, non construit** — reporté (PRODUCT.md §6) |
 | `/l/[token]` (`share.detail`) | Une liste partagée, **hors app authentifiée** | `List`, `ListItem` | **livré** — lecture seule, sans session, image d'aperçu |
-| `/u/[username]` (`profile`) | Profil d'un membre : statistiques, journal | `User`, `Entry`, `EntryEvent` | **livré** (12 septembre) — calendrier d'activité sur un an, répartition par statut, notes, genres, journal paginé |
+| `/u/[username]` (`profile`) | Profil d'un membre : favoris, statistiques, journal | `User`, `Entry`, `EntryEvent`, `Favorite` | **livré** (12 septembre, refait le 30) — en-tête à bande floutée (jaquette du dernier favori), deux colonnes dès `lg` : à gauche favoris (dix par rangée, le reste replié), répartition, notes, genres ; à droite calendrier d'activité et journal sur deux colonnes, allongé par « Voir plus ». Calendrier et notes en gris |
 | `/calendar` (`calendar`) | Planning de diffusion, tout ou filtré sur ce qu'on suit | `Media`, `Entry` | **livré** — grille 7 colonnes, navigation de semaine, portée réglable, retard par épisode |
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **livré** (19 septembre) — rangées avec réglette, trois états, chiffres d'étagère |

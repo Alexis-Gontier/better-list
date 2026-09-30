@@ -52,7 +52,7 @@ export function ProfileTimeline({
       l'intérieur d'une journée n'a aucun de ces deux défauts : chaque en-tête garde sa ligne, et
       les colonnes se remplissent toujours également à une entrée près.
     */
-    <ol className="flex flex-col gap-6">
+    <ol className="flex flex-col gap-4">
       {days.map((day) => (
         <li className="flex flex-col gap-2" key={day.key}>
           {/*
@@ -72,13 +72,13 @@ export function ProfileTimeline({
           {/*
             Une grille, et non des colonnes CSS : à l'intérieur d'une journée, l'ordre de lecture
             naturel est **de gauche à droite puis à la ligne**, ce que la grille fait par défaut.
-            Des colonnes CSS rempliraient la gauche de haut en bas, et la deuxième entrée de la
-            journée se retrouverait au milieu de l'écran.
 
-            `gap-x-8` sépare franchement les deux colonnes : sans ça, l'heure d'une entrée de gauche
-            colle au titre de celle de droite, et les deux se lisent comme une seule ligne.
+            **Deux colonnes dès `sm`** (demande d'Alexis, 30 septembre 2026). Une seule colonne avait
+            été essayée quand le journal a rejoint la colonne principale ; elle doublait la hauteur
+            de la carte pour des lignes à moitié vides. L'heure étant désormais sous l'entrée, deux
+            entrées de front ne se confondent plus.
           */}
-          <ol className="grid gap-x-8 lg:grid-cols-2">
+          <ol className="grid gap-x-6 sm:grid-cols-2">
             {day.events.map((event) => (
               <TimelineRow event={event} key={event.id} />
             ))}
@@ -89,7 +89,7 @@ export function ProfileTimeline({
   );
 }
 
-/** Une ligne : la jaquette, ce qui s'est passé, et l'heure. */
+/** Une entrée : la jaquette, puis le titre, ce qui s'est passé et l'heure, sur trois lignes. */
 function TimelineRow({ event }: { event: ProfileEvent }) {
   const line = describeEntryEvent(event, event.unit);
 
@@ -102,7 +102,7 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
         le contenu.
       */}
       <Link
-        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-accent"
+        className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-accent"
         href={routes.media(event.mediaId)}
       >
         <Cover cover={event.cover} title={event.title} />
@@ -119,14 +119,18 @@ function TimelineRow({ event }: { event: ProfileEvent }) {
               <span className="shrink-0 tabular-nums">{line.detail}</span>
             ) : null}
           </span>
+          {/*
+            **L'heure en troisième ligne, sous ce qui s'est passé** (demande d'Alexis, 30 septembre
+            2026). Au bout de la ligne, elle se lisait comme appartenant à l'entrée voisine ; collée
+            au titre, elle le concurrençait. Dessous, elle se lit comme ce qu'elle est : un détail.
+          */}
+          <time
+            className="text-muted-foreground text-xs tabular-nums"
+            dateTime={event.createdAt.toISOString()}
+          >
+            {formatEventTime(event.createdAt)}
+          </time>
         </div>
-
-        <time
-          className="ml-auto shrink-0 text-muted-foreground text-xs tabular-nums"
-          dateTime={event.createdAt.toISOString()}
-        >
-          {formatEventTime(event.createdAt)}
-        </time>
       </Link>
     </li>
   );

@@ -13,7 +13,6 @@ const ENTRY: EntryState = {
   progress: 12,
   progressVolumes: null,
   score: 80,
-  favorite: false,
   notes: "Excellent",
   repeatCount: 1,
   startedAt: new Date("2026-03-11T12:00:00.000Z"),

@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils";
 /**
  * Une année d'activité, une case par jour.
  *
- * **C'est le seul endroit vraiment coloré de l'écran, et c'est délibéré.** La DA du projet dit que
- * la jaquette est la seule chose colorée d'une page ; ici il n'y a pas de jaquette, et la rampe qui
- * monte vers l'accent est ce qui rend l'année lisible d'un coup d'œil. Les quatre autres graphes
- * restent, eux, dans les gris.
+ * **La rampe est passée aux gris le 30 septembre 2026.** Elle montait vers l'accent iris, au titre
+ * de l'exception « un graphe sur un écran sans jaquette ». Depuis, le profil en montre — la bande,
+ * les favoris, le journal —, et l'exception ne tient plus : la couleur de l'écran revient aux
+ * jaquettes (spec du 2 septembre). Du plus sombre au plus clair, la rampe se lit aussi bien.
  *
- * **La rampe est à une seule teinte**, du `--muted` d'une journée vide jusqu'à l'accent. Une échelle
+ * **La rampe est à une seule teinte**, du `--muted` d'une journée vide jusqu'au texte. Une échelle
  * bleu-vers-rouge dirait « froid / chaud », ce qui n'a aucun sens pour un compte d'événements : il
  * n'y a pas de valeur neutre au milieu, juste plus ou moins.
  *
@@ -102,13 +102,13 @@ export function ActivityCalendar({
     <div className="flex flex-col gap-3">
       <ContributionGraph
         /*
-          Des cases de 14 px et non 12 : à 12, la grille d'une année laissait 250 px de vide à
-          droite de la carte, et une carte de chaleur qui n'occupe pas sa largeur se lit comme une
-          vignette. 14 + 4 de gouttière × 53 semaines remplit la colonne à quelques pixels près.
+          Des cases de 10 px et 3 de gouttière depuis le 30 septembre 2026 : le calendrier vit dans
+          la colonne principale, large d'environ 45 rem, et 13 × 53 semaines la remplit sans
+          défilement. Les 14 + 4 d'avant étaient taillés pour la pleine largeur.
         */
-        blockMargin={4}
+        blockMargin={3}
         blockRadius={2}
-        blockSize={14}
+        blockSize={10}
         data={data}
         fontSize={12}
         labels={LABELS}
@@ -160,15 +160,15 @@ export function ActivityCalendar({
 
           <ContributionGraphLegend>
             {({ level }) => (
-              <svg height={14} width={14}>
+              <svg height={10} width={10}>
                 <title>{`Niveau ${level}`}</title>
                 <rect
                   className={LEVEL_FILLS}
                   data-level={level}
-                  height={14}
+                  height={10}
                   rx={2}
                   ry={2}
-                  width={14}
+                  width={10}
                 />
               </svg>
             )}

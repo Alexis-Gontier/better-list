@@ -494,6 +494,9 @@ async function seedTracking(userId: string, catalogue: MirroredMedia[]) {
       /** Note stockée sur 0–100 quelle que soit l'échelle affichée (§4.2) — par pas de 5. */
       const score = slot.scored ? randomInt(11, 20) * 5 : null;
 
+      // Tiré à la même place qu'avant la table `Favorite` : le reste du jeu reste identique.
+      const favorite = random() < 0.2;
+
       const entry = await prisma.entry.create({
         data: {
           userId,
@@ -504,7 +507,6 @@ async function seedTracking(userId: string, catalogue: MirroredMedia[]) {
           repeatCount: slot.status === "REPEATING" ? 1 : 0,
           startedAt,
           finishedAt,
-          favorite: random() < 0.2,
           createdAt: startedAt ?? updatedAt,
           /**
            * `updatedAt` porte `@updatedAt`, mais reste **fournissable à la création** — et il faut
@@ -518,6 +520,18 @@ async function seedTracking(userId: string, catalogue: MirroredMedia[]) {
       });
 
       entryCount++;
+
+      if (favorite) {
+        await prisma.favorite.create({
+          data: {
+            userId,
+            kind: "MEDIA",
+            anilistId: media.id,
+            mediaId: media.id,
+            createdAt: updatedAt,
+          },
+        });
+      }
 
       const events = planEvents({
         status: slot.status,
@@ -775,6 +789,7 @@ async function main() {
     // `EntryEvent` et `ListItem` partent en cascade (`onDelete: Cascade`). `Media` ne bouge pas :
     // c'est le catalogue partagé, pas une donnée de compte.
     await prisma.entry.deleteMany({ where: { userId: user.id } });
+    await prisma.favorite.deleteMany({ where: { userId: user.id } });
     await prisma.list.deleteMany({ where: { ownerId: user.id } });
     await prisma.ownedVolume.deleteMany({ where: { userId: user.id } });
 

@@ -69,6 +69,11 @@ type EntryActionBarProps = {
    * Absent sur un anime : on ne collectionne pas des épisodes, et c'est la fiche qui le décide.
    */
   collection?: React.ReactNode;
+  /**
+   * Le cœur, rendu par le serveur. Un emplacement comme `collection` : la barre parle du suivi, et
+   * un favori ne dépend pas du suivi — on peut aimer une œuvre qu'on ne suit pas.
+   */
+  favorite?: React.ReactNode;
   mediaId: number;
   /**
    * Le titre et la bannière ne servent **qu'à la fenêtre d'édition** : celle-ci les affiche en
@@ -124,6 +129,7 @@ export function EntryActionBar({
   total,
   lists,
   collection,
+  favorite,
 }: EntryActionBarProps) {
   /**
    * Le brouillon est **local et optimiste**, et il le faut.
@@ -310,6 +316,8 @@ export function EntryActionBar({
         rangement — une case par liste, cochée quand l'œuvre y est déjà. Il garde son icône et son
         libellé : c'est le geste qu'il annonçait, il le tient enfin.
       */}
+      {favorite}
+
       <AddToListDialog lists={lists} mediaId={mediaId} title={title} />
 
       {collection}

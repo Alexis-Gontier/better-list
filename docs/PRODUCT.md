@@ -137,7 +137,10 @@ Les statuts reprennent **exactement l'énumération `MediaListStatus` d'AniList*
 MAL reste une correspondance triviale le jour où quelqu'un en a besoin.
 
 Champs : `status`, `progress` (épisodes ou chapitres), `progressVolumes`, `score`,
-`repeatCount`, `startedAt`, `finishedAt`, `notes`, `favorite`, `private`.
+`repeatCount`, `startedAt`, `finishedAt`, `notes`, `private`.
+
+Les favoris (œuvre, personnage, staff) vivent dans leur propre table, `Favorite`, indépendante du
+suivi : on peut aimer une œuvre qu'on ne suit pas.
 
 **`progress` est un curseur, pas un ensemble.** Un entier : « j'en suis à l'épisode 14 ». On ne
 coche pas des épisodes individuellement, et on ne peut pas avoir vu le 4 sans avoir vu le 3 —
