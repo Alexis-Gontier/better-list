@@ -286,3 +286,27 @@
     @apply font-sans;
   }
 }
+
+/*
+  Le défilement du mur de jaquettes des pages d'authentification
+  (`app/(auth)/_components/cover-wall.tsx`).
+
+  Une colonne porte sa liste **deux fois** : glisser de la moitié de sa hauteur la ramène
+  exactement à son image de départ, et la boucle ne se voit pas. La durée se règle par colonne
+  avec `--cover-duration`, pour que les colonnes ne défilent pas d'un même bloc.
+
+  `inline` est nécessaire : sans lui, la variable du thème est résolue sur `:root`, où
+  `--cover-duration` n'existe pas, et toutes les colonnes tournent à la durée par défaut.
+*/
+@theme inline {
+  --animate-cover-rise: cover-rise var(--cover-duration, 80s) linear infinite;
+
+  @keyframes cover-rise {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-50%);
+    }
+  }
+}
