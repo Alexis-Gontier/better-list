@@ -67,8 +67,8 @@ Relevé le **30 septembre 2026**.
 > cul-de-sac : aucune case à cliquer au-delà du tome 1.
 >
 > **L'accueil ne montre que ce qui vient de quelque part.** Trois zones, chacune avec sa frontière :
-> un carrousel de tendances centré (la diapositive active sur les trois quarts du contenu depuis le
-> 28 septembre) — qui dit « Reprendre à l'épisode 12 » sur une œuvre déjà suivie plutôt que son
+> un carrousel de tendances centré (la diapositive active à la largeur du contenu, ses voisines
+> jusqu'aux bords de la fenêtre, depuis le 2 octobre) — qui dit « Reprendre à l'épisode 12 » sur une œuvre déjà suivie plutôt que son
 > synopsis —, « En cours » où **les séries dont un épisode est sorti passent en tête avec leur
 > retard**, puis les tendances, la saison et, depuis le 28 septembre, « Recommandé pour vous ». **Un trait sépare les deux
 > moitiés** — mon suivi au-dessus, la découverte en dessous : c'est la seule frontière de l'écran
@@ -202,7 +202,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 
 | Route | Rôle | Modèles | État |
 | --- | --- | --- | --- |
-| `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel centré, « En cours » mené par les épisodes sortis, tendances, saison, puis « Recommandé pour vous » (28 septembre). « À reprendre » et « Mes listes » retirées le 17 septembre |
+| `/` (`home`) | Carrousel de tendances, suivi, découverte | `Entry`, `Media` | **livré** (14 septembre) — carrousel centré, diapositive à la largeur du contenu et voisines jusqu'aux bords (2 octobre), « En cours » mené par les épisodes sortis, tendances, saison, puis « Recommandé pour vous » (28 septembre). « À reprendre » et « Mes listes » retirées le 17 septembre |
 | `/search` (`search`) | Recherche du catalogue, filtres en URL | `Media`, `Entry` | **livré** — barre, panneau, grille AniList, pagination, repli sur le miroir |
 | `/media/[id]` (`media`) | Fiche d'une œuvre, suivi, journal, ajout aux listes | `Media`, `Entry`, `EntryEvent`, `ListItem` | **hero, suivi et cinq onglets livrés**, chacun avec sa propre lecture AniList — restent le journal et les chiffres de la communauté |
 | `/character/[id]` (`character`) | Un personnage : faits, biographie, apparitions | AniList seul | **livré** (26 septembre, profil repris le 29) — bande floutée, portrait, autres noms en pastilles, faits en tuiles (dont la fiche technique sortie de la biographie), biographie à largeur de lecture, grille paginée avec rôle et doubleur |
