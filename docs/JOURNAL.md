@@ -1487,3 +1487,18 @@ Le build Vercel passe maintenant par un script `vercel-build`, que Vercel préf�
 preview n'applique pas la migration d'une PR à la base de prod avant le merge. `build` ne bouge pas :
 la CI le lance avec une base factice. Une migration qui échoue fait échouer le déploiement, et
 Vercel garde l'ancienne version en ligne : jamais de code neuf sur un schéma ancien.
+
+## 2 octobre 2026 — le carrousel reprend toute la largeur
+
+**Les trois quarts du 28 septembre sont abandonnés** (décision d'Alexis) : la diapositive active
+reprend la largeur du contenu, et le carrousel déborde du `main` pour que ses voisines aillent
+jusqu'aux bords de la fenêtre. Une première lecture de la demande avait étiré le carrousel à toute
+la fenêtre en gardant les trois quarts — une diapositive de plus de 1 000 px ; ce n'était pas ce
+qui était voulu.
+
+**`100vw` ne vaut pas la largeur du contenu dès qu'il y a une barre de défilement.** La version
+d'avant le 28 septembre calculait la diapositive en `min(100vw - 3rem, 69rem)` : mesurée au
+navigateur, elle débordait du contenu de 7,5 px de chaque côté sous 1 200 px, l'épaisseur d'une
+demi-barre. Un conteneur de requête posé dans le `main` règle la question sans JavaScript :
+`100cqw` y vaut exactement la boîte de contenu, à toutes les largeurs.
+

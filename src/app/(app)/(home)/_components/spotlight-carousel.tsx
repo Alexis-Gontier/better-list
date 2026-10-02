@@ -27,8 +27,10 @@ const SLIDE_DURATION = 45;
  * Le carrousel de tête, **centré** : la diapositive active au milieu, ses voisines qui dépassent de
  * part et d'autre, atténuées.
  *
- * **Tout reste dans la largeur du contenu** : la diapositive active en occupe les trois quarts,
- * ses voisines se partagent le reste.
+ * **La diapositive fait la largeur du contenu, le carrousel celle de la fenêtre** (décision
+ * d'Alexis du 2 octobre 2026, qui revient sur les trois quarts du 28 septembre). Même débord que
+ * `MediaBanner` (`left-1/2 w-screen -translate-x-1/2`) ; le `overflow-x-clip` du layout `(app)`
+ * rattrape les pixels de la barre de défilement.
  *
  * Construit sur le motif de la doc shadcn — `setApi` pour suivre la diapositive courante, le
  * plugin `Autoplay` d'Embla pour le défilement. Il se met en pause au survol et ne défile pas du
@@ -68,71 +70,75 @@ export function SpotlightCarousel({ children }: { children: React.ReactNode }) {
   }, [reducedMotion]);
 
   return (
-    <Carousel
-      aria-label="À la une"
-      className="flex flex-col gap-4"
-      opts={{
-        align: "center",
-        loop: slides.length > 2,
-        duration: reducedMotion ? 0 : SLIDE_DURATION,
-      }}
-      plugins={[autoplay.current]}
-      setApi={setApi}
-    >
-      {/*
-        **Le carrousel reste dans la boîte de contenu ; la diapositive en prend les trois quarts.**
-
-        Centrée, elle laisse un huitième de la largeur à chaque voisine, rognées par le conteneur
-        plutôt que débordant jusqu'aux bords de la fenêtre. Sous `lg`, la diapositive reprend toute
-        la largeur : les trois quarts d'une tablette donnent une diapositive presque carrée, où une
-        bannière AniList — cinq fois plus large que haute — ne montre plus que son centre.
+    /*
+      Le conteneur de requête reste dans le `main` : `100cqw` y vaut exactement la largeur du
+      contenu, à tous les points de rupture. `100vw` compterait la barre de défilement, et la
+      diapositive déborderait du contenu de quelques pixels de chaque côté.
+    */
+    <div className="@container">
+      <Carousel
+        aria-label="À la une"
+        className="relative left-1/2 flex w-screen -translate-x-1/2 flex-col gap-4"
+        opts={{
+          align: "center",
+          loop: slides.length > 2,
+          duration: reducedMotion ? 0 : SLIDE_DURATION,
+        }}
+        plugins={[autoplay.current]}
+        setApi={setApi}
+      >
+        {/*
+        **La diapositive reprend exactement la boîte de contenu du `main`** (`100cqw`, mesurée sur
+        le conteneur de requête ci-dessus) ; le carrousel, lui, sort jusqu'aux bords de la fenêtre,
+        et les voisines dépassent jusque-là, atténuées.
 
         `data-current` et le groupe `spotlight` laissent la diapositive éteindre son texte quand elle
         n'est pas au centre : sans quoi un bout de titre dépasse dans la marge d'une voisine.
 
-        L'écart est porté par un `px-1` **symétrique** plutôt que le `pl-4` par défaut : centrée, une
-        diapositive à marge gauche seule serait décalée vers la droite. D'où le `ml-0`, qui annule
-        le `-ml-4` du conteneur.
+        L'écart est porté par un `px-2` **symétrique** plutôt que le `pl-4` par défaut : centrée, une
+        diapositive à marge gauche seule serait décalée de huit pixels vers la droite du contenu.
+        D'où le `+ 1rem` sur la base, et le `ml-0` qui annule le `-ml-4` du conteneur.
       */}
-      <CarouselContent className="ml-0">
-        {slides.map((slide, index) => (
-          <CarouselItem
-            aria-label={`${index + 1} sur ${slides.length}`}
-            className={cn(
-              "group/spotlight basis-full px-1 transition-opacity duration-700 ease-out lg:basis-3/4 motion-reduce:transition-none",
-              index !== current && "opacity-40",
-            )}
-            data-current={index === current}
-            // biome-ignore lint/suspicious/noArrayIndexKey: l'ordre des diapositives est figé au rendu serveur.
-            key={index}
-          >
-            {slide}
-          </CarouselItem>
-        ))}
-      </CarouselContent>
+        <CarouselContent className="ml-0">
+          {slides.map((slide, index) => (
+            <CarouselItem
+              aria-label={`${index + 1} sur ${slides.length}`}
+              className={cn(
+                "group/spotlight basis-[calc(100cqw+1rem)] px-2 transition-opacity duration-700 ease-out motion-reduce:transition-none",
+                index !== current && "opacity-40",
+              )}
+              data-current={index === current}
+              // biome-ignore lint/suspicious/noArrayIndexKey: l'ordre des diapositives est figé au rendu serveur.
+              key={index}
+            >
+              {slide}
+            </CarouselItem>
+          ))}
+        </CarouselContent>
 
-      {count > 1 ? (
-        <div className="flex items-center justify-center">
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: count }, (_, index) => (
-              <button
-                aria-current={index === current}
-                aria-label={`Aller à la diapositive ${index + 1}`}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500 ease-out motion-reduce:transition-none",
-                  index === current
-                    ? "w-6 bg-primary"
-                    : "w-1.5 bg-muted-foreground/40 hover:bg-muted-foreground",
-                )}
-                // biome-ignore lint/suspicious/noArrayIndexKey: un point par diapositive, dans le même ordre.
-                key={index}
-                onClick={() => api?.scrollTo(index)}
-                type="button"
-              />
-            ))}
+        {count > 1 ? (
+          <div className="flex items-center justify-center">
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: count }, (_, index) => (
+                <button
+                  aria-current={index === current}
+                  aria-label={`Aller à la diapositive ${index + 1}`}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-500 ease-out motion-reduce:transition-none",
+                    index === current
+                      ? "w-6 bg-primary"
+                      : "w-1.5 bg-muted-foreground/40 hover:bg-muted-foreground",
+                  )}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: un point par diapositive, dans le même ordre.
+                  key={index}
+                  onClick={() => api?.scrollTo(index)}
+                  type="button"
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ) : null}
-    </Carousel>
+        ) : null}
+      </Carousel>
+    </div>
   );
 }

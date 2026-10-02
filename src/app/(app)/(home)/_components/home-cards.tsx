@@ -115,7 +115,7 @@ export function FeaturedSpotlight({
           )}
           fill
           priority={priority}
-          sizes="(min-width: 1024px) 70vw, 90vw"
+          sizes="(min-width: 1200px) 69rem, 100vw"
           src={background}
         />
       ) : null}
