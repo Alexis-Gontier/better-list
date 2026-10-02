@@ -1,22 +1,22 @@
 "use client";
 
-import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { routes } from "@/config/routes";
 import { signIn } from "@/lib/auth/client";
 
 /**
  * Lucide a retiré les logos de marque de sa bibliothèque : le mark GitHub est donc en SVG
- * direct, dimensionné comme les icônes Lucide pour rester cohérent dans le bouton.
+ * direct, marqué `data-icon` pour que le bouton le dimensionne comme une icône Lucide.
  */
 function GithubMark() {
   return (
     <svg
       aria-hidden="true"
-      className="size-4"
+      data-icon="inline-start"
       fill="currentColor"
       viewBox="0 0 16 16"
       xmlns="http://www.w3.org/2000/svg"
@@ -52,17 +52,8 @@ export function GithubSignInButton({ callbackUrl }: { callbackUrl?: string }) {
   }
 
   return (
-    <Button
-      className="w-full"
-      disabled={isPending}
-      onClick={handleSignIn}
-      type="button"
-    >
-      {isPending ? (
-        <Loader2Icon aria-hidden="true" className="animate-spin" />
-      ) : (
-        <GithubMark />
-      )}
+    <Button disabled={isPending} onClick={handleSignIn} size="lg" type="button">
+      {isPending ? <Spinner data-icon="inline-start" /> : <GithubMark />}
       Continuer avec GitHub
     </Button>
   );

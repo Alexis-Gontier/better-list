@@ -217,7 +217,7 @@ Chaque route et où elle en est. La clé entre parenthèses est celle de
 | `/settings` (`settings`) | Préférences d'affichage | `UserPreferences` | **livré** — bloc compte en lecture seule, langue des titres et contenu adulte, chaque contrôle enregistrant seul |
 | `/collection` (`collection.root`) | Mon étagère : séries possédées, tomes manquants | `Edition`, `OwnedVolume` | **livré** (19 septembre) — rangées avec réglette, trois états, chiffres d'étagère |
 | `/collection/[mediaId]` (`collection.detail`) | Une série : tomes possédés, saisie par plage | `Edition`, `OwnedVolume` | **livré** (19 septembre) — grille qu'on peint, case « + » pour le tome qui vient de paraître, nombre de tomes réglable |
-| `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — seul écran réel |
+| `/login` · `/signup` · `/waitlist` (`auth.*`) | Connexion GitHub, liste d'attente | `User`, `Session`, `Account` | **livré** — refait le 2 octobre : le texte à gauche, un mur de jaquettes des tendances qui défile à droite |
 
 La colonne « Features consommées » avait disparu de ce tableau quand plus aucune route ne consommait
 de feature. Elle n'était pas revenue tant que les routes livrées lisaient toutes le même trio —

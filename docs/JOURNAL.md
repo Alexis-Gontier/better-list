@@ -1502,3 +1502,20 @@ navigateur, elle débordait du contenu de 7,5 px de chaque côté sous 1 200 px,
 demi-barre. Un conteneur de requête posé dans le `main` règle la question sans JavaScript :
 `100cqw` y vaut exactement la boîte de contenu, à toutes les largeurs.
 
+Même jour : **les pages d'authentification refaites.** La mise en page vient de la page premium
+d'Ortega Scans, désignée par Alexis : le texte à gauche, un mur de jaquettes incliné en 3D qui
+défile à droite. Une première version en avait aussi repris la voix — capitales très grasses, un
+mot sur un bloc d'accent, des puces violettes — et Alexis l'a ramenée à la DA du site : le titre
+de la fiche un cran plus grand, l'accent sur le seul bouton de connexion, des jaquettes à la
+matière de `MediaCard`. C'est la règle des quatre emplois de l'accent
+(docs/superpowers/specs/2026-09-02-refonte-design-ui-design.md) qui tranche, pas le goût.
+
+**Une variable de thème ne se règle pas par élément.** La durée de défilement passait par
+`var(--cover-duration, 80s)` dans `@theme` : la variable y est résolue sur `:root`, et les quatre
+colonnes tournaient à 80 s malgré leurs réglages. `@theme inline` recopie la valeur dans
+l'utilitaire, où elle se lit sur l'élément.
+
+`/waitlist` a été vérifiée sur une branche Neon jetable, avec un compte `PENDING` et une session
+signée à la main — `next dev` refuse deux serveurs dans le même dossier, il a fallu arrêter celui du
+port 3000 le temps de la vérification.
+
