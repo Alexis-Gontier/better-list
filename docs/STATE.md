@@ -1046,6 +1046,9 @@ Deux choses apprises au navigateur : **`pageInfo.total` vaut 5000 pour toute rec
 d'où « Meilleurs résultats » au plafond plutôt qu'un chiffre ; et cmdk laissait sa sélection sur
 « Aller à » quand les résultats arrivaient au-dessus, si bien qu'`Entrée` ouvrait la bibliothèque —
 la sélection est désormais pilotée. `use-debounced-value` et `cmdk` ont quitté le gel de `knip.jsonc`.
+**Depuis le 5 octobre 2026, `Entrée` mène à `/search`** (décision d'Alexis) : dès qu'un terme est
+tapé, une ligne « Rechercher « … » » se pose en tête de la palette, sélectionnée ; ouvrir une œuvre
+demande une flèche vers le bas.
 
 Le cron de rafraîchissement du miroir figurait ici aussi ; il a été repris le 7 septembre 2026, hors
 de l'ordre des écrans puisqu'il n'en est pas un.
