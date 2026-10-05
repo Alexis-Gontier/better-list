@@ -67,6 +67,9 @@ const SEARCH_DEBOUNCE_MS = 250;
  */
 const ITEM_CLASS = "cursor-pointer data-[selected=true]:bg-accent";
 
+/** La valeur cmdk de la ligne « Rechercher … » — distincte de tout id AniList, qui est numérique. */
+const SEARCH_ALL_VALUE = "search-all";
+
 /**
  * Où en est la recherche du terme courant.
  *
@@ -85,11 +88,11 @@ export function CommandSearch() {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>({ phase: "idle" });
   /*
-    **La ligne sélectionnée est pilotée, et c'est un correctif, pas un confort.** Pendant le
-    chargement, seul « Aller à » est rendu : cmdk y pose sa sélection. Quand les résultats arrivent
-    au-dessus, il la laisse en bas — et Entrée ouvrait « Ma bibliothèque » au lieu de la première
-    œuvre. Vu au navigateur le 13 septembre 2026. Chaque réponse remet donc la sélection sur son
-    premier résultat.
+    **La ligne sélectionnée est pilotée.** Dès qu'un terme est tapé, elle se pose sur « Rechercher
+    … », la première ligne : Entrée mène à `/search` avec le terme (décision d'Alexis du 5 octobre
+    2026), et les flèches descendent vers les œuvres. Sans ce pilotage, cmdk laissait la sélection
+    sur « Aller à » pendant le chargement — et Entrée ouvrait « Ma bibliothèque ». Vu au navigateur
+    le 13 septembre 2026.
   */
   const [selected, setSelected] = useState("");
 
@@ -136,8 +139,6 @@ export function CommandSearch() {
     })
       .then((result) => {
         setState({ phase: "done", query: term, result });
-        const [first] = result.items;
-        if (first) setSelected(String(first.id));
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
@@ -221,7 +222,10 @@ export function CommandSearch() {
           value={selected}
         >
           <CommandInput
-            onValueChange={setQuery}
+            onValueChange={(value) => {
+              setQuery(value);
+              if (value.trim()) setSelected(SEARCH_ALL_VALUE);
+            }}
             placeholder="Rechercher un titre…"
             value={query}
           />
@@ -262,6 +266,29 @@ export function CommandSearch() {
             le champ visible.
           */}
           <CommandList className="max-h-[min(36rem,75dvh)]">
+            {/*
+              **Entrée lance la recherche complète.** La ligne est en tête et sélectionnée dès la
+              frappe : taper un titre puis Entrée mène à `/search`, comme dans un champ de
+              recherche ordinaire. Ouvrir une œuvre demande une flèche de plus.
+            */}
+            {query.trim() ? (
+              <CommandGroup>
+                <CommandItem
+                  className={ITEM_CLASS}
+                  onSelect={() => go(searchHref)}
+                  value={SEARCH_ALL_VALUE}
+                >
+                  <SearchIcon />
+                  <span className="truncate">
+                    Rechercher « {query.trim()} »
+                  </span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    Tout le catalogue
+                  </span>
+                </CommandItem>
+              </CommandGroup>
+            ) : null}
+
             {result && result.items.length > 0 ? (
               <CommandGroup heading="Œuvres">
                 {result.items.map((item) => (

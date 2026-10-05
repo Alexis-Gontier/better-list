@@ -22,6 +22,15 @@ import { prisma } from "@/lib/db/prisma";
 
 export const EPISODE_CARD_SIZE = { width: 1200, height: 630 };
 
+/**
+ * La jaquette à fond perdu sur toute la hauteur, au format 2:3 d'une jaquette AniList.
+ *
+ * Elle flottait avant dans un cadre bordé de 315 × 450, plus petit que la carte et décalé de ses
+ * marges (revu le 5 octobre 2026) : collée au bord, elle occupe la place qu'il lui faut sans rien
+ * avoir à aligner.
+ */
+const COVER_WIDTH = 420;
+
 /*
   En hexadécimal et non repris de `globals.css` : Satori ne lit ni les variables CSS ni `oklch`.
   Mêmes valeurs que `l/[token]/opengraph-image.tsx`.
@@ -114,101 +123,98 @@ export async function renderEpisodeCard(
         }}
       />
 
-      <div
-        style={{
-          alignItems: "center",
-          display: "flex",
-          gap: 56,
-          height: "100%",
-          padding: 64,
-          position: "relative",
-          width: "100%",
-        }}
-      >
-        {media.coverImage ? (
-          // biome-ignore lint/performance/noImgElement: Satori ne connaît que `<img>`, pas `next/image`.
-          <img
-            alt=""
-            height={450}
-            src={media.coverImage}
-            style={{
-              border: `4px solid ${accent}`,
-              borderRadius: 20,
-              objectFit: "cover",
-            }}
-            width={315}
-          />
-        ) : null}
-
+      {media.coverImage ? (
+        // biome-ignore lint/performance/noImgElement: Satori ne connaît que `<img>`, pas `next/image`.
+        <img
+          alt=""
+          height={EPISODE_CARD_SIZE.height}
+          src={media.coverImage}
+          style={{ objectFit: "cover", position: "relative" }}
+          width={COVER_WIDTH}
+        />
+      ) : null}
+      {/* Un filet de la couleur de la jaquette fait la couture entre l'image et le texte. */}
+      {media.coverImage ? (
         <div
           style={{
+            background: accent,
             display: "flex",
-            flex: 1,
-            flexDirection: "column",
             height: "100%",
-            justifyContent: "space-between",
+            position: "relative",
+            width: 8,
           }}
-        >
-          <div style={{ alignItems: "center", display: "flex", gap: 14 }}>
-            <svg
-              aria-hidden="true"
-              fill={PAPER}
-              height={32}
-              viewBox="0 0 24 24"
-              width={32}
-            >
-              <path d={logoPath} fillRule="evenodd" />
-            </svg>
-            <div style={{ color: MUTED, display: "flex", fontSize: 26 }}>
-              Better-List
-            </div>
+        />
+      ) : null}
+
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "56px 64px",
+          position: "relative",
+        }}
+      >
+        <div style={{ alignItems: "center", display: "flex", gap: 14 }}>
+          <svg
+            aria-hidden="true"
+            fill={PAPER}
+            height={32}
+            viewBox="0 0 24 24"
+            width={32}
+          >
+            <path d={logoPath} fillRule="evenodd" />
+          </svg>
+          <div style={{ color: MUTED, display: "flex", fontSize: 26 }}>
+            Better-List
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div
+            style={{
+              alignSelf: "flex-start",
+              background: accent,
+              borderRadius: 999,
+              color: INK,
+              display: "flex",
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: 2,
+              padding: "8px 20px",
+            }}
+          >
+            NOUVEL ÉPISODE
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ alignItems: "baseline", display: "flex", gap: 16 }}>
             <div
               style={{
-                alignSelf: "flex-start",
-                background: accent,
-                borderRadius: 999,
-                color: INK,
                 display: "flex",
-                fontSize: 22,
+                fontSize: 104,
                 fontWeight: 700,
-                letterSpacing: 2,
-                padding: "8px 20px",
+                lineHeight: 1,
               }}
             >
-              NOUVEL ÉPISODE
+              {`Épisode ${card.episode}`}
             </div>
-
-            <div style={{ alignItems: "baseline", display: "flex", gap: 20 }}>
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: 112,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {`Épisode ${card.episode}`}
+            {media.episodes ? (
+              <div style={{ color: MUTED, display: "flex", fontSize: 40 }}>
+                {`/ ${media.episodes}`}
               </div>
-              {media.episodes ? (
-                <div style={{ color: MUTED, display: "flex", fontSize: 40 }}>
-                  {`/ ${media.episodes}`}
-                </div>
-              ) : null}
-            </div>
+            ) : null}
+          </div>
 
-            <div
-              style={{
-                display: "flex",
-                fontSize: 44,
-                fontWeight: 600,
-                lineHeight: 1.2,
-              }}
-            >
-              {title}
-            </div>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 44,
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
+            {title}
           </div>
         </div>
       </div>

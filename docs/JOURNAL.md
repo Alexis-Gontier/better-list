@@ -1519,3 +1519,15 @@ l'utilitaire, où elle se lit sur l'élément.
 signée à la main — `next dev` refuse deux serveurs dans le même dossier, il a fallu arrêter celui du
 port 3000 le temps de la vérification.
 
+## 5 octobre 2026
+
+**La palette : `Entrée` lance la recherche complète.** Une ligne « Rechercher « … » » en tête,
+sélectionnée dès la frappe, mène à `/search` avec le terme ; les œuvres sont une flèche plus bas.
+**La carte Discord d'un épisode est refaite** : la jaquette n'est plus un cadre bordé de 315 × 450
+qui flottait dans la carte, elle est à fond perdu sur toute la hauteur (420 × 630, 2:3), cousue au
+texte par un filet de sa couleur.
+
+**`next dev` ne voit pas toujours une écriture faite hors de l'éditeur** : la route de la carte a
+servi l'ancien rendu jusqu'au redémarrage du serveur. Et l'en-tête `immutable` de la carte fait que
+le navigateur ou `curl` ressert la même image pour une même URL : pour revoir un rendu, changer le
+numéro d'épisode (et donc la signature).
