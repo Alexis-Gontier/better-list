@@ -22,6 +22,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Spinner } from "@/components/ui/spinner";
@@ -282,9 +283,14 @@ export function CommandSearch() {
                   <span className="truncate">
                     Rechercher « {query.trim()} »
                   </span>
-                  <span className="ml-auto text-xs text-muted-foreground">
+                  {/*
+                    `CommandShortcut` et non un `span` en `ml-auto` : `CommandItem` porte une coche
+                    invisible, elle aussi en `ml-auto`, qui partageait l'espace libre — le libellé
+                    s'arrêtait au milieu de la ligne. Le raccourci la masque.
+                  */}
+                  <CommandShortcut className="tracking-normal">
                     Tout le catalogue
-                  </span>
+                  </CommandShortcut>
                 </CommandItem>
               </CommandGroup>
             ) : null}
