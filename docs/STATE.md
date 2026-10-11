@@ -19,7 +19,9 @@ Relevé le **11 octobre 2026**.
 > **synonymes AniList**, désormais mirroités (`Media.synonyms`, un par ligne) — comme AniList. La
 > migration `20261011120000_media_synonyms` déclare tout le miroir périmé : le cron
 > `refresh-media` remplit les synonymes des lignes existantes au fil de ses passes. Le bouton de
-> sens est promu dans `components/shared/sort-direction-button.tsx`.
+> sens est promu dans `components/shared/sort-direction-button.tsx`. Les trois colonnes de titre
+> passent en collation ICU (`und-x-icu`) : un tri par titre ne range plus « BLEACH » avant « Black
+> Bullet » — la base est en `C.UTF-8`, qui compare octet par octet.
 >
 > **Le 30 septembre, les favoris.** Un cœur sur la fiche d'une œuvre, sur `/character/[id]` et sur
 > `/staff/[id]` ; le profil gagne une section « Favoris » en quatre rangées — Anime, Manga,
