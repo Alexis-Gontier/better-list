@@ -172,9 +172,6 @@ export const searchMediaInputSchema = z.object({
   includeAdult: z.boolean().default(false),
 });
 
-/** Ce qu'on passe à `searchMedia` : tout est optionnel, les défauts sont dans le schéma. */
-export type SearchMediaInput = z.input<typeof searchMediaInputSchema>;
-
 /** Ce que le schéma produit une fois validé : plus aucun champ à défaut n'est optionnel. */
 export type SearchMediaParams = z.output<typeof searchMediaInputSchema>;
 

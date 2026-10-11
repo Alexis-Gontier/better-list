@@ -142,27 +142,6 @@ const MEDIA_MIRROR_FIELDS = /* GraphQL */ `
 `;
 
 /**
- * Sélection du catalogue éditorialisé de l'accueil : **la carte compacte, plus la bannière**.
- *
- * Elle recopiait champ par champ la sélection compacte, en y ajoutant `seasonYear` et `genres`.
- * Depuis le 14 septembre 2026, ces deux-là sont dans `MediaCompactFields` — le panneau de survol les
- * demande partout —, et ce fragment se contente donc de **le composer**. Deux sélections qui
- * divergent silencieusement, c'est exactement ce que la recopie rendait possible.
- *
- * `bannerImage` sert au **hero** de l'accueil, et à lui seul : les vignettes n'en veulent pas. Elle
- * est demandée ici plutôt que dans un alias dédié parce qu'un cinquième champ `Page` coûterait une
- * entrée de plus dans la réponse pour redemander des œuvres que `trending` ramène déjà — le hero se
- * sert dans cette rangée quand la bibliothèque est vide (`home-hero.tsx`). Un champ de plus sur
- * quarante-huit cartes, contre une requête entière économisée.
- */
-const MEDIA_BROWSE_FIELDS = /* GraphQL */ `
-  fragment MediaBrowseFields on Media {
-    ...MediaCompactFields
-    bannerImage
-  }
-`;
-
-/**
  * Rafraîchissement du miroir, **par lots de cinquante**.
  *
  * `id_in` est ce qui rend le cron tenable : cinquante fiches pour une requête, donc un miroir de
@@ -181,68 +160,6 @@ export const MEDIA_MIRROR_QUERY = /* GraphQL */ `
     }
   }
   ${MEDIA_MIRROR_FIELDS}
-`;
-
-/**
- * Le catalogue éditorialisé de `/browse` : cinq rangées, **une seule requête AniList**.
- *
- * GraphQL autorise plusieurs champs `Page` dans le même document dès qu'ils portent des alias, et
- * c'est exactement ce que le quota commande : cinq requêtes séparées coûteraient cinq crédits sur les
- * trente de la minute, partagés par tous les visiteurs. Une seule en coûte un.
- *
- * `status_not: NOT_YET_RELEASED` sur les mieux notés n'est pas cosmétique : une œuvre non diffusée
- * porte parfois une moyenne calculée sur trois votes, qui la placerait en tête d'un classement censé
- * dire quelque chose.
- */
-export const BROWSE_CATALOGUE_QUERY = /* GraphQL */ `
-  query BrowseCatalogue(
-    $season: MediaSeason
-    $seasonYear: Int
-    $nextSeason: MediaSeason
-    $nextSeasonYear: Int
-    $perPage: Int = 12
-    $isAdult: Boolean
-  ) {
-    trending: Page(page: 1, perPage: $perPage) {
-      media(type: ANIME, sort: [TRENDING_DESC], isAdult: $isAdult) {
-        ...MediaBrowseFields
-      }
-    }
-    season: Page(page: 1, perPage: $perPage) {
-      media(
-        type: ANIME
-        season: $season
-        seasonYear: $seasonYear
-        sort: [POPULARITY_DESC]
-        isAdult: $isAdult
-      ) {
-        ...MediaBrowseFields
-      }
-    }
-    upcoming: Page(page: 1, perPage: $perPage) {
-      media(
-        type: ANIME
-        season: $nextSeason
-        seasonYear: $nextSeasonYear
-        sort: [POPULARITY_DESC]
-        isAdult: $isAdult
-      ) {
-        ...MediaBrowseFields
-      }
-    }
-    topRated: Page(page: 1, perPage: $perPage) {
-      media(
-        type: ANIME
-        sort: [SCORE_DESC]
-        status_not: NOT_YET_RELEASED
-        isAdult: $isAdult
-      ) {
-        ...MediaBrowseFields
-      }
-    }
-  }
-  ${MEDIA_BROWSE_FIELDS}
-  ${MEDIA_COMPACT_FIELDS}
 `;
 
 /**

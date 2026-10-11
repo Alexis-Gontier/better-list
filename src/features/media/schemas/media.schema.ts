@@ -364,23 +364,6 @@ export const mediaMirrorSchema = z.object({
 export type MediaMirror = z.infer<typeof mediaMirrorSchema>;
 
 /**
- * Carte du catalogue éditorialisé : la carte compacte, **plus la bannière**.
- *
- * `MediaCard` attend un `MediaCompact` ; l'extension le satisfait donc sans conversion.
- *
- * Elle redéclarait `seasonYear` et `genres` jusqu'au 14 septembre 2026 ; `mediaCompactSchema` les
- * porte désormais pour tout le monde, et l'extension se réduit au seul champ qui lui est propre.
- *
- * `bannerImage` n'est lu que par le hero de l'accueil, qui se rabat sur les tendances quand la
- * bibliothèque est vide. Elle est `null` sur la plupart des mangas et des webtoons chez AniList —
- * l'appelant doit toujours prévoir le cas.
- */
-export const mediaBrowseSchema = mediaCompactSchema.extend({
-  bannerImage: z.string().nullable(),
-});
-export type MediaBrowse = z.infer<typeof mediaBrowseSchema>;
-
-/**
  * Une diffusion : un épisode d'une œuvre, à une heure.
  *
  * `airingAt` est un horodatage Unix **en secondes** — c'est la convention d'AniList, et c'est aussi
@@ -440,7 +423,6 @@ export const pageInfoSchema = z.object({
   hasNextPage: z.boolean().nullable(),
   perPage: z.number().int().nullable(),
 });
-export type PageInfo = z.infer<typeof pageInfoSchema>;
 
 // --- Forme du `data` par query ---------------------------------------------
 
@@ -510,19 +492,6 @@ export const mediaMirrorDataSchema = z.object({
   Page: z.object({
     media: z.array(mediaMirrorSchema),
   }),
-});
-
-/**
- * Les quatre rangées de l'accueil, ramenées par un seul document à alias multiples.
- *
- * Les clés sont les alias du document GraphQL : les renommer ici sans les renommer là-bas fait
- * échouer la validation, ce qui est le bon côté pour se tromper.
- */
-export const browseCatalogueDataSchema = z.object({
-  trending: z.object({ media: z.array(mediaBrowseSchema) }),
-  season: z.object({ media: z.array(mediaBrowseSchema) }),
-  upcoming: z.object({ media: z.array(mediaBrowseSchema) }),
-  topRated: z.object({ media: z.array(mediaBrowseSchema) }),
 });
 
 export const airingScheduleDataSchema = z.object({
