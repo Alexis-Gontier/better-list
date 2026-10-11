@@ -199,6 +199,7 @@ async function LibraryResults({
   const { items, page, pageCount } = await getLibrary({
     filters,
     includeAdult,
+    titleLanguage,
   });
 
   /*

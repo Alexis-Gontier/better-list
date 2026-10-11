@@ -349,6 +349,20 @@ export function mediaTitle(
 }
 
 /**
+ * La colonne de `Media` sur laquelle trier par titre, selon la même préférence.
+ *
+ * Chacune est **générée par PostgreSQL** avec l'ordre de repli de `mediaTitle` ci-dessus
+ * (migration `20261011140000_title_sort_keys`) : un tri qui suivrait le romaji rangerait à S
+ * « Shingeki no Kyojin » sous une carte qui affiche « Attack on Titan ». Les deux ordres vivent à
+ * deux endroits, SQL et TypeScript — à changer ensemble.
+ */
+export const TITLE_SORT_FIELD = {
+  ROMAJI: "titleSortRomaji",
+  ENGLISH: "titleSortEnglish",
+  NATIVE: "titleSortNative",
+} as const satisfies Record<TitleLanguage, string>;
+
+/**
  * Les colonnes du miroir dont l'affichage a besoin. Décrites en structure plutôt qu'importées du
  * client Prisma : ce type traverse la frontière server/client avec les données qu'il décrit.
  */

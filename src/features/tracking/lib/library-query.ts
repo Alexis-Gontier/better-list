@@ -1,3 +1,5 @@
+import { TITLE_SORT_FIELD } from "@/features/media/lib/media-format";
+import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import {
   type LibraryFilterValues,
   resolveLibraryDirection,
@@ -80,13 +82,14 @@ const nullsLast = (sort: Order) => ({ sort, nulls: "last" as const });
  * (docs/PRODUCT.md §4.2), et une œuvre jamais commencée n'a pas commencé « il y a très longtemps ».
  * Les remonter en tête quand on renverse le sens serait le contraire de la question posée.
  *
- * Le tri par titre suit le romaji et **pas encore `titleLanguage`** : c'est le manque relevé au
- * §1.10 de docs/recherche-filtres.md, et il vaut ici aussi. L'ordre alphabétique lui-même — la
- * casse et les accents à leur place — vient de la collation ICU des colonnes de titre (migration
- * `20261011130000_title_collation`), pas d'une option de tri : Prisma n'en a pas.
+ * Le tri par titre suit **la langue d'affichage du compte**, repli compris (`TITLE_SORT_FIELD`) :
+ * la grille se lit dans l'ordre de ce qu'elle montre. L'ordre alphabétique lui-même — la casse et
+ * les accents à leur place — vient de la collation ICU des colonnes, pas d'une option de tri :
+ * Prisma n'en a pas.
  */
 export function libraryOrderBy(
   filters: Pick<LibraryFilterValues, "sort" | "dir" | "type">,
+  titleLanguage: TitleLanguage,
 ) {
   const order: Order =
     resolveLibraryDirection(filters.sort, filters.dir) === "ASC"
@@ -98,7 +101,10 @@ export function libraryOrderBy(
     case "added":
       return [{ createdAt: order }, { id: "asc" as const }];
     case "title":
-      return [{ media: { titleRomaji: nullsLast(order) } }, ...tieBreak];
+      return [
+        { media: { [TITLE_SORT_FIELD[titleLanguage]]: nullsLast(order) } },
+        ...tieBreak,
+      ];
     case "score":
       return [{ score: nullsLast(order) }, ...tieBreak];
     case "progress":

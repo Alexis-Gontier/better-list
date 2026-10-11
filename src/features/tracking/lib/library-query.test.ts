@@ -72,20 +72,20 @@ describe("mediaConditions — le terme", () => {
 
 describe("libraryOrderBy", () => {
   it("prend le sens naturel du tri quand l'URL n'en dit rien", () => {
-    expect(libraryOrderBy({ sort: "title", dir: null, type: null })[0]).toEqual(
-      { media: { titleRomaji: { sort: "asc", nulls: "last" } } },
-    );
-    expect(libraryOrderBy({ sort: "score", dir: null, type: null })[0]).toEqual(
-      { score: { sort: "desc", nulls: "last" } },
-    );
+    expect(
+      libraryOrderBy({ sort: "title", dir: null, type: null }, "ROMAJI")[0],
+    ).toEqual({ media: { titleSortRomaji: { sort: "asc", nulls: "last" } } });
+    expect(
+      libraryOrderBy({ sort: "score", dir: null, type: null }, "ROMAJI")[0],
+    ).toEqual({ score: { sort: "desc", nulls: "last" } });
   });
 
   it("renverse le sens sans déplacer les vides", () => {
     expect(
-      libraryOrderBy({ sort: "score", dir: "ASC", type: null })[0],
+      libraryOrderBy({ sort: "score", dir: "ASC", type: null }, "ROMAJI")[0],
     ).toEqual({ score: { sort: "asc", nulls: "last" } });
     expect(
-      libraryOrderBy({ sort: "finished", dir: "ASC", type: null })[0],
+      libraryOrderBy({ sort: "finished", dir: "ASC", type: null }, "ROMAJI")[0],
     ).toEqual({ finishedAt: { sort: "asc", nulls: "last" } });
   });
 
@@ -104,19 +104,30 @@ describe("libraryOrderBy", () => {
 
     for (const sort of sorts) {
       for (const dir of [null, "ASC", "DESC"] as const) {
-        expect(libraryOrderBy({ sort, dir, type: null }).at(-1)).toEqual({
+        expect(
+          libraryOrderBy({ sort, dir, type: null }, "ROMAJI").at(-1),
+        ).toEqual({
           id: "asc",
         });
       }
     }
   });
 
+  it("trie le titre dans la langue affichée, repli compris", () => {
+    expect(
+      libraryOrderBy({ sort: "title", dir: null, type: null }, "ENGLISH")[0],
+    ).toEqual({ media: { titleSortEnglish: { sort: "asc", nulls: "last" } } });
+    expect(
+      libraryOrderBy({ sort: "title", dir: "DESC", type: null }, "NATIVE")[0],
+    ).toEqual({ media: { titleSortNative: { sort: "desc", nulls: "last" } } });
+  });
+
   it("trie la longueur sur la colonne du type posé", () => {
     expect(
-      libraryOrderBy({ sort: "length", dir: null, type: "ANIME" })[0],
+      libraryOrderBy({ sort: "length", dir: null, type: "ANIME" }, "ROMAJI")[0],
     ).toEqual({ media: { episodes: { sort: "desc", nulls: "last" } } });
     expect(
-      libraryOrderBy({ sort: "length", dir: null, type: "MANGA" })[0],
+      libraryOrderBy({ sort: "length", dir: null, type: "MANGA" }, "ROMAJI")[0],
     ).toEqual({ media: { chapters: { sort: "desc", nulls: "last" } } });
   });
 });

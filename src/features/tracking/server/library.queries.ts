@@ -6,6 +6,7 @@ import {
   MIRRORED_MEDIA_SELECT,
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import {
@@ -297,9 +298,12 @@ export type LibraryPage = {
 export async function getLibrary({
   filters,
   includeAdult,
+  titleLanguage,
 }: {
   filters: LibraryFilterValues;
   includeAdult: boolean;
+  /** Décide du tri par titre : la grille se range dans l'ordre de ce qu'elle affiche. */
+  titleLanguage: TitleLanguage;
 }): Promise<LibraryPage> {
   const userId = await currentUserId();
   const where = libraryWhere({
@@ -320,7 +324,7 @@ export async function getLibrary({
 
   const rows = await prisma.entry.findMany({
     where,
-    orderBy: libraryOrderBy(filters),
+    orderBy: libraryOrderBy(filters, titleLanguage),
     skip: (page - 1) * CATALOGUE_PAGE_SIZE,
     take: CATALOGUE_PAGE_SIZE,
     select: {

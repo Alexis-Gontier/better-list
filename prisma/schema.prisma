@@ -320,13 +320,21 @@ model Media {
   /// Code ISO 3166-1 alpha-2. Distingue manga (JP), manhwa (KR), manhua (CN).
   countryOfOrigin String?      @db.Char(2)
 
-  titleRomaji  String?
-  titleEnglish String?
-  titleNative  String?
+  titleRomaji      String?
+  titleEnglish     String?
+  titleNative      String?
   /// Les synonymes AniList (« SNK », « L'Attaque des Titans »…), **un par ligne**. Du texte et pas
   /// un `String[]` : Prisma ne sait chercher dans un tableau que par égalité (`has`), et la
   /// recherche de `/library` a besoin d'un `contains` insensible à la casse, comme sur les titres.
-  synonyms     String  @default("")
+  synonyms         String  @default("")
+  /// Clés de tri par titre, une par `TitleLanguage` : le titre dans cette langue, sinon les
+  /// autres dans l'ordre de repli de `mediaTitle`. **Colonnes générées par PostgreSQL** (migration
+  /// `20261011140000_title_sort_keys`) : on ne les écrit jamais. Prisma ne connaît pas les colonnes
+  /// générées et les lit comme un `dbgenerated` ; l'expression est recopiée telle qu'il l'introspecte,
+  /// sinon `migrate dev` y voit une dérive et propose de la supprimer.
+  titleSortRomaji  String? @default(dbgenerated("COALESCE(NULLIF(\"titleRomaji\", ''::text), NULLIF(\"titleEnglish\", ''::text), NULLIF(\"titleNative\", ''::text))"))
+  titleSortEnglish String? @default(dbgenerated("COALESCE(NULLIF(\"titleEnglish\", ''::text), NULLIF(\"titleRomaji\", ''::text), NULLIF(\"titleNative\", ''::text))"))
+  titleSortNative  String? @default(dbgenerated("COALESCE(NULLIF(\"titleNative\", ''::text), NULLIF(\"titleRomaji\", ''::text), NULLIF(\"titleEnglish\", ''::text))"))
 
   coverImage  String?
   /// Couleur dominante de la jaquette, fournie par AniList — sert aux dégradés de fiche.

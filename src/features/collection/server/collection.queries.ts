@@ -9,10 +9,12 @@ import {
 import {
   compactFromMirror,
   MIRRORED_MEDIA_SELECT,
+  TITLE_SORT_FIELD,
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import { getMediaDetailFromMirror } from "@/features/media/server/media.mirror";
 import { getMediaById } from "@/features/media/server/media.queries";
+import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
@@ -178,7 +180,11 @@ function toShelfSeries(edition: {
  * chacun. Le jour où une étagère en compterait mille, ce serait une colonne dénormalisée, pas une
  * requête plus habile.
  */
-export async function getShelf(state: CollectionState): Promise<ShelfSeries[]> {
+export async function getShelf(
+  state: CollectionState,
+  /** Le tri seulement : l'en-tête, qui ne fait que compter, n'a pas à la connaître. */
+  titleLanguage: TitleLanguage = "ROMAJI",
+): Promise<ShelfSeries[]> {
   const userId = await currentUserId();
 
   const editions = await prisma.edition.findMany({
@@ -192,11 +198,11 @@ export async function getShelf(state: CollectionState): Promise<ShelfSeries[]> {
       },
     },
     /*
-      Le tri est sur le titre romaji, pas sur la date d'ajout : une étagère se parcourt comme un
-      rayon, et un rayon est rangé. `titleRomaji` plutôt que le titre préféré du compte parce que
-      c'est la seule colonne toujours remplie — `titleEnglish` est souvent nul.
+      Le tri est sur le titre, pas sur la date d'ajout : une étagère se parcourt comme un rayon, et
+      un rayon est rangé. **Le titre affiché**, repli compris : la clé générée de
+      `TITLE_SORT_FIELD` retombe sur le romaji quand l'anglais manque, comme la carte.
     */
-    orderBy: { media: { titleRomaji: "asc" } },
+    orderBy: { media: { [TITLE_SORT_FIELD[titleLanguage]]: "asc" } },
   });
 
   const shelf = editions.map(toShelfSeries);
