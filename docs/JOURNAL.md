@@ -1603,3 +1603,10 @@ lendemain, dans la case comme dans le journal.
 
 La case est un `<a>` SVG : `next/link` posé dans un `<svg>` rend un lien SVG, focalisable et activable
 au clavier sans rien de plus.
+
+**`BROWSE_CATALOGUE_QUERY` est supprimé**, et le gel `knip` descend à trois entrées. L'arbitrage
+attendait depuis le 14 septembre : s'en servir aurait regroupé en une requête les rangées que
+l'accueil avait séparées exprès, pour un quota déjà protégé par `"use cache"`. Pour savoir ce que le
+gel couvrait encore, knip a tourné une fois **sans** `ignoreIssues` (configuration jetable) : il
+restait exactement les entrées que STATE.md attribue aux facettes et aux chiffres de la communauté,
+et `search-media.schema.ts` ne gelait plus rien.

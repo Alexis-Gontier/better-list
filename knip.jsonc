@@ -57,10 +57,15 @@
   //
   // **L'accueil est passé le 14 septembre 2026, et c'était la dernière route.** `ignoreDependencies`
   // est parti avec, comme promis. `ignoreIssues` survit à cinq entrées près, et c'est une décision
-  // écrite : chacune nomme désormais **ce qui la lèvera** — les facettes de `/search`, les chiffres
-  // de la communauté sur la fiche, et un arbitrage à rendre sur `BROWSE_CATALOGUE_QUERY`, qui a
-  // perdu l'écran pour lequel il avait été gelé. La liste et l'arbitrage sont dans docs/STATE.md,
-  // « Le prochain pas ».
+  // écrite : chacune nomme désormais **ce qui la lèvera** — les facettes de `/search` et les chiffres
+  // de la communauté sur la fiche. La liste est dans docs/STATE.md, « Le prochain pas ».
+  //
+  // **L'arbitrage sur `BROWSE_CATALOGUE_QUERY` est rendu le 11 octobre 2026 : supprimé.** Il avait
+  // perdu l'écran pour lequel il avait été gelé, et l'accueil a choisi l'inverse de ce qu'il
+  // proposait — une zone, une requête, pour que le carrousel n'attende pas les rangées du dessous.
+  // Le regrouper aurait rendu ce défaut contre un gain nul : chaque `searchMedia` est déjà
+  // mémorisée par `"use cache"` et partagée entre les visiteurs. Son fragment, son schéma, `MediaBrowse`,
+  // `PageInfo` et `SearchMediaInput` sont partis avec.
   // ─────────────────────────────────────────────────────────────────────────────────────────────
   "ignoreIssues": {
     // ── Fichiers sans importateur ───────────────────────────────────────────────────────────────
@@ -107,7 +112,8 @@
     // cinquante —, et **`AIRING_SCHEDULE_QUERY` depuis le 8 septembre 2026**, avec `/calendar` :
     // ses 488 lignes de GraphQL avaient été gelées en pariant qu'un écran finirait par les
     // demander, et celle-là n'en avait jamais eu. Restent deux documents sans écran : le catalogue
-    // de l'accueil et le vocabulaire de filtres.
+    // de l'accueil — supprimé le 11 octobre 2026 — et le vocabulaire de filtres, qui attend les
+    // facettes de `/search`.
     "src/features/media/server/media.documents.ts": ["exports"],
     // `media-freshness.ts` est **sorti du gel le 7 septembre 2026**, avec le cron de
     // rafraîchissement : `refreshStaleMirror` consomme `mirrorStaleCutoffs`, les deux listes de
@@ -122,14 +128,12 @@
     // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
     // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que
     // l'entrée précédente disait attendre, et elle part avec, comme `library-params.ts` avant elle.
-    // Un schéma et quatre types, et non plus cinq et neuf : `browseCatalogueDataSchema`,
-    // `MediaBrowse` et `PageInfo` tombent avec l'arbitrage sur `BROWSE_CATALOGUE_QUERY` ;
-    // `MediaTagOption` attend les facettes ; `ScoreDistribution` attend les chiffres de la
-    // communauté.
-    "src/features/media/schemas/media.schema.ts": ["exports", "types"],
-    // `SearchMediaInput` seul : le type d'entrée, dont personne n'a besoin tant que les appelants
-    // passent des littéraux que `z.input` valide par inférence.
-    "src/features/media/schemas/search-media.schema.ts": ["types"]
+    // Deux types, et plus aucun export : `browseCatalogueDataSchema`, `MediaBrowse` et `PageInfo`
+    // sont tombés avec `BROWSE_CATALOGUE_QUERY` le 11 octobre 2026. `MediaTagOption` attend les
+    // facettes ; `ScoreDistribution` attend les chiffres de la communauté.
+    "src/features/media/schemas/media.schema.ts": ["types"]
+    // `search-media.schema.ts` est **sorti du gel le 11 octobre 2026** : son seul type gelé,
+    // `SearchMediaInput`, n'avait pas d'appelant et est parti avec le catalogue de l'accueil.
     // `preferences.schema.ts` est **sorti du gel le 14 septembre 2026**, et par constat plutôt que
     // par travail : ses défauts avaient trouvé leur appelant avec `/settings`, le 7 septembre. Une
     // entrée de gel qui ne gèle plus rien est un mensonge qui dort — c'est la passe de l'accueil,

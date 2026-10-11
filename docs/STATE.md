@@ -885,20 +885,20 @@ Il ne reste donc **aucune erreur de console** sur le site.
 écrans est donc finie ; ce qui suit n'est plus une reconstruction mais des choix ouverts.
 
 **Le premier est dans `knip.jsonc`, et il a une date.** Le gel de la mise à blanc devait partir avec
-la dernière route ; il reste cinq entrées, et chacune sait maintenant ce qui la lèvera :
+la dernière route ; il reste trois entrées, et chacune sait maintenant ce qui la lèvera :
 
-- `BROWSE_CATALOGUE_QUERY` et `browseCatalogueDataSchema` **ont perdu l'écran pour lequel ils
-  avaient été gelés** : l'accueil est fait sans eux, sur deux `searchMedia`. Or ce document
-  rassemble cinq rangées en **une seule requête** par alias GraphQL, là où l'accueil en dépense
-  deux. Donc : ou bien on s'en sert et l'accueil retombe à une requête, ou bien on le supprime. Ne
-  rien décider serait la seule mauvaise réponse.
 - `FILTER_VOCABULARY_QUERY` et `MediaTagOption` attendent les facettes de genres et de tags de
   `/search` — l'inventaire de [recherche-filtres.md](./recherche-filtres.md), 21 lignes cochées
   sur 66.
 - `formatListStatus`, `formatRanking` et `ScoreDistribution` attendent les **chiffres de la
   communauté** sur la fiche, qui sont au reste de la liste ci-dessous.
-- `PageInfo`, `MediaBrowse` et `SearchMediaInput` sont les types de ce qui précède, et partiront
-  avec.
+
+**L'arbitrage sur `BROWSE_CATALOGUE_QUERY` est rendu (11 octobre 2026) : supprimé**, avec son
+fragment, `browseCatalogueDataSchema`, `MediaBrowse`, `PageInfo` et `SearchMediaInput`. Le
+document rassemblait les rangées en une requête ; l'accueil a choisi l'inverse — une zone, une
+requête — pour que le carrousel n'attende pas les rangées du dessous. S'en servir aurait rendu ce
+défaut, pour un gain de quota à peu près nul : chaque `searchMedia` est mémorisée par `"use cache"`
+et partagée entre les visiteurs.
 
 `react-hotkeys-hook` en est parti pour de bon : la palette est revenue le 13 septembre sur un
 `keydown` nu, et la dépendance a été désinstallée plutôt que regelée.
@@ -1052,8 +1052,8 @@ vocabulaire de tous les autres.
    place, le reste vient d'un hasard pondéré par le score, donc elle change à chaque visite.
    Tirage pur et testé dans `(home)/_lib/home-recommendations.ts`.
    **Limite connue** : AniList recommande aussi des suites — « Code Geass R2 » à côté de
-   « Code Geass » —, que `MediaCompact` ne permet pas de reconnaître. **Ce qui reste sur cet
-   écran** : le choix ouvert sur `BROWSE_CATALOGUE_QUERY` ci-dessus.
+   « Code Geass » —, que `MediaCompact` ne permet pas de reconnaître. Le choix ouvert sur
+   `BROWSE_CATALOGUE_QUERY` est tranché (le document est supprimé, voir « Le prochain pas »).
 
 Hors de cet ordre : **la palette de recherche est revenue le 13 septembre 2026**, repartie d'une
 page blanche. Un bouton discret dans l'en-tête (`Ctrl K`, loupe seule sous `md`), cinq résultats
