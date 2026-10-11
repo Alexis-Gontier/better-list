@@ -25,6 +25,11 @@ Relevé le **11 octobre 2026**.
 > `/library` et de `/collection` **suit la langue d'affichage**, repli compris : trois colonnes
 > générées par PostgreSQL (`titleSortRomaji|English|Native`), choisies par `TITLE_SORT_FIELD`.
 >
+> **Le même jour, le calendrier d'activité de `/u/[username]` mène au journal.** Une case active
+> est un lien vers `?jour=AAAA-MM-JJ#journal` ; le journal filtre sur ce jour de Paris (`dayRange`,
+> l'inverse de `dayKey`, juste aux jours de 23 et 25 heures) et offre « Tout le journal » pour en
+> sortir. Parcours E2E `e2e/journal-day.spec.ts`.
+>
 > **Le 30 septembre, les favoris.** Un cœur sur la fiche d'une œuvre, sur `/character/[id]` et sur
 > `/staff/[id]` ; le profil gagne une section « Favoris » en quatre rangées — Anime, Manga,
 > Personnages, Staff —, les plus récents d'abord. Table `Favorite`, indépendante du suivi (on peut
@@ -905,10 +910,8 @@ commentaire de `groupEventsByDay` disait lui-même avoir été écrit pour « le
 lit le journal de toutes les œuvres ». Il n'y avait donc aucune logique de journal à écrire, une
 présentation à poser dessus. Le gel `knip` avait raison de les garder.
 
-Il reste une chose que ce journal **ne fait pas** : cliquer une case du calendrier d'activité
-n'amène pas au jour correspondant. Il y faudrait un `?jour=` dans `profile-params.ts` et un filtre
-de plus dans `getProfileJournal` — le geste est le seul intérêt d'avoir mis les deux sur le même
-défilement, et il n'est pas branché.
+**Le geste qui manquait au journal est branché** (11 octobre 2026) : une case active du calendrier
+d'activité mène à `?jour=AAAA-MM-JJ#journal`, et le journal se resserre sur ce jour.
 
 **Écartés le 13 septembre 2026, décision d'Alexis** : le **compteur de résultats** de `/search` —
 aucun n'est affiché, et aucun ne le sera ; `pageInfo.total`, plafonné à 5000, n'aurait de toute façon

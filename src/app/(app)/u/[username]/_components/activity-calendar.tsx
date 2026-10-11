@@ -1,5 +1,11 @@
 "use client";
 
+import Link from "next/link";
+
+import {
+  JOURNAL_ANCHOR,
+  serializeProfileFilters,
+} from "@/app/(app)/u/[username]/_lib/profile-params";
 import {
   ContributionGraph,
   ContributionGraphBlock,
@@ -13,7 +19,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LOCALE } from "@/config/locale";
-import type { ActivityDay } from "@/features/profile/lib/profile-activity";
+import {
+  type ActivityDay,
+  formatDayKey,
+} from "@/features/profile/lib/profile-activity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -34,26 +43,16 @@ import { cn } from "@/lib/utils";
  *
  * **Îlot client**, parce que le survol d'une case est la seule façon d'en lire le compte exact —
  * une grille de 365 cases ne peut pas porter 365 étiquettes.
+ *
+ * **Une case active est un lien vers le journal de ce jour** (`?jour=…#journal`, 11 octobre 2026).
+ * C'est le geste qui justifiait de mettre le calendrier et le journal sur le même défilement, et il
+ * manquait. Une case vide n'en est pas un : elle mènerait à « Rien ce jour-là », ce que son survol
+ * dit déjà. Le lien est un `<a>` SVG, donc focalisable au clavier, et son nom accessible est
+ * l'intitulé du survol.
  */
 
 /** Les milliers espacés : le total dépasse volontiers quatre chiffres sur une année active. */
 const COUNT_FORMAT = new Intl.NumberFormat(LOCALE);
-
-/**
- * **`timeZone: "UTC"` est ici le bon fuseau, et c'est le seul endroit du projet où l'écrire.** Les
- * clés `AAAA-MM-JJ` arrivent déjà calculées à Paris par le serveur (`dayKey`) ; ce format ne fait
- * que réécrire une **date seule** en français, il ne convertit aucun instant. Relire cette clé en
- * `Europe/Paris` la décalerait d'un jour en heure d'été, puisqu'elle est reconstruite à minuit UTC.
- *
- * La locale, elle, vient bien de `config/locale.ts` : la règle du projet vaut pour tout `Intl.*`.
- */
-const DAY_LABEL_FORMAT = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: "UTC",
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
 
 const LABELS = {
   months: [
@@ -94,9 +93,12 @@ const LEVEL_FILLS = cn(
 export function ActivityCalendar({
   data,
   totalCount,
+  profilePath,
 }: {
   data: ActivityDay[];
   totalCount: number;
+  /** Le profil affiché : les cases mènent à **son** journal. */
+  profilePath: string;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -120,31 +122,45 @@ export function ActivityCalendar({
         weekStart={1}
       >
         <ContributionGraphCalendar className="text-muted-foreground">
-          {({ activity, dayIndex, weekIndex }) => (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <ContributionGraphBlock
-                  activity={activity}
-                  className={LEVEL_FILLS}
-                  dayIndex={dayIndex}
-                  weekIndex={weekIndex}
-                />
-              </TooltipTrigger>
-              <TooltipContent>
-                {/*
-                  Le compte **puis** la date, dans cet ordre : on survole une case parce qu'on veut
-                  savoir combien, la date on l'a déjà déduite de la position.
-                */}
-                {activity.count === 0
-                  ? "Rien ce jour-là"
-                  : `${activity.count} ${activity.count > 1 ? "événements" : "événement"}`}
-                {" · "}
-                {DAY_LABEL_FORMAT.format(
-                  new Date(`${activity.date}T00:00:00Z`),
-                )}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          {({ activity, dayIndex, weekIndex }) => {
+            /*
+              Le compte **puis** la date, dans cet ordre : on survole une case parce qu'on veut
+              savoir combien, la date on l'a déjà déduite de la position.
+            */
+            const label = `${
+              activity.count === 0
+                ? "Rien ce jour-là"
+                : `${activity.count} ${activity.count > 1 ? "événements" : "événement"}`
+            } · ${formatDayKey(activity.date)}`;
+
+            const block = (
+              <ContributionGraphBlock
+                activity={activity}
+                className={LEVEL_FILLS}
+                dayIndex={dayIndex}
+                weekIndex={weekIndex}
+              />
+            );
+
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {activity.count === 0 ? (
+                    block
+                  ) : (
+                    <Link
+                      aria-label={label}
+                      className="cursor-pointer outline-none [&:focus-visible>rect]:stroke-2 [&:focus-visible>rect]:stroke-foreground"
+                      href={`${serializeProfileFilters(profilePath, { jour: activity.date })}#${JOURNAL_ANCHOR}`}
+                    >
+                      {block}
+                    </Link>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+              </Tooltip>
+            );
+          }}
         </ContributionGraphCalendar>
 
         <ContributionGraphFooter className="text-xs">

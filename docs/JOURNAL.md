@@ -1593,3 +1593,13 @@ branche Neon : diff vide, et le cron réécrit les 637 lignes sans erreur.
 Un `next dev` lancé en tâche de fond et arrêté par l'outil **laisse son processus node vivant** sous
 Windows : le suivant refuse de démarrer (« Another next dev server is already running »). Le tuer par
 son PID, après avoir vérifié son heure de création.
+
+**Une case du calendrier mène au journal de ce jour.** Le point délicat était l'inverse de `dayKey` :
+passer d'un jour de Paris à l'intervalle d'instants qu'il couvre, sans bibliothèque de dates.
+`dayRange` lit l'avance de Paris à minuit en deux passes (celle de 0 h UTC peut différer), et prend
+pour fin le minuit **du lendemain**, pas début + 24 h — les jours de changement d'heure durent 23 ou
+25 heures. Vérifié avec un événement à 22 h 30 UTC, qui s'affiche à 0 h 30 et doit tomber le
+lendemain, dans la case comme dans le journal.
+
+La case est un `<a>` SVG : `next/link` posé dans un `<svg>` rend un lien SVG, focalisable et activable
+au clavier sans rien de plus.

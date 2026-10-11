@@ -1,3 +1,4 @@
+import { LOCALE, TIMEZONE } from "@/config/locale";
 import { dayKey } from "@/features/tracking/lib/entry-format";
 
 /**
@@ -122,4 +123,97 @@ function currentStreak(days: ActivityDay[]): number {
   }
 
   return streak;
+}
+
+/** Une clé `AAAA-MM-JJ` qui désigne un vrai jour — le 31 février n'en est pas un. */
+export function isDayKey(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(Date.UTC(year ?? 0, (month ?? 0) - 1, day ?? 0));
+  return date.toISOString().slice(0, 10) === value;
+}
+
+/**
+ * Les parties d'un instant **lues à Paris**. `en-US` et `h23` pour des nombres sans surprise :
+ * seules les valeurs comptent ici, pas leur mise en forme.
+ */
+const ZONE_PARTS_FORMAT = new Intl.DateTimeFormat("en-US", {
+  timeZone: TIMEZONE,
+  hourCycle: "h23",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+/** L'avance de Paris sur UTC à cet instant, en millisecondes (une ou deux heures selon la saison). */
+function zoneOffsetAt(instant: number): number {
+  const parts = Object.fromEntries(
+    ZONE_PARTS_FORMAT.formatToParts(new Date(instant)).map((part) => [
+      part.type,
+      Number(part.value),
+    ]),
+  );
+  const asUtc = Date.UTC(
+    parts.year ?? 0,
+    (parts.month ?? 1) - 1,
+    parts.day ?? 1,
+    parts.hour ?? 0,
+    parts.minute ?? 0,
+    parts.second ?? 0,
+  );
+  return asUtc - instant;
+}
+
+/** Minuit à Paris, ce jour-là. Deux passes : l'avance de minuit peut différer de celle de 0 h UTC. */
+function zoneMidnight(key: string): number {
+  const [year, month, day] = key.split("-").map(Number);
+  const utcMidnight = Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1);
+  const guess = utcMidnight - zoneOffsetAt(utcMidnight);
+  return utcMidnight - zoneOffsetAt(guess);
+}
+
+/**
+ * Le jour `AAAA-MM-JJ` de Paris → l'intervalle d'instants `[début, fin[` qu'il couvre.
+ *
+ * C'est l'inverse de `dayKey`, et il en faut un pour que le journal filtré sur une case du
+ * calendrier montre **exactement** ce que la case compte. Un intervalle calculé en UTC
+ * décalerait d'une ou deux heures, et un événement de 0 h 30 changerait de jour entre la case et
+ * le journal.
+ *
+ * **La fin est le minuit du lendemain, pas début + 24 h** : les jours de changement d'heure durent
+ * 23 ou 25 heures (`profile-activity.test.ts`).
+ */
+export function dayRange(key: string): { gte: Date; lt: Date } {
+  const [year, month, day] = key.split("-").map(Number);
+  const next = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, (day ?? 1) + 1))
+    .toISOString()
+    .slice(0, 10);
+
+  return { gte: new Date(zoneMidnight(key)), lt: new Date(zoneMidnight(next)) };
+}
+
+/**
+ * **`timeZone: "UTC"` est ici le bon fuseau, et c'est le seul endroit du projet où l'écrire.** Les
+ * clés `AAAA-MM-JJ` arrivent déjà calculées à Paris par le serveur (`dayKey`) ; ce format ne fait
+ * que réécrire une **date seule** en français, il ne convertit aucun instant. Relire cette clé en
+ * `Europe/Paris` la décalerait d'un jour en heure d'été, puisqu'elle est reconstruite à minuit UTC.
+ *
+ * La locale, elle, vient bien de `config/locale.ts` : la règle du projet vaut pour tout `Intl.*`.
+ */
+const DAY_LABEL_FORMAT = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: "UTC",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+/** « samedi 3 octobre 2026 » — l'intitulé d'une case, au survol comme en tête du journal filtré. */
+export function formatDayKey(key: string): string {
+  return DAY_LABEL_FORMAT.format(new Date(`${key}T00:00:00Z`));
 }
