@@ -17,5 +17,10 @@ test("⌘K puis Entrée ouvre la recherche sur le terme tapé @anilist", async (
   await input.fill("one piece");
   await page.keyboard.press("Enter");
 
-  await expect(page).toHaveURL(/\/search\?.*q=one(\+|%20)piece/);
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return [url.pathname, url.searchParams.get("q")];
+    })
+    .toEqual([routes.search, "one piece"]);
 });

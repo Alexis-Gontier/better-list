@@ -420,13 +420,18 @@ Client Component.
 - **Jamais de `process.env.X` dans le code applicatif.** Toujours `import { env } from "@/config/env"`.
 - **La liste des exceptions est close, et c'est le hook qui la tient** (`ENV_ALLOWLIST` dans
   `.claude/hooks/conventions-guard.mjs`) : `src/config/env.ts`, `next.config.ts`,
-  `postcss.config.mjs`, `prisma/seed.ts` et `playwright.config.ts` — plus, par préfixe, tout `e2e/`.
-  Les fichiers de configuration tournent avant que
+  `postcss.config.mjs`, `prisma/seed.ts` et `playwright.config.ts`. Les fichiers de configuration
+  tournent avant que
   `@/config/env` soit chargeable ; `prisma/seed.ts` tourne sous `tsx`, hors de Next, donc sans le
   `NODE_ENV` que t3-env exige — l'importer y ferait échouer le script avant sa première ligne utile.
   Les nommer un par un interdit d'étendre l'exception par inadvertance. `prisma.config.ts` n'en fait
   pas partie et n'a pas à en faire partie : il lit sa variable par `env("DATABASE_URL")`, la
   fonction de `prisma/config`, et non par `process.env`.
+
+  **Deux dossiers sont exemptés par préfixe** (`ENV_ALLOWED_PREFIXES`), et seulement deux, parce
+  que tout ce qu'ils contiennent tourne hors de Next par nature : `.claude/` (les hooks de l'agent,
+  lancés par Claude Code) et `e2e/` (les tests, lancés par le runner Playwright). Un fichier ne s'y
+  pose pas pour échapper à la règle — il s'y pose parce qu'il est un outil, et alors il y échappe.
 
 - **Les scripts sont hors du périmètre de deux autres règles**, pour la même raison qu'ils tournent
   hors de Next : `prisma/seed.ts` et `scripts/legacy-import.ts` instancient leur propre
