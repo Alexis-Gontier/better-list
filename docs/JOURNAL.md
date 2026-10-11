@@ -1568,3 +1568,15 @@ défaut et veut dire « le sens naturel du tri » ; changer de tri le remet à n
 
 Le rattrapage des synonymes ne demande pas de script : la migration recule `syncedAt` de tout le
 miroir, et le cron reprend les lignes les plus anciennes d'abord, dans ses plafonds de quota.
+
+**La base trie octet par octet.** Elle est en `C.UTF-8` : toutes les majuscules avant toutes les
+minuscules, d'où « BLEACH », « BTOOOM! », puis « Black Bullet ». Prisma n'a pas d'option de
+collation dans `orderBy` ; la correction est une collation ICU (`und-x-icu`) posée sur les trois
+colonnes de titre par migration. Prisma ne décrit pas les collations de colonnes PostgreSQL, et
+`migrate diff` le confirme : aucune dérive. Elle profite d'un coup à `/library`, `/collection` et au
+repli de `/search`.
+
+Vérifier à l'écran demande une session. Créer une session au nom d'un vrai compte, ou recopier son
+suivi sur le compte de test, a été refusé par le garde-fou de l'outil — à raison. Ce qui passe :
+le compte `e2e-member` (`e2e/support/session.ts`) sur une branche Neon jetable, avec un suivi
+inventé posé sur des œuvres du miroir, qui sont des données publiques.

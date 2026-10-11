@@ -81,7 +81,9 @@ const nullsLast = (sort: Order) => ({ sort, nulls: "last" as const });
  * Les remonter en tête quand on renverse le sens serait le contraire de la question posée.
  *
  * Le tri par titre suit le romaji et **pas encore `titleLanguage`** : c'est le manque relevé au
- * §1.10 de docs/recherche-filtres.md, et il vaut ici aussi.
+ * §1.10 de docs/recherche-filtres.md, et il vaut ici aussi. L'ordre alphabétique lui-même — la
+ * casse et les accents à leur place — vient de la collation ICU des colonnes de titre (migration
+ * `20261011130000_title_collation`), pas d'une option de tri : Prisma n'en a pas.
  */
 export function libraryOrderBy(
   filters: Pick<LibraryFilterValues, "sort" | "dir" | "type">,
