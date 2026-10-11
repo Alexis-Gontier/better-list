@@ -76,6 +76,7 @@ pnpm dev          # next dev
 pnpm lint         # biome check
 pnpm typecheck    # tsc --noEmit
 pnpm test         # vitest run
+pnpm test:e2e     # playwright test (réutilise le `pnpm dev` ouvert)
 pnpm knip         # dépendances, fichiers et exports morts
 pnpm build        # next build
 
@@ -86,8 +87,10 @@ pnpm db:seed      # jeu d'essai ; refuse d'écraser des données, `--reset` pour
 ```
 
 Lefthook installe les hooks Git au `pnpm install` : `pre-commit` formate, `pre-push` lance
-`typecheck` + `test` + `knip`. La CI GitHub enchaîne lint → typecheck → tests → knip → build.
+`typecheck` + `test` + `knip`. La CI GitHub enchaîne lint → typecheck → tests → knip → build, et lance en parallèle les tests
+E2E hors `@anilist`.
 
 Pour créer une feature, la skill `new-feature`. Pour toucher à l'API AniList, `anilist-read`.
+Pour un test de bout en bout, `e2e-test` (avec `playwright-best-practices` et `playwright-cli`).
 Deux agents dédiés : `convention-reviewer` (relit un diff contre les conventions) et `next-docs`
 (répond sur Next 16 en lisant `node_modules/next/dist/docs/`).

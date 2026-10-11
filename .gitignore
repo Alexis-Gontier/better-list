@@ -56,3 +56,6 @@ lefthook-local.yml
 
 # prisma — client généré, reconstruit par le postinstall
 /src/generated
+
+# sorties de playwright-cli (instantanés, sessions — peuvent contenir des cookies)
+.playwright-cli/

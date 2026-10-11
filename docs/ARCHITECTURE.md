@@ -65,9 +65,10 @@ src/
 └── proxy.ts                      # ex-middleware.ts (renommé dans Next 16)
 ```
 
-Et deux dossiers **hors de `src/`**, parce que rien de ce qu'ils contiennent ne tourne dans Next :
+Et trois dossiers **hors de `src/`**, parce que rien de ce qu'ils contiennent ne tourne dans Next :
 
 ```
+e2e/                              # tests Playwright (*.spec.ts), setup/teardown des comptes de test
 prisma/                           # schema.prisma + seed.ts (chemin imposé par Prisma)
 scripts/                          # exécutables manuels, lancés à la main et jamais importés
 ├── legacy-import.ts              #   reprise des données de l'ancienne app (tsx)
@@ -79,6 +80,11 @@ appelant ni test ; ils se lancent depuis un terminal, avec des arguments. `legac
 dans `prisma/` où seul un préfixe `_` le cachait de la CLI Prisma — un dossier dont le nom dit la
 nature vaut mieux qu'un underscore qui camoufle. `prisma/seed.ts` **ne suit pas** : son chemin est
 attendu par l'outillage Prisma et nommé dans `ENV_ALLOWLIST`.
+
+**`e2e/` tourne sous le runner Playwright**, donc lui aussi hors de Next : `process.env` et `pg` y
+sont permis (le hook l'exempte par préfixe), `@/config/env` et `@/lib/db/prisma` n'y fonctionnent
+pas. `@/config/routes` y reste obligatoire — une URL en dur dans un test casse aussi silencieusement
+qu'ailleurs. Le détail est dans la skill `e2e-test`.
 
 Un script échappe à trois règles de `src/` (`process.env`, `PrismaClient` instancié, `fetch` nu) et
 c'est délibéré : il tourne sous `tsx` ou `node`, hors du runtime Next, donc hors de portée de
@@ -414,7 +420,8 @@ Client Component.
 - **Jamais de `process.env.X` dans le code applicatif.** Toujours `import { env } from "@/config/env"`.
 - **La liste des exceptions est close, et c'est le hook qui la tient** (`ENV_ALLOWLIST` dans
   `.claude/hooks/conventions-guard.mjs`) : `src/config/env.ts`, `next.config.ts`,
-  `postcss.config.mjs` et `prisma/seed.ts`. Les deux fichiers de configuration tournent avant que
+  `postcss.config.mjs`, `prisma/seed.ts` et `playwright.config.ts` — plus, par préfixe, tout `e2e/`.
+  Les fichiers de configuration tournent avant que
   `@/config/env` soit chargeable ; `prisma/seed.ts` tourne sous `tsx`, hors de Next, donc sans le
   `NODE_ENV` que t3-env exige — l'importer y ferait échouer le script avant sa première ligne utile.
   Les nommer un par un interdit d'étendre l'exception par inadvertance. `prisma.config.ts` n'en fait
@@ -497,10 +504,15 @@ La provenance de chaque skill et de chaque agent est dans [.claude/SKILLS.md](..
 - **Knip** : `src/components/ui/**` est ignoré (généré par shadcn) et `scripts/legacy-import.ts`
   aussi (script de CLI lancé à la main). Les règles sont au défaut, c'est-à-dire `error` — elles ont
   passé un temps en `warn` et un garde-fou qu'on laisse en `warn` finit par ne plus rien garder.
+- **Playwright** (`playwright.config.ts`, `e2e/`) : Chromium, en 1440 et en 390. Un projet `setup`
+  crée en base deux comptes de test (approuvé, en attente) et leur session — la connexion étant
+  GitHub seul —, un projet `teardown` les supprime. Les tests `@anilist` interrogent l'API pour de
+  vrai et ne tournent qu'en local.
 - **Lefthook**, installé au `pnpm install` : `pre-commit` formate les fichiers indexés avec Biome,
   `pre-push` lance `typecheck` + `test` + `knip`.
 - **CI GitHub** (`.github/workflows/ci.yml`) : lint → typecheck → tests → knip → build, sur PR et
-  sur `main`. Le build y passe `SKIP_ENV_VALIDATION=1`, faute de secrets.
+  sur `main`, et en parallèle un job `e2e` sur un service Postgres jetable (`migrate deploy`, build,
+  `playwright test --grep-invert @anilist`, rapport HTML en artefact). Le build y passe `SKIP_ENV_VALIDATION=1`, faute de secrets.
 - **`pnpm db:seed`** (`prisma/seed.ts`, sous `tsx`) remplit la base de développement pour le compte
   approuvé le plus ancien. Il **refuse d'écrire par-dessus des données existantes** et demande
   `--reset`, qui supprime alors suivis, journal et listes de ce compte — `Media` n'est jamais

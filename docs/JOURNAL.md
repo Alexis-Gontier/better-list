@@ -27,6 +27,30 @@ exacte est dans [ARCHITECTURE.md](./ARCHITECTURE.md#les-commentaires--le-pourquo
 
 ---
 
+## 11 octobre 2026 — Playwright, enfin posé
+
+Prévu depuis août (PRODUCT.md §7), repoussé écran après écran. Trois choses à retenir.
+
+**La connexion GitHub seule ne bloque pas les tests, elle décide de leur forme.** Aucun test ne
+passe par l'écran de login : un projet `setup` insère deux comptes `e2e-*` et leur session en SQL
+brut, puis signe le cookie comme better-call (HMAC-SHA256 du jeton, en base64) — la mécanique de
+`scripts/dev-session-cookie.mjs`, qui avait marché le 26 septembre. Le plugin `testUtils` de Better
+Auth aurait été plus propre sur le papier, mais il faut instancier `betterAuth()` hors de Next, or
+`server.ts` importe `server-only` et `@/config/env`. Piège évité au passage : les colonnes
+`@updatedAt` de Prisma n'ont **pas** de défaut SQL, toute insertion brute doit les poser.
+
+**AniList décide de ce que la CI peut rejouer.** Les appels partent du serveur, donc
+`page.route()` ne les voit pas, et le mode test expérimental de Next se heurte au `"use cache"`.
+Les tests qui en dépendent portent `@anilist` et ne tournent qu'en local ; la CI a un service
+Postgres jetable migré par `migrate deploy` — sans secret, et première vérification que les
+migrations passent sur une base vide.
+
+**La copie personnelle de `playwright-best-practices` était cassée** : un `SKILL.md` seul, qui
+renvoie à 58 fiches absentes. Elle avait été installée ainsi en juillet et personne ne l'avait
+remarqué, puisqu'une skill dont les liens pendent se charge sans erreur. Recopiée depuis la source.
+Et knip ne lit pas les `testMatch` en regex des projets Playwright : setup et teardown sont déclarés
+à la main dans `knip.jsonc`.
+
 ## 28 septembre 2026 — un carrousel centré, et des recommandations pour moi
 
 **Le carrousel a été recopié sur mesures, pas à l'œil.** Le modèle (un site tiers désigné par
