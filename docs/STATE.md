@@ -689,8 +689,11 @@ prétend s'y fier.**
   qu'hier : le hero de la fiche, ses contrôles de suivi, et maintenant les deux écrans du catalogue
   avec leur barre, leur panneau, leur grille et leur pagination. **Deux écrans livrés, zéro test
   ajouté** — ils ont été vérifiés à l'écran en 1440 et en 390, pas par un test. C'est ce qui a
-  attrapé la pagination à 238 pages, mais ça ne se rejoue pas tout seul. Playwright est prévu
-  (PRODUCT.md §7) et toujours pas posé.
+  attrapé la pagination à 238 pages, mais ça ne se rejoue pas tout seul. **Playwright est posé
+  depuis le 11 octobre 2026**, sur quatre parcours seulement : connexion et redirection d'un
+  anonyme, garde d'accès (membre, liste d'attente), palette ⌘K → `/search`, et ajout puis retrait
+  d'une œuvre depuis sa fiche. Les deux derniers sont `@anilist` et ne tournent qu'en local ; la CI
+  ne rejoue que les deux premiers. Les écrans eux-mêmes restent sans test.
 - ~~**Les états vides des deux écrans ne sont pas dessinés.**~~ **Fait le 7 septembre 2026.**
   `/search` porte ses trois messages et `/library` ses deux, et le catalogue propose un **geste** :
   `mostSelectiveFacet` (testée) désigne la facette active la plus étroite, et un lien ne retire
@@ -1058,7 +1061,8 @@ Quand la dernière part, le bloc entier part avec elle.
 
 ### Ensuite, peut-être
 
-Sans engagement, et sans ordre : Playwright et le repli de panne AniList (à re-poser de toute façon
+Sans engagement, et sans ordre : étendre Playwright aux écrans qui ne lisent que la base
+(collection, listes, réglages — ils tourneraient en CI), le repli de panne AniList (à re-poser de toute façon
 pendant la reconstruction), l'ordre de visionnage d'une franchise (PRODUCT.md §8, meilleur rapport
 valeur/effort du projet), et les trois chantiers que la collection laisse ouverts ci-dessous.
 

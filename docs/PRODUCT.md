@@ -372,7 +372,7 @@ AniList à chaque affichage. Côté collection : scan de code-barres ISBN pour c
 | Drag & drop | `dnd-kit` |
 | Ordre des items | `fractional-indexing` |
 | Formulaires | `react-hook-form` + `next-safe-action` v8 |
-| Tests | Vitest (unitaire) ; Playwright plus tard, sur les parcours critiques |
+| Tests | Vitest (unitaire) ; Playwright sur les parcours critiques |
 | Tâches planifiées | Vercel Cron |
 | Images de partage | `next/og` |
 | Langue | Français uniquement |

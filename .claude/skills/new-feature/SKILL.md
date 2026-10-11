@@ -133,11 +133,27 @@ plutôt que de convertir tout le sous-arbre.
 3. Créer `src/app/(app)/<segment>/page.tsx` qui importe depuis la feature. La page reste
    mince : elle compose, elle ne contient pas de logique.
 
-### 7. Vérifier
+### 7. Tester
+
+Deux niveaux, et chacun a sa place :
+
+- **Vitest** pour la logique : schémas Zod et helpers purs de `lib/`, en `<fichier>.test.ts` à
+  côté de leur sujet. Pas de test de rendu React, la config tourne sous `node`.
+- **Playwright** pour le **parcours** que la feature ouvre : au moins un `e2e/<domaine>.spec.ts` qui
+  traverse l'écran comme un membre — arriver, faire le geste principal, voir le résultat. Suivre la
+  skill `e2e-test` (comptes de test, `routes`, sélecteurs par rôle). Un écran qui ne lit que la
+  base tourne en CI ; s'il affiche une donnée AniList, le titre du test porte `@anilist` et il ne
+  tourne qu'en local.
+
+Un parcours qui **écrit** défait ce qu'il a fait et ne tourne que sur le projet `desktop`.
+
+### 8. Vérifier
 
 ```bash
-pnpm exec tsc --noEmit
+pnpm typecheck
 pnpm lint
+pnpm test
+pnpm test:e2e <domaine>
 ```
 
 Le hook Biome formate déjà chaque fichier écrit, mais il ne remplace pas le typecheck.

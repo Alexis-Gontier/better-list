@@ -5,6 +5,12 @@
   // Claude Code qui les exécute.
   "entry": [".claude/hooks/*.mjs"],
 
+  // Le plugin Playwright de knip ne voit que les `*.spec.ts` : les projets `setup` et `teardown`
+  // de playwright.config.ts déclarent leur `testMatch` en expression régulière, qu'il ne lit pas.
+  "playwright": {
+    "entry": ["e2e/**/*.spec.ts", "e2e/auth.{setup,teardown}.ts"]
+  },
+
   // `src/components/ui/` est généré par shadcn : ses composants exportent volontairement plus que
   // ce qu'on consomme, et les supprimer casserait la prochaine régénération. (`src/generated/`,
   // produit par Prisma, est déjà écarté par le .gitignore.)

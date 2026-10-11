@@ -50,7 +50,8 @@ Elles sont justifiées dans ARCHITECTURE.md ; ici, seulement leur énoncé.
   Un route handler sous `src/app/api/` porte lui-même sa garde.
 - Aucune URL en dur : tout chemin passe par `src/config/routes.ts`.
 - Jamais de `process.env.X` : `import { env } from "@/config/env"`. Liste close d'exceptions, tenue
-  par le hook : `src/config/env.ts`, `next.config.ts`, `postcss.config.mjs`, `prisma/seed.ts`.
+  par le hook : `src/config/env.ts`, `next.config.ts`, `postcss.config.mjs`, `prisma/seed.ts`,
+  `playwright.config.ts` et `e2e/**` (fichiers de CLI, hors de Next).
 - Accès base via `import { prisma } from "@/lib/db/prisma"`, jamais un `PrismaClient` instancié
   ailleurs. Appels HTTP sortants via `upfetch` (`@/lib/http/fetch`) avec un `schema`, jamais `fetch`
   nu. Ces deux règles valent pour `src/` ; les scripts de `prisma/`, qui tournent hors de Next, y
@@ -75,6 +76,7 @@ pnpm dev          # next dev
 pnpm lint         # biome check
 pnpm typecheck    # tsc --noEmit
 pnpm test         # vitest run
+pnpm test:e2e     # playwright test (réutilise le `pnpm dev` ouvert)
 pnpm knip         # dépendances, fichiers et exports morts
 pnpm build        # next build
 
@@ -85,8 +87,10 @@ pnpm db:seed      # jeu d'essai ; refuse d'écraser des données, `--reset` pour
 ```
 
 Lefthook installe les hooks Git au `pnpm install` : `pre-commit` formate, `pre-push` lance
-`typecheck` + `test` + `knip`. La CI GitHub enchaîne lint → typecheck → tests → knip → build.
+`typecheck` + `test` + `knip`. La CI GitHub enchaîne lint → typecheck → tests → knip → build, et lance en parallèle les tests
+E2E hors `@anilist`.
 
 Pour créer une feature, la skill `new-feature`. Pour toucher à l'API AniList, `anilist-read`.
+Pour un test de bout en bout, `e2e-test` (avec `playwright-best-practices` et `playwright-cli`).
 Deux agents dédiés : `convention-reviewer` (relit un diff contre les conventions) et `next-docs`
 (répond sur Next 16 en lisant `node_modules/next/dist/docs/`).

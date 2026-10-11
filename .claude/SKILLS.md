@@ -19,6 +19,7 @@ Ce fichier remplace le lock manquant : il dit d'où vient chaque skill et quand 
 | --- | --- |
 | `new-feature` | Créer une feature selon `docs/ARCHITECTURE.md` |
 | `anilist-read` | Ajouter une lecture AniList : document, schéma, cache, quota |
+| `e2e-test` | Écrire un test Playwright ici : comptes de test, tag `@anilist`, lancement |
 
 ## Copies figées de skills externes
 
@@ -37,6 +38,18 @@ Copiées depuis les skills personnelles (`~/.claude/skills/`) le **7 août 2026*
 
 Ces huit-là existent aussi en version personnelle sur la machine actuelle, donc **en double dans
 la liste des skills**. Le doublon est le prix de la portabilité : il est assumé, pas accidentel.
+
+Copiées le **11 octobre 2026**, pour les tests de bout en bout.
+
+| Skill | Origine |
+| --- | --- |
+| `playwright-cli` | Microsoft — `pnpm dlx @playwright/cli@0.1.22 install --skills` |
+| `playwright-best-practices` | currents.dev — github.com/currents-dev/playwright-best-practices-skill @ `283d5cb` (21 juillet 2026) |
+
+`playwright-best-practices` existe aussi en version personnelle, **mais incomplète** : le seul
+`SKILL.md`, sans les 58 fiches de référence vers lesquelles il renvoie. La copie du dépôt fait foi.
+`playwright-cli` se rafraîchit en relançant sa commande à chaque montée de version de
+`@playwright/test` ; elle a ajouté `.playwright-cli/` au `.gitignore`.
 
 ### Rafraîchir une copie
 
