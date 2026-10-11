@@ -27,8 +27,13 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Fabrique en base les comptes de test et leur session (e2e/support/session.ts), puis les
+    // supprime une fois tous les projets passés.
+    { name: "setup", testMatch: /auth\.setup\.ts/, teardown: "teardown" },
+    { name: "teardown", testMatch: /auth\.teardown\.ts/ },
     {
       name: "desktop",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
@@ -36,6 +41,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },
