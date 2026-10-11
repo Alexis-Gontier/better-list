@@ -50,7 +50,8 @@ Elles sont justifiées dans ARCHITECTURE.md ; ici, seulement leur énoncé.
   Un route handler sous `src/app/api/` porte lui-même sa garde.
 - Aucune URL en dur : tout chemin passe par `src/config/routes.ts`.
 - Jamais de `process.env.X` : `import { env } from "@/config/env"`. Liste close d'exceptions, tenue
-  par le hook : `src/config/env.ts`, `next.config.ts`, `postcss.config.mjs`, `prisma/seed.ts`.
+  par le hook : `src/config/env.ts`, `next.config.ts`, `postcss.config.mjs`, `prisma/seed.ts`,
+  `playwright.config.ts` et `e2e/**` (fichiers de CLI, hors de Next).
 - Accès base via `import { prisma } from "@/lib/db/prisma"`, jamais un `PrismaClient` instancié
   ailleurs. Appels HTTP sortants via `upfetch` (`@/lib/http/fetch`) avec un `schema`, jamais `fetch`
   nu. Ces deux règles valent pour `src/` ; les scripts de `prisma/`, qui tournent hors de Next, y

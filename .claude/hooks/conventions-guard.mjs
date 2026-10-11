@@ -27,7 +27,11 @@ const ENV_ALLOWLIST = [
   "next.config.ts",
   "postcss.config.mjs",
   "prisma/seed.ts",
+  "playwright.config.ts",
 ];
+
+/** Les tests de bout en bout tournent sous le runner Playwright, hors de Next — même famille que le seed. */
+const ENV_ALLOWED_PREFIXES = [".claude/", "e2e/"];
 
 /**
  * Les seuls fichiers tolérés à la racine de `src/lib/` — le reste est rangé par sujet
@@ -53,7 +57,7 @@ function check(path, content) {
     isCode &&
     /\bprocess\.env\./.test(content) &&
     !ENV_ALLOWLIST.includes(path) &&
-    !path.startsWith(".claude/")
+    !ENV_ALLOWED_PREFIXES.some((prefix) => path.startsWith(prefix))
   ) {
     return `\`process.env\` est interdit hors de \`src/config/env.ts\`.
 Déclarer la variable dans \`src/config/env.ts\` (t3-env) puis \`import { env } from "@/config/env"\`.
