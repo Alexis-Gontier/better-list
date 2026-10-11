@@ -7,11 +7,16 @@ import {
   FilterSelect,
   labelOf,
 } from "@/components/shared/filter-bar";
+import { SortDirectionButton } from "@/components/shared/sort-direction-button";
 import {
+  LIBRARY_ADULT_OPTIONS,
+  LIBRARY_SORT_DEFAULT_DIRECTION,
   LIBRARY_SORT_OPTIONS,
   LIBRARY_TYPE_OPTIONS,
+  type LibraryAdultFilter,
   type LibrarySort,
   libraryFilterParsers,
+  resolveLibraryDirection,
 } from "@/features/tracking/lib/library-params";
 import { useUrlFilters } from "@/hooks/use-url-filters";
 
@@ -33,6 +38,10 @@ import { useUrlFilters } from "@/hooks/use-url-filters";
  *    le panneau se justifiera — et les primitives de `/search` seront à promouvoir à ce moment-là,
  *    pas avant.
  *
+ * **Le sens du tri et le 18+ l'ont rejointe le 11 octobre 2026.** Le premier renverse le tri
+ * choisi ; le second n'apparaît que pour un compte qui a ouvert le 18+ dans ses réglages — pour les
+ * autres il n'y a rien à trier, la requête l'écarte déjà.
+ *
  * **Le genre n'est pas de la partie, et c'est une décision d'Alexis du 6 septembre 2026.** Il avait
  * sa place ici par symétrie avec `/search`, mais les deux écrans ne répondent pas à la même
  * question : on cherche un genre dans un catalogue de dizaines de milliers d'œuvres, on ne le
@@ -52,6 +61,8 @@ const barParsers = {
   q: libraryFilterParsers.q,
   type: libraryFilterParsers.type,
   sort: libraryFilterParsers.sort,
+  dir: libraryFilterParsers.dir,
+  adult: libraryFilterParsers.adult,
   page: libraryFilterParsers.page,
 };
 
@@ -68,10 +79,12 @@ const RESET_FILTERS = {
   q: "",
   type: null,
   sort: "recent" as LibrarySort,
+  dir: null,
+  adult: null,
   page: 1,
 };
 
-export function LibraryFilterBar() {
+export function LibraryFilterBar({ includeAdult }: { includeAdult: boolean }) {
   const [filters, setFilters] = useUrlFilters(barParsers);
 
   /** Toute facette qui change ramène à la première page — sinon on atterrit sur une page vide. */
@@ -91,6 +104,12 @@ export function LibraryFilterBar() {
       onRemove: () => update({ type: null }),
     });
 
+  if (includeAdult && filters.adult)
+    chips.push({
+      label: labelOf(LIBRARY_ADULT_OPTIONS, filters.adult),
+      onRemove: () => update({ adult: null }),
+    });
+
   /*
     Le terme, le tri et la page n'ont pas de puce, et suffisent pourtant à se retrouver page 8
     triée par titre sans moyen visible de revenir. La rangée s'affiche donc aussi pour eux — même
@@ -102,6 +121,7 @@ export function LibraryFilterBar() {
   const canClear =
     filters.q !== RESET_FILTERS.q ||
     filters.sort !== RESET_FILTERS.sort ||
+    filters.dir !== RESET_FILTERS.dir ||
     filters.page !== RESET_FILTERS.page;
 
   return (
@@ -128,14 +148,43 @@ export function LibraryFilterBar() {
           value={filters.type}
         />
 
+        {includeAdult && (
+          <FilterSelect
+            anyLabel="Tout"
+            ariaLabel="Contenu 18+"
+            className="w-40"
+            label="18+"
+            onValueChange={(adult: LibraryAdultFilter | null) =>
+              update({ adult })
+            }
+            options={LIBRARY_ADULT_OPTIONS}
+            value={filters.adult}
+          />
+        )}
+
         {/* Pas d'`anyLabel` : le tri a toujours une valeur, donc aucun cas nul à traiter. */}
         <FilterSelect
           ariaLabel="Trier par"
           className="w-52"
           label="Tri"
-          onValueChange={(sort: LibrarySort) => update({ sort })}
+          // Changer de tri repart de son sens naturel : « Titre » après « Ma note » croissante
+          // doit lire de A à Z, pas hériter d'un sens choisi pour une autre question.
+          onValueChange={(sort: LibrarySort) => update({ sort, dir: null })}
           options={LIBRARY_SORT_OPTIONS}
           value={filters.sort}
+        />
+
+        <SortDirectionButton
+          direction={resolveLibraryDirection(filters.sort, filters.dir)}
+          // Le sens naturel du tri s'écrit « rien » : l'URL ne garde que ce qui s'en écarte.
+          onToggle={(dir) =>
+            update({
+              dir:
+                dir === LIBRARY_SORT_DEFAULT_DIRECTION[filters.sort]
+                  ? null
+                  : dir,
+            })
+          }
         />
       </div>
     </FilterBar>

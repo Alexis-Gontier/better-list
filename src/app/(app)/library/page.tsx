@@ -127,7 +127,7 @@ async function LibraryControls({
   return (
     <div className="flex flex-col gap-4">
       <LibraryStatusRow counts={counts} filters={filters} />
-      <LibraryFilterBar />
+      <LibraryFilterBar includeAdult={includeAdult} />
     </div>
   );
 }
@@ -216,7 +216,10 @@ async function LibraryResults({
   if (items.length === 0) {
     const term = filters.q.trim();
     const filtered =
-      term !== "" || filters.status !== null || filters.type !== null;
+      term !== "" ||
+      filters.status !== null ||
+      filters.type !== null ||
+      (includeAdult && filters.adult !== null);
 
     return (
       <Empty>
@@ -251,6 +254,8 @@ async function LibraryResults({
                     status: null,
                     type: null,
                     sort: filters.sort,
+                    dir: filters.dir,
+                    adult: null,
                     view: filters.view,
                     page: 1,
                   })

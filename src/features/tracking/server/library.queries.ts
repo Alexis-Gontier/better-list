@@ -12,6 +12,10 @@ import {
   LIBRARY_STATUS_ORDER,
   type LibraryFilterValues,
 } from "@/features/tracking/lib/library-params";
+import {
+  libraryOrderBy,
+  mediaConditions,
+} from "@/features/tracking/lib/library-query";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
@@ -80,50 +84,6 @@ const ENTRY_STATE_SELECT = {
 } as const;
 
 /**
- * Les conditions qui portent sur l'**œuvre** plutôt que sur le suivi.
- *
- * Elles sont rassemblées en un seul objet et pas empilées au fur et à mesure : `media` est une
- * clé unique du `where`, et deux `media: {…}` écrits à la suite dans un littéral se remplacent
- * silencieusement. C'est exactement comme ça qu'on perd le filtre 18+ en ajoutant une facette de
- * plus — sans erreur de compilation, et sans que rien ne se voie à la relecture.
- *
- * **`includeAdult` est appliqué dans la requête**, jamais par un masque d'affichage : la règle vaut
- * ici comme sur la fiche et sur la recherche (docs/recherche-filtres.md §2.5). Une ligne écartée à
- * l'affichage a quand même traversé le réseau, fausse les décomptes et compte dans la pagination.
- */
-function mediaConditions({
-  filters,
-  includeAdult,
-}: {
-  filters: LibraryFilterValues;
-  includeAdult: boolean;
-}) {
-  const media: Record<string, unknown> = {};
-
-  if (!includeAdult) media.isAdult = false;
-  if (filters.type) media.type = filters.type;
-
-  /*
-    Le terme cherche dans les **trois** colonnes de titre du miroir, pas seulement le romaji : on
-    tape « Attack on Titan » aussi souvent que « Shingeki ». `insensitive` parce qu'on ne capitalise
-    pas une recherche, et `contains` parce qu'on tape un morceau du titre — jamais son début.
-
-    Il ne part jamais chez AniList : c'est ce qui rend la saisie à la volée acceptable ici alors
-    qu'elle est anti-rebondie sur le catalogue.
-  */
-  const term = filters.q.trim();
-  if (term) {
-    media.OR = [
-      { titleRomaji: { contains: term, mode: "insensitive" } },
-      { titleEnglish: { contains: term, mode: "insensitive" } },
-      { titleNative: { contains: term, mode: "insensitive" } },
-    ];
-  }
-
-  return Object.keys(media).length > 0 ? { media } : {};
-}
-
-/**
  * Le `where` complet d'une page de bibliothèque.
  *
  * `withStatus` existe pour la rangée de compteurs, qui pose la même question **six fois moins le
@@ -145,39 +105,6 @@ function libraryWhere({
     ...(withStatus && filters.status ? { status: filters.status } : {}),
     ...mediaConditions({ filters, includeAdult }),
   };
-}
-
-/**
- * Le tri, traduit en `orderBy`.
- *
- * Trois des quatre se départagent ensuite par l'activité récente : sans ce second critère, deux
- * œuvres de même note ou de même progression changeraient d'ordre d'une page à l'autre, et un
- * résultat pourrait apparaître deux fois — ou jamais. **Une pagination sans ordre total est une
- * pagination qui perd des lignes.**
- *
- * `nulls: "last"` sur la note : « pas encore noté » n'est pas zéro (docs/PRODUCT.md §4.2), et
- * remonter les non-notées en tête d'un tri par note serait le contraire de la question posée.
- *
- * Le tri par titre suit le romaji et **pas encore `titleLanguage`** : c'est le manque relevé au
- * §1.10 de docs/recherche-filtres.md, et il vaut ici aussi — on trie en romaji un écran qui peut
- * afficher l'anglais.
- */
-function libraryOrderBy(sort: LibraryFilterValues["sort"]) {
-  switch (sort) {
-    case "title":
-      return [{ media: { titleRomaji: "asc" as const } }];
-    case "score":
-      return [
-        { score: { sort: "desc" as const, nulls: "last" as const } },
-        { updatedAt: "desc" as const },
-      ];
-    case "progress":
-      return [{ progress: "desc" as const }, { updatedAt: "desc" as const }];
-    default:
-      // L'index `[userId, updatedAt]` existe pour celui-ci : c'est la question que la bibliothèque
-      // pose d'abord — « où j'en étais déjà ? ».
-      return [{ updatedAt: "desc" as const }];
-  }
 }
 
 export type LibraryStatusCounts = {
@@ -393,7 +320,7 @@ export async function getLibrary({
 
   const rows = await prisma.entry.findMany({
     where,
-    orderBy: libraryOrderBy(filters.sort),
+    orderBy: libraryOrderBy(filters),
     skip: (page - 1) * CATALOGUE_PAGE_SIZE,
     take: CATALOGUE_PAGE_SIZE,
     select: {

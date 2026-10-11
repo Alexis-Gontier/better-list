@@ -75,6 +75,7 @@ function anilistMedia(id: number) {
       native: null,
       userPreferred: null,
     },
+    synonyms: [],
     coverImage: {
       extraLarge: `cover-${id}`,
       large: null,

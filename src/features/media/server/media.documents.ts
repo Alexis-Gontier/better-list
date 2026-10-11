@@ -122,6 +122,7 @@ const MEDIA_MIRROR_FIELDS = /* GraphQL */ `
       native
       userPreferred
     }
+    synonyms
     coverImage {
       extraLarge
       large

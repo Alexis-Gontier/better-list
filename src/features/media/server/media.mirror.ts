@@ -55,6 +55,7 @@ export async function getMediaDetailFromMirror(
       titleRomaji: true,
       titleEnglish: true,
       titleNative: true,
+      synonyms: true,
       coverImage: true,
       coverColor: true,
       bannerImage: true,
@@ -108,6 +109,7 @@ export async function getMediaDetailFromMirror(
     genres: media.genres,
     meanScore: media.meanScore,
     isAdult: media.isAdult,
+    synonyms: media.synonyms ? media.synonyms.split("\n") : [],
 
     /*
       Tout ce qui suit n'est **pas** mirroité, et les valeurs vides ne sont pas des trous à combler
@@ -127,7 +129,6 @@ export async function getMediaDetailFromMirror(
     source: null,
     popularity: null,
     favourites: null,
-    synonyms: [],
     stats: null,
     streamingEpisodes: [],
     trailer: null,
@@ -144,7 +145,7 @@ export async function getMediaDetailFromMirror(
 }
 
 /**
- * Les dix-huit colonnes de `Media`, telles qu'AniList les rend.
+ * Les dix-neuf colonnes de `Media`, telles qu'AniList les rend.
  *
  * **Une seule fonction pour les deux écrivains du miroir**, et c'est ce que `mediaMirrorSchema`
  * annonçait : `MediaDetail` satisfait structurellement `MediaMirror`, donc le garde-fou du premier
@@ -165,6 +166,8 @@ function toMirrorRow(media: MediaMirror, syncedAt: Date) {
     titleRomaji: media.title.romaji,
     titleEnglish: media.title.english,
     titleNative: media.title.native,
+    // Un par ligne — voir le commentaire de la colonne dans `schema.prisma`.
+    synonyms: media.synonyms.join("\n"),
     coverImage: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
     // `coverColor` est un `@db.VarChar(9)` : une valeur plus longue ferait échouer toute la
     // transaction du lot pour une couleur de dégradé. AniList rend `#rrggbb`, mais rien ne nous le
@@ -201,7 +204,7 @@ function toMirrorRow(media: MediaMirror, syncedAt: Date) {
  * **Ce qui reste du rafraîchissement paresseux abandonné, c'est ce garde-fou et rien d'autre.** La
  * lecture ne réécrit plus jamais (§4.1 : une requête `GET` ne doit pas être coûteuse ni non
  * idempotente) ; ici on est déjà dans une écriture, donc le reproche tombe. Sans le test de
- * fraîcheur, chaque « +1 » recopierait dix-huit colonnes du catalogue partagé pour incrémenter un
+ * fraîcheur, chaque « +1 » recopierait dix-neuf colonnes du catalogue partagé pour incrémenter un
  * compteur personnel.
  *
  * **Une ligne périmée est rafraîchie au passage, mais son échec n'arrête rien** : le suivi de
@@ -515,6 +518,7 @@ export async function searchMediaInMirror({
       { titleRomaji: { contains: term, mode: "insensitive" } },
       { titleEnglish: { contains: term, mode: "insensitive" } },
       { titleNative: { contains: term, mode: "insensitive" } },
+      { synonyms: { contains: term, mode: "insensitive" } },
     ];
   }
 
