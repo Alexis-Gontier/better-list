@@ -234,6 +234,8 @@ pièce partagée qu'il imite (`CatalogueGridSkeleton` dans `components/shared/ca
 | un helper transverse sans domaine | `lib/<sujet>/` — voir la table ci-dessus |
 | un appel sortant vers une API tierce | `lib/http/` (sur `upfetch`, jamais `fetch` nu) |
 | une garde de sécurité sans domaine | `lib/security/` |
+| un test de logique (schéma, helper pur) | à côté de son sujet, `<fichier>.test.ts` (Vitest) |
+| un test de parcours (un écran traversé comme un membre) | `e2e/<parcours>.spec.ts` (Playwright, skill `e2e-test`) |
 
 **Règle de promotion :** on démarre toujours dans le `_components/` — ou le `_lib/` — de la route.
 Dès qu'un deuxième endroit en a besoin, on remonte le fichier dans `features/<domaine>/`. On ne crée
