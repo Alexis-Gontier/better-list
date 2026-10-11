@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowDownWideNarrowIcon, ArrowUpNarrowWideIcon } from "lucide-react";
 import { debounce } from "nuqs";
 
 import { SearchFilterPanel } from "@/app/(app)/search/_components/search-filter-panel";
@@ -13,7 +12,7 @@ import {
   FilterSelect,
   labelOf,
 } from "@/components/shared/filter-bar";
-import { Button } from "@/components/ui/button";
+import { SortDirectionButton } from "@/components/shared/sort-direction-button";
 import { formatGenre } from "@/features/media/lib/media-format";
 import {
   COUNTRY_OPTIONS,
@@ -27,7 +26,6 @@ import {
   TYPE_OPTIONS,
 } from "@/features/media/lib/search-params";
 import {
-  type SortDirection,
   type SortField,
   sortFieldHasDirection,
 } from "@/features/media/schemas/search-media.schema";
@@ -309,54 +307,5 @@ export function SearchFilterBar({ yearBounds }: SearchFilterBarProps) {
         />
       </div>
     </FilterBar>
-  );
-}
-
-/**
- * Le sens du tri, **croissant ou décroissant** — le paramètre `dir` du contrat, qui n'avait
- * jusqu'ici aucun contrôle pour l'écrire.
- *
- * Un bouton plutôt qu'un troisième sélecteur : il n'y a que deux valeurs, et une liste déroulante
- * de deux items coûte deux clics là où une bascule en demande un. L'icône dit l'état courant — la
- * flèche descendante pour « du plus grand au plus petit » —, et le nom accessible dit ce que le
- * clic fera, parce qu'une flèche seule ne distingue pas l'état de l'action.
- *
- * **Il vit dans ce fichier et pas dans `components/shared/`** : `/library` trie aussi, mais son
- * contrat n'a pas de direction — ses quatre tris portent déjà leur sens (« Activité récente » n'a
- * pas de version croissante qu'on demanderait). Un seul appelant, donc pas de promotion : la règle
- * d'ARCHITECTURE.md vaut aussi pour les petits composants, et surtout pour eux.
- */
-function SortDirectionButton({
-  direction,
-  available,
-  onToggle,
-}: {
-  direction: SortDirection;
-  /**
-   * `SEARCH_MATCH` n'a pas de pendant ascendant — demander « les moins pertinents d'abord » n'a
-   * pas de sens, et `sortFieldHasDirection` le sait déjà pour toute la chaîne. Le bouton reste
-   * **affiché mais éteint** plutôt que de disparaître : une rangée dont un contrôle s'absente
-   * selon le tri choisi se réorganise sous l'œil à chaque changement.
-   */
-  available: boolean;
-  onToggle: (direction: SortDirection) => void;
-}) {
-  const descending = direction === "DESC";
-  const Icon = descending ? ArrowDownWideNarrowIcon : ArrowUpNarrowWideIcon;
-
-  return (
-    <Button
-      aria-label={
-        descending ? "Trier par ordre croissant" : "Trier par ordre décroissant"
-      }
-      disabled={!available}
-      onClick={() => onToggle(descending ? "ASC" : "DESC")}
-      size="icon"
-      title={descending ? "Décroissant" : "Croissant"}
-      type="button"
-      variant="outline"
-    >
-      <Icon />
-    </Button>
   );
 }

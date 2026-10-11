@@ -349,6 +349,7 @@ export const mediaMirrorSchema = z.object({
   status: mediaStatusSchema.nullable(),
   countryOfOrigin: z.string().nullable(),
   title: mediaTitleSchema,
+  synonyms: z.array(z.string()).default([]),
   coverImage: mediaCoverImageSchema.nullable(),
   bannerImage: z.string().nullable(),
   episodes: z.number().int().nullable(),

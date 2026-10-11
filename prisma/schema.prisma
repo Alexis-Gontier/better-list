@@ -323,6 +323,10 @@ model Media {
   titleRomaji  String?
   titleEnglish String?
   titleNative  String?
+  /// Les synonymes AniList (« SNK », « L'Attaque des Titans »…), **un par ligne**. Du texte et pas
+  /// un `String[]` : Prisma ne sait chercher dans un tableau que par égalité (`has`), et la
+  /// recherche de `/library` a besoin d'un `contains` insensible à la casse, comme sur les titres.
+  synonyms     String  @default("")
 
   coverImage  String?
   /// Couleur dominante de la jaquette, fournie par AniList — sert aux dégradés de fiche.

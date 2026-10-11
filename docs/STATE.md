@@ -8,9 +8,18 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **30 septembre 2026**.
+Relevé le **11 octobre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
+>
+> **Le 11 octobre, le tri de `/library`.** Un bouton ↑↓ renverse le tri choisi (`dir`, vide = le
+> sens naturel du tri, les valeurs manquantes toujours à la fin) ; cinq tris de plus — date d'ajout,
+> de début, de fin, année de sortie, longueur ; un filtre 18+ (`adult` : tout / sans / seulement),
+> affiché seulement si le 18+ est ouvert dans les réglages. La recherche cherche aussi dans les
+> **synonymes AniList**, désormais mirroités (`Media.synonyms`, un par ligne) — comme AniList. La
+> migration `20261011120000_media_synonyms` déclare tout le miroir périmé : le cron
+> `refresh-media` remplit les synonymes des lignes existantes au fil de ses passes. Le bouton de
+> sens est promu dans `components/shared/sort-direction-button.tsx`.
 >
 > **Le 30 septembre, les favoris.** Un cœur sur la fiche d'une œuvre, sur `/character/[id]` et sur
 > `/staff/[id]` ; le profil gagne une section « Favoris » en quatre rangées — Anime, Manga,

@@ -1555,3 +1555,16 @@ texte par un filet de sa couleur.
 servi l'ancien rendu jusqu'au redémarrage du serveur. Et l'en-tête `immutable` de la carte fait que
 le navigateur ou `curl` ressert la même image pour une même URL : pour revoir un rendu, changer le
 numéro d'épisode (et donc la signature).
+
+## 11 octobre 2026
+
+**Le tri de `/library` : sens, cinq critères, filtre 18+, synonymes.** Alexis demandait que la
+recherche « marche comme AniList » : les trois titres étaient déjà cherchés, il manquait les
+synonymes — récupérés d'AniList, jamais stockés. Ils sont mirroités en **texte, un par ligne**, et
+pas en `String[]` : Prisma ne cherche dans un tableau que par égalité (`has`), pas par `contains`.
+
+**Un défaut unique pour `dir` aurait fait lire les titres de Z à A.** Le paramètre est donc nul par
+défaut et veut dire « le sens naturel du tri » ; changer de tri le remet à nul.
+
+Le rattrapage des synonymes ne demande pas de script : la migration recule `syncedAt` de tout le
+miroir, et le cron reprend les lignes les plus anciennes d'abord, dans ses plafonds de quota.
