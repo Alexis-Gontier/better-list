@@ -21,6 +21,7 @@
       "Bash(git branch*)",
       "Bash(gh pr view*)",
       "Bash(gh pr diff*)",
+      "Bash(gh pr merge*)",
       "Bash(gh run list*)",
       "Bash(gh run view*)"
     ]
