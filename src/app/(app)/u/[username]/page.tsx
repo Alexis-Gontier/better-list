@@ -15,6 +15,7 @@ import { ProfileTimeline } from "@/app/(app)/u/[username]/_components/profile-ti
 import { ScoreDistributionChart } from "@/app/(app)/u/[username]/_components/score-distribution-chart";
 import { StatusBreakdown } from "@/app/(app)/u/[username]/_components/status-breakdown";
 import {
+  JOURNAL_ANCHOR,
   loadProfileFilters,
   serializeProfileFilters,
 } from "@/app/(app)/u/[username]/_lib/profile-params";
@@ -36,6 +37,7 @@ import {
   getProfileFavorites,
 } from "@/features/favorites/server/favorites.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { formatDayKey } from "@/features/profile/lib/profile-activity";
 import {
   getProfileActivity,
   getProfileIdentity,
@@ -255,7 +257,11 @@ async function ProfileActivityBlock({
       description="Une case par jour sur les douze derniers mois. Plus elle est foncée, plus la journée a été chargée."
       title="Activité"
     >
-      <ActivityCalendar data={days} totalCount={total} />
+      <ActivityCalendar
+        data={days}
+        profilePath={routes.profile(profile.username)}
+        totalCount={total}
+      />
     </ProfileSection>
   );
 }
@@ -380,7 +386,7 @@ async function ProfileJournalBlock({
   searchParams: PageProps<"/u/[username]">["searchParams"];
 }) {
   const profile = await resolveProfile(params);
-  const { page } = await loadProfileFilters(searchParams);
+  const { page, jour } = await loadProfileFilters(searchParams);
   const { includeAdult, titleLanguage } = await getPreferences();
 
   const pages = Math.min(Math.max(page, 1), TIMELINE_MAX_PAGES);
@@ -392,6 +398,7 @@ async function ProfileJournalBlock({
     titleLanguage,
     skip: 0,
     take: pages * TIMELINE_PAGE_SIZE,
+    day: jour,
   });
 
   const remaining = total - events.length;
@@ -399,10 +406,39 @@ async function ProfileJournalBlock({
 
   return (
     <ProfileSection
-      description="Chaque progression, chaque note, chaque changement de statut — dans l'ordre."
+      aside={
+        /*
+          Le retour à tout le journal vit dans l'en-tête et pas au pied de la liste : c'est là
+          qu'on lit qu'on regarde un seul jour, donc là qu'on cherche comment en sortir.
+        */
+        jour ? (
+          <Button asChild size="sm" variant="outline">
+            <Link
+              href={`${serializeProfileFilters(routes.profile(profile.username), {})}#${JOURNAL_ANCHOR}`}
+            >
+              Tout le journal
+            </Link>
+          </Button>
+        ) : undefined
+      }
+      description={
+        jour
+          ? `Le ${formatDayKey(jour)}.`
+          : "Chaque progression, chaque note, chaque changement de statut — dans l'ordre."
+      }
+      id={JOURNAL_ANCHOR}
       title="Historique"
     >
-      {events.length === 0 ? (
+      {events.length === 0 && jour ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Rien ce jour-là</EmptyTitle>
+            <EmptyDescription>
+              Aucun événement le {formatDayKey(jour)}.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : events.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyTitle>Aucun événement</EmptyTitle>
@@ -423,6 +459,8 @@ async function ProfileJournalBlock({
                   routes.profile(profile.username),
                   {
                     page: pages + 1,
+                    // Le jour choisi survit au « Voir plus » : on allonge ce qu'on lit, on n'en sort pas.
+                    jour,
                   },
                 )}
                 prefetch={false}

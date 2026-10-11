@@ -5,6 +5,7 @@ import {
   ACTIVITY_WINDOW_DAYS,
   type ActivityCalendar,
   buildActivityCalendar,
+  dayRange,
 } from "@/features/profile/lib/profile-activity";
 import {
   type GenreBar,
@@ -298,6 +299,10 @@ export async function getProfileActivity({
  * Le `count` accompagne la page dans la même transaction implicite du `Promise.all` : sans lui, on
  * ne saurait pas combien de crans afficher, et un « page suivante » qui mène au vide est pire que
  * pas de pagination du tout.
+ *
+ * `day` resserre le journal sur une case du calendrier. L'intervalle vient de `dayRange`, l'inverse
+ * exact de la `dayKey` qui a rempli la case : le journal montre donc ce que la case compte, ni plus
+ * ni moins, même un jour de changement d'heure.
  */
 export async function getProfileJournal({
   userId,
@@ -306,6 +311,7 @@ export async function getProfileJournal({
   titleLanguage,
   skip,
   take,
+  day = null,
 }: {
   userId: string;
   isOwner: boolean;
@@ -313,10 +319,13 @@ export async function getProfileJournal({
   titleLanguage: "ROMAJI" | "ENGLISH" | "NATIVE";
   skip: number;
   take: number;
+  /** Une clé `AAAA-MM-JJ` déjà validée (`profile-params.ts`), ou `null` pour tout le journal. */
+  day?: string | null;
 }): Promise<ProfileJournal> {
   const where = {
     userId,
     entry: entryVisibility({ isOwner, includeAdult }),
+    ...(day ? { createdAt: dayRange(day) } : {}),
   };
 
   const [rows, total] = await Promise.all([

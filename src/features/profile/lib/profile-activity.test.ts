@@ -4,7 +4,10 @@ import {
   ACTIVITY_WINDOW_DAYS,
   activityLevel,
   buildActivityCalendar,
+  dayRange,
+  isDayKey,
 } from "@/features/profile/lib/profile-activity";
+import { dayKey } from "@/features/tracking/lib/entry-format";
 
 /**
  * Les dates sont écrites en UTC avec une heure **choisie**, pas arbitraire : le fuseau de référence
@@ -140,5 +143,53 @@ describe("buildActivityCalendar", () => {
 
       expect(streak).toBe(0);
     });
+  });
+});
+
+describe("isDayKey", () => {
+  it("accepte un vrai jour et refuse le reste", () => {
+    expect(isDayKey("2026-10-11")).toBe(true);
+    expect(isDayKey("2024-02-29")).toBe(true);
+    expect(isDayKey("2026-02-29")).toBe(false);
+    expect(isDayKey("2026-13-01")).toBe(false);
+    expect(isDayKey("11/10/2026")).toBe(false);
+    expect(isDayKey("2026-10-11T00:00")).toBe(false);
+  });
+});
+
+describe("dayRange — l'inverse de dayKey", () => {
+  it("couvre le jour de Paris, pas le jour UTC", () => {
+    // Été : Paris a deux heures d'avance.
+    expect(dayRange("2026-07-14")).toEqual({
+      gte: new Date("2026-07-13T22:00:00.000Z"),
+      lt: new Date("2026-07-14T22:00:00.000Z"),
+    });
+    // Hiver : une heure.
+    expect(dayRange("2026-01-15")).toEqual({
+      gte: new Date("2026-01-14T23:00:00.000Z"),
+      lt: new Date("2026-01-15T23:00:00.000Z"),
+    });
+  });
+
+  it("tient les jours de 23 et de 25 heures", () => {
+    const spring = dayRange("2026-03-29");
+    const autumn = dayRange("2026-10-25");
+
+    expect(spring.lt.getTime() - spring.gte.getTime()).toBe(23 * 3_600_000);
+    expect(autumn.lt.getTime() - autumn.gte.getTime()).toBe(25 * 3_600_000);
+  });
+
+  it("rend à dayKey exactement ce qu'il a reçu, aux deux bornes", () => {
+    for (const key of [
+      "2026-03-29",
+      "2026-10-25",
+      "2026-12-31",
+      "2026-07-14",
+    ]) {
+      const { gte, lt } = dayRange(key);
+      expect(dayKey(gte)).toBe(key);
+      expect(dayKey(new Date(lt.getTime() - 1))).toBe(key);
+      expect(dayKey(lt)).not.toBe(key);
+    }
   });
 });

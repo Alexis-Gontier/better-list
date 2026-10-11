@@ -24,11 +24,14 @@ import {
  * ne se pose, et c'est ce qui rend l'écran lisible sans survol — donc au clavier et au doigt.
  */
 export function ProfileSection({
+  id,
   title,
   description,
   aside,
   children,
 }: {
+  /** Une ancre, pour qu'un lien mène au bloc plutôt qu'en haut de la page. */
+  id?: string;
   title: string;
   description: string;
   /**
@@ -40,7 +43,8 @@ export function ProfileSection({
   children: ReactNode;
 }) {
   return (
-    <Card>
+    // `scroll-mt` : sans marge, l'en-tête collant de l'application recouvrirait le titre visé.
+    <Card className="scroll-mt-20" id={id}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
