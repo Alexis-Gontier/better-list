@@ -1580,3 +1580,16 @@ Vérifier à l'écran demande une session. Créer une session au nom d'un vrai c
 suivi sur le compte de test, a été refusé par le garde-fou de l'outil — à raison. Ce qui passe :
 le compte `e2e-member` (`e2e/support/session.ts`) sur une branche Neon jetable, avec un suivi
 inventé posé sur des œuvres du miroir, qui sont des données publiques.
+
+**Le tri par titre suit la langue affichée.** Trier sur « l'anglais, sinon le romaji » est un
+`COALESCE`, que Prisma ne sait pas mettre dans un `orderBy` : ce sont trois **colonnes générées**
+par PostgreSQL, une par langue. Générées plutôt qu'écrites par le miroir, pour que le seed et les
+lignes existantes les aient sans rien faire. **Le piège** : Prisma ne connaît pas les colonnes
+générées et les introspecte comme un `@default(dbgenerated("…"))`. Sans ce `dbgenerated` recopié
+**à l'octet près** dans le schéma (casts `''::text` compris), `migrate diff` voit une dérive et
+propose un `DROP DEFAULT` — que PostgreSQL refuserait sur une colonne générée. Vérifié sur une
+branche Neon : diff vide, et le cron réécrit les 637 lignes sans erreur.
+
+Un `next dev` lancé en tâche de fond et arrêté par l'outil **laisse son processus node vivant** sous
+Windows : le suivant refuse de démarrer (« Another next dev server is already running »). Le tuer par
+son PID, après avoir vérifié son heure de création.

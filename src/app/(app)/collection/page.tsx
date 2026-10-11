@@ -136,7 +136,7 @@ async function Shelf({
 }) {
   const { titleLanguage } = await getPreferences();
   const filters = await loadCollectionFilters(searchParams);
-  const shelf = await getShelf(filters.state);
+  const shelf = await getShelf(filters.state, titleLanguage);
 
   /*
     Deux vides, et ils ne se ressemblent pas. Une étagère neuve n'a rien à desserrer : le seul
