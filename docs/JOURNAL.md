@@ -1610,3 +1610,11 @@ l'accueil avait séparées exprès, pour un quota déjà protégé par `"use cac
 gel couvrait encore, knip a tourné une fois **sans** `ignoreIssues` (configuration jetable) : il
 restait exactement les entrées que STATE.md attribue aux facettes et aux chiffres de la communauté,
 et `search-media.schema.ts` ne gelait plus rien.
+
+**L'accueil tombait en prod au premier 429 d'AniList** (13 octobre 2026), sur l'error boundary au
+lieu du repli vide. `tryAniList` reconnaissait la panne à son `name`, mesuré en `next dev` le
+15 août ; en production, React ne transporte à travers `"use cache"` **que le `digest`** et
+recrée un `Error` générique. Le filet n'avait donc jamais fonctionné en prod. La panne porte
+désormais aussi `digest: "ANILIST_OUTAGE"`, que Next respecte au lieu de le recalculer — le même
+canal que `redirect()` et `notFound()`. Trouvé grâce à `vercel logs --level error` : la « Réf. »
+de l'écran d'erreur est ce digest, et le journal le relie à l'erreur d'origine.

@@ -363,10 +363,14 @@ l'appelant qui rattrape, via `tryAniList` (`src/lib/http/anilist.ts`).
 
 **Une erreur ne traverse pas `"use cache"` intacte** (Next 16.3). Côté appelant, ce n'est plus
 l'instance levée mais un `Error` nu : `instanceof` répond `false`, les propriétés ajoutées valent
-`undefined`, et **seuls `name` et `message` survivent**. La catégorie se porte donc dans le `name`
-(`AniListOutageError`), et `isAniListOutage` ne regarde que lui. Un test qui lèverait la vraie
-classe passerait au vert pendant que la page casserait : le test reconstitue la forme transportée
-à la main.
+`undefined`. **Ce qui survit dépend du mode** : en `next dev`, `name` et `message` ; en production,
+**seul `digest`** — React remplace le message par « An error occurred in the Server Components
+render… » et le nom par `Error`, mais recopie le `digest` d'origine, que Next ne recalcule pas s'il
+est déjà posé. La panne se porte donc dans les deux : `name` (`AniListOutageError`) et `digest`
+(`ANILIST_OUTAGE`), et `isAniListOutage` accepte l'un ou l'autre. Le seul `name` a suffi en dev
+pendant deux mois et a fait tomber l'accueil en prod au premier 429 (13 octobre 2026). Un test qui
+lèverait la vraie classe passerait au vert pendant que la page casserait : les tests reconstituent
+à la main les deux formes transportées.
 
 ## Anatomie d'une feature
 

@@ -64,7 +64,8 @@ Elles sont justifiées dans ARCHITECTURE.md ; ici, seulement leur énoncé.
 - Fichiers et dossiers en `kebab-case`. Pas de barrel `index.ts` dans `features/`. Un seul alias
   d'import : `@/*` → `src/*`.
 - Une panne d'API externe se rattrape **hors** du `"use cache"`, jamais dedans — et une erreur ne
-  traverse pas `"use cache"` intacte : seuls `name` et `message` survivent.
+  traverse pas `"use cache"` intacte : en dev `name` et `message` survivent, en prod **seul
+  `digest`**.
 
 Un hook `PreToolUse` (`.claude/hooks/conventions-guard.mjs`) refuse les écritures qui violent
 celles de ces règles qu'une machine sait voir. S'il bloque, c'est le code qu'il faut corriger.

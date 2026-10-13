@@ -52,8 +52,18 @@ const anilistEnvelopeSchema = z.object({
  * `message` et un `digest` (mesuré le 15 août 2026 avec Next 16.3). `instanceof` répond `false`
  * et `status` vaut `undefined`. Le tri doit donc être fait **avant** la frontière, à la
  * construction, et déposé dans le seul champ qui la traverse.
+ *
+ * ⚠️ **Ce n'est vrai qu'en `next dev`.** En production, React ne transporte plus ni `name` ni
+ * `message` : l'appelant reçoit « An error occurred in the Server Components render… », et **seul
+ * le `digest` survit** — React le recopie sur l'erreur recréée, et Next respecte un `digest` déjà
+ * posé au lieu de le recalculer (c'est par là que passent `redirect()` et `notFound()`). La panne
+ * porte donc aussi `ANILIST_OUTAGE_DIGEST`. Faute de lui, le 13 octobre 2026, un 429 a fait
+ * tomber l'accueil en prod sur l'error boundary, alors que tout le filet tenait en dev.
  */
 const ANILIST_OUTAGE_ERROR = "AniListOutageError";
+
+/** Le `digest` d'une panne — le seul champ qui traverse `"use cache"` en production. */
+const ANILIST_OUTAGE_DIGEST = "ANILIST_OUTAGE";
 
 /**
  * La panne, par statut.
@@ -82,12 +92,16 @@ function isOutageStatus(status: number) {
  */
 export class AniListError extends Error {
   readonly status: number;
+  /** Posé sur une panne seulement : voir `ANILIST_OUTAGE_DIGEST`. */
+  readonly digest?: string;
 
   constructor(message: string, status: number) {
     super(message);
-    // Le nom encode la catégorie parce que lui seul survit à `"use cache"` — voir
-    // `ANILIST_OUTAGE_ERROR`.
-    this.name = isOutageStatus(status) ? ANILIST_OUTAGE_ERROR : "AniListError";
+    // Le nom et le digest encodent la catégorie parce qu'eux seuls survivent à `"use cache"` —
+    // le premier en dev, le second en prod. Voir `ANILIST_OUTAGE_ERROR`.
+    const outage = isOutageStatus(status);
+    this.name = outage ? ANILIST_OUTAGE_ERROR : "AniListError";
+    if (outage) this.digest = ANILIST_OUTAGE_DIGEST;
     this.status = status;
   }
 
@@ -109,11 +123,15 @@ export function isAniListError(error: unknown): error is AniListError {
 /**
  * AniList ne répond pas : coupure, erreur serveur ou quota épuisé.
  *
- * Se contente du `name`, sans `instanceof` : c'est ce qui la rend vraie **des deux côtés** d'un
- * `"use cache"`, là où un `instanceof` ne l'est qu'en amont.
+ * Se contente du `name` ou du `digest`, sans `instanceof` : c'est ce qui la rend vraie **des deux
+ * côtés** d'un `"use cache"`, en dev comme en prod, là où un `instanceof` ne l'est qu'en amont.
  */
 export function isAniListOutage(error: unknown): boolean {
-  return error instanceof Error && error.name === ANILIST_OUTAGE_ERROR;
+  return (
+    error instanceof Error &&
+    (error.name === ANILIST_OUTAGE_ERROR ||
+      (error as { digest?: unknown }).digest === ANILIST_OUTAGE_DIGEST)
+  );
 }
 
 /**

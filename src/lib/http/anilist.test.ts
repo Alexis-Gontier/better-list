@@ -221,6 +221,51 @@ describe("tryAniList", () => {
     ).resolves.toBeNull();
   });
 
+  /**
+   * La même traversée, **en production** — là où l'accueil est tombé le 13 octobre 2026.
+   *
+   * Hors `next dev`, React ne transporte ni `name` ni `message` : l'appelant reçoit un `Error`
+   * générique, et seul le `digest` de l'erreur d'origine est recopié dessus. C'est cette forme que
+   * le test reconstitue, à partir de la vraie erreur levée par un 429.
+   */
+  it("rattrape une panne qui n'a gardé que son digest en traversant `use cache` en production", async () => {
+    const { anilistQuery, tryAniList } = await importAnilist(
+      vi.fn(async () =>
+        jsonResponse(
+          { errors: [{ message: "Too Many Requests.", status: 429 }] },
+          429,
+        ),
+      ) as never,
+    );
+    const original = (await anilistQuery({ query: "query {}", schema }).catch(
+      (error: unknown) => error,
+    )) as { digest?: string };
+
+    const transported = Object.assign(
+      new Error(
+        "An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.",
+      ),
+      { digest: original.digest },
+    );
+
+    await expect(
+      tryAniList(() => Promise.reject(transported)),
+    ).resolves.toBeNull();
+  });
+
+  it("laisse passer en production une erreur qui n'est pas une panne", async () => {
+    const { tryAniList } = await importAnilist(vi.fn() as never);
+
+    const transported = Object.assign(
+      new Error("An error occurred in the Server Components render."),
+      { digest: "1234567890" },
+    );
+
+    await expect(tryAniList(() => Promise.reject(transported))).rejects.toBe(
+      transported,
+    );
+  });
+
   it("laisse passer un 404 : une fiche inconnue n'est pas une panne", async () => {
     const { anilistQuery, tryAniList } = await importAnilist(
       vi.fn(async () =>
