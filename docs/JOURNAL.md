@@ -1610,3 +1610,30 @@ l'accueil avait séparées exprès, pour un quota déjà protégé par `"use cac
 gel couvrait encore, knip a tourné une fois **sans** `ignoreIssues` (configuration jetable) : il
 restait exactement les entrées que STATE.md attribue aux facettes et aux chiffres de la communauté,
 et `search-media.schema.ts` ne gelait plus rien.
+
+## 16 octobre 2026 — le monogramme devient le BL-signet
+
+**Refonte de la marque avec la skill [logo-design](https://github.com/kaankiziltug/logo-design-skill)**
+(brief, concepts, construction SVG, tests à 16 px, kit). Huit pistes, puis un B-signet à ruban
+vertical intégré jusqu'au bout — et Alexis, en le voyant en situation, a préféré **rester dans
+l'idée du monogramme** : même B, même hampe partagée, mais le pied du L raccourci de 8 à 5 unités
+et taillé en queue d'aronde. Kit et règles dans [docs/brand/](./brand/README.md).
+
+La leçon de méthode : **montrer une planche en situation (onglet, écran d'accueil, avant/après)
+avant de déclarer le kit fini.** C'est la comparaison côte à côte avec l'ancien logo qui a fait
+revenir vers lui ; sur des planches de concepts isolés, la nouveauté gagnait toujours.
+
+Ce qui a appris quelque chose :
+
+- **Les rangs droits tuent le B.** La tier list plaisait ; quatre façons de la fondre dans la lettre
+  ont toutes donné un E ou un F. Une panse doit être courbe et pincée au milieu pour rester une panse.
+- **Une liste à trois barres égales est un menu hamburger** — à éviter pour une marque posée dans
+  un en-tête, à côté d'un vrai menu.
+- **`/apple-icon` retombait dans la trappe de `/icon`** : route de métadonnées sans extension, et
+  elle ne commence pas par `icon`, donc l'exclusion du matcher ne la couvrait pas. Vue tout de suite
+  en local cette fois (307 vers `/login`), test ajouté avant le correctif.
+- `icon.tsx` disait encore « bleu nuit de `--primary` » alors qu'Obsidienne l'a passé en indigo :
+  l'onglet ne suivait plus le thème depuis septembre. Les couleurs de tuile sont maintenant à un seul
+  endroit, `app/_lib/brand-tile.tsx`.
+- Le mot des lockups est en Archivo **vectorisé** avec fontTools (instance `wght 800, wdth 108` de
+  la police variable OFL) : un SVG de logo ne doit dépendre d'aucune police installée.
