@@ -147,4 +147,13 @@ describe("config.matcher", () => {
   it("laisse passer l'icône d'onglet, qui n'a pas d'extension", () => {
     expect(matcher.test("/icon")).toBe(false);
   });
+
+  /*
+    La même trappe, rouverte par l'icône d'écran d'accueil iOS : `/apple-icon` ne commence pas par
+    `icon`, donc l'exclusion de `/icon` ne la couvre pas. Safari la demande au moment d'« Ajouter à
+    l'écran d'accueil », et recevait la page de connexion à la place.
+  */
+  it("laisse passer l'icône d'écran d'accueil iOS", () => {
+    expect(matcher.test("/apple-icon")).toBe(false);
+  });
 });

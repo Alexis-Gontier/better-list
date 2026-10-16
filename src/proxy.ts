@@ -83,9 +83,10 @@ export const config = {
    * extensions ci-dessous ne l'attrapait pas. Le proxy renvoyait l'icône d'onglet vers `/login`, et
    * elle manquait à tout visiteur déconnecté — sur les écrans d'authentification comme sur
    * `/l/<jeton>`, la seule page prévue pour des gens sans compte. Rien à protéger ici : c'est un
-   * carré de 32 pixels que le dépôt montre à tout le monde.
+   * carré de 32 pixels que le dépôt montre à tout le monde. **`apple-icon` est nommée pour la même
+   * raison** : elle ne commence pas par `icon`, l'exclusion précédente ne la couvre donc pas.
    */
   matcher: [
-    "/((?!api/|_next/static|_next/image|icon|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?)$).*)",
+    "/((?!api/|_next/static|_next/image|icon|apple-icon|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?)$).*)",
   ],
 };

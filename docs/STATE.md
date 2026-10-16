@@ -8,7 +8,7 @@
 Quand les deux se contredisent, c'est ce fichier qui a raison sur le présent, et PRODUCT.md sur
 l'intention.
 
-Relevé le **11 octobre 2026**.
+Relevé le **16 octobre 2026**.
 
 > ### En un mot : onze écrans sur onze — la collection physique est entrée, et la carte est pleine.
 >
@@ -566,7 +566,7 @@ tombe dans l'entrée de `"use cache"` que l'accueil vient de poser.
 | Fichier | Rôle |
 | --- | --- |
 | `app/robots.ts` | `disallow: "/"` **total**. `/l/<jeton>` s'ouvre sans session : un lien secret indexé n'est plus un secret, il est cherchable. Le placeholder de `/l/[token]` porte en plus son propre `noindex`. |
-| `app/icon.tsx` | L'icône d'onglet, dessinée par `ImageResponse` — aucun binaire à relire dans `public/`. Depuis le 6 septembre 2026 elle rend le monogramme et non plus une lettre : le tracé vient de `components/layout/logo.tsx`, seule géométrie du dépôt, partagée avec les trois en-têtes. |
+| `app/icon.tsx`, `app/apple-icon.tsx` | L'icône d'onglet (32 px) et celle de l'écran d'accueil iOS (180 px), dessinées par `ImageResponse` — aucun binaire à relire dans `public/`. Depuis le 16 octobre 2026 elles rendent le **BL-signet** blanc sur l'indigo de `--primary`, via `app/_lib/brand-tile.tsx` ; le tracé vient de `components/layout/logo.tsx`, seule géométrie du dépôt. Le kit (masters SVG, lockups, règles) est dans [docs/brand/](./brand/README.md). Les deux sont exclues du matcher du proxy, sinon un visiteur déconnecté les reçoit en `/login`. |
 | `instrumentation.ts` | `onRequestError` : relie le `digest` qu'`error.tsx` affiche au visiteur à une ligne de journal cherchable. |
 
 ---
