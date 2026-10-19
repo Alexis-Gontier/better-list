@@ -36,13 +36,16 @@ Une spec, **deux PR** sur des branches successives :
   - un champ de recherche ; à partir de deux caractères, cinq résultats (jaquette, titre dans la
     langue du compte, format, année, pastille de suivi) ;
   - chaque ligne est une **bascule** : « Ajouter », ou « Dans la liste » (coché) pour retirer ;
-  - **`Entrée` ajoute le résultat surligné et vide le champ** ; les flèches déplacent le surlignage.
-    On enchaîne donc sans souris : taper, Entrée, taper, Entrée.
+  - **`Entrée` ajoute le résultat surligné et sélectionne le texte du champ** ; les flèches
+    déplacent le surlignage. La frappe suivante remplace le terme : on enchaîne sans souris, taper,
+    Entrée, taper, Entrée. Vider le champ démonterait la ligne pendant son écriture, et un échec ne
+    pourrait plus remettre la case en place.
 - **Champ vide : des suggestions tirées de ma bibliothèque**, sans requête AniList. En PR 1 : mes
   œuvres `PLANNING` qui ne sont pas déjà dans la liste, les plus récemment modifiées d'abord, huit au
   plus. La PR 2 les fait dépendre du genre (voir plus bas).
-- La grille derrière la fenêtre se met à jour à chaque geste : `addToList` et `removeFromList`
-  appellent déjà `revalidateLists`.
+- La grille derrière la fenêtre se met à jour à chaque geste. `addToList` et `removeFromList`
+  revalident aujourd'hui `/lists` et la fiche de l'œuvre, **pas `/lists/[id]`** : elles gagnent
+  cette revalidation.
 - La fenêtre « Ajouter à une liste » de la fiche reste : elle sert le cas inverse, une œuvre rangée
   dans plusieurs listes.
 
