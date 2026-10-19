@@ -109,6 +109,17 @@ export function AddMediaDialog({
 
   const items = searchable ? (result?.items ?? []) : suggestions;
 
+  /*
+    **Le surlignage revient en tête à chaque nouvelle liste.** Laissé à cmdk, il garde la valeur de
+    la suggestion surlignée à l'ouverture ; quand les résultats la remplacent, il ne vise plus rien
+    et `Entrée` ne range rien.
+  */
+  const itemsKey = items.map((item) => item.id).join(",");
+  const [highlighted, setHighlighted] = useState("");
+  useEffect(() => {
+    setHighlighted(itemsKey.split(",")[0] ?? "");
+  }, [itemsKey]);
+
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
@@ -128,7 +139,12 @@ export function AddMediaDialog({
         </DialogHeader>
 
         {/* `shouldFilter={false}` : l'ordre est celui d'AniList, cmdk n'a rien à refiltrer. */}
-        <Command className="rounded-none bg-transparent" shouldFilter={false}>
+        <Command
+          className="rounded-none bg-transparent"
+          onValueChange={setHighlighted}
+          shouldFilter={false}
+          value={highlighted}
+        >
           <div className="relative px-3">
             <CommandInput
               onValueChange={setQuery}
