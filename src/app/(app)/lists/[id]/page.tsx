@@ -28,16 +28,6 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import {
-  itemCountLabel,
-  listCountsLine,
-  listHeadline,
-  sectionHeading,
-} from "@/features/lists/lib/list-labels";
-import {
-  listSections,
-  sectionCounts,
-} from "@/features/lists/lib/list-sections";
-import {
   getList,
   getListSuggestions,
 } from "@/features/lists/server/lists.queries";
@@ -151,29 +141,8 @@ async function ListDetail({
     : await Promise.all([
         getLibraryEntriesFor(list.items.map((i) => i.media.id)),
         // Ce que la fenêtre d'ajout propose avant qu'on tape ; indépendant du suivi, donc en parallèle.
-        getListSuggestions(list.id, list.kind, {
-          includeAdult,
-          titleLanguage,
-        }),
+        getListSuggestions(list.id, { includeAdult, titleLanguage }),
       ]);
-
-  /*
-    Le genre décide des sections (D47). En mode réorganisation, il n'y en a pas : on réordonne la
-    liste entière, et le suivi n'y est pas lu.
-  */
-  const sections = listSections(
-    list.kind,
-    list.cutoff,
-    list.items.map((item) => ({
-      item,
-      mediaStatus: item.media.status,
-      entryStatus: entries.get(item.media.id)?.status ?? null,
-    })),
-  );
-  const countsLine = listCountsLine(list.kind, list.cutoff, {
-    total: list.itemCount,
-    ...sectionCounts(sections),
-  });
 
   return (
     <>
@@ -199,9 +168,7 @@ async function ListDetail({
               </p>
             ) : null}
             <p className="text-muted-foreground text-xs">
-              {reordering
-                ? itemCountLabel(list.itemCount)
-                : listHeadline(list.kind, list.cutoff, countsLine)}
+              {itemLabel(list.itemCount)}
             </p>
           </div>
 
@@ -278,71 +245,36 @@ async function ListDetail({
           />
         </>
       ) : (
-        <div className="flex flex-col gap-8">
-          {sections.map((section, sectionIndex) => {
-            const grid = (
-              <CatalogueGrid key={section.key}>
-                {section.items.map(({ item, rank }, index) => (
-                  <MediaCard
-                    action={
-                      <EntryQuickEdit
-                        banner={item.banner}
-                        compact
-                        entry={entries.get(item.media.id) ?? null}
-                        mediaId={item.media.id}
-                        title={mediaTitle(item.media.title, titleLanguage)}
-                        total={item.total}
-                        unit={item.unit}
-                      />
-                    }
-                    key={item.media.id}
-                    marker={
-                      entries.has(item.media.id) ? (
-                        <EntryStatusDot
-                          // biome-ignore lint/style/noNonNullAssertion: `has` vient d'être vérifié.
-                          status={entries.get(item.media.id)!.status}
-                        />
-                      ) : undefined
-                    }
-                    media={item.media}
-                    // La première rangée de la première section porte la mesure de LCP.
-                    priority={sectionIndex === 0 && index < WIDEST_COLUMN_COUNT}
-                    rank={list.kind === "RANKING" ? rank : undefined}
-                    titleLanguage={titleLanguage}
+        <CatalogueGrid>
+          {list.items.map((item, index) => (
+            <MediaCard
+              action={
+                <EntryQuickEdit
+                  banner={item.banner}
+                  compact
+                  entry={entries.get(item.media.id) ?? null}
+                  mediaId={item.media.id}
+                  title={mediaTitle(item.media.title, titleLanguage)}
+                  total={item.total}
+                  unit={item.unit}
+                />
+              }
+              key={item.media.id}
+              marker={
+                entries.has(item.media.id) ? (
+                  <EntryStatusDot
+                    // biome-ignore lint/style/noNonNullAssertion: `has` vient d'être vérifié.
+                    status={entries.get(item.media.id)!.status}
                   />
-                ))}
-              </CatalogueGrid>
-            );
-
-            if (section.label === null) {
-              return <div key={section.key}>{grid}</div>;
-            }
-
-            const heading = sectionHeading(
-              section.key,
-              section.label,
-              section.items.length,
-            );
-
-            /*
-              Une section repliée est un `<details>` natif : ouvrir « Déjà vues » ne coûte pas une
-              ligne de JavaScript, et la page reste serveur.
-            */
-            return section.collapsed ? (
-              <details className="flex flex-col" key={section.key}>
-                <summary className="cursor-pointer font-heading text-lg">
-                  {heading}
-                </summary>
-                <div className="pt-4">{grid}</div>
-              </details>
-            ) : (
-              <section className="flex flex-col gap-4" key={section.key}>
-                <h2 className="font-heading text-lg">{heading}</h2>
-                {grid}
-              </section>
-            );
-          })}
-        </div>
+                ) : undefined
+              }
+              media={item.media}
+              // La première rangée au palier le plus large : elle porte la mesure de LCP.
+              priority={index < WIDEST_COLUMN_COUNT}
+              titleLanguage={titleLanguage}
+            />
+          ))}
+        </CatalogueGrid>
       )}
     </>
   );
@@ -414,4 +346,10 @@ function ListDetailSkeleton() {
       <CatalogueGridSkeleton />
     </>
   );
+}
+
+/** « 18 œuvres », « 1 œuvre », « Aucune œuvre » — la formulation de la carte de `/lists`. */
+function itemLabel(count: number): string {
+  if (count === 0) return "Aucune œuvre";
+  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }

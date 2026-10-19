@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { RankNumeral } from "@/components/shared/rank-numeral";
 import { routes } from "@/config/routes";
 import { MediaHoverCard } from "@/features/media/components/media-hover-card";
 import { MediaPreview } from "@/features/media/components/media-preview";
@@ -64,11 +63,6 @@ type MediaCardProps = {
    */
   marker?: React.ReactNode;
   /**
-   * Le rang de l'œuvre dans un classement (D47), posé sur la jaquette. Un nombre et pas un nœud :
-   * la carte décide où il va, l'appelant dit seulement lequel.
-   */
-  rank?: number;
-  /**
    * L'action posée **en bas à droite de la jaquette** — aujourd'hui le bouton d'édition rapide du
    * suivi.
    *
@@ -107,7 +101,6 @@ export function MediaCard({
   titleLanguage,
   priority,
   marker,
-  rank,
   action,
   details,
   footer,
@@ -184,7 +177,6 @@ export function MediaCard({
                 src={cover}
               />
             ) : null}
-            {rank !== undefined ? <RankNumeral rank={rank} /> : null}
           </div>
 
           {/*
@@ -204,9 +196,6 @@ export function MediaCard({
           */}
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5">
-              {rank !== undefined ? (
-                <span className="sr-only">Numéro {rank}, </span>
-              ) : null}
               {marker}
               <p className="min-w-0 truncate text-sm" title={title}>
                 {title}

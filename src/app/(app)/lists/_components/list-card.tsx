@@ -75,7 +75,20 @@ export function ListCard({ list }: { list: ListSummary }) {
         eux sans avoir à réserver quoi que ce soit au-dessus. La carte est étirée à la hauteur de sa
         rangée par la grille, donc l'espace à absorber existe déjà.
       */}
-      <p className="mt-auto text-muted-foreground text-xs">{list.countsLine}</p>
+      <p className="mt-auto text-muted-foreground text-xs">
+        {itemLabel(list.itemCount)}
+      </p>
     </Link>
   );
+}
+
+/**
+ * « 8 œuvres », « 1 œuvre », « Aucune œuvre ».
+ *
+ * Le cas zéro a ses propres mots plutôt qu'un « 0 œuvre » : un décompte nul se lit comme une panne
+ * de chargement, une phrase se lit comme un état.
+ */
+function itemLabel(count: number): string {
+  if (count === 0) return "Aucune œuvre";
+  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }

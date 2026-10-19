@@ -5,10 +5,7 @@ import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  ListFormDialog,
-  parseCutoff,
-} from "@/features/lists/components/list-form-dialog";
+import { ListFormDialog } from "@/features/lists/components/list-form-dialog";
 import { createList } from "@/features/lists/server/lists.actions";
 
 /**
@@ -56,17 +53,12 @@ export function CreateListDialog() {
         fieldErrors={result.validationErrors?.fieldErrors}
         heading="Nouvelle liste"
         onOpenChange={setOpen}
-        onSubmit={({ title, description, kind, cutoff }) =>
+        onSubmit={({ title, description }) =>
           /*
             La description part `undefined` quand elle est vide, et pas chaîne vide : le schéma la
             veut nullable et facultative, et « je n'ai rien écrit » n'est pas « j'ai écrit rien ».
           */
-          execute({
-            title,
-            description: description.trim() || undefined,
-            kind,
-            cutoff: parseCutoff(cutoff),
-          })
+          execute({ title, description: description.trim() || undefined })
         }
         open={open}
         pending={isPending}
