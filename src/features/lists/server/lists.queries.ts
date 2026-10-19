@@ -443,7 +443,7 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
 
 /**
  * Ce que chaque genre suggère avant qu'on tape. Une attente de fin propose ce que j'ai mis de côté
- * pendant sa parution — en production, c'est exactement le contenu de « A lire une fois fini ».
+ * pendant sa parution : en pause, abandonné ou prévu, et toujours en cours de publication.
  */
 const SUGGESTION_FILTERS: Record<
   ListKind,
