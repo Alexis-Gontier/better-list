@@ -1,10 +1,12 @@
 "use client";
 
 import { PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { routes } from "@/config/routes";
 import {
   ListFormDialog,
   parseCutoff,
@@ -28,6 +30,7 @@ import { createList } from "@/features/lists/server/lists.actions";
  * pour les deux emplacements, donc plus de propriété du tout.
  */
 export function CreateListDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   /*
@@ -38,7 +41,14 @@ export function CreateListDialog() {
     donc il n'y a rien à recharger à la main ici.
   */
   const { execute, isPending, result } = useAction(createList, {
-    onSuccess: () => setOpen(false),
+    /*
+      Une liste vide ne sert à rien : on y emmène, fenêtre d'ajout ouverte, pour que le geste qui
+      suit la création soit déjà fait.
+    */
+    onSuccess: ({ data }) => {
+      setOpen(false);
+      if (data) router.push(routes.lists.fill(data.id));
+    },
     onError: ({ error }) =>
       toast.error(
         error.serverError ?? "La liste n'a pas été créée. Réessayez.",
@@ -70,7 +80,7 @@ export function CreateListDialog() {
         }
         open={open}
         pending={isPending}
-        submitLabel="Créer"
+        submitLabel="Créer et remplir"
       />
     </>
   );

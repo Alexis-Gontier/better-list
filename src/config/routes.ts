@@ -47,6 +47,8 @@ export const routes = {
      * casser, et l'identifiant est déjà ce que portent les mutations.
      */
     detail: (id: string) => `/lists/${id}` as const,
+    /** Une liste qu'on vient de créer, fenêtre « Ajouter des œuvres » déjà ouverte. */
+    fill: (id: string) => `/lists/${id}?ajouter=1` as const,
     /** Une vue posée sur une liste : classement, tier list, grille (conception.md §4.4). */
     view: (id: string, viewId: string) => `/lists/${id}/${viewId}` as const,
   },

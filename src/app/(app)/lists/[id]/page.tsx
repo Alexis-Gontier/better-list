@@ -129,7 +129,10 @@ async function ListDetail({
   searchParams: PageProps<"/lists/[id]">["searchParams"];
 }) {
   const { id } = await params;
-  const reordering = (await searchParams).mode === REORDER_MODE;
+  const query = await searchParams;
+  const reordering = query.mode === REORDER_MODE;
+  // Posé par la création (`routes.lists.fill`) : la liste neuve s'ouvre sur sa fenêtre d'ajout.
+  const filling = query.ajouter === "1";
   const { includeAdult, titleLanguage } = await getPreferences();
   const list = await getList(id, { includeAdult });
 
@@ -217,6 +220,7 @@ async function ListDetail({
             {/* Ajouter est l'action principale de l'écran (D33), sauf pendant qu'on réordonne. */}
             {reordering ? null : (
               <AddMediaDialog
+                initialOpen={filling}
                 listId={list.id}
                 memberIds={list.items.map((item) => item.media.id)}
                 suggestions={suggestions}

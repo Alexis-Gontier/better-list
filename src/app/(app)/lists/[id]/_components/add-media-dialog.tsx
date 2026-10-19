@@ -2,6 +2,7 @@
 
 import { CheckIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -55,16 +56,31 @@ const SEARCH_DEBOUNCE_MS = 250;
  * cache d'une heure de `searchMedia`.
  */
 export function AddMediaDialog({
+  initialOpen = false,
   listId,
   memberIds,
   suggestions,
 }: {
+  /** Ouverte d'emblée : la liste vient d'être créée, et la remplir est le geste suivant. */
+  initialOpen?: boolean;
   listId: string;
   /** Les œuvres déjà dans la liste : la page les connaît, la recherche n'a pas à les savoir. */
   memberIds: number[];
   suggestions: CommandSearchItem[];
 }) {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [open, setOpen] = useState(initialOpen);
+
+  /*
+    Refermer une fenêtre ouverte par l'adresse retire le paramètre : sinon un rechargement, ou un
+    retour arrière, la rouvrirait sans qu'on l'ait demandé.
+  */
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    if (!next && initialOpen) {
+      router.replace(routes.lists.detail(listId), { scroll: false });
+    }
+  };
   const [query, setQuery] = useState("");
   /** Le dernier résultat, **avec le terme qui l'a produit** : c'est ce qui dit s'il vaut encore. */
   const [searched, setSearched] = useState<{
@@ -129,7 +145,7 @@ export function AddMediaDialog({
     : String(items[0]?.id ?? "");
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog onOpenChange={changeOpen} open={open}>
       <DialogTrigger asChild>
         <Button aria-label="Ajouter des œuvres" size="sm">
           <PlusIcon data-icon="inline-start" />
