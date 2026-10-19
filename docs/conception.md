@@ -120,10 +120,6 @@ Sans ordre imposé :
 5. **L'ordre de visionnage d'une franchise** (§8) : le meilleur rapport valeur/effort.
 6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
 7. **Annoncer sur Discord** qu'une œuvre d'une liste « Quand c'est fini » a terminé sa parution.
-8. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
-   recommandation, pourquoi tel rang.
-9. **L'identité des listes** : la carte de `/lists` (podium ou pile plutôt que quatre cases), l'état
-   vide, un en-tête qui dit qu'une liste est partagée, un pictogramme tiré du signet.
 
 ## 7. Choix techniques
 
