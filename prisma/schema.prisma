@@ -486,6 +486,14 @@ model EntryEvent {
 // Listes (§4.4)
 // =============================================================================
 
+/// Ce qu'une liste est (D47). Il décide de son affichage, jamais de son ordre.
+enum ListKind {
+  SELECTION
+  RANKING
+  WATCHLIST
+  WAIT_FOR_END
+}
+
 /// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
 ///
 /// Pas de `slug` : une liste s'adresse par son `id` (`/lists/[id]`). Un slug tiré du titre devait
@@ -500,6 +508,11 @@ model List {
   title       String
   description String?
   isTemplate  Boolean @default(false)
+
+  kind   ListKind @default(SELECTION)
+  /// Ligne de coupe d'un classement (« Top 10 »). Lue seulement pour `RANKING`, mais conservée si
+  /// la liste change de genre : y revenir retrouve son Top 10.
+  cutoff Int?
 
   /// Le lien non listé, et **la seule source de vérité du partage** (§4.4).
   ///

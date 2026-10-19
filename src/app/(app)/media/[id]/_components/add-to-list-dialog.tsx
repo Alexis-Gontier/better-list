@@ -33,6 +33,10 @@ import {
 } from "@/components/ui/tooltip";
 import { routes } from "@/config/routes";
 import {
+  itemCountLabel,
+  LIST_KIND_LABELS,
+} from "@/features/lists/lib/list-labels";
+import {
   addToList,
   removeFromList,
 } from "@/features/lists/server/lists.actions";
@@ -202,8 +206,14 @@ function ListToggle({
           id={checkboxId}
           onCheckedChange={(value) => toggle(value === true)}
         />
-        <span className="min-w-0 flex-1 truncate" title={list.title}>
-          {list.title}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate" title={list.title}>
+            {list.title}
+          </span>
+          {/* Le genre et le décompte : sans eux, « Top 10 » et « Brouillon » se ressemblent. */}
+          <span className="text-muted-foreground text-xs">
+            {LIST_KIND_LABELS[list.kind]} · {itemCountLabel(list.itemCount)}
+          </span>
         </span>
         {/* La place du témoin est réservée en permanence, sinon le titre sauterait à chaque clic. */}
         <span className="flex size-4 shrink-0 items-center justify-center">

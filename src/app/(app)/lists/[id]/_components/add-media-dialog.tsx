@@ -66,7 +66,11 @@ export function AddMediaDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<CommandSearchResult | null>(null);
+  /** Le dernier résultat, **avec le terme qui l'a produit** : c'est ce qui dit s'il vaut encore. */
+  const [searched, setSearched] = useState<{
+    term: string;
+    result: CommandSearchResult;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -74,13 +78,9 @@ export function AddMediaDialog({
   const searchable = term.length >= COMMAND_SEARCH_MIN_LENGTH;
   const members = new Set(memberIds);
 
-  /*
-    Une requête par terme stabilisé, la précédente annulée. Le dernier résultat reste affiché
-    pendant la suivante : une liste qui se vide à chaque lettre fait perdre sa place à l'œil.
-  */
+  /* Une requête par terme stabilisé, la précédente annulée. */
   useEffect(() => {
     if (!open || !searchable) {
-      setResult(null);
       setLoading(false);
       return;
     }
@@ -93,8 +93,8 @@ export function AddMediaDialog({
       schema: commandSearchResultSchema,
       signal: controller.signal,
     })
-      .then((next) => {
-        setResult(next);
+      .then((result) => {
+        setSearched({ term, result });
         setLoading(false);
       })
       .catch((error: unknown) => {
@@ -107,18 +107,26 @@ export function AddMediaDialog({
     return () => controller.abort();
   }, [open, searchable, term]);
 
-  const items = searchable ? (result?.items ?? []) : suggestions;
+  /*
+    **On ne montre que ce qui répond au champ tel qu'il est.** Les suggestions disparaissent dès la
+    première lettre, et un résultat périmé n'est jamais affiché : pendant le délai de frappe,
+    `Entrée` rangeait sinon la suggestion surlignée, ou le premier résultat du terme d'avant, à la
+    place de l'œuvre qu'on venait de taper.
+  */
+  const typed = query.trim();
+  const current = searched?.term === typed ? searched.result : null;
+  const items = typed === "" ? suggestions : (current?.items ?? []);
 
   /*
-    **Le surlignage revient en tête à chaque nouvelle liste.** Laissé à cmdk, il garde la valeur de
-    la suggestion surlignée à l'ouverture ; quand les résultats la remplacent, il ne vise plus rien
-    et `Entrée` ne range rien.
+    **Le surlignage retombe sur le premier élément dès qu'il ne vise plus rien.** Laissé à cmdk, il
+    garde la suggestion surlignée à l'ouverture, que les résultats ont remplacée : `Entrée` ne
+    rangeait rien. Calculé au rendu et non dans un effet, sinon une touche frappée à l'arrivée des
+    résultats tombe entre les deux et se perd.
   */
-  const itemsKey = items.map((item) => item.id).join(",");
   const [highlighted, setHighlighted] = useState("");
-  useEffect(() => {
-    setHighlighted(itemsKey.split(",")[0] ?? "");
-  }, [itemsKey]);
+  const highlightedValue = items.some((item) => String(item.id) === highlighted)
+    ? highlighted
+    : String(items[0]?.id ?? "");
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -143,7 +151,7 @@ export function AddMediaDialog({
           className="rounded-none bg-transparent"
           onValueChange={setHighlighted}
           shouldFilter={false}
-          value={highlighted}
+          value={highlightedValue}
         >
           <div className="relative px-3">
             <CommandInput
@@ -159,12 +167,16 @@ export function AddMediaDialog({
 
           <CommandList className="max-h-96 px-3 pt-2 pb-3">
             <CommandEmpty>
-              {searchable
-                ? `Rien ne correspond à « ${term} ».`
-                : "Tapez un titre pour chercher dans le catalogue."}
+              {typed === ""
+                ? "Tapez un titre pour chercher dans le catalogue."
+                : typed.length < COMMAND_SEARCH_MIN_LENGTH
+                  ? "Encore une lettre."
+                  : current
+                    ? `Rien ne correspond à « ${typed} ».`
+                    : "Recherche…"}
             </CommandEmpty>
 
-            {searchable && result?.fromMirror ? (
+            {current?.fromMirror ? (
               <p className="px-2 py-1.5 text-muted-foreground text-xs">
                 AniList ne répond pas : résultats de la copie locale.
               </p>
@@ -172,9 +184,7 @@ export function AddMediaDialog({
 
             {items.length > 0 ? (
               <CommandGroup
-                heading={
-                  searchable ? undefined : "Prévues dans ma bibliothèque"
-                }
+                heading={typed === "" ? "Dans ma bibliothèque" : undefined}
               >
                 {items.map((item) => (
                   <ResultRow
