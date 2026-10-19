@@ -83,13 +83,13 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
               Modifier
             </DropdownMenuItem>
             {/*
-              Le libellé dit **l'état**, pas seulement le geste : « Gérer le lien » quand la liste
+              Le libellé dit **l'état**, pas seulement le geste : « Lien de partage » quand la liste
               est déjà partagée, « Partager » sinon. Sans ça, on rouvre la fenêtre pour savoir si un
               lien existe — ou pire, on croit en créer un alors qu'on va le remplacer.
             */}
             <DropdownMenuItem onSelect={() => setSharing(true)}>
               <Share2Icon />
-              {list.shareToken ? "Gérer le lien de partage" : "Partager"}
+              {list.shareToken ? "Lien de partage" : "Partager"}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => setDeleting(true)}

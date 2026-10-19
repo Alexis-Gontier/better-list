@@ -250,7 +250,8 @@ async function ListDetail({
                 suggestions={suggestions}
               />
             )}
-            {list.items.length > 1 ? (
+            {/* Dès une œuvre : le mode sert aussi à retirer, pas seulement à réordonner. */}
+            {list.items.length > 0 ? (
               <Button
                 asChild
                 size="sm"
@@ -290,10 +291,20 @@ async function ListDetail({
             premier geste arrive trop tard, et celle-ci nomme aussi le chemin clavier — sans quoi
             personne ne devinerait qu'Espace saisit.
           */}
+          {/*
+            L'aide suit le support : au doigt, la saisie demande un appui long (`TouchSensor`), et le
+            clavier n'y existe pas ; à la souris, on glisse tout de suite.
+          */}
           <p className="text-muted-foreground text-sm">
-            Faites glisser une jaquette pour la déplacer. Au clavier : Tab pour
-            l'atteindre, Espace pour la saisir, les flèches pour la déplacer,
-            Espace pour la reposer. Chaque déplacement est enregistré aussitôt.
+            <span className="pointer-coarse:hidden">
+              Faites glisser une jaquette pour la déplacer. Au clavier : Tab
+              pour l'atteindre, Espace pour la saisir, les flèches pour la
+              déplacer, Espace pour la reposer.
+            </span>
+            <span className="hidden pointer-coarse:inline">
+              Maintenez une jaquette, puis faites-la glisser.
+            </span>{" "}
+            La croix retire une œuvre. Tout est enregistré aussitôt.
           </p>
 
           <ListReorderGrid
