@@ -1,11 +1,13 @@
 import type { NextRequest } from "next/server";
 
 import { dispatchDiscordEpisodes } from "@/features/notifications/server/discord.dispatch";
+import { dispatchDiscordReadyWorks } from "@/features/notifications/server/discord-ready.dispatch";
 import { isAuthorizedCron } from "@/lib/security/cron-auth";
 
 /**
- * Pousse dans Discord les épisodes sortis depuis la dernière passe, pour chaque compte qui a
- * branché un webhook dans `/settings`.
+ * Pousse dans Discord les épisodes sortis depuis la dernière passe, puis les œuvres des listes
+ * « Quand c'est fini » devenues prêtes (D50), pour chaque compte qui a branché un webhook dans
+ * `/settings`.
  *
  * **Appelé toutes les heures par GitHub Actions, pas par Vercel** — et c'est une contrainte, pas un
  * goût. Le plan Hobby n'accorde aux crons de `vercel.json` qu'une passe par jour, ce qui ferait
@@ -27,5 +29,12 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return Response.json(await dispatchDiscordEpisodes());
+  /*
+    L'un après l'autre et pas en parallèle : les deux peuvent débrancher un webhook supprimé côté
+    Discord, et le second relit la liste des webhooks après le premier.
+  */
+  const episodes = await dispatchDiscordEpisodes();
+  const ready = await dispatchDiscordReadyWorks();
+
+  return Response.json({ episodes, ready });
 }

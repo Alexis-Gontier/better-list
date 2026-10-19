@@ -126,3 +126,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D49** — Sur la page partagée, une œuvre 18+ arrive floutée, titre masqué, et se révèle d'un
   clic ; l'aperçu du lien n'en montre jamais. Rien n'est retiré, le décompte reste juste. Révise la
   décision du 6 septembre 2026 (« rien n'est masqué ») : le lien peut sortir du cercle.
+- **D50** — Quand une œuvre d'une liste « Quand c'est fini » termine (ou arrête) sa parution, le
+  cron Discord horaire l'annonce une fois, si son lecteur ne l'a pas déjà finie. On part de zéro :
+  une œuvre déjà prête à l'ajout, au passage d'une liste dans ce genre ou à la mise en service n'est
+  pas une nouvelle. `ListItem.readyNotifiedAt` retient l'annonce, posé seulement après l'envoi.

@@ -556,6 +556,11 @@ model ListItem {
 
   addedAt DateTime @default(now())
 
+  /// Quand Discord a annoncé que l'œuvre est prête (parution terminée ou annulée) — `null` tant
+  /// qu'elle ne l'a pas été. Posé d'emblée sur une œuvre déjà prête à l'ajout : ce n'est pas une
+  /// nouvelle. Une annonce, une fois, et seulement si l'envoi a réussi.
+  readyNotifiedAt DateTime?
+
   viewItems ListViewItem[]
 
   /// Une œuvre n'apparaît qu'une fois dans une liste.

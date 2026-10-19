@@ -7,6 +7,7 @@ import {
   rankAfterMove,
   rankForAppend,
 } from "@/features/lists/lib/list-reorder";
+import { READY_MEDIA_STATUSES } from "@/features/lists/lib/list-sections";
 import { generateShareToken } from "@/features/lists/lib/share-token";
 import {
   addToListSchema,
@@ -64,6 +65,22 @@ import { authActionClient } from "@/lib/safe-action";
  * `"use cache"` à invalider (`lists.queries.ts`). Ce qu'on purge est le cache **client** du routeur,
  * celui qui garde une page déjà visitée.
  */
+/**
+ * L'horodatage d'annonce d'une œuvre qu'on range : maintenant si elle est déjà prête — ce n'est pas
+ * une nouvelle, Discord n'a rien à en dire (D50) —, `null` sinon, pour qu'on l'annonce le jour où
+ * sa parution s'achève.
+ */
+async function alreadyReadyAt(mediaId: number): Promise<Date | null> {
+  const media = await prisma.media.findUnique({
+    where: { id: mediaId },
+    select: { status: true },
+  });
+  const ready = (READY_MEDIA_STATUSES as readonly string[]).includes(
+    media?.status ?? "",
+  );
+  return ready ? new Date() : null;
+}
+
 function revalidateLists(mediaId?: number) {
   revalidatePath(routes.lists.root);
   if (mediaId !== undefined) revalidatePath(routes.media(mediaId));
@@ -86,6 +103,8 @@ export const createList = authActionClient
     const { mediaId } = parsedInput;
     // Le miroir d'abord : `ListItem` pointe vers `Media`, et la clé étrangère l'exige.
     if (mediaId !== undefined) await ensureMediaMirror(mediaId);
+    const readyNotifiedAt =
+      mediaId === undefined ? null : await alreadyReadyAt(mediaId);
 
     const list = await prisma.list.create({
       data: {
@@ -95,7 +114,11 @@ export const createList = authActionClient
         kind: parsedInput.kind,
         cutoff: parsedInput.cutoff ?? null,
         ...(mediaId !== undefined
-          ? { items: { create: { mediaId, rank: rankForAppend(null) } } }
+          ? {
+              items: {
+                create: { mediaId, rank: rankForAppend(null), readyNotifiedAt },
+              },
+            }
           : {}),
       },
       select: { id: true },
@@ -122,6 +145,22 @@ export const updateList = authActionClient
       where: { id: listId, ownerId: ctx.user.id },
       data: { title, description: description ?? null, kind, cutoff },
     });
+
+    /*
+      Passer une liste en « Quand c'est fini » ne doit pas annoncer sur Discord des œuvres terminées
+      depuis longtemps : celles qui sont déjà prêtes sont marquées comme annoncées (D50).
+    */
+    if (kind === "WAIT_FOR_END") {
+      await prisma.listItem.updateMany({
+        where: {
+          listId,
+          list: { ownerId: ctx.user.id },
+          readyNotifiedAt: null,
+          media: { status: { in: [...READY_MEDIA_STATUSES] } },
+        },
+        data: { readyNotifiedAt: new Date() },
+      });
+    }
 
     revalidateLists();
     // Le genre change l'affichage de la liste elle-même, pas seulement sa carte.
@@ -264,7 +303,12 @@ export const addToList = authActionClient
 
     await prisma.listItem.upsert({
       where: { listId_mediaId: { listId, mediaId } },
-      create: { listId, mediaId, rank: rankForAppend(last?.rank ?? null) },
+      create: {
+        listId,
+        mediaId,
+        rank: rankForAppend(last?.rank ?? null),
+        readyNotifiedAt: await alreadyReadyAt(mediaId),
+      },
       update: {},
     });
 

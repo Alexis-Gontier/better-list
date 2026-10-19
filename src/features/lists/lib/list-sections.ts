@@ -35,11 +35,15 @@ export type ListSection<T> = {
   items: { item: T; rank: number }[];
 };
 
-/** Une œuvre annulée n'aura pas de suite : elle est aussi prête à lire qu'une œuvre terminée. */
-const READY_STATUSES: ReadonlySet<MediaStatus> = new Set([
+/**
+ * Une œuvre annulée n'aura pas de suite : elle est aussi prête à lire qu'une œuvre terminée.
+ * Exportée pour que l'affichage, les actions et l'annonce Discord partagent la même définition.
+ */
+export const READY_MEDIA_STATUSES = [
   "FINISHED",
   "CANCELLED",
-]);
+] as const satisfies readonly MediaStatus[];
+const READY_STATUSES: ReadonlySet<MediaStatus> = new Set(READY_MEDIA_STATUSES);
 
 /** Seul « terminé » vaut vu : en pratique, un abandon veut souvent dire « en attendant la fin ». */
 const isSeen = (status: EntryStatus | null) => status === "COMPLETED";

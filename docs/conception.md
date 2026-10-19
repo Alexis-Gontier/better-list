@@ -67,7 +67,7 @@ vues sont reportées (D17). `List` et `ListItem` n'ont pas de journal.
 Une liste a un **genre** (`kind`, D47) : sélection, classement (avec une ligne de coupe facultative,
 `cutoff`), à voir, quand c'est fini. Il ne change que l'affichage ; l'ordre reste `rank`. « Prête »
 (parution terminée ou annulée, lue dans le miroir) et « vue » (suivi `COMPLETED`) se calculent, rien
-n'est stocké (`features/lists/lib/list-sections.ts`).
+n'est stocké (`features/lists/lib/list-sections.ts`). Le cron Discord annonce une œuvre d'une liste « Quand c'est fini » quand elle devient prête (D50).
 
 ### 4.5 `Edition`, `OwnedVolume` — la collection physique
 
@@ -119,7 +119,8 @@ Sans ordre imposé :
 4. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
 5. **L'ordre de visionnage d'une franchise** (§8) : le meilleur rapport valeur/effort.
 6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
-7. **Annoncer sur Discord** qu'une œuvre d'une liste « Quand c'est fini » a terminé sa parution.
+7. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
+   recommandation, pourquoi tel rang.
 
 ## 7. Choix techniques
 

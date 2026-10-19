@@ -6,6 +6,9 @@ import { accounts } from "./support/accounts";
 
 test.use({ storageState: accounts.member.storageState });
 
+/** Une fiche qu'aucun autre test n'écrit. */
+const COWBOY_BEBOP = 1;
+
 /**
  * Un texte **visible**, et lui seul. Next garde la page précédente cachée dans le DOM pour le retour
  * arrière : la carte de `/lists` qu'on vient de quitter y porte encore le même décompte.
@@ -97,8 +100,12 @@ test("créer une liste depuis la fiche, l'œuvre y est rangée @anilist", async 
 
   const title = `E2E fiche ${Date.now()}`;
 
-  // One Piece, la fiche que `tracking.spec.ts` emploie déjà.
-  await page.goto(routes.media(21));
+  /*
+    Cowboy Bebop, et pas One Piece : `tracking.spec.ts` écrit sur One Piece en parallèle, avec le même
+    compte, et chacune de ses écritures rafraîchit la fiche — une réponse calculée avant notre
+    création pouvait arriver après elle et afficher une fenêtre périmée.
+  */
+  await page.goto(routes.media(COWBOY_BEBOP));
   // La fiche rend sa barre d'actions en deux versions, mobile et bureau : on vise celle qui se voit.
   await page
     .getByRole("button", { name: /Ajouter à une liste — / })
@@ -114,6 +121,8 @@ test("créer une liste depuis la fiche, l'œuvre y est rangée @anilist", async 
   await dialog.getByRole("button", { name: "Créer et ranger" }).click();
 
   const row = dialog.getByText(title).locator("xpath=ancestor::label");
-  await expect(row.getByRole("checkbox")).toBeChecked();
+  // La fiche se rend à nouveau après la création, lectures AniList comprises : sous la charge des
+  // tests en parallèle, cinq secondes ne suffisent pas toujours.
+  await expect(row.getByRole("checkbox")).toBeChecked({ timeout: 15_000 });
   await expect(row).toContainText("n° 1");
 });
