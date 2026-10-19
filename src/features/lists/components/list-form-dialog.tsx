@@ -13,8 +13,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  LIST_KIND_HINTS,
+  LIST_KIND_LABELS,
+} from "@/features/lists/lib/list-labels";
+import {
+  type ListKind,
+  listKindSchema,
+} from "@/features/lists/schemas/lists.schema";
 
 /**
  * Le formulaire d'une liste — **son nom et ce qu'elle dit d'elle**, et rien d'autre.
@@ -38,7 +47,19 @@ import { Textarea } from "@/components/ui/textarea";
  * dont on ne mesure plus les conséquences.
  */
 
-export type ListFormValues = { title: string; description: string };
+export type ListFormValues = {
+  title: string;
+  description: string;
+  kind: ListKind;
+  /** Du texte tant qu'on tape : l'appelant le convertit avec `parseCutoff`. */
+  cutoff: string;
+};
+
+/** Vide devient `null` ; le reste part tel quel, et c'est Zod qui refuse un nombre hors bornes. */
+export function parseCutoff(raw: string): number | null {
+  const trimmed = raw.trim();
+  return trimmed === "" ? null : Number(trimmed);
+}
 
 type ListFormDialogProps = {
   open: boolean;
@@ -55,11 +76,20 @@ type ListFormDialogProps = {
   initialValues?: ListFormValues;
   pending: boolean;
   /** Ce que le serveur a refusé, par champ. `defaultValidationErrorsShape: "flattened"`. */
-  fieldErrors?: { title?: string[]; description?: string[] };
+  fieldErrors?: {
+    title?: string[];
+    description?: string[];
+    cutoff?: string[];
+  };
   onSubmit: (values: ListFormValues) => void;
 };
 
-const EMPTY: ListFormValues = { title: "", description: "" };
+const EMPTY: ListFormValues = {
+  title: "",
+  description: "",
+  kind: "SELECTION",
+  cutoff: "",
+};
 
 export function ListFormDialog({
   open,
@@ -84,6 +114,7 @@ export function ListFormDialog({
 
   const titleError = fieldErrors?.title?.[0];
   const descriptionError = fieldErrors?.description?.[0];
+  const cutoffError = fieldErrors?.cutoff?.[0];
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -91,8 +122,8 @@ export function ListFormDialog({
         <DialogHeader>
           <DialogTitle>{heading}</DialogTitle>
           <DialogDescription>
-            Le nom est le seul champ nécessaire. La description aide à retrouver
-            une liste quand il y en a plusieurs qui se ressemblent.
+            Le nom est le seul champ nécessaire. Le genre décide de l'affichage
+            : rangs, progression, œuvres prêtes.
           </DialogDescription>
         </DialogHeader>
 
@@ -162,6 +193,81 @@ export function ListFormDialog({
               </p>
             ) : null}
           </div>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 font-medium text-sm">Genre</legend>
+            <RadioGroup
+              className="grid gap-2 sm:grid-cols-2"
+              onValueChange={(kind) =>
+                setValues((current) => ({
+                  ...current,
+                  kind: listKindSchema.parse(kind),
+                }))
+              }
+              value={values.kind}
+            >
+              {listKindSchema.options.map((kind) => (
+                <Label
+                  className="flex cursor-pointer items-start gap-3 rounded-md border p-3 font-normal has-[[data-state=checked]]:border-primary"
+                  htmlFor={`list-kind-${kind}`}
+                  key={kind}
+                >
+                  <RadioGroupItem
+                    className="mt-0.5"
+                    id={`list-kind-${kind}`}
+                    value={kind}
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-medium">
+                      {LIST_KIND_LABELS[kind]}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {LIST_KIND_HINTS[kind]}
+                    </span>
+                  </span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </fieldset>
+
+          {/*
+            La ligne de coupe ne se montre que pour un classement, mais sa valeur reste dans l'état :
+            changer de genre puis revenir retrouve son Top 10.
+          */}
+          {values.kind === "RANKING" ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="list-cutoff">Top</Label>
+              <Input
+                aria-describedby={
+                  cutoffError ? "list-cutoff-error" : "list-cutoff-hint"
+                }
+                aria-invalid={cutoffError ? true : undefined}
+                className="w-24"
+                id="list-cutoff"
+                inputMode="numeric"
+                onChange={(event) =>
+                  setValues((current) => ({
+                    ...current,
+                    cutoff: event.target.value,
+                  }))
+                }
+                placeholder="10"
+                value={values.cutoff}
+              />
+              {cutoffError ? (
+                <p className="text-destructive text-sm" id="list-cutoff-error">
+                  {cutoffError}
+                </p>
+              ) : (
+                <p
+                  className="text-muted-foreground text-xs"
+                  id="list-cutoff-hint"
+                >
+                  Facultatif. Les œuvres suivantes deviennent les prétendants.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           <DialogFooter>
             {/*
