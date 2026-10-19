@@ -31,9 +31,23 @@ const listTitleSchema = z
   .max(120);
 const listDescriptionSchema = z.string().trim().max(1000).nullable().optional();
 
+/** Les quatre genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
+export const listKindSchema = z.enum([
+  "SELECTION",
+  "RANKING",
+  "WATCHLIST",
+  "WAIT_FOR_END",
+]);
+export type ListKind = z.infer<typeof listKindSchema>;
+
+/** Un « Top 100 » est déjà une liste entière ; au-delà, une ligne de coupe ne coupe plus rien. */
+const listCutoffSchema = z.number().int().min(1).max(100).nullable();
+
 export const createListSchema = z.object({
   title: listTitleSchema,
   description: listDescriptionSchema,
+  kind: listKindSchema.default("SELECTION"),
+  cutoff: listCutoffSchema.optional(),
 });
 
 /**
@@ -51,6 +65,9 @@ export const updateListSchema = z.object({
   listId: listIdSchema,
   title: listTitleSchema,
   description: listDescriptionSchema,
+  kind: listKindSchema,
+  /** Toujours envoyée, même hors classement : la garder permet de retrouver son Top en y revenant. */
+  cutoff: listCutoffSchema,
 });
 
 export const deleteListSchema = z.object({ listId: listIdSchema });

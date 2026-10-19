@@ -20,12 +20,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ListFormDialog } from "@/features/lists/components/list-form-dialog";
+import {
+  ListFormDialog,
+  parseCutoff,
+} from "@/features/lists/components/list-form-dialog";
 import { updateList } from "@/features/lists/server/lists.actions";
 import type { ListDetail } from "@/features/lists/server/lists.queries";
 
 /**
- * Les deux gestes qu'on porte sur une liste : la renommer, la supprimer.
+ * Les gestes qu'on porte sur une liste : la modifier (nom, description, genre), la partager, la supprimer.
  *
  * **Il vit sur la fiche d'une liste, et non sur la grille** — décision d'Alexis du 6 septembre
  * 2026, prise à l'écran. Posé dans le coin d'une carte de `/lists`, il tombait sur la quatrième
@@ -34,20 +37,20 @@ import type { ListDetail } from "@/features/lists/server/lists.queries";
  *
  * L'effet de bord est que la grille de `/lists` n'a plus un octet de JavaScript.
  *
- * **Ce composant ne fait qu'ouvrir.** Le renommage a son formulaire (`ListFormDialog`, partagé avec
+ * **Ce composant ne fait qu'ouvrir.** La modification a son formulaire (`ListFormDialog`, partagé avec
  * la création) et la suppression sa fenêtre à part (`DeleteListDialog`, qui fait recopier le nom) :
  * garder les trois ici en aurait fait un fichier où l'on cherche.
  */
 export function ListActionsMenu({ list }: { list: ListDetail }) {
-  const [renaming, setRenaming] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const rename = useAction(updateList, {
-    onSuccess: () => setRenaming(false),
+  const edit = useAction(updateList, {
+    onSuccess: () => setEditing(false),
     onError: ({ error }) =>
       toast.error(
-        error.serverError ?? "Le renommage n'a pas abouti. Réessayez.",
+        error.serverError ?? "La modification n'a pas abouti. Réessayez.",
       ),
   });
 
@@ -75,9 +78,9 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
         {/* Les items dans leur groupe — la composition qu'attend `DropdownMenu`. */}
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
-            <DropdownMenuItem onSelect={() => setRenaming(true)}>
+            <DropdownMenuItem onSelect={() => setEditing(true)}>
               <PencilIcon />
-              Renommer
+              Modifier
             </DropdownMenuItem>
             {/*
               Le libellé dit **l'état**, pas seulement le geste : « Gérer le lien » quand la liste
@@ -100,7 +103,7 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
       </DropdownMenu>
 
       {/*
-        Renommer et redécrire d'un même geste : ce sont les deux champs du même formulaire que la
+        Nom, description, genre et Top d'un même geste : ce sont les champs du même formulaire que la
         création, et `updateListSchema` les demande ensemble.
 
         `initialValues` est reconstruit à chaque rendu, et c'est voulu — `ListFormDialog` les relit à
@@ -108,22 +111,26 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
         venait d'abandonner.
       */}
       <ListFormDialog
-        fieldErrors={rename.result.validationErrors?.fieldErrors}
-        heading="Renommer la liste"
+        fieldErrors={edit.result.validationErrors?.fieldErrors}
+        heading="Modifier la liste"
         initialValues={{
           title: list.title,
           description: list.description ?? "",
+          kind: list.kind,
+          cutoff: list.cutoff === null ? "" : String(list.cutoff),
         }}
-        onOpenChange={setRenaming}
-        onSubmit={({ title, description }) =>
-          rename.execute({
+        onOpenChange={setEditing}
+        onSubmit={({ title, description, kind, cutoff }) =>
+          edit.execute({
             listId: list.id,
             title,
             description: description.trim() || null,
+            kind,
+            cutoff: parseCutoff(cutoff),
           })
         }
-        open={renaming}
-        pending={rename.isPending}
+        open={editing}
+        pending={edit.isPending}
         submitLabel="Enregistrer"
       />
 

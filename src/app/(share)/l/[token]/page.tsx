@@ -2,7 +2,17 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { RankNumeral } from "@/components/shared/rank-numeral";
 import { Separator } from "@/components/ui/separator";
+import {
+  listCountsLine,
+  listHeadline,
+  sectionHeading,
+} from "@/features/lists/lib/list-labels";
+import {
+  listSections,
+  sectionCounts,
+} from "@/features/lists/lib/list-sections";
 import { getSharedList } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 
@@ -82,6 +92,21 @@ export default async function SharedListPage({
   */
   if (!list) notFound();
 
+  /*
+    Sans suivi : le visiteur n'a pas celui du propriétaire, et le montrer dévoilerait sa
+    bibliothèque. `entryStatus: null` partout, donc « Déjà vues » ne paraît jamais ici.
+  */
+  const sections = listSections(
+    list.kind,
+    list.cutoff,
+    list.items.map((item) => ({
+      item,
+      mediaStatus: item.media.status,
+      entryStatus: null,
+    })),
+  );
+  const ranked = list.kind === "RANKING";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
@@ -98,7 +123,15 @@ export default async function SharedListPage({
             envoyé.
           */}
           <p className="text-muted-foreground text-xs">
-            Une liste de {list.ownerName} · {itemLabel(list.items.length)}
+            Une liste de {list.ownerName} ·{" "}
+            {listHeadline(
+              list.kind,
+              list.cutoff,
+              listCountsLine(list.kind, list.cutoff, {
+                total: list.items.length,
+                ...sectionCounts(sections),
+              }),
+            )}
           </p>
         </div>
         <Separator />
@@ -115,43 +148,56 @@ export default async function SharedListPage({
           une largeur de `max-w-6xl`, quand le layout `(share)` tient dans `max-w-5xl`. Deux
           contextes, deux densités ; les partager aurait fait dépendre l'un du réglage de l'autre.
         */
-        <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">
-          {list.items.map((item) => {
-            /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le repli de
-               `mediaTitle` sur le romaji est exactement ce qu'on veut afficher. */
-            const title = mediaTitle(item.media.title, "ROMAJI");
-            const cover =
-              item.media.coverImage?.extraLarge ??
-              item.media.coverImage?.large ??
-              null;
+        <div className="flex flex-col gap-8">
+          {sections.map((section) => (
+            <section className="flex flex-col gap-4" key={section.key}>
+              {section.label === null ? null : (
+                <h2 className="font-heading text-lg">
+                  {sectionHeading(
+                    section.key,
+                    section.label,
+                    section.items.length,
+                  )}
+                </h2>
+              )}
+              <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">
+                {section.items.map(({ item, rank }) => {
+                  /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le
+                     repli de `mediaTitle` sur le romaji est exactement ce qu'on veut afficher. */
+                  const title = mediaTitle(item.media.title, "ROMAJI");
+                  const cover =
+                    item.media.coverImage?.extraLarge ??
+                    item.media.coverImage?.large ??
+                    null;
 
-            return (
-              <li className="flex flex-col gap-2" key={item.media.id}>
-                <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
-                  {cover ? (
-                    <Image
-                      alt=""
-                      className="object-cover"
-                      fill
-                      sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
-                      src={cover}
-                    />
-                  ) : null}
-                </div>
-                <p className="min-w-0 truncate text-sm" title={title}>
-                  {title}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
+                  return (
+                    <li className="flex flex-col gap-2" key={item.media.id}>
+                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+                        {cover ? (
+                          <Image
+                            alt=""
+                            className="object-cover"
+                            fill
+                            sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
+                            src={cover}
+                          />
+                        ) : null}
+                        {ranked ? <RankNumeral rank={rank} /> : null}
+                      </div>
+                      <p className="min-w-0 truncate text-sm" title={title}>
+                        {ranked ? (
+                          <span className="sr-only">Numéro {rank}, </span>
+                        ) : null}
+                        {title}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
     </div>
   );
-}
-
-/** « 18 œuvres », « 1 œuvre », « Aucune œuvre » — la formulation des deux écrans de listes. */
-function itemLabel(count: number): string {
-  if (count === 0) return "Aucune œuvre";
-  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }
