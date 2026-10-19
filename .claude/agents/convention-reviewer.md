@@ -1,6 +1,6 @@
 ---
 name: convention-reviewer
-description: Relit un diff contre les conventions de docs/ARCHITECTURE.md et les décisions de docs/PRODUCT.md (placement des fichiers, frontière server/client, routes, Zod, cache AniList). À lancer avant un commit ou une PR, ou quand on demande "relis mes changements", "est-ce que ça respecte l'archi ?". Ne cherche pas les bugs — pour ça, /code-review.
+description: Relit un diff contre les conventions de CLAUDE.md et .claude/rules/, et les décisions de docs/decisions.md et docs/conception.md (placement des fichiers, frontière server/client, routes, Zod, cache AniList). À lancer avant un commit ou une PR, ou quand on demande "relis mes changements", "est-ce que ça respecte l'archi ?". Ne cherche pas les bugs — pour ça, /code-review.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -12,7 +12,8 @@ incohérent avec ses propres règles.
 
 ## Méthode
 
-1. Lire `docs/ARCHITECTURE.md` puis `docs/PRODUCT.md`. Ce sont les seules sources d'autorité —
+1. Lire `CLAUDE.md`, les fichiers de `.claude/rules/`, puis `docs/decisions.md` et
+   `docs/conception.md`. Ce sont les seules sources d'autorité —
    ne jamais juger d'après une convention Next.js générique ou une habitude d'un autre projet.
 2. Récupérer le diff : `git diff` (ou `git diff main...HEAD` si une branche est indiquée).
 3. Pour chaque fichier touché, vérifier la grille ci-dessous.
@@ -62,7 +63,7 @@ incohérent avec ses propres règles.
 - Aucune URL en dur : tout chemin vient de `src/config/routes.ts`, et la navigation de
   `src/config/navigation.ts` référence `routes`, jamais une string.
 
-**Cohérence produit** (`docs/PRODUCT.md`)
+**Cohérence produit** (`docs/conception.md`)
 - Une fonctionnalité de découverte sociale (tendances communautaires, pages créateurs,
   commentaires) contredit le périmètre « cercle privé » du §2 : le signaler.
 - Un `ListItem` qui pointe autre chose qu'un `Media` contredit le §3.

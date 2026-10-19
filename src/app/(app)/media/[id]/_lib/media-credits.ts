@@ -5,11 +5,11 @@ import type { MediaDetail } from "@/features/media/schemas/media.schema";
  *
  * **Le libellé change avec le type, parce que la donnée n'existe pas des deux côtés.** AniList
  * renseigne `studios` sur les animes et le laisse vide sur les mangas, pour lesquels il ne fournit
- * **aucun éditeur** (docs/PRODUCT.md §9). Afficher « Éditeur » reviendrait donc à promettre une
+ * **aucun éditeur** (docs/conception.md §9). Afficher « Éditeur » reviendrait donc à promettre une
  * colonne vide sur toute la moitié manga du catalogue. L'auteur, lui, est toujours au staff.
  *
  * Fonction pure, testée (`media-credits.test.ts`), et posée dans le `_lib/` de la route : elle n'a
- * qu'un consommateur, et on ne promeut qu'au deuxième appelant (docs/ARCHITECTURE.md).
+ * qu'un consommateur, et on ne promeut qu'au deuxième appelant (CLAUDE.md).
  */
 
 /** Ce que la fonction lit de la fiche, et rien de plus — pour que le test tienne en trois lignes. */

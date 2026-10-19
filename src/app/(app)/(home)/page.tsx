@@ -54,7 +54,7 @@ export const metadata: Metadata = {
  * œuvre a la même apparence et le même geste — pastille de statut, fenêtre d'édition au survol —
  * ici, sur `/search` et sur `/library`.
  *
- * L'ordre fait tout le travail (docs/PRODUCT.md §5) : le suivi passe avant la découverte. Chaque
+ * L'ordre fait tout le travail (docs/conception.md §5) : le suivi passe avant la découverte. Chaque
  * zone a sa propre frontière et s'affiche dès qu'elle est prête, sans attendre les autres.
  *
  * **La rangée « Du moment » et ses quatre onglets ont été retirées le 14 septembre 2026** (décision
@@ -296,7 +296,7 @@ async function SeasonRail() {
 
 /**
  * « Recommandé pour vous » — **en bas de page** (décision d'Alexis du 28 septembre 2026), après
- * les deux rangées du catalogue plutôt qu'à la place de « Cette saison », comme docs/STATE.md
+ * les deux rangées du catalogue plutôt qu'à la place de « Cette saison », comme une version antérieure
  * l'envisageait.
  *
  * Chaque carte dit **d'où elle vient** : une recommandation qu'on ne sait pas expliquer est une

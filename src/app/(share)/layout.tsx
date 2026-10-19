@@ -8,7 +8,7 @@ import { site } from "@/config/site";
  * Chrome des pages ouvertes **sans compte**.
  *
  * Ce groupe existe pour une raison précise et non cosmétique : la garde d'accès du projet est dans
- * `app/(app)/layout.tsx` et couvre tout ce qui vit dessous (docs/PRODUCT.md §7.1). Une page qui doit
+ * `app/(app)/layout.tsx` et couvre tout ce qui vit dessous (docs/conception.md §7.1). Une page qui doit
  * s'ouvrir sans session ne peut donc pas y être — pas « ne devrait pas », ne peut pas. D'où un
  * groupe frère, à côté de `(auth)`.
  *

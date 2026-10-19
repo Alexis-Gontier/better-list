@@ -24,7 +24,7 @@ export const instant = false;
  * **Elle est posée ici et nulle part ailleurs.** Répéter la vérification page par page revient à
  * l'oublier un jour sur une route, et une seule route oubliée ouvre tout le reste. `src/proxy.ts`
  * ne fait qu'une redirection optimiste sur présence de cookie : c'est cet appel qui valide
- * réellement la session et le statut `APPROVED` (docs/PRODUCT.md §7.1).
+ * réellement la session et le statut `APPROVED` (docs/conception.md §7.1).
  */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireApprovedUser();

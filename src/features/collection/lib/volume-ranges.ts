@@ -1,7 +1,7 @@
 /**
  * Les trous d'une série, et la façon de les écrire.
  *
- * C'est le calcul qui justifie le modèle par tome (docs/PRODUCT.md §4.5) : une ligne
+ * C'est le calcul qui justifie le modèle par tome (docs/conception.md §4.5) : une ligne
  * `OwnedVolume` par tome possédé permet de représenter « j'ai le 1 et le 3, pas le 2 », ce
  * qu'un compteur ne saurait pas faire. Ces deux fonctions sont l'autre bout de cette
  * décision — elles rendent la question « il me manque lesquels ? » lisible en une phrase.
@@ -100,7 +100,7 @@ export function formatVolumeRanges(numbers: readonly number[]): string {
  * Les trous d'une série, **`volumesTotal` inconnu compris**.
  *
  * Le nombre de tomes d'une édition est saisi à la main — AniList n'en fournit aucun au niveau du
- * tome (docs/PRODUCT.md §9) —, donc il peut manquer. Quand il manque, on ne sait rien de ce qui
+ * tome (docs/conception.md §9) —, donc il peut manquer. Quand il manque, on ne sait rien de ce qui
  * vient après le dernier tome possédé : une série peut être en cours de parution. On ne signale
  * alors que les creux **internes**, et la série n'est jamais dite complète — « complète » est une
  * affirmation, et on ne l'affirme pas sans le total.
@@ -175,7 +175,7 @@ export function applyVolumeRange(
  * l'affiche au rechargement suivant. Aucun cron, aucune écriture, aucune migration.
  *
  * L'ordre est celui-là et pas l'inverse parce qu'AniList **ignore la notion d'édition**
- * (docs/PRODUCT.md §9) : son chiffre vaut pour « la série », pas pour la perfect edition qu'on a
+ * (docs/conception.md §9) : son chiffre vaut pour « la série », pas pour la perfect edition qu'on a
  * sur l'étagère. Une valeur saisie à la main est donc toujours plus juste que la sienne, et
  * l'effacer revient à redemander la sienne.
  */

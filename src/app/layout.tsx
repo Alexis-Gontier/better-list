@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      // L'interface est en français (docs/PRODUCT.md §7). Un `lang` qui ment fait prononcer la page
+      // L'interface est en français (docs/conception.md §7). Un `lang` qui ment fait prononcer la page
       // avec les phonèmes de l'autre langue par un lecteur d'écran — et c'est sur une page publique,
       // ouverte par des gens qu'on ne connaît pas, que ça se paie.
       lang="fr"

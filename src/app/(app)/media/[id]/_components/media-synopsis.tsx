@@ -13,7 +13,7 @@ type MediaSynopsisProps = {
  * la saisie de contributeurs et non une donnée structurée. On normalise et on rend du texte.
  *
  * Il est en anglais, et ce n'est pas un défaut à corriger : AniList ne fournit pas de synopsis
- * français (docs/PRODUCT.md §9).
+ * français (docs/conception.md §9).
  *
  * **Le cas vide est un vrai cas**, pas une exception : une fiche servie depuis le miroir n'a pas de
  * synopsis du tout, puisque la colonne n'existe pas en base (§4.1).

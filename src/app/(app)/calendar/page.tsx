@@ -41,7 +41,7 @@ export const metadata: Metadata = {
  *
  * La forme a été tranchée sur pièces plutôt qu'au goût : douze plannings en service ont été relevés
  * le 8 septembre 2026, les cinq références francophones comprises, et **aucun ne rend une grille de
- * sept colonnes** (docs/JOURNAL.md). Le raisonnement complet est dans `airing-day-list.tsx`, qui
+ * sept colonnes** (voir l'historique git). Le raisonnement complet est dans `airing-day-list.tsx`, qui
  * porte la disposition.
  *
  * **Ce que cet écran a de plus que les calendriers publics, c'est le retard.** Icotaku, Nautiljon,
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
  * à l'affichage.
  *
  * La coquille — titre, trait, navigation de semaine — est rendue tout de suite ; seule la liste est
- * suspendue. Une frontière par zone, jamais de `loading.tsx` de segment (docs/ARCHITECTURE.md).
+ * suspendue. Une frontière par zone, jamais de `loading.tsx` de segment (CLAUDE.md).
  */
 export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
   return (
@@ -138,7 +138,7 @@ async function resolveWeek(
  *
  * **Deux portées, deux coûts très différents.** En « suivis », on demande à AniList la grille des
  * seuls ids qu'on suit : une requête, une clé de cache par jeu d'ids. En « tout », on demande la
- * grille entière — ce que `docs/PRODUCT.md` §9 écarte explicitement, et que le plafond de pages de
+ * grille entière — ce que `docs/conception.md` §9 écarte explicitement, et que le plafond de pages de
  * `media.queries.ts` borne faute de pouvoir mesurer le vrai volume (AniList répondait 403 le jour
  * où on a essayé).
  *

@@ -86,7 +86,7 @@ function ShelfRow({
             </p>
             {/*
               L'éditeur quand il est connu — il ne l'est jamais sur une édition créée en silence,
-              AniList n'ayant aucune donnée d'édition (docs/PRODUCT.md §9). Le libellé seul suffit
+              AniList n'ayant aucune donnée d'édition (docs/conception.md §9). Le libellé seul suffit
               alors, plutôt qu'un tiret devant le vide.
             */}
             <p className="truncate text-muted-foreground text-xs">

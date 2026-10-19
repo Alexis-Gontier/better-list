@@ -23,7 +23,7 @@ import { prisma } from "@/lib/db/prisma";
  * Les lectures du profil — **toutes en base, aucune ne touche AniList.**
  *
  * C'est ce qui rend cet écran bon marché : les statistiques se calculent sur nos propres lignes, et
- * les jaquettes du journal viennent du miroir (docs/PRODUCT.md §4.1), qui existe précisément pour
+ * les jaquettes du journal viennent du miroir (docs/conception.md §4.1), qui existe précisément pour
  * qu'afficher plusieurs centaines de titres ne coûte pas trente requêtes par minute.
  *
  * **Aucun `"use cache"` dans ce fichier, et ce n'est pas un oubli.** Deux raisons, et chacune
@@ -141,7 +141,7 @@ export async function getProfileIdentity(
     Un compte en liste d'attente ou refusé n'a **pas** de profil public, et se comporte comme un
     pseudonyme inconnu plutôt que comme un profil vide. La nuance compte : un profil vide confirme
     que le compte existe, ce qui n'a pas à être confirmé pour quelqu'un qui n'est pas dans le
-    cercle (docs/PRODUCT.md §7.1).
+    cercle (docs/conception.md §7.1).
   */
   if (user.status !== "APPROVED") return null;
 

@@ -72,11 +72,11 @@ import { saveEntry } from "@/features/tracking/server/tracking.actions";
  *
  * **Il vit dans `features/tracking/components/` depuis que `/search` l'ouvre aussi.** Il avait
  * démarré dans le `_components/` de `/library`, et il en est monté **au deuxième appelant** — pas
- * avant, pas « puisqu'on y était ». C'est la règle de promotion d'ARCHITECTURE.md, la même qui a
+ * avant, pas « puisqu'on y était ». C'est la règle de promotion d'CLAUDE.md, la même qui a
  * fait monter `MediaCard`, la grille et la pagination.
  *
  * **Les trois contrôles viennent d'à côté, aucun n'est réécrit.** Ils avaient été promus d'avance,
- * en connaissance de cause, exactement pour ce deuxième appelant (docs/STATE.md) : c'est ici que la
+ * en connaissance de cause, exactement pour ce deuxième appelant (voir l'historique git) : c'est ici que la
  * dette est remboursée. Ce fichier ne porte que l'assemblage — la disposition propre à une fenêtre,
  * qui n'a rien à faire dans la rangée de la fiche.
  *
@@ -192,7 +192,7 @@ export function EntryQuickEdit({
     setDraft((current) => ({ ...current, ...patch }));
 
   /**
-   * **On envoie la différence, jamais l'état complet** (docs/PRODUCT.md §4.2).
+   * **On envoie la différence, jamais l'état complet** (docs/conception.md §4.2).
    *
    * `entryDraftChanges` compare le brouillon à ce qui a été chargé et ne rend que ce qui a bougé.
    * C'est ce qui laisse la transition dater la fin d'une série au dernier épisode alors que le
@@ -473,7 +473,7 @@ export function EntryQuickEdit({
  * La bannière de la fenêtre — pleine largeur, et **absente quand il n'y en a pas.**
  *
  * AniList n'a de bannière que sur une partie des animes : elle manque sur la plupart des mangas et
- * des webtoons (docs/fiche-media.md §1.1), c'est-à-dire sur une bonne moitié d'une bibliothèque.
+ * des webtoons (.claude/skills/anilist-read/references/fiche-media.md §1.1), c'est-à-dire sur une bonne moitié d'une bibliothèque.
  *
  * **Rien du tout plutôt qu'une bande vide**, et c'est l'inverse du choix fait sur la fiche. Là-bas
  * la bannière absente laisse une bande de `surface-raised`, parce qu'elle sépare l'en-tête collant

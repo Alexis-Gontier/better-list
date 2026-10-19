@@ -22,7 +22,7 @@ import {
  * « le tableau de bord [qui] lit le journal de toutes les œuvres ». C'est cet écran-là. Il n'y avait
  * donc pas de logique de journal à réécrire, seulement une présentation à poser dessus.
  *
- * La granularité est **le jour** (docs/PRODUCT.md §4.3) : « le 3 mars, 15 épisodes » est
+ * La granularité est **le jour** (docs/conception.md §4.3) : « le 3 mars, 15 épisodes » est
  * l'information ; l'heure exacte du quinzième ne l'est pas, et elle reste au bout de la ligne, en
  * gris, pour qui la cherche.
  */

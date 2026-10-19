@@ -22,7 +22,7 @@ import type {
  * savoir. Un échantillon vide vaut preuve que l'ensemble l'est aussi.
  *
  * Fonctions pures, dans le `_lib/` de la route : un seul écran les consomme
- * (docs/ARCHITECTURE.md).
+ * (CLAUDE.md).
  */
 
 type RelationEdge = MediaDetail["relations"]["edges"][number];

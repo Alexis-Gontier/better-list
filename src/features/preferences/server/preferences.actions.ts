@@ -11,11 +11,11 @@ import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
 /**
- * L'écriture des préférences d'affichage (docs/PRODUCT.md §4.6).
+ * L'écriture des préférences d'affichage (docs/conception.md §4.6).
  *
  * Elle vit dans un fichier séparé de `preferences.queries.ts`, qui est en `import "server-only"` :
  * un module ne peut pas être à la fois `"use server"` et lecture server-only, et la convention du
- * dépôt interdit d'exporter les deux depuis le même endroit (ARCHITECTURE.md).
+ * dépôt interdit d'exporter les deux depuis le même endroit (CLAUDE.md).
  *
  * `authActionClient` et non `actionClient` : une Server Action est un endpoint POST à part entière,
  * que la garde de `(app)/layout.tsx` ne protège pas. L'utilisateur vient de `ctx`, jamais d'un

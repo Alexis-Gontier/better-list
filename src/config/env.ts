@@ -20,12 +20,12 @@ export const env = createEnv({
     /** Secret de signature des sessions Better Auth. 32 octets minimum. */
     BETTER_AUTH_SECRET: z.string().min(32),
 
-    /** Application OAuth GitHub — seul fournisseur d'authentification (PRODUCT.md §7). */
+    /** Application OAuth GitHub — seul fournisseur d'authentification (conception.md §7). */
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
 
     /**
-     * Jeton porteur du cron Vercel (PRODUCT.md §4.1).
+     * Jeton porteur du cron Vercel (conception.md §4.1).
      *
      * C'est la **seule** protection de `/api/cron/*` : ces routes ne portent pas de session, donc la
      * garde de `(app)/layout.tsx` ne les couvre pas. Longueur minimale imposée pour qu'un secret

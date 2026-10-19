@@ -5,8 +5,7 @@ prolongeant la barre du bas vers la gauche — dont **le pied s'achève en queue
 ruban qu'on laisse dans un livre : **là où tu t'es arrêté**. C'est la mémoire de visionnage, ce qui
 distingue Better-List d'AniList et de MyAnimeList.
 
-Adoptée le 16 octobre 2026 : le pied passe de 8 à 5 unités et devient un signet (voir
-[JOURNAL.md](../JOURNAL.md)).
+Adoptée le 16 octobre 2026 : le pied passe de 8 à 5 unités et devient un signet.
 
 ## La géométrie
 

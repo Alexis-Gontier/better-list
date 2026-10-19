@@ -5,7 +5,7 @@ import "server-only";
 import type { MediaStatus } from "@/features/media/schemas/media.schema";
 
 /**
- * Politique de péremption du miroir local (docs/PRODUCT.md §4.1).
+ * Politique de péremption du miroir local (docs/conception.md §4.1).
  *
  * Le miroir existe parce qu'AniList plafonne à 30 requêtes/minute par IP, partagée par tous les
  * visiteurs : une bibliothèque de 600 titres ne peut pas être servie par l'API. La contrepartie est

@@ -51,7 +51,7 @@ export const metadata: Metadata = {
  * La recherche — la barre, ses facettes, la grille et sa pagination.
  *
  * C'est le même écran que `/library`, et c'est le sujet : les deux étaient écrits deux fois avant
- * la mise à blanc (docs/STATE.md). Ils partagent la carte, la grille, la coquille de la barre et la
+ * la mise à blanc (voir l'historique git). Ils partagent la carte, la grille, la coquille de la barre et la
  * pagination (`components/shared/`), et ne diffèrent que par ce qui les distingue réellement — la
  * source. Ici AniList et ses trente requêtes par minute ; là-bas mes lignes `Entry`, en base.
  *
@@ -86,7 +86,7 @@ export default async function SearchPage({
       {/*
         La grille est **suspendue** et la coquille ne l'attend pas : la barre de filtres est du HTML
         statique, elle n'a aucune raison d'attendre AniList pour s'afficher. Une frontière par zone,
-        jamais de `loading.tsx` de segment (docs/ARCHITECTURE.md).
+        jamais de `loading.tsx` de segment (CLAUDE.md).
       */}
       <Suspense
         fallback={
@@ -159,7 +159,7 @@ async function SearchResults({
   const { items, page, pageCount } = result ?? fallback ?? EMPTY_RESULT;
 
   /*
-    **Trois vides, trois messages** (docs/recherche-filtres.md §5). Rendre `null`, ce que cet écran
+    **Trois vides, trois messages** (.claude/skills/anilist-read/references/recherche-filtres.md §5). Rendre `null`, ce que cet écran
     faisait jusqu'au 7 septembre 2026, laissait une page blanche sous la barre — et une page blanche
     se lit comme une panne, pas comme une recherche sans réponse.
 
@@ -229,7 +229,7 @@ async function SearchResults({
   /*
     **La pastille de suivi sur les résultats du catalogue — « annoter plutôt que filtrer ».**
 
-    C'est l'issue 1 de docs/recherche-filtres.md §2, celle que le document recommande comme « la
+    C'est l'issue 1 de .claude/skills/anilist-read/references/recherche-filtres.md §2, celle que le document recommande comme « la
     seule qui ne coûte rien et ne mente jamais ». Filtrer `/search` sur nos propres lignes trouerait
     une page qu'AniList a déjà découpée : grille à trous, page 2 qui répète la page 1, compteur
     faux. La pastille répond à la même question — « est-ce que je l'ai déjà, et où j'en suis ? » —

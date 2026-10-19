@@ -6,11 +6,10 @@ import {
 } from "@/features/media/schemas/media.schema";
 
 /**
- * Formes AniList d'un personnage et d'un membre du staff (docs/superpowers/specs/
- * 2026-09-26-personnages-staff-design.md).
+ * Formes AniList d'un personnage et d'un membre du staff (docs/decisions.md, D19).
  *
  * **Un tableau AniList peut arriver à `null`**, pas seulement absent : c'est ce qui a fait tomber
- * la fiche d'une œuvre sans audience le 26 septembre 2026 (docs/JOURNAL.md). `.default([])` ne
+ * la fiche d'une œuvre sans audience le 26 septembre 2026 (voir l'historique git). `.default([])` ne
  * couvre que l'absence, d'où ce `transform` qui garde un tableau pour les lecteurs.
  */
 function listOf<T extends z.ZodType>(item: T) {

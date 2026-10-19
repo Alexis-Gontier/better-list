@@ -32,7 +32,7 @@ import { anilistQuery, isAniListError, tryAniList } from "@/lib/http/anilist";
  * Lectures AniList mises en cache.
  *
  * Le cache n'est pas un confort : AniList plafonne à 30 requêtes/minute **par IP**, et en
- * production cette IP est partagée par tous les visiteurs (docs/PRODUCT.md §4.1). Chaque lecture
+ * production cette IP est partagée par tous les visiteurs (docs/conception.md §4.1). Chaque lecture
  * non mémorisée est prélevée sur ce même compteur.
  */
 
@@ -66,7 +66,7 @@ async function fetchMediaById(id: number): Promise<MediaDetail | null> {
      * raison exacte qui fonde cette règle. On ne mémorise une absence que lorsqu'elle est
      * définitive : un id AniList qui n'existe pas ne se met pas à exister. Une panne, elle, se
      * répare, donc son erreur continue de traverser sans être rattrapée : l'entrée n'est pas
-     * écrite et la visite suivante retente (docs/ARCHITECTURE.md, `tryAniList`).
+     * écrite et la visite suivante retente (CLAUDE.md, `tryAniList`).
      *
      * `instanceof` est fiable à cet endroit précis : on est **avant** la frontière du cache, celle
      * qui resérialise l'erreur en `Error` nu. En aval, seul le `name` survit.
@@ -282,7 +282,7 @@ function toFuzzyDate(year: number, edge: "start" | "end"): number {
  * La recherche du catalogue, **mise en cache et facturée au quota**.
  *
  * Chaque combinaison distincte de facettes est une entrée de cache **et** une requête sur les
- * trente que la minute partage entre tous les visiteurs (docs/recherche-filtres.md). C'est pour ça
+ * trente que la minute partage entre tous les visiteurs (.claude/skills/anilist-read/references/recherche-filtres.md). C'est pour ça
  * que les curseurs avancent par paliers et que le tri est clos : le prix d'un filtre se paie ici.
  *
  * **`includeAdult` fait partie de la clé, contrairement à la fiche** — et l'écart est justifié.
@@ -387,7 +387,7 @@ const AIRING_PAGE_SIZE = 50;
 /**
  * Le plafond du mode « tout », et **c'est un garde-fou de quota, pas une pagination**.
  *
- * `docs/PRODUCT.md` §9 écartait le planning global sur un calcul qui s'est révélé faux : il annonçait
+ * `docs/conception.md` §9 écartait le planning global sur un calcul qui s'est révélé faux : il annonçait
  * cinq mille entrées par semaine, soit cent requêtes sur les trente que la minute partage. **La
  * mesure du 8 septembre 2026 donne 124 diffusions**, soit trois requêtes — le chiffre de §9 venait de
  * `pageInfo.total`, qu'AniList plafonne à 5000 (voir `ANILIST_TOTAL_CAP` plus haut dans ce fichier).

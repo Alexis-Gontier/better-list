@@ -44,7 +44,7 @@ describe("proxy", () => {
   });
 
   /**
-   * Le lien non listé s'adresse à quelqu'un **qui n'a pas de compte** (docs/PRODUCT.md §2). S'il
+   * Le lien non listé s'adresse à quelqu'un **qui n'a pas de compte** (docs/conception.md §2). S'il
    * était renvoyé vers `/login`, le partage ne partagerait rien.
    */
   it("laisse passer une liste partagée sans session", () => {
@@ -113,7 +113,7 @@ describe("config.matcher", () => {
   /**
    * L'invariant de ce bloc. Un route handler porte sa propre garde — jeton porteur pour le cron,
    * session pour Better Auth — et une redirection 307 vers du HTML est une réponse absurde à un appel
-   * programmatique. Le cron de rafraîchissement du miroir (docs/PRODUCT.md §4.1) n'a pas de cookie :
+   * programmatique. Le cron de rafraîchissement du miroir (docs/conception.md §4.1) n'a pas de cookie :
    * s'il passait par le proxy, il recevrait la page de connexion au lieu d'être exécuté.
    */
   it("ne s'applique à aucune route d'API", () => {

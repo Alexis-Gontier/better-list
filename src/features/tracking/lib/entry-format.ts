@@ -53,7 +53,7 @@ export const ENTRY_STATUS_LABELS: Record<EntryStatus, string> = {
 
 /**
  * Cinq étoiles, **par demies** — une étoile vaut vingt points, une demie en vaut dix
- * (docs/PRODUCT.md §4.2 : le stockage reste sur 0–100 quelle que soit l'échelle affichée).
+ * (docs/conception.md §4.2 : le stockage reste sur 0–100 quelle que soit l'échelle affichée).
  *
  * Les constantes vivent ici et pas dans `score-stars.tsx` : ce fichier-là est un îlot client, et la
  * timeline — un Server Component — a besoin de la même conversion pour afficher « Noté 3,5/5 ».
@@ -250,7 +250,7 @@ const DAYS_PER_YEAR = 365;
 /**
  * « il y a trois mois » — l'ancienneté d'un geste.
  *
- * C'est toute l'information de la section « à reprendre » (docs/PRODUCT.md §8.4) : savoir qu'une
+ * C'est toute l'information de la section « à reprendre » (docs/conception.md §8.4) : savoir qu'une
  * série est en pause n'apprend rien, savoir qu'elle l'est depuis huit mois décide.
  *
  * **Une durée, pas une date** : aucun fuseau n'intervient ici, contrairement aux intitulés de
@@ -283,7 +283,7 @@ export function formatSince(date: Date, now: Date): string {
 /**
  * Combien vaut une étoile en points de stockage. Vingt, et une demie en vaut dix.
  *
- * Le stockage reste sur 0–100 (docs/PRODUCT.md §4.2) alors que l'affichage est sur cinq : c'est ce
+ * Le stockage reste sur 0–100 (docs/conception.md §4.2) alors que l'affichage est sur cinq : c'est ce
  * facteur qui fait l'aller-retour. Il garde tout leur sens aux notes importées d'AniList, qui
  * arrivent sur cent et qu'aucune conversion n'écrase.
  */
@@ -361,7 +361,7 @@ export function describeEntryEvent(
       /**
        * L'écart, pas la valeur de départ : « +8 » dit ce qui a été fait ce jour-là, là où
        * « depuis 12 » demande une soustraction au lecteur. C'est toute la raison d'être du couple
-       * `from`/`to` (docs/PRODUCT.md §4.3).
+       * `from`/`to` (docs/conception.md §4.3).
        */
       if (event.progressFrom === null || event.progressFrom === to) {
         return { label, detail: null };
@@ -428,7 +428,7 @@ export type EntryEventDay<T> = {
 /**
  * Le journal, regroupé par journée.
  *
- * La granularité voulue est le jour (docs/PRODUCT.md §4.3) : « le 3 mars, 15 épisodes » est
+ * La granularité voulue est le jour (docs/conception.md §4.3) : « le 3 mars, 15 épisodes » est
  * l'information, l'heure exacte du quinzième ne l'est pas.
  *
  * Générique sur l'événement, et pas fixé à `EntryEventView` : le tableau de bord lit le journal de

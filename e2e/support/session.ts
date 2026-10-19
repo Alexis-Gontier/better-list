@@ -8,7 +8,7 @@ import { accounts, type TestAccount } from "./accounts";
 /**
  * Fabrique une session Better Auth sans passer par GitHub, seul fournisseur du projet.
  *
- * Même mécanique que `scripts/dev-session-cookie.mjs` (JOURNAL.md, 26 septembre 2026), à une
+ * Même mécanique que `scripts/dev-session-cookie.mjs` (voir l'historique git, 26 septembre 2026), à une
  * différence près : on **crée** le compte et sa session au lieu d'emprunter ceux d'un membre.
  *
  * `.env` est lu par `dotenv` : on tourne sous le runner Playwright, où `@/config/env` exigerait un

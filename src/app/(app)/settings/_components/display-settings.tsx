@@ -17,7 +17,7 @@ import { updatePreferences } from "@/features/preferences/server/preferences.act
  * Les deux réglages d'affichage — **la seule feuille interactive de l'écran.**
  *
  * `"use client"` est posé ici et nulle part au-dessus : la page, ses sections et le bloc « Compte »
- * restent des composants serveur. C'est la règle de frontière d'ARCHITECTURE.md, appliquée à la
+ * restent des composants serveur. C'est la règle de frontière d'CLAUDE.md, appliquée à la
  * lettre — un `"use client"` sur la page emporterait la lecture de session dans le bundle.
  *
  * **Chaque contrôle enregistre seul, et sans bouton.** Il n'y a pas de formulaire à valider : deux

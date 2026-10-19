@@ -22,7 +22,7 @@ import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
 /**
- * Les écritures sur mes listes (docs/PRODUCT.md §4.4).
+ * Les écritures sur mes listes (docs/conception.md §4.4).
  *
  * Elles suivent `tracking.actions.ts`, le modèle posé le 6 septembre 2026 : `authActionClient`
  * parce qu'une Server Action est un **endpoint POST à part entière**, appelable directement sans

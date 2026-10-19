@@ -14,8 +14,8 @@ import { authActionClient } from "@/lib/safe-action";
 
 /**
  * **La première Server Action du dépôt.** Jusqu'ici, rien n'écrivait : la barre de la fiche et la
- * fenêtre des vignettes étaient des coquilles dont l'état disparaissait au rechargement, ce que
- * `docs/STATE.md` signalait comme l'écart le plus visible du chantier.
+ * fenêtre des vignettes étaient des coquilles dont l'état disparaissait au rechargement,
+ * ce que l'état des lieux de l'époque signalait comme l'écart le plus visible du chantier.
  *
  * Elle a attendu que la mise en page soit validée, et **c'est ce qui lui permet d'être courte** :
  * tout ce qu'elle fait a été écrit et testé avant elle. Elle ne décide de rien.
@@ -109,7 +109,7 @@ export const saveEntry = authActionClient
       vers `Media` : suivre depuis `/search` une œuvre que personne n'a jamais croisée échouerait
       au niveau de la base. `ensureMediaMirror` ne réécrit rien quand la ligne existe et n'est pas
       périmée — sans ce garde-fou, chaque « +1 » recopierait dix-huit colonnes du catalogue partagé
-      pour incrémenter un compteur personnel (docs/PRODUCT.md §4.1).
+      pour incrémenter un compteur personnel (docs/conception.md §4.1).
 
       C'est aussi lui qui garantit que `ceilingFor` trouve un plafond juste après : les deux
       lectures qui suivent dépendent donc de celle-ci, et ne peuvent pas partir avec elle.
@@ -193,7 +193,7 @@ export const saveEntry = authActionClient
  * `EntryEvent` porte `onDelete: Cascade` vers `Entry` (prisma/schema.prisma) : la suppression
  * emporte donc l'historique, ce qui est irréversible et non rétroactif. C'est exactement pourquoi
  * l'appelant doit demander confirmation par `alert-dialog` — la note en est portée depuis le
- * 6 septembre dans docs/STATE.md et docs/fiche-media.md §2.1.
+ * 6 septembre dans l'historique git et .claude/skills/anilist-read/references/fiche-media.md §2.1.
  *
  * `deleteMany` et non `delete` : supprimer deux fois la même entrée — deux onglets, un double clic —
  * ne doit pas produire une erreur serveur. `deleteMany` sur une ligne absente ne fait rien, ce qui

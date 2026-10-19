@@ -11,7 +11,7 @@ import { routes } from "@/config/routes";
 /**
  * Le choix de portée : **ce que je suis**, ou **tout ce qui passe**.
  *
- * Demandé par Alexis le 8 septembre 2026. Il contredit `docs/PRODUCT.md` §9, qui écarte le planning
+ * Demandé par Alexis le 8 septembre 2026. Il contredit `docs/conception.md` §9, qui écarte le planning
  * global et précise que le proposer supposerait « une seconde source ou un miroir des grilles
  * horaires, **pas un réglage** » — c'est-à-dire exactement ce contrôle. La contradiction est
  * documentée dans `calendar-params.ts` et bornée dans `media.queries.ts` par un plafond de pages ;

@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
  * `robots.txt` — **tout est interdit à l'indexation, sans exception.**
  *
  * Ce n'est pas une précaution de façade : c'est la contrepartie directe du modèle de partage décrit
- * dans docs/PRODUCT.md §4.4. Une liste partagée s'ouvre sur `/l/<jeton>` **sans session**, et toute
+ * dans docs/conception.md §4.4. Une liste partagée s'ouvre sur `/l/<jeton>` **sans session**, et toute
  * sa confidentialité tient à ce que le jeton soit indevinable. Or un jeton n'a pas besoin d'être
  * deviné pour fuir : il suffit qu'une de ces adresses soit collée dans un espace qu'un robot
  * parcourt, ou qu'elle parte en `Referer` vers un site tiers, pour qu'elle devienne indexable — et

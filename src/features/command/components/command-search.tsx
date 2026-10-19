@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
  *
  * **La lecture passe par un route handler** (`app/api/search/route.ts`) et non par une Server
  * Action : une recherche à la frappe doit pouvoir s'annuler, et la réponse à « fri » ne doit pas
- * écraser celle à « frieren » (CLAUDE.md, docs/STATE.md § les route handlers).
+ * écraser celle à « frieren » (CLAUDE.md, docs/conception.md § les route handlers).
  */
 
 /**

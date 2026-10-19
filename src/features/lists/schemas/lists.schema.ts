@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 /**
- * Formes des listes (docs/PRODUCT.md §4.4).
+ * Formes des listes (docs/conception.md §4.4).
  *
  * Les identifiants de liste sont des `cuid` : ils viennent du client, donc ils sont **validés en
  * forme ici et vérifiés en propriété dans l'action**. Un schéma ne peut pas savoir à qui appartient

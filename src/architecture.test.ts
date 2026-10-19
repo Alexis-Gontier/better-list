@@ -116,7 +116,7 @@ describe("frontière server / client", () => {
    *
    * `.skip` plutôt que la suppression, donc : le test reste lisible, sa panne reste expliquée, et
    * **le premier module qui exporte un Server Component `async` doit retirer ce `.skip`**. C'est
-   * noté dans les écarts connus de `docs/STATE.md`.
+   * noté dans les écarts connus de `docs/conception.md`.
    *
    * Le mot « exporte » n'est pas un détail de formulation : la reconstruction de `/media/[id]`
    * (hero, 6 septembre 2026) pose bien un composant serveur `async`, mais **interne à sa page**,
@@ -133,7 +133,7 @@ describe("frontière server / client", () => {
 describe("placement des fichiers", () => {
   /**
    * `src/app/` ne fait que du routing : un fichier y est une convention Next ou vit dans un dossier
-   * privé `_*`. La règle est dans `docs/ARCHITECTURE.md` et le hook n'en voit qu'une partie — il
+   * privé `_*`. La règle est dans `CLAUDE.md` et le hook n'en voit qu'une partie — il
    * juge le fichier écrit, pas l'arborescence qu'il rejoint.
    */
   it("src/app/ ne contient que des conventions Next et des dossiers privés", () => {

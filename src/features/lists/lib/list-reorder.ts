@@ -5,7 +5,7 @@ import "server-only";
 import { generateKeyBetween } from "fractional-indexing";
 
 /**
- * Le calcul d'un déplacement dans une liste (docs/PRODUCT.md §4.4).
+ * Le calcul d'un déplacement dans une liste (docs/conception.md §4.4).
  *
  * **C'est ici que le glisser-déposer se trompe, pas dans le glisser.** La partie visuelle est prise en
  * charge par dnd-kit ; ce qui reste à écrire est le voisinage — entre quelles deux clés insérer —, et

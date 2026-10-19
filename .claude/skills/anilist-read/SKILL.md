@@ -135,14 +135,23 @@ Et poser les `cacheTag` : `MEDIA_CACHE_TAG` sur toute lecture du catalogue, plus
   dépasserait le délai de remplissage d'un `"use cache"`. L'erreur remonte ; le cache est là
   précisément pour qu'on n'y arrive jamais.
 
-## Quand la base de données existera
+## Le miroir local
 
-Lire d'abord `docs/PRODUCT.md` §4.1. Le principe : les champs qui servent à afficher une carte et
+Lire d'abord `docs/conception.md` §4.1. Le principe : les champs qui servent à afficher une carte et
 à trier viennent du **miroir local** (`Media` en base), pas d'AniList. AniList n'est interrogé que
 pour remplir ce miroir, et à la volée pour les champs lourds de la fiche détail.
 
 Une nouvelle lecture qui parcourt la bibliothèque ou une liste de l'utilisateur **ne doit pas**
 passer par AniList : elle interroge la base.
+
+## Ce qu'AniList fournit, et ce qui est déjà demandé
+
+Deux inventaires, à lire avant d'ajouter un champ ou un filtre :
+
+- [references/fiche-media.md](references/fiche-media.md) — les champs d'une œuvre : ceux que `MEDIA_BY_ID_QUERY` ramène déjà, ceux qui coûteraient une requête de plus, et ceux qu'AniList n'a pas.
+- [references/recherche-filtres.md](references/recherche-filtres.md) — les arguments de `Page.media`, le prix d'un filtre en quota, ce que nous seuls pouvons filtrer, et le contrat d'URL de `/search`.
+
+Les cases cochées datent du 19 octobre 2026 : vérifier dans le code avant de s'y fier.
 
 ## Checklist avant de considérer la lecture terminée
 

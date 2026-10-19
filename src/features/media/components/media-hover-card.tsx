@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
  * C'est la feuille interactive de `MediaCard` : la carte reste un Server Component, et seul ce
  * fichier part au bundle. Les deux côtés arrivent en props — la carte par `children`, le panneau par
  * `preview` — donc tous deux sont **rendus sur le serveur** et traversent la frontière déjà en HTML.
- * C'est la règle server-first d'ARCHITECTURE.md à la lettre : on passe les Server Components en
+ * C'est la règle server-first d'CLAUDE.md à la lettre : on passe les Server Components en
  * `children` plutôt que de convertir le sous-arbre.
  *
  * **Le panneau est accroché au curseur** (demande d'Alexis, 17 septembre 2026), et c'est ce qui a

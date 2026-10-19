@@ -5,13 +5,13 @@ import { CATALOGUE_PAGE_SIZE } from "@/config/catalogue";
  * La grille d'un catalogue — **la disposition seule, sans rien savoir de ce qu'elle range.**
  *
  * Elle a démarré dans le `page.tsx` de `/search` et a été promue ici le 6 septembre 2026, quand
- * `/library` a demandé la même : deuxième appelant, donc la règle de promotion d'ARCHITECTURE.md
+ * `/library` a demandé la même : deuxième appelant, donc la règle de promotion d'CLAUDE.md
  * s'applique. Elle atterrit dans `components/shared/` et pas dans `features/media/` parce qu'elle
  * ne connaît **aucune** entité — elle pose des colonnes autour de ses enfants, et ce sont ses
  * appelants qui décident si ce sont des œuvres, des entrées de suivi ou autre chose.
  *
  * C'est la fusion qui motivait toute la refonte : `/search` et `/library` étaient le même écran
- * écrit deux fois (docs/STATE.md), et une grille dupliquée est exactement l'endroit où les deux
+ * écrit deux fois (voir l'historique git), et une grille dupliquée est exactement l'endroit où les deux
  * recommencent à diverger.
  *
  * Composant **serveur** : il ne fait que poser des classes. Le rendre client embarquerait toute la

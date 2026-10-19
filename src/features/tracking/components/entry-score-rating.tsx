@@ -14,7 +14,7 @@ import {
  * Ma note : cinq étoiles par demies, encadrées de deux crans.
  *
  * **Le composant parle en points, pas en étoiles.** Il reçoit et renvoie le score tel qu'il est
- * stocké — un entier de 0 à 100, l'échelle d'AniList (docs/PRODUCT.md §4.2) — et convertit
+ * stocké — un entier de 0 à 100, l'échelle d'AniList (docs/conception.md §4.2) — et convertit
  * lui-même avec `scoreToStars` / `starsToScore`, qui sont testées. C'est ce qui évite que chaque
  * appelant refasse la conversion, et que l'un d'eux la refasse mal.
  *

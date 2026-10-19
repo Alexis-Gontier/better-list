@@ -118,7 +118,7 @@ export const libraryFilterParsers = {
    * Le terme de recherche, qui ne part **jamais chez AniList**.
    *
    * C'est toute la différence avec `/search` : la bibliothèque ne cherche que dans les colonnes de
-   * titre du miroir local (docs/PRODUCT.md §4.1), donc une frappe ne coûte rien au quota de 30
+   * titre du miroir local (docs/conception.md §4.1), donc une frappe ne coûte rien au quota de 30
    * requêtes par minute. C'est ce qui rend la recherche à la volée acceptable ici alors qu'elle est
    * anti-rebondie sur le catalogue.
    *

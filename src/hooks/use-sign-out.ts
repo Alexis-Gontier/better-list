@@ -14,7 +14,7 @@ import { signOut as endSession } from "@/lib/auth/client";
  * emprunter celle de l'autre : la liste d'attente veut un `Button`, le menu du compte veut un
  * `DropdownMenuItem`. Glisser le premier dans le second par `asChild` fusionne les classes des
  * deux et ne donne plus la géométrie d'aucun — le même piège de composition que celui rencontré
- * sur `ToggleGroup` (docs/journal/2026-08-archive.md, 11 août). Chacun rend donc sa forme, et seule la logique se
+ * sur `ToggleGroup` (voir l'historique git, 11 août). Chacun rend donc sa forme, et seule la logique se
  * partage.
  *
  * `router.refresh()` après la redirection : sans lui, le rendu serveur déjà en cache continue

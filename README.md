@@ -9,7 +9,7 @@ l'[API AniList](https://docs.anilist.co/), sur lequel se greffent le **suivi du 
 > un détail de dimensionnement : ça retire du périmètre la découverte sociale, la modération, les
 > commentaires et l'administration des comptes. Le partage d'une liste passe par un **lien non
 > listé**, pas par un graphe social. Le raisonnement complet est dans
-> [docs/PRODUCT.md](docs/PRODUCT.md).
+> [docs/conception.md](docs/conception.md).
 
 ## Stack
 
@@ -67,21 +67,17 @@ y ajoute le `build`, sur chaque push de `main` et chaque pull request.
 
 ## Où lire quoi
 
-| La question que tu te poses | Le fichier à ouvrir |
+| La question | Le fichier |
 | --- | --- |
-| Où on en est, ce qui existe, quoi faire ensuite | [docs/STATE.md](docs/STATE.md) |
-| Quoi et pourquoi : périmètre, modèle de domaine, roadmap | [docs/PRODUCT.md](docs/PRODUCT.md) |
-| Comment : où poser un fichier, frontière server/client | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Ce qu'on a appris en chemin | [docs/JOURNAL.md](docs/JOURNAL.md) |
-| Ce qu'on peut afficher sur la fiche d'une œuvre | [docs/fiche-media.md](docs/fiche-media.md) |
-| Ce par quoi on peut filtrer le catalogue | [docs/recherche-filtres.md](docs/recherche-filtres.md) |
-| Les conventions non négociables, en une page | [CLAUDE.md](CLAUDE.md) |
-
-**STATE.md dit ce qui est construit, PRODUCT.md ce qu'on veut construire.** Quand les deux se
-contredisent, STATE.md a raison sur le présent et PRODUCT.md sur l'intention.
+| Le produit, son modèle, ce qui est livré, la suite | [docs/conception.md](docs/conception.md) |
+| Les décisions en vigueur, une par ligne | [docs/decisions.md](docs/decisions.md) |
+| Déployer : variables, migrations, crons | [docs/deploiement.md](docs/deploiement.md) |
+| La marque : logo, couleurs | [docs/brand/](docs/brand/README.md) |
+| Les conventions de code et les commandes | [CLAUDE.md](CLAUDE.md) et [.claude/rules/](.claude/rules/) |
 
 ## Contribuer
 
-Dépôt privé à un seul contributeur : pas de pull requests, pas d'issues. Le travail part d'une
-branche thématique (`refonte/…`, `feat/…`) fusionnée dans `main` en `--no-ff` avec un message
-`merge: …`. `main` est protégée contre le force-push et la suppression.
+Dépôt privé à un seul contributeur. Le travail part d'une branche thématique (`feat/…`, `fix/…`,
+`chore/…`, `docs/…`), passe par une pull request GitHub vers `main` et y est fusionné une fois la CI
+verte. Commits au format `type(portée): message en français`. `main` est protégée contre le
+force-push et la suppression.

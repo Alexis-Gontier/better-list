@@ -36,13 +36,13 @@ import { upfetch } from "@/lib/http/fetch";
  * La cloche de l'en-tête — **les épisodes sortis que je n'ai pas vus**.
  *
  * Elle a été un décor pendant cinq semaines, `notifications` étant un tableau vide écrit en dur
- * (relevé du 8 août 2026, docs/journal/) : une entrée qui ne mène nulle part se lit comme une panne.
+ * (relevé du 8 août 2026, l'historique git) : une entrée qui ne mène nulle part se lit comme une panne.
  * Elle dit maintenant ce que dit la rangée « En cours » de l'accueil, mais **depuis les dix
  * routes** — c'est la seule chose qu'elle ajoute, et c'est ce qui la justifie à côté d'elle.
  *
  * **Elle vit dans `features/tracking/` et non dans `components/layout/`**, d'où elle est partie le
  * 14 septembre 2026 : dès qu'un composant connaît une entité métier, il change de maison
- * (docs/ARCHITECTURE.md). C'est déjà pourquoi `CommandSearch` est dans `features/command/` alors que
+ * (CLAUDE.md). C'est déjà pourquoi `CommandSearch` est dans `features/command/` alors que
  * l'en-tête l'importe.
  *
  * **Il n'y a rien à marquer comme lu, et c'est le cœur du dessin** (décision d'Alexis du

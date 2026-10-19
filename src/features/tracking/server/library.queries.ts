@@ -27,7 +27,7 @@ import { prisma } from "@/lib/db/prisma";
  * C'est toute la différence avec `/search` : là-bas les filtres partent chez un tiers avec un quota
  * de trente requêtes par minute, ici ils deviennent un `where` Prisma sur des lignes qu'on possède.
  * Une frappe au clavier ne coûte donc rien, et **la pagination se fait en base** plutôt qu'en
- * sur-demandant puis en filtrant après coup — c'est l'issue 3 de docs/recherche-filtres.md §2, et
+ * sur-demandant puis en filtrant après coup — c'est l'issue 3 de .claude/skills/anilist-read/references/recherche-filtres.md §2, et
  * la raison pour laquelle ces facettes sont chez elles ici et pas sur le catalogue.
  *
  * **Aucun `"use cache"` dans ce fichier, et ce n'est pas un oubli** : tout y dépend du visiteur.
@@ -45,7 +45,7 @@ import { prisma } from "@/lib/db/prisma";
  * Le compte courant, pour un écran qui vit **sous la garde du layout**.
  *
  * `requireApprovedUser()` est appelée une fois et une seule, dans `app/(app)/layout.tsx`
- * (docs/ARCHITECTURE.md) : la redemander ici serait une deuxième garde, c'est-à-dire deux endroits
+ * (CLAUDE.md) : la redemander ici serait une deuxième garde, c'est-à-dire deux endroits
  * où l'on peut se tromper. Arriver sans session est donc un défaut de câblage — une route sortie du
  * groupe `(app)` —, pas un cas d'usage à traiter en silence. Renvoyer une bibliothèque vide le
  * masquerait précisément le jour où il compte.
@@ -67,7 +67,7 @@ async function currentUserId(): Promise<string> {
  *
  * La forme est celle d'`entry-transition.ts`, et c'est ce qui permet à `entryDraftFrom` de partir
  * de cette ligne sans adaptateur, puis à `entryDraftChanges` de n'envoyer que ce qui a bougé
- * (docs/PRODUCT.md §4.2). Ramener moins obligerait la fenêtre à inventer les champs manquants — et
+ * (docs/conception.md §4.2). Ramener moins obligerait la fenêtre à inventer les champs manquants — et
  * un champ inventé qu'on renvoie au serveur est une modification qu'on n'a pas demandée.
  *
  * `private` n'y est pas : il ne concerne que la visibilité auprès du cercle, qui n'a pas d'écran.
@@ -122,7 +122,7 @@ export type LibraryStatusCounts = {
  *
  * **Les compteurs honorent le terme et le type, mais pas le statut** — c'est ce qui les
  * rend vrais. Un onglet « Terminé · 159 » posé au-dessus de trois résultats parce qu'on cherche
- * « frieren » est exactement le compteur qui ment dont docs/recherche-filtres.md §3 veut se
+ * « frieren » est exactement le compteur qui ment dont .claude/skills/anilist-read/references/recherche-filtres.md §3 veut se
  * débarrasser. Ici chaque onglet annonce ce qu'il donnera si on le clique.
  *
  * La table renvoyée est **complète**, zéros compris. Prisma n'émet pas de ligne pour un statut sans
@@ -171,7 +171,7 @@ export async function getLibraryStatusCounts({
  * aurait marché, mais aurait fait lire « parmi ces œuvres » là où la question est « celle-ci ».
  *
  * **Le `null` est une réponse, pas une absence de réponse** : c'est lui qui distingue l'œuvre
- * jamais suivie de l'œuvre suivie à zéro — la case que docs/fiche-media.md §2.7 laisse ouverte —,
+ * jamais suivie de l'œuvre suivie à zéro — la case que .claude/skills/anilist-read/references/fiche-media.md §2.7 laisse ouverte —,
  * et c'est lui qui fait dire « Ajouter » plutôt que « Enregistrer ».
  */
 export async function getEntryFor(mediaId: number): Promise<EntryState | null> {
@@ -186,7 +186,7 @@ export async function getEntryFor(mediaId: number): Promise<EntryState | null> {
 /**
  * Parmi ces œuvres, lesquelles sont déjà dans ma bibliothèque — et **où j'en suis avec chacune**.
  *
- * **C'est l'issue 1 de docs/recherche-filtres.md §2, « annoter plutôt que filtrer ».** Le document
+ * **C'est l'issue 1 de .claude/skills/anilist-read/references/recherche-filtres.md §2, « annoter plutôt que filtrer ».** Le document
  * la recommande comme « la seule qui ne coûte rien et ne mente jamais » : filtrer `/search` sur nos
  * propres lignes trouerait une page qu'AniList a déjà découpée, et le compteur mentirait. Une
  * pastille sur la carte répond à la même question — « est-ce que je l'ai déjà ? » — sans toucher à
@@ -254,7 +254,7 @@ export type LibraryItem = {
    * La bannière du miroir — l'en-tête de la fenêtre d'édition rapide.
    *
    * `null` sur la plupart des mangas et des webtoons : AniList n'en a pas, et c'est le cas courant,
-   * pas l'exception (docs/fiche-media.md §1.1).
+   * pas l'exception (.claude/skills/anilist-read/references/fiche-media.md §1.1).
    */
   banner: string | null;
   /**
@@ -487,7 +487,7 @@ export async function getAiringWatchlist({
       ...(wholeLibrary ? {} : { status: { in: AIRING_ENTRY_STATUSES } }),
       /*
         Le filtre 18+ est posé **dans la requête**, comme partout ailleurs
-        (docs/recherche-filtres.md §2.5) : une ligne écartée à l'affichage a quand même traversé le
+        (.claude/skills/anilist-read/references/recherche-filtres.md §2.5) : une ligne écartée à l'affichage a quand même traversé le
         réseau, et elle aurait ici un second effet — son id serait parti chez AniList, donc dans une
         clé de cache que rien ne devrait porter.
       */

@@ -4,7 +4,7 @@ import { refreshStaleMirror } from "@/features/media/server/media.mirror";
 import { isAuthorizedCron } from "@/lib/security/cron-auth";
 
 /**
- * Cron de rafraîchissement du miroir AniList (docs/PRODUCT.md §4.1).
+ * Cron de rafraîchissement du miroir AniList (docs/conception.md §4.1).
  *
  * Sans lui, le miroir est une photographie : une série en cours de diffusion garde pour toujours le
  * nombre d'épisodes qu'elle avait le jour où quelqu'un l'a ajoutée, et le planning de V2 — qui

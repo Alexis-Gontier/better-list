@@ -179,7 +179,7 @@ export function MediaHero({
                 C'est la même borne que `getSeriesShelf`, qui refuse tout ce qui n'est pas un
                 `MANGA`.
 
-                Une icône seule, comme le bouton de liste à côté : docs/fiche-media.md attend ici un
+                Une icône seule, comme le bouton de liste à côté : .claude/skills/anilist-read/references/fiche-media.md attend ici un
                 bloc de tomes possédés, et ce lien ne fait qu'ouvrir le passage en attendant.
               */
               media.type === "MANGA" ? (

@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
  * Il a démarré dans le `_components/` de `/lists` et **a été promu ici le 6 septembre 2026**, quand
  * la barre d'actions de `/lists/[id]` en a eu besoin pour renommer : deuxième route, donc
  * `features/lists/components/`, la maison d'un composant qui connaît une entité métier et sert
- * plusieurs écrans (docs/ARCHITECTURE.md).
+ * plusieurs écrans (CLAUDE.md).
  *
  * **Le partage n'y figure pas**, et `lists.schema.ts` dit pourquoi : publier une liste et la
  * renommer n'ont ni la même portée ni le même défaire. Les mêler ferait d'« Enregistrer » un bouton

@@ -50,7 +50,7 @@ export async function AccountSection() {
             {/*
               Le badge dit toujours la même chose, et ce n'est pas un oubli de câblage : le layout
               du groupe `(app)` redirige `PENDING` vers la liste d'attente et `REJECTED` vers la
-              connexion (docs/PRODUCT.md §7.1). Personne d'autre qu'un membre approuvé n'atteint
+              connexion (docs/conception.md §7.1). Personne d'autre qu'un membre approuvé n'atteint
               cet écran — une table de correspondance à trois entrées aurait deux branches mortes.
             */}
             <Badge variant="secondary">Membre</Badge>

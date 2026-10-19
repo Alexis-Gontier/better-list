@@ -48,14 +48,14 @@ export const metadata: Metadata = {
  * Ma bibliothèque — la rangée de statuts, la barre, la grille et sa pagination.
  *
  * C'est le même écran que `/search`, et c'est le sujet : les deux étaient écrits deux fois avant la
- * mise à blanc (docs/STATE.md). Ils partagent désormais la carte, la grille et la coquille de la
+ * mise à blanc (voir l'historique git). Ils partagent désormais la carte, la grille et la coquille de la
  * barre (`components/shared/`), et ne diffèrent que par ce qui les distingue réellement — la
  * source. Là-bas AniList et son quota ; ici mes lignes `Entry`, en base, où la pagination se fait.
  *
  * **Deux zones suspendues, et elles ne demandent pas la même chose.** Les contrôles ont besoin des
  * décomptes par statut ; la grille, d'une page de résultats. Les séparer laisse
  * la barre s'afficher pendant que la grille arrive — une frontière par zone, jamais de
- * `loading.tsx` de segment (docs/ARCHITECTURE.md).
+ * `loading.tsx` de segment (CLAUDE.md).
  *
  * Les deux relisent `searchParams` chacune de leur côté plutôt que de recevoir des filtres déjà
  * décodés : lire l'adresse au niveau de la page la rendrait dynamique en entier, et la coquille

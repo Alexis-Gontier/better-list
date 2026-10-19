@@ -6,6 +6,7 @@
       "Bash(pnpm format*)",
       "Bash(pnpm build*)",
       "Bash(pnpm typecheck*)",
+      "Bash(pnpm test*)",
       "Bash(pnpm knip*)",
       "Bash(pnpm install*)",
       "Bash(pnpm exec tsc*)",

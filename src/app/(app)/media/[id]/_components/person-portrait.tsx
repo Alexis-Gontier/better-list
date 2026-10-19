@@ -6,7 +6,7 @@ import Image from "next/image";
  * Extrait des cartes de personnages quand l'onglet Équipe a demandé la même boîte : deuxième
  * appelant, donc le composant sort de son fichier. Il reste dans le `_components/` de la route et
  * ne monte pas dans `features/` — les deux appelants sont sur cette route, et la règle de promotion
- * parle de deuxième **route**, pas de deuxième usage (docs/ARCHITECTURE.md).
+ * parle de deuxième **route**, pas de deuxième usage (CLAUDE.md).
  *
  * Largeur fixe et `shrink-0` : sans eux, un nom long comprimerait l'image au lieu de se tronquer —
  * c'est le texte qui doit céder, puisqu'il a `truncate` et son infobulle pour se rattraper.

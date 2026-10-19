@@ -30,7 +30,7 @@ import { setEditionVolumesTotal } from "@/features/collection/server/collection.
 /**
  * La porte de l'édition — **la seule, et c'est pour ça qu'elle existe.**
  *
- * PRODUCT.md §4.5 veut qu'on n'ait rien à remplir dans le cas courant : une édition par défaut est
+ * conception.md §4.5 veut qu'on n'ait rien à remplir dans le cas courant : une édition par défaut est
  * créée en silence à la première saisie, et l'écran n'en dit rien tant qu'il n'y en a qu'une
  * (décision du 19 septembre 2026). Mais « ne rien dire » ne peut pas vouloir dire « ne rien
  * offrir » : le `volumesTotal` — que **seul l'utilisateur connaît**, AniList ne le donnant que
@@ -41,7 +41,7 @@ import { setEditionVolumesTotal } from "@/features/collection/server/collection.
  * a pas besoin. **Il n'a qu'une entrée**, et c'est délibéré : « Ajouter une édition… » n'y est pas
  * tant que le cas multi-éditions n'a pas d'écran (sélecteur en tête de série, une rangée par
  * édition sur `/collection`). Une entrée de menu qui n'ouvre rien est pire qu'une entrée absente
- * — c'est la même règle qui avait retiré « Ma collection » de la nav (docs/STATE.md).
+ * — c'est la même règle qui avait retiré « Ma collection » de la nav (docs/conception.md).
  */
 export function EditionMenu({
   mediaId,

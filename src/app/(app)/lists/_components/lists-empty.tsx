@@ -14,7 +14,7 @@ import {
  * L'écran d'un membre qui n'a encore aucune liste.
  *
  * C'est le premier des états vides que le dépôt dessine — les trois écrans livrés n'ont toujours
- * pas les leurs (docs/STATE.md), et celui-ci arrive d'abord parce qu'il n'a **qu'un** cas à dire.
+ * pas les leurs (voir l'historique git), et celui-ci arrive d'abord parce qu'il n'a **qu'un** cas à dire.
  * Une bibliothèque vide et une recherche sans résultat en ont trois à distinguer, c'est ce qui les
  * a fait reporter ; « aucune liste » ne se confond avec rien.
  *

@@ -1,13 +1,17 @@
 # Les filtres du catalogue — inventaire de ce qu'on peut y mettre
 
+> Référence de la skill `anilist-read`, déplacée depuis `docs/` le 19 octobre 2026. Les cases
+> cochées disent ce qui était branché ce jour-là : vérifier dans le code avant de s'y fier. Les
+> « §4.1 », « §8 »… renvoient à [docs/conception.md](../../../../docs/conception.md).
+
 > **Ce document est une liste à cocher, pas une spécification.** Une case cochée veut dire
 > « ce filtre est utilisable sur `/search` aujourd'hui », pas « c'est décidé ». Ce qui reste
 > décoché n'est pas une promesse : c'est du disponible, et la question de savoir si ça mérite une
 > place dans la barre se tranche au cas par cas.
 
 Même rôle que [fiche-media.md](./fiche-media.md), sur l'autre écran : celui-ci ne parle que de
-**ce par quoi on peut restreindre une liste d'œuvres**. [PRODUCT.md](./PRODUCT.md) dit ce qu'on
-veut construire ; [STATE.md](./STATE.md) dit où en est le dépôt.
+**ce par quoi on peut restreindre une liste d'œuvres**. [conception.md](../../../../docs/conception.md) dit ce qu'on
+veut construire ; [conception.md §5](../../../../docs/conception.md) dit où en est le dépôt.
 
 Relevé le **6 septembre 2026**.
 
@@ -149,7 +153,7 @@ qu'au-delà l'URL n'est plus une URL.
 - [ ] `licensedBy` / `licensedBy_in` — par **nom** de plateforme
 - [ ] `licensedById` / `licensedById_in` — par **identifiant** de plateforme, la forme robuste : un nom se renomme, un id non
 
-**La réserve de PRODUCT.md §9 s'applique en entier** : cette donnée est communautaire et
+**La réserve de conception.md §9 s'applique en entier** : cette donnée est communautaire et
 régionale, elle **ne garantit pas** que la plateforme diffuse l'œuvre dans le pays du visiteur.
 Un filtre « disponible sur Crunchyroll » qui ment est pire que pas de filtre du tout.
 
@@ -189,7 +193,7 @@ supplémentaire ne les comble.
 - **Aucun filtre par personnage, ni par doubleur.**
 - **Aucune recherche dans le synopsis** : `search` ne regarde que les titres.
 - **Aucun filtre de langue de diffusion**, donc rien qui ressemble à « disponible en VF ».
-- **Rien sur la franchise** : « les séries d'au moins trois saisons » n'est pas exprimable. Les `relations` vivent sur la fiche, pas dans la recherche (PRODUCT.md §8).
+- **Rien sur la franchise** : « les séries d'au moins trois saisons » n'est pas exprimable. Les `relations` vivent sur la fiche, pas dans la recherche (conception.md §8).
 - `onList` existe, mais il désigne **la liste AniList du visiteur** — or on ne s'authentifie jamais auprès d'eux. Notre équivalent est en base, et c'est tout le §2.
 
 ---
@@ -197,7 +201,7 @@ supplémentaire ne les comble.
 ## 2. Ce que nous seuls pouvons filtrer — et pourquoi c'est le point dur
 
 Ces facettes n'existent nulle part ailleurs : ce sont **nos** lignes, celles de quatre comptes.
-Ce sont aussi celles qui font la différence avec AniList et MyAnimeList (PRODUCT.md §8).
+Ce sont aussi celles qui font la différence avec AniList et MyAnimeList (conception.md §8).
 
 > **⚠️ Aucune ne peut être un filtre au sens d'AniList.** La page de 24 résultats arrive déjà
 > découpée : appliquer « pas encore dans ma bibliothèque » ensuite retire des cartes d'une page
@@ -268,7 +272,7 @@ Ces données sont en base dès aujourd'hui : ce sont les `Entry` des trois autre
 ## 4. Ce que l'URL sait déjà écrire
 
 Treize paramètres — les onze gelés par la mise à blanc, **à ne pas casser** parce que ce sont des
-adresses qu'on peut s'envoyer (STATE.md, « les contrats d'URL »), plus les deux qu'a ajoutés le
+adresses qu'on peut s'envoyer, plus les deux qu'a ajoutés le
 panneau. Les ajouter n'a rien invalidé : un paramètre absent reste un filtre absent, donc tout
 lien écrit avant cette passe se relit à l'identique.
 
