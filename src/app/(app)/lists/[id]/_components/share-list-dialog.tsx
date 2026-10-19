@@ -83,9 +83,15 @@ export function ShareListDialog({
     connaît pas l'hôte par lequel on l'atteint — localhost en développement, le domaine en
     production —, et coder une base en dur donnerait un lien qui ne marche que d'un côté.
   */
-  const url = token
-    ? `${window.location.origin}${routes.share.detail(token)}`
-    : null;
+  /*
+    **Seulement fenêtre ouverte** : le composant est aussi rendu côté serveur, où `window` n'existe
+    pas, et l'y lire faisait échouer le rendu de toute liste partagée. Fermée au premier rendu, la
+    fenêtre n'en a pas besoin, et serveur et navigateur rendent la même chose.
+  */
+  const url =
+    token && open
+      ? `${window.location.origin}${routes.share.detail(token)}`
+      : null;
 
   const copy = async () => {
     if (!url) return;
