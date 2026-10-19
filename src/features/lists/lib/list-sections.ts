@@ -102,6 +102,28 @@ export function listSections<T>(
   return sections.filter(({ items }) => items.length > 0);
 }
 
+/**
+ * La barre de progression d'une file ou d'une attente, ou `null` pour les genres qui n'en ont pas.
+ *
+ * Une file avance par ce qu'on a vu ; une attente, par ce qui est prêt parmi ce qu'il reste à lire.
+ */
+export function listProgress(
+  kind: ListKind,
+  { total, ready, seen }: { total: number; ready: number; seen: number },
+): { ratio: number; label: string } | null {
+  if (total === 0) return null;
+  if (kind === "WATCHLIST") {
+    return { ratio: seen / total, label: `${seen} sur ${total} vues` };
+  }
+  if (kind === "WAIT_FOR_END") {
+    const left = total - seen;
+    return left === 0
+      ? null
+      : { ratio: ready / left, label: `${ready} sur ${left} prêtes` };
+  }
+  return null;
+}
+
 /** Ce que la ligne de décompte annonce : les prêtes et les vues, hors œuvres déjà vues pour les premières. */
 export function sectionCounts(sections: ListSection<unknown>[]) {
   const count = (key: SectionKey) =>

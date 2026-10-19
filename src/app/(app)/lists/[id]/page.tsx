@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AddMediaDialog } from "@/app/(app)/lists/[id]/_components/add-media-dialog";
 import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
+import { ListProgress } from "@/app/(app)/lists/[id]/_components/list-progress";
 import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
 import {
   CatalogueGrid,
@@ -34,6 +35,7 @@ import {
   sectionHeading,
 } from "@/features/lists/lib/list-labels";
 import {
+  listProgress,
   listSections,
   sectionCounts,
 } from "@/features/lists/lib/list-sections";
@@ -173,9 +175,15 @@ async function ListDetail({
       entryStatus: entries.get(item.media.id)?.status ?? null,
     })),
   );
+  const counts = sectionCounts(sections);
   const countsLine = listCountsLine(list.kind, list.cutoff, {
     total: list.itemCount,
-    ...sectionCounts(sections),
+    ...counts,
+  });
+  const hiddenCount = list.itemCount - list.items.length;
+  const progress = listProgress(list.kind, {
+    total: list.itemCount,
+    ...counts,
   });
 
   return (
@@ -193,9 +201,14 @@ async function ListDetail({
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between gap-4">
+        {/*
+          Empilé sur téléphone, en ligne à partir de `sm` : à côté de trois boutons, le titre était
+          coupé à « A voir (ani… » et la description tassée sur trois colonnes étroites.
+        */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="truncate text-2xl">{list.title}</h1>
+            {/* Deux lignes plutôt qu'une coupée : le nom est ce qu'on vient lire ici. */}
+            <h1 className="line-clamp-2 text-balance text-2xl">{list.title}</h1>
             {list.description ? (
               <p className="text-pretty text-muted-foreground text-sm">
                 {list.description}
@@ -205,7 +218,18 @@ async function ListDetail({
               {reordering
                 ? itemCountLabel(list.itemCount)
                 : listHeadline(list.kind, list.cutoff, countsLine)}
+              {/*
+                Le décompte compte tout, la grille ne montre que ce que la préférence 18+ laisse
+                passer : sans cette mention, « 6 œuvres » au-dessus de cinq jaquettes se lit comme
+                une perte.
+              */}
+              {hiddenCount > 0
+                ? ` · ${hiddenCount} masquée${hiddenCount > 1 ? "s" : ""} par vos préférences`
+                : null}
             </p>
+            {!reordering && progress !== null ? (
+              <ListProgress label={progress.label} ratio={progress.ratio} />
+            ) : null}
           </div>
 
           {/*
@@ -318,7 +342,8 @@ async function ListDetail({
               </CatalogueGrid>
             );
 
-            if (section.label === null) {
+            // Une section seule n'a rien à distinguer : son intitulé redirait l'en-tête.
+            if (section.label === null || sections.length === 1) {
               return <div key={section.key}>{grid}</div>;
             }
 
@@ -399,7 +424,7 @@ function ListDetailSkeleton() {
           coup. Trois lignes à gauche et non deux, pour la même raison : le décompte (« 18 œuvres »)
           manquait, soit vingt pixels de moins que ce qui arrive.
         */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-5 w-96 max-w-full" />

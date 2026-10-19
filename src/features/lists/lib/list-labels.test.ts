@@ -39,7 +39,7 @@ describe("listCountsLine", () => {
     ).toBe("3 vues sur 14");
     expect(
       listCountsLine("WATCHLIST", null, { total: 14, ready: 0, seen: 0 }),
-    ).toBe("14 à voir");
+    ).toBe("14 œuvres");
   });
 
   it("annonce les prêtes d'une attente de fin", () => {

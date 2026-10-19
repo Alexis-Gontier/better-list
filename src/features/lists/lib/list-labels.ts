@@ -60,8 +60,9 @@ export function listCountsLine(
         ? `Top ${cutoff} · ${itemCountLabel(total)}`
         : itemCountLabel(total);
     case "WATCHLIST":
+      // « 5 œuvres » et non « 5 à voir » : l'en-tête dit déjà « À voir · ».
       return seen === 0
-        ? `${total} à voir`
+        ? itemCountLabel(total)
         : `${seen} vue${seen > 1 ? "s" : ""} sur ${total}`;
     case "WAIT_FOR_END":
       if (ready === 0) return `Aucune prête sur ${total}`;

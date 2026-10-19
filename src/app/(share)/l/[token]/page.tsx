@@ -151,7 +151,8 @@ export default async function SharedListPage({
         <div className="flex flex-col gap-8">
           {sections.map((section) => (
             <section className="flex flex-col gap-4" key={section.key}>
-              {section.label === null ? null : (
+              {/* Une section seule n'a rien à distinguer : son intitulé redirait l'en-tête. */}
+              {section.label === null || sections.length === 1 ? null : (
                 <h2 className="font-heading text-lg">
                   {sectionHeading(
                     section.key,

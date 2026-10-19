@@ -147,10 +147,9 @@ export function AddMediaDialog({
   return (
     <Dialog onOpenChange={changeOpen} open={open}>
       <DialogTrigger asChild>
-        <Button aria-label="Ajouter des œuvres" size="sm">
+        <Button size="sm">
           <PlusIcon data-icon="inline-start" />
-          {/* Sur téléphone, la barre d'actions n'a de place que pour l'icône. */}
-          <span className="hidden sm:inline">Ajouter des œuvres</span>
+          Ajouter des œuvres
         </Button>
       </DialogTrigger>
 

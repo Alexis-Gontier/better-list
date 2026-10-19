@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  listProgress,
   listSections,
   type SectionInput,
   sectionCounts,
@@ -119,5 +120,30 @@ describe("sectionCounts", () => {
       input("lue", "FINISHED", "COMPLETED"),
     ]);
     expect(sectionCounts(sections)).toEqual({ ready: 1, seen: 1 });
+  });
+});
+
+describe("listProgress", () => {
+  it("fait avancer une file par ce qu'on a vu", () => {
+    expect(listProgress("WATCHLIST", { total: 4, ready: 0, seen: 1 })).toEqual({
+      ratio: 0.25,
+      label: "1 sur 4 vues",
+    });
+  });
+
+  it("mesure une attente sur ce qu'il reste à lire", () => {
+    expect(
+      listProgress("WAIT_FOR_END", { total: 10, ready: 3, seen: 4 }),
+    ).toEqual({ ratio: 0.5, label: "3 sur 6 prêtes" });
+  });
+
+  it("n'en dessine pas pour un classement, une sélection, ou une attente épuisée", () => {
+    expect(listProgress("RANKING", { total: 5, ready: 5, seen: 0 })).toBeNull();
+    expect(
+      listProgress("SELECTION", { total: 5, ready: 0, seen: 0 }),
+    ).toBeNull();
+    expect(
+      listProgress("WAIT_FOR_END", { total: 2, ready: 0, seen: 2 }),
+    ).toBeNull();
   });
 });
