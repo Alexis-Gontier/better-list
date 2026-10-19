@@ -88,8 +88,6 @@ export const createList = authActionClient
         ownerId: ctx.user.id,
         title: parsedInput.title,
         description: parsedInput.description ?? null,
-        kind: parsedInput.kind,
-        cutoff: parsedInput.cutoff ?? null,
       },
       select: { id: true },
     });
@@ -109,16 +107,14 @@ export const updateList = authActionClient
   .metadata({ actionName: "updateList" })
   .inputSchema(updateListSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { listId, title, description, kind, cutoff } = parsedInput;
+    const { listId, title, description } = parsedInput;
 
     await prisma.list.updateMany({
       where: { id: listId, ownerId: ctx.user.id },
-      data: { title, description: description ?? null, kind, cutoff },
+      data: { title, description: description ?? null },
     });
 
     revalidateLists();
-    // Le genre change l'affichage de la liste elle-même, pas seulement sa carte.
-    revalidatePath(routes.lists.detail(listId));
 
     return { updated: true };
   });

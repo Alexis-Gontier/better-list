@@ -64,11 +64,6 @@ fractionnaire (réordonner ne modifie qu'une ligne), unique par `(listId, mediaI
 serait une **vue** posée sur une liste (`ListView`, `ListViewItem`), pas une liste de plus. Les
 vues sont reportées (D17). `List` et `ListItem` n'ont pas de journal.
 
-Une liste a un **genre** (`kind`, D47) : sélection, classement (avec une ligne de coupe facultative,
-`cutoff`), à voir, quand c'est fini. Il ne change que l'affichage ; l'ordre reste `rank`. « Prête »
-(parution terminée ou annulée, lue dans le miroir) et « vue » (suivi `COMPLETED`) se calculent, rien
-n'est stocké (`features/lists/lib/list-sections.ts`).
-
 ### 4.5 `Edition`, `OwnedVolume` — la collection physique
 
 Posséder et avoir lu sont deux axes indépendants. `Edition` (série, libellé, éditeur, total de
@@ -94,7 +89,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
-| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46) | livré |
 | `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
 | `/l/[token]` | Une liste partagée, **sans session** | livré |
 | `/u/[username]` | Profil : favoris, statistiques, calendrier d'activité, journal | livré |
@@ -118,12 +113,7 @@ Sans ordre imposé :
 3. **Annoter les cartes de `/search`** par ce qu'on suit déjà (« déjà suivi · ép. 14 »).
 4. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
 5. **L'ordre de visionnage d'une franchise** (§8) : le meilleur rapport valeur/effort.
-6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
-7. **Annoncer sur Discord** qu'une œuvre d'une liste « Quand c'est fini » a terminé sa parution.
-8. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
-   recommandation, pourquoi tel rang.
-9. **L'identité des listes** : la carte de `/lists` (podium ou pile plutôt que quatre cases), l'état
-   vide, un en-tête qui dit qu'une liste est partagée, un pictogramme tiré du signet.
+6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, listes, réglages).
 
 ## 7. Choix techniques
 
