@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { AdultItem } from "@/app/(share)/l/[token]/_components/adult-item";
 import { RankNumeral } from "@/components/shared/rank-numeral";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -76,9 +77,10 @@ export const metadata: Metadata = {
  * d'attente. Même raison que l'absence de navigation dans le layout `(share)`. Les jaquettes ne sont
  * donc pas cliquables, et c'est délibéré plutôt que faute de temps.
  *
- * **Rien n'est masqué.** Contrairement à `/lists` et `/lists/[id]`, aucun filtre 18+ : la
- * préférence appartient à un compte, et il n'y en a pas ici. La page montre la liste **telle qu'elle
- * a été partagée** (décision d'Alexis, 6 septembre 2026).
+ * **Rien n'est retiré, mais le 18+ est flouté** (D49). Il n'y a pas de compte, donc pas de
+ * préférence : la page montre la liste **telle qu'elle a été partagée**, décompte compris, mais une
+ * œuvre adulte arrive floutée, titre masqué, et se révèle d'un clic (`AdultItem`). Le lien peut
+ * partir hors du cercle, vers quelqu'un qui n'a rien demandé.
  */
 export default async function SharedListPage({
   params,
@@ -170,6 +172,18 @@ export default async function SharedListPage({
                     item.media.coverImage?.extraLarge ??
                     item.media.coverImage?.large ??
                     null;
+
+                  if (item.media.isAdult) {
+                    return (
+                      <li className="flex flex-col gap-2" key={item.media.id}>
+                        <AdultItem
+                          cover={cover}
+                          rank={ranked ? rank : undefined}
+                          title={title}
+                        />
+                      </li>
+                    );
+                  }
 
                   return (
                     <li className="flex flex-col gap-2" key={item.media.id}>

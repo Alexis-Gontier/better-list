@@ -96,7 +96,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
 | `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
 | `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
-| `/l/[token]` | Une liste partagée, **sans session** | livré |
+| `/l/[token]` | Une liste partagée, **sans session**, 18+ flouté (D49) | livré |
 | `/u/[username]` | Profil : favoris, statistiques, calendrier d'activité, journal | livré |
 | `/calendar` | Planning de diffusion, retard épisode par épisode | livré |
 | `/collection` · `/collection/[mediaId]` | L'étagère, les tomes manquants | livré, une seule édition par série |
