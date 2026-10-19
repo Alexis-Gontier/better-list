@@ -41,6 +41,8 @@ export const commandSearchItemSchema = z.object({
   status: entryStatusSchema.nullable(),
 });
 
+export type CommandSearchItem = z.infer<typeof commandSearchItemSchema>;
+
 export const commandSearchResultSchema = z.object({
   items: z.array(commandSearchItemSchema),
   total: z.number().int(),

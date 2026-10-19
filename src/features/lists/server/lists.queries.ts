@@ -2,11 +2,15 @@ import "server-only";
 
 import { cache } from "react";
 
+import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
 import {
   compactFromMirror,
+  formatMediaFormat,
   MIRRORED_MEDIA_SELECT,
+  mediaTitle,
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
@@ -363,4 +367,52 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
       total: media.type === "ANIME" ? media.episodes : media.chapters,
     })),
   };
+}
+
+/** Huit : ce que la fenêtre d'ajout montre sans défiler, sous le champ. */
+const SUGGESTION_COUNT = 8;
+
+/**
+ * Ce que la fenêtre « Ajouter des œuvres » propose avant qu'on tape : mes œuvres prévues qui ne
+ * sont pas encore dans cette liste, les dernières touchées d'abord.
+ *
+ * **Aucune lecture AniList** : tout vient du miroir et de mon suivi. La forme est celle d'une ligne
+ * de la palette (`CommandSearchItem`), pour que la fenêtre dessine suggestions et résultats d'un
+ * même composant.
+ */
+export async function getListSuggestions(
+  listId: string,
+  {
+    includeAdult,
+    titleLanguage,
+  }: { includeAdult: boolean; titleLanguage: TitleLanguage },
+): Promise<CommandSearchItem[]> {
+  const userId = await currentUserId();
+
+  const rows = await prisma.entry.findMany({
+    where: {
+      userId,
+      status: { in: ["PLANNING"] },
+      media: {
+        listItems: { none: { listId } },
+        ...(includeAdult ? {} : { isAdult: false }),
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: SUGGESTION_COUNT,
+    select: { status: true, media: { select: MIRRORED_MEDIA_SELECT } },
+  });
+
+  return rows.map(({ status, media }) => {
+    const compact = compactFromMirror(media);
+
+    return {
+      id: compact.id,
+      title: mediaTitle(compact.title, titleLanguage),
+      format: formatMediaFormat(compact.format),
+      year: media.seasonYear,
+      cover: compact.coverImage?.medium ?? null,
+      status,
+    };
+  });
 }
