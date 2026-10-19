@@ -54,7 +54,7 @@ next-safe-action, shadcn (`Command` = cmdk), Vitest, Playwright.
 | `src/app/(app)/lists/[id]/_components/list-actions-menu.tsx` | « Modifier » | 2 |
 | `src/app/(app)/media/[id]/_components/add-to-list-dialog.tsx` | genre et décompte par ligne | 2 |
 | `src/app/(share)/l/[token]/page.tsx` | sections et rangs, sans « Déjà vues » | 2 |
-| `docs/decisions.md`, `docs/conception.md` | D47 (PR 1), D46 (PR 2) | 1, 2 |
+| `docs/decisions.md`, `docs/conception.md` | D46 (PR 1), D47 (PR 2) | 1, 2 |
 
 ---
 
@@ -355,7 +355,7 @@ import { upfetch } from "@/lib/http/fetch";
 const SEARCH_DEBOUNCE_MS = 250;
 
 /**
- * Remplir une liste **depuis elle-même** (D47) : chercher, ranger, recommencer, sans quitter
+ * Remplir une liste **depuis elle-même** (D46) : chercher, ranger, recommencer, sans quitter
  * l'écran.
  *
  * La fenêtre reste ouverte et chaque ligne est une bascule, comme celle de la fiche. `Entrée` range
@@ -596,7 +596,7 @@ git add "src/app/(app)/lists/[id]/_components/add-media-dialog.tsx" src/features
 git commit -m "feat(lists): fenêtre « Ajouter des œuvres » sur la page d'une liste"
 ```
 
-### Tâche 3 : brancher la fenêtre sur la page, E2E, décision D47
+### Tâche 3 : brancher la fenêtre sur la page, E2E, décision D46
 
 **Fichiers :**
 - Modifier : `src/app/(app)/lists/[id]/page.tsx`
@@ -700,7 +700,7 @@ import {
    ici.** … » par :
 
 ```
- * - **On remplit aussi la liste d'ici** (D47) : la fenêtre « Ajouter des œuvres » cherche et range
+ * - **On remplit aussi la liste d'ici** (D46) : la fenêtre « Ajouter des œuvres » cherche et range
  *   sans passer par la fiche. Celle de la fiche reste, pour ranger une œuvre dans plusieurs listes.
 ```
 
@@ -720,7 +720,7 @@ Attendu : PASS.
 Dans `docs/decisions.md`, après D45 :
 
 ```markdown
-- **D47** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
+- **D46** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
   `/lists/[id]` cherche et range sans passer par la fiche. Révise la décision du 6 septembre 2026
   (« on remplit une liste depuis la fiche ») : dix-sept œuvres demandaient dix-sept allers-retours.
 ```
@@ -728,14 +728,14 @@ Dans `docs/decisions.md`, après D45 :
 Dans `docs/conception.md` §5, la ligne `/lists` devient :
 
 ```markdown
-| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D47) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46) | livré |
 ```
 
 - [ ] **Étape 6 : committer**
 
 ```bash
 git add "src/app/(app)/lists/[id]/page.tsx" e2e/lists.spec.ts docs/decisions.md docs/conception.md
-git commit -m "feat(lists): remplir une liste depuis sa page (D47)"
+git commit -m "feat(lists): remplir une liste depuis sa page (D46)"
 ```
 
 ### Tâche 4 : vérifier et ouvrir la PR 1
@@ -765,7 +765,7 @@ git push -u origin feat/lists-add-media
 gh pr create --base main --title "feat(lists): remplir une liste depuis elle-même" --body "…"
 ```
 
-Corps : le pourquoi (17 allers-retours), ce qui change, D47, la vérification faite. **S'arrêter
+Corps : le pourquoi (17 allers-retours), ce qui change, D46, la vérification faite. **S'arrêter
 là** : attendre l'accord explicite avant toute fusion.
 
 ---
@@ -793,7 +793,7 @@ Branche : `feat/lists-genres`, créée depuis `main` une fois la PR 1 fusionnée
 Dans `prisma/schema.prisma`, avant `model List` :
 
 ```prisma
-/// Ce qu'une liste est (D46). Il décide de son affichage, jamais de son ordre.
+/// Ce qu'une liste est (D47). Il décide de son affichage, jamais de son ordre.
 enum ListKind {
   SELECTION
   RANKING
@@ -868,7 +868,7 @@ Attendu : ÉCHEC (`kind` absent).
 Dans `lists.schema.ts`, après `listDescriptionSchema` :
 
 ```ts
-/** Les quatre genres d'une liste (D46) — le miroir de l'énumération `ListKind` de Prisma. */
+/** Les quatre genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
 export const listKindSchema = z.enum([
   "SELECTION",
   "RANKING",
@@ -943,7 +943,7 @@ Attendu : vert.
 
 ```bash
 git add prisma/schema.prisma prisma/migrations src/features/lists/schemas/lists.schema.ts src/features/lists/schemas/lists.schema.test.ts src/features/lists/server/lists.actions.ts src/features/lists/server/lists.queries.ts "src/app/(app)/lists/[id]/_components/list-actions-menu.tsx"
-git commit -m "feat(lists): une liste a un genre et une ligne de coupe (D46)"
+git commit -m "feat(lists): une liste a un genre et une ligne de coupe (D47)"
 ```
 
 ### Tâche 6 : la répartition par genre et les libellés
@@ -1090,7 +1090,7 @@ import type { MediaStatus } from "@/features/media/schemas/media.schema";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 
 /**
- * Répartir les œuvres d'une liste selon son genre (D46).
+ * Répartir les œuvres d'une liste selon son genre (D47).
  *
  * **Un seul ordre** : les sections filtrent l'ordre de la liste sans le changer, et chaque œuvre
  * garde son rang dans la liste entière. Réorganiser garde donc son sens quel que soit le genre.
@@ -1561,7 +1561,7 @@ Dans `MediaCardProps`, après `marker` :
 
 ```ts
   /**
-   * Le rang de l'œuvre dans un classement (D46), posé sur la jaquette. Un nombre et pas un nœud :
+   * Le rang de l'œuvre dans un classement (D47), posé sur la jaquette. Un nombre et pas un nœud :
    * la carte décide où il va, l'appelant dit seulement lequel.
    */
   rank?: number;
@@ -1893,7 +1893,7 @@ git add src/features/lists/server/lists.queries.ts "src/app/(share)/l/[token]/pa
 git commit -m "feat(lists): la page partagée suit le genre de la liste"
 ```
 
-### Tâche 11 : E2E, décision D46, vérification, PR 2
+### Tâche 11 : E2E, décision D47, vérification, PR 2
 
 **Fichiers :**
 - Modifier : `e2e/lists.spec.ts`, `docs/decisions.md`, `docs/conception.md`
@@ -1937,17 +1937,17 @@ Lancer : `pnpm test:e2e e2e/lists.spec.ts` → PASS (les deux tests, le premier 
 
 - [ ] **Étape 2 : la décision et la conception**
 
-`docs/decisions.md`, après D47 :
+`docs/decisions.md`, après D46 :
 
 ```markdown
-- **D46** — Une liste a un genre : Sélection, Classement, À voir, Quand c'est fini. Il décide de
+- **D47** — Une liste a un genre : Sélection, Classement, À voir, Quand c'est fini. Il décide de
   son affichage (rangs et ligne de coupe, progression, sections « Prêtes » et « Déjà vues ») ;
   l'ordre reste unique. Précise D17 : le genre n'est pas une vue, et les vues restent reportées.
 ```
 
 `docs/conception.md` §4.4 : ajouter une phrase sur `kind` et `cutoff`, et que « prête » et
 « vue » se calculent (statut de parution du miroir, suivi `COMPLETED`). §5 : la ligne `/lists`
-mentionne les genres (D46). §6 : ajouter « Annoncer sur Discord qu'une œuvre d'une liste « Quand
+mentionne les genres (D47). §6 : ajouter « Annoncer sur Discord qu'une œuvre d'une liste « Quand
 c'est fini » a terminé sa parution ».
 
 - [ ] **Étape 3 : la batterie complète**
@@ -1973,7 +1973,7 @@ Lancer l'agent `convention-reviewer` ; corriger. Puis :
 
 ```bash
 git add e2e/lists.spec.ts docs/decisions.md docs/conception.md
-git commit -m "docs(lists): D46, le genre d'une liste"
+git commit -m "docs(lists): D47, le genre d'une liste"
 git push -u origin feat/lists-genres
 gh pr create --base main --title "feat(lists): le genre d'une liste" --body "…"
 ```

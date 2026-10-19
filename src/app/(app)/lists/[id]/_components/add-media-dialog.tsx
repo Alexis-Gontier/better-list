@@ -43,7 +43,7 @@ import { upfetch } from "@/lib/http/fetch";
 const SEARCH_DEBOUNCE_MS = 250;
 
 /**
- * Remplir une liste **depuis elle-même** (D47) : chercher, ranger, recommencer, sans quitter
+ * Remplir une liste **depuis elle-même** (D46) : chercher, ranger, recommencer, sans quitter
  * l'écran.
  *
  * La fenêtre reste ouverte et chaque ligne est une bascule, comme celle de la fiche. `Entrée` range

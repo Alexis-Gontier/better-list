@@ -81,7 +81,7 @@ export async function generateMetadata({
  * **Ce que cet écran n'a pas**, et ce sont des décisions, pas des oublis :
  *
  * - **Pas de partage.** `generateShareToken` attend `/l/[token]`, qui est une autre branche.
- * - **On remplit aussi la liste d'ici** (D47) : la fenêtre « Ajouter des œuvres » cherche et range
+ * - **On remplit aussi la liste d'ici** (D46) : la fenêtre « Ajouter des œuvres » cherche et range
  *   sans passer par la fiche. Celle de la fiche reste, pour ranger une œuvre dans plusieurs listes.
  *
  * **La page n'attend rien elle-même** : elle transmet la promesse `params` à l'enfant suspendu, ce

@@ -1,7 +1,7 @@
 # Listes : un genre, et un ajout depuis la liste
 
 Spec du 19 octobre 2026. Document de chantier : une fois fusionné, ses décisions passent dans
-`docs/decisions.md` (D46, D47), `docs/conception.md` §5 et §6 est mis à jour, et ce fichier est
+`docs/decisions.md` (D47, D46), `docs/conception.md` §5 et §6 est mis à jour, et ce fichier est
 supprimé.
 
 ## Pourquoi
@@ -77,7 +77,7 @@ Une spec, **deux PR** sur des branches successives :
 
 ### Décision
 
-**D47** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
+**D46** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
 `/lists/[id]` cherche et range sans passer par la fiche. Révise la décision du 6 septembre 2026
 (« on remplit une liste depuis la fiche »), que l'usage a démentie.
 
@@ -180,7 +180,7 @@ donc une grille unique, une `WAIT_FOR_END` montre « Prêtes » et « En parutio
 
 ### Décision
 
-**D46** — Une liste a un genre : Sélection, Classement, À voir, Quand c'est fini. Il décide de son
+**D47** — Une liste a un genre : Sélection, Classement, À voir, Quand c'est fini. Il décide de son
 affichage (rangs et ligne de coupe, progression, sections « Prêtes » et « Déjà vues ») ; l'ordre,
 lui, reste unique. Précise D17 : le genre n'est pas une vue, et les vues restent reportées.
 
