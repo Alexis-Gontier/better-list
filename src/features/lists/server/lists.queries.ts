@@ -376,6 +376,8 @@ export async function getListMembership(
 export type SharedList = {
   title: string;
   description: string | null;
+  kind: ListKind;
+  cutoff: number | null;
   /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
   ownerName: string;
   items: ListDetailItem[];
@@ -411,6 +413,8 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
     select: {
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
       owner: { select: { name: true, username: true } },
       items: {
         orderBy: { rank: "asc" },
@@ -424,6 +428,8 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
   return {
     title: list.title,
     description: list.description,
+    kind: list.kind,
+    cutoff: list.cutoff,
     // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
     ownerName: list.owner.name || list.owner.username || "un membre",
     items: list.items.map(({ media }) => ({
