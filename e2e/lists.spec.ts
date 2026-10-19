@@ -29,12 +29,14 @@ test("remplir une liste depuis elle-même, au clavier @anilist", async ({
   await page.getByRole("button", { name: "Ajouter des œuvres" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByPlaceholder("Chercher une œuvre…").fill("frieren");
-  await expect(dialog.getByRole("option").first()).toBeVisible();
+  const first = dialog.getByRole("option").first();
+  await expect(first).toContainText(/Frieren/i);
   await page.keyboard.press("Enter");
-  await expect(dialog.getByText("Dans la liste").first()).toBeVisible();
+  await expect(first).toContainText("Dans la liste");
 
   await page.keyboard.press("Escape");
   await expect(page.getByText("1 œuvre", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Frieren/i })).toBeVisible();
 });
 
 test("créer une liste « Quand c'est fini », puis en faire un Top 3", async ({
