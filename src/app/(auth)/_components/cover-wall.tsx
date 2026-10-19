@@ -87,7 +87,7 @@ export async function CoverWall() {
                 {ROUNDS.map((round) =>
                   column.covers.map((cover) => (
                     <div className="pb-4" key={`${round}-${cover.id}`}>
-                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
                         <Image
                           alt=""
                           className="object-cover"

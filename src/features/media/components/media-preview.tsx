@@ -102,7 +102,7 @@ export function MediaPreview({
           un rectangle teinté à l'œuvre vaut mieux qu'un trou gris.
         */}
         <div
-          className="relative aspect-2/3 w-32 shrink-0 self-start overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"
+          className="relative aspect-2/3 w-32 shrink-0 self-start overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset"
           style={
             media.coverImage?.color
               ? { backgroundColor: media.coverImage.color }

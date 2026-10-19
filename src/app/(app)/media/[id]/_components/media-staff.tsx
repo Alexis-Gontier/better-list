@@ -64,7 +64,7 @@ function StaffCard({ edge }: { edge: StaffEdge }) {
       */}
       <PersonHoverCard person={edge.node} subtitle={role}>
         <Link
-          className="flex h-20 items-stretch gap-3 overflow-hidden group/half rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors duration-200 hover:bg-primary/10 focus-visible:bg-primary/10 motion-reduce:transition-none relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+          className="flex h-20 items-stretch gap-3 overflow-hidden group/half rounded-lg ring-1 ring-border ring-inset transition-colors duration-200 hover:bg-primary/10 focus-visible:bg-primary/10 motion-reduce:transition-none relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
           href={routes.staff(edge.node.id)}
           prefetch={false}
         >

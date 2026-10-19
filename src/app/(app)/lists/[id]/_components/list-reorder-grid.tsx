@@ -236,7 +236,7 @@ function SortableCover({
     >
       <div
         className={cn(
-          "relative aspect-2/3 cursor-grab overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]",
+          "relative aspect-2/3 cursor-grab overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset",
           // L'anneau suit le focus clavier : c'est ce qui rend le déplacement au clavier visible.
           "group-focus-visible:ring-2 focus-visible:ring-2 focus-visible:ring-ring",
           isDragging && "cursor-grabbing ring-2 ring-ring",

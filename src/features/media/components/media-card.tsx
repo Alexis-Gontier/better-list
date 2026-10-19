@@ -168,7 +168,7 @@ export function MediaCard({
             de l'entourer — c'est le premier des trois leviers de signature de la spec du 2 septembre,
             et le seul qui ne coûte rien à poser tout de suite.
           */}
-          <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+          <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
             {cover ? (
               <Image
                 alt=""

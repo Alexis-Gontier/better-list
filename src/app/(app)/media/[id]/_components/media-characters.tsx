@@ -114,7 +114,7 @@ function CharacterCard({ edge }: { edge: CharacterEdge }) {
         Hauteur fixe, et elle est ce qui tient la rangée : les deux portraits sont en `h-full`, donc
         sans elle une carte dont un côté manque serait plus basse que sa voisine.
       */}
-      <div className="flex h-20 items-stretch justify-between gap-2 overflow-hidden rounded-lg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none">
+      <div className="flex h-20 items-stretch justify-between gap-2 overflow-hidden rounded-lg ring-1 ring-border ring-inset relative after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:transition-shadow after:duration-200 hover:after:shadow-[inset_0_0_0_1px_var(--color-primary)] has-focus-visible:after:shadow-[inset_0_0_0_1px_var(--color-primary)] motion-reduce:after:transition-none">
         {/*
           `flex-1` sur les deux moitiés, et c'est ce qui a suivi le passage des noms à deux
           lignes. Sans lui, flex partage la largeur d'après ce que chaque colonne *voudrait*

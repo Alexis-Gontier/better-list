@@ -173,7 +173,7 @@ export default async function SharedListPage({
 
                   return (
                     <li className="flex flex-col gap-2" key={item.media.id}>
-                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
                         {cover ? (
                           <Image
                             alt=""
