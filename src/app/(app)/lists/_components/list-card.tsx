@@ -1,6 +1,8 @@
+import { LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/config/routes";
 import { ListCoverMosaic } from "@/features/lists/components/list-cover-mosaic";
+import { listHeadline } from "@/features/lists/lib/list-labels";
 import type { ListSummary } from "@/features/lists/server/lists.queries";
 
 /**
@@ -31,7 +33,12 @@ export function ListCard({ list }: { list: ListSummary }) {
       lien à la hauteur de sa rangée, ce qui donne au `mt-auto` du décompte l'espace qu'il absorbe.
     */
     <Link
-      className="flex flex-col gap-3 rounded-lg p-3 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] transition-colors hover:bg-muted/40"
+      /*
+        **Couchée sur téléphone, debout dès `sm`.** Debout en une colonne, une carte prenait 360 px
+        et l'écran ne montrait qu'une liste ; couchée, il en montre trois ou quatre. Le contour vient
+        du jeton `border` : codé en blanc, il disparaissait en thème clair.
+      */
+      className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/40 sm:flex-col"
       href={routes.lists.detail(list.id)}
     >
       {/*
@@ -46,7 +53,7 @@ export function ListCard({ list }: { list: ListSummary }) {
       */}
       <ListCoverMosaic covers={list.covers} />
 
-      <div className="flex flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/*
           Le titre tient sur une ligne, coupé au besoin — la décision de `MediaCard` du 6 septembre,
           et pour la même raison : sur deux lignes, la hauteur des cartes varierait d'une rangée à
@@ -68,14 +75,24 @@ export function ListCard({ list }: { list: ListSummary }) {
             {list.description}
           </p>
         ) : null}
-      </div>
 
-      {/*
-        `mt-auto` pousse le décompte au bas de la carte : c'est ce qui aligne les décomptes entre
-        eux sans avoir à réserver quoi que ce soit au-dessus. La carte est étirée à la hauteur de sa
-        rangée par la grille, donc l'espace à absorber existe déjà.
-      */}
-      <p className="mt-auto text-muted-foreground text-xs">{list.countsLine}</p>
+        {/*
+          `mt-auto` pousse la ligne au bas de la carte : c'est ce qui aligne les décomptes entre
+          eux sans rien réserver au-dessus. Elle nomme le genre, et signale un lien de partage
+          actif — sans quoi il faut ouvrir la liste pour savoir qu'elle est visible hors du cercle.
+        */}
+        <p className="mt-auto flex items-center gap-1.5 pt-2 text-muted-foreground text-xs">
+          <span className="truncate">
+            {listHeadline(list.kind, list.cutoff, list.countsLine)}
+          </span>
+          {list.shared ? (
+            <span className="flex shrink-0 items-center gap-1">
+              <LinkIcon aria-hidden className="size-3" />
+              Partagée
+            </span>
+          ) : null}
+        </p>
+      </div>
     </Link>
   );
 }

@@ -69,64 +69,47 @@ export type ListSummary = {
   id: string;
   title: string;
   description: string | null;
+  kind: ListKind;
+  cutoff: number | null;
+  /** La liste porte un lien de partage : la carte le signale, sans exposer le jeton. */
+  shared: boolean;
   itemCount: number;
   /** La ligne de décompte propre au genre : « Top 10 · 18 œuvres », « 8 prêtes sur 17 ». */
   countsLine: string;
-  /** Au plus quatre, dans l'ordre `rank` de la liste. Vide quand la liste n'a rien. */
+  /** Au plus quatre, dans l'ordre des sections du genre. Vide quand la liste n'a rien. */
   covers: ListCover[];
 };
 
+/** Quatre jaquettes par carte : c'est la largeur d'une carte, et ce que la mosaïque dessine. */
+const COVERS_PER_CARD = 4;
+
 /**
- * Mes listes, avec de quoi dessiner leur carte : le décompte et les quatre premières jaquettes.
+ * Mes listes, avec de quoi dessiner leur carte : le genre, le décompte, et quatre jaquettes.
  *
- * **`List` n'a ni `cover` ni compteur d'items** — `conception.md` §4.4 mentionne la première, elle
- * n'existe pas au schéma. Les deux se dérivent donc des `ListItem`, et c'était le seul vrai
- * problème de lecture de cet écran : quatre jaquettes par carte, sur une page de listes, sans faire
- * une requête par liste.
- *
- * **Ce qui est mesuré, et non supposé** (6 septembre 2026, journal `query` de Prisma, cinq listes).
- * Ce `findMany` émet **trois** requêtes (cinq avec les décomptes par genre, plus bas), et ce nombre
- * ne bouge pas avec le nombre de listes — donc
- * **pas de N+1**, qui était la crainte :
+ * **`List` n'a ni `cover` ni compteur d'items** : les deux se dérivent des `ListItem`. Trois
+ * requêtes, quel que soit le nombre de listes — **pas de N+1** :
  *
  * 1. les listes, le `_count` porté par un `LEFT JOIN` sur un `GROUP BY` de `list_items` ;
- * 2. `list_items WHERE "listId" IN (…) ORDER BY rank` — **sans `LIMIT`** ;
- * 3. `media WHERE id IN (…)`, pour les seules jaquettes retenues.
+ * 2. **tous** les items de mes listes, avec le statut de parution et la jaquette de chaque œuvre ;
+ * 3. mon suivi sur ces œuvres.
  *
- * **Le `take: 4` n'est pas poussé en SQL** : Prisma rapatrie tous les items de toutes mes listes,
- * puis tranche en mémoire. C'est le fait que la spec demandait d'établir, et il n'est pas celui
- * qu'on attendait — le coût n'est pas un aller-retour de trop, c'est une sur-lecture de la requête
- * 2. Elle reste **bornée et étroite** : trois colonnes (`id`, `mediaId`, `listId`), et surtout la
- * table large n'y passe pas — la requête 3 ne lit que les jaquettes réellement affichées. Sur un
- * cercle de quatre comptes aux listes de quelques dizaines d'œuvres, c'est sans conséquence ; ça
- * cesserait de l'être vers le millier d'items, et il faudrait alors une fenêtre
- * (`ROW_NUMBER() OVER (PARTITION BY "listId" ORDER BY rank)`) écrite à la main.
+ * La requête 2 lit tout, exprès : les décomptes « prêtes » et « vues » portent sur la liste
+ * entière, et la mosaïque d'une liste « Quand c'est fini » montre **ses prêtes d'abord**, donc elle
+ * a besoin de connaître toutes les œuvres pour choisir ses quatre. Sur un cercle de quatre comptes
+ * aux listes de quelques dizaines d'œuvres, c'est sans conséquence ; vers le millier d'items, il
+ * faudrait une fenêtre (`ROW_NUMBER() OVER (PARTITION BY "listId" …)`) écrite à la main.
+ * `relationLoadStrategy: "join"` n'est pas une issue : Prisma 7 le refuse avec le driver adapter.
  *
- * **`relationLoadStrategy: "join"` n'est pas une issue : il n'existe pas ici.** Essayé le même
- * jour, Prisma 7.9.1 rejette l'argument avec le générateur `prisma-client` et le driver adapter —
- * `Unknown argument relationLoadStrategy`. Le repli que la spec envisageait n'est donc pas
- * disponible, et c'est pour ça qu'on garde celui-ci en le documentant plutôt qu'en le contournant.
+ * **Les jaquettes suivent l'ordre des sections du genre** (`listSections`) : le rang pour une
+ * sélection ou un classement, les prêtes avant les en-parution, ce qui reste à voir avant le déjà vu.
+ * C'est l'ordre que `/lists/[id]` montrera, donc la carte ne ment pas sur ce qu'elle ouvre.
  *
- * `_count` plutôt que compter `items` en mémoire : la carte annonce « 8 œuvres » alors qu'on n'en
- * rapatrie que quatre, et compter en base est la seule façon d'avoir les deux.
+ * L'ordre des cartes suit `updatedAt` — l'index `@@index([ownerId, updatedAt])` est posé pour ça.
  *
- * **Les jaquettes se rangent par `rank`, jamais par `addedAt`.** C'est l'ordre que la liste a, et
- * celui que `/lists/[id]` montrera : deux ordres pour une même liste donneraient une carte qui ment
- * sur ce qu'elle ouvre.
- *
- * L'ordre des cartes suit `updatedAt` — l'index `@@index([ownerId, updatedAt])` est posé pour ça,
- * et c'est le seul ordre possible : `List` ne porte aucune colonne de rang, donc les listes ne se
- * réarrangent pas entre elles.
- *
- * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026,
- * prise en regardant l'écran. Le filtre est dans la requête et non en masque d'affichage, comme
- * partout ailleurs (.claude/skills/anilist-read/references/recherche-filtres.md §2.5) ; mais il ne porte que sur les quatre vignettes,
- * parce que le décompte parle de la liste et non de ce qu'on en montre. Une liste que j'ai composée
- * moi-même annonce donc toujours ce qu'elle contient, même quand sa préférence en cache l'aperçu.
- *
- * La conséquence à connaître : une liste **entièrement** 18+ montre quatre cases vides sur un
- * décompte non nul. C'est le seul cas où la mosaïque et le décompte ne parlent pas de la même
- * chose, et c'est précisément le décompte qui la distingue d'une liste réellement vide.
+ * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026 :
+ * le décompte parle de la liste, la mosaïque de ce qu'on en montre. Une liste **entièrement** 18+
+ * montre donc des cases vides sur un décompte non nul, et c'est le décompte qui la distingue d'une
+ * liste réellement vide.
  */
 export async function getLists({
   includeAdult,
@@ -144,81 +127,78 @@ export async function getLists({
       description: true,
       kind: true,
       cutoff: true,
+      shareToken: true,
       _count: { select: { items: true } },
-      items: {
-        take: 4,
-        orderBy: { rank: "asc" },
-        ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
-        select: {
-          media: {
-            select: {
-              id: true,
-              coverImage: true,
-              titleRomaji: true,
-              titleEnglish: true,
-            },
-          },
-        },
-      },
     },
   });
 
-  /*
-    Les décomptes « prêtes » et « vues » portent sur la liste entière, pas sur ses quatre jaquettes :
-    deux lectures étroites de plus (statut de parution, mon suivi), quel que soit le nombre de listes.
-  */
-  const statuses = await prisma.listItem.findMany({
+  const items = await prisma.listItem.findMany({
     where: { list: { ownerId } },
     orderBy: { rank: "asc" },
     select: {
       listId: true,
-      mediaId: true,
-      media: { select: { status: true } },
+      media: {
+        select: {
+          id: true,
+          status: true,
+          isAdult: true,
+          coverImage: true,
+          titleRomaji: true,
+          titleEnglish: true,
+        },
+      },
     },
   });
   const entries = await prisma.entry.findMany({
     where: {
       userId: ownerId,
-      mediaId: { in: [...new Set(statuses.map(({ mediaId }) => mediaId))] },
+      mediaId: { in: [...new Set(items.map(({ media }) => media.id))] },
     },
     select: { mediaId: true, status: true },
   });
   const entryStatus = new Map(entries.map((e) => [e.mediaId, e.status]));
 
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    itemCount: row._count.items,
-    countsLine: listCountsLine(row.kind, row.cutoff, {
-      total: row._count.items,
-      ...sectionCounts(
-        listSections(
-          row.kind,
-          row.cutoff,
-          statuses
-            .filter(({ listId }) => listId === row.id)
-            .map(({ mediaId, media }) => ({
-              item: mediaId,
-              mediaStatus: media.status,
-              entryStatus: entryStatus.get(mediaId) ?? null,
-            })),
-        ),
-      ),
-    }),
-    /*
-      Le titre sert d'`alt`, donc il doit dire quelque chose : le romaji d'abord, l'anglais en
-      repli. Ce n'est pas `mediaTitle` — celle-ci honore la préférence `titleLanguage` du membre, ce
-      qui a du sens sur une carte d'œuvre, pas sur une vignette de 40 px qu'on ne lit pas. La chaîne
-      vide reste possible sur une ligne de miroir sans aucun titre, et c'est le bon `alt` : une
-      jaquette décorative dans une mosaïque qui porte déjà le nom de la liste.
-    */
-    covers: row.items.map((item) => ({
-      mediaId: item.media.id,
-      cover: item.media.coverImage,
-      title: item.media.titleRomaji ?? item.media.titleEnglish ?? "",
-    })),
-  }));
+  return rows.map((row) => {
+    const sections = listSections(
+      row.kind,
+      row.cutoff,
+      items
+        .filter(({ listId }) => listId === row.id)
+        .map(({ media }) => ({
+          item: media,
+          mediaStatus: media.status,
+          entryStatus: entryStatus.get(media.id) ?? null,
+        })),
+    );
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      kind: row.kind,
+      cutoff: row.cutoff,
+      shared: row.shareToken !== null,
+      itemCount: row._count.items,
+      countsLine: listCountsLine(row.kind, row.cutoff, {
+        total: row._count.items,
+        ...sectionCounts(sections),
+      }),
+      /*
+        Le titre sert d'`alt` : le romaji d'abord, l'anglais en repli. Ce n'est pas `mediaTitle`,
+        qui honore la préférence de langue — sans objet sur une vignette de 40 px qu'on ne lit pas.
+      */
+      covers: sections
+        .flatMap(({ items: sectionItems }) => sectionItems)
+        .map(({ item }) => item)
+        .filter((media) => includeAdult || !media.isAdult)
+        .slice(0, COVERS_PER_CARD)
+        .map((media) => ({
+          mediaId: media.id,
+          cover: media.coverImage,
+          title: media.titleRomaji ?? media.titleEnglish ?? "",
+        })),
+    };
+  });
 }
 
 /** Une œuvre d'une liste, dans la forme que `MediaCard` et la fenêtre d'édition rapide attendent. */
