@@ -123,3 +123,6 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   l'œuvre y est rangée d'emblée. Révise la décision du 6 septembre 2026 (« une liste ne naît qu'à
   un seul endroit ») : « je veux mettre ça dans une nouvelle liste » coûtait deux visites. Le
   formulaire complet reste sur `/lists`.
+- **D49** — Sur la page partagée, une œuvre 18+ arrive floutée, titre masqué, et se révèle d'un
+  clic ; l'aperçu du lien n'en montre jamais. Rien n'est retiré, le décompte reste juste. Révise la
+  décision du 6 septembre 2026 (« rien n'est masqué ») : le lien peut sortir du cercle.
