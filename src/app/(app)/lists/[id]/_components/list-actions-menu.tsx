@@ -68,6 +68,7 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
           */}
           <Button
             aria-label={`Actions sur la liste ${list.title}`}
+            className="max-sm:size-10"
             size="icon"
             variant="outline"
           >

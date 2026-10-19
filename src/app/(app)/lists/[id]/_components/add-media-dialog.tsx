@@ -147,7 +147,8 @@ export function AddMediaDialog({
   return (
     <Dialog onOpenChange={changeOpen} open={open}>
       <DialogTrigger asChild>
-        <Button size="sm">
+        {/* 40 px au doigt, la hauteur qui garde la barre d'actions sur une ligne en 390. */}
+        <Button className="max-sm:h-10" size="sm">
           <PlusIcon data-icon="inline-start" />
           Ajouter des œuvres
         </Button>

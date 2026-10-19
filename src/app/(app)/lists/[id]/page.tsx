@@ -254,6 +254,7 @@ async function ListDetail({
             {list.items.length > 0 ? (
               <Button
                 asChild
+                className="max-sm:h-10"
                 size="sm"
                 variant={reordering ? "default" : "outline"}
               >

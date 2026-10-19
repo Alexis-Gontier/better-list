@@ -51,7 +51,7 @@ export function ListCard({ list }: { list: ListSummary }) {
         C'est aussi ce qui rend lisible la liste entièrement 18+ d'une préférence qui la masque :
         elle a la même mosaïque vide, et son décompte la distingue.
       */}
-      <ListCoverMosaic covers={list.covers} />
+      <ListCoverMosaic covers={list.covers} empty={list.itemCount === 0} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/*
