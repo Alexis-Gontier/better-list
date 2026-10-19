@@ -29,8 +29,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import {
   itemCountLabel,
-  LIST_KIND_LABELS,
   listCountsLine,
+  listHeadline,
+  sectionHeading,
 } from "@/features/lists/lib/list-labels";
 import {
   listSections,
@@ -200,9 +201,7 @@ async function ListDetail({
             <p className="text-muted-foreground text-xs">
               {reordering
                 ? itemCountLabel(list.itemCount)
-                : list.kind === "SELECTION"
-                  ? countsLine
-                  : `${LIST_KIND_LABELS[list.kind]} · ${countsLine}`}
+                : listHeadline(list.kind, list.cutoff, countsLine)}
             </p>
           </div>
 
@@ -319,7 +318,11 @@ async function ListDetail({
               return <div key={section.key}>{grid}</div>;
             }
 
-            const heading = `${section.label} (${section.items.length})`;
+            const heading = sectionHeading(
+              section.key,
+              section.label,
+              section.items.length,
+            );
 
             /*
               Une section repliée est un `<details>` natif : ouvrir « Déjà vues » ne coûte pas une

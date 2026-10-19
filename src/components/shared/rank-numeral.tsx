@@ -8,7 +8,7 @@ export function RankNumeral({ rank }: { rank: number }) {
   return (
     <span
       aria-hidden
-      className="pointer-events-none absolute bottom-0.5 left-1.5 font-extrabold font-heading text-5xl text-white tabular-nums leading-none tracking-tight [text-shadow:0_2px_12px_rgb(0_0_0/0.85)]"
+      className="pointer-events-none absolute bottom-0.5 left-1.5 font-extrabold font-heading text-4xl sm:text-5xl text-white tabular-nums leading-none tracking-tight [text-shadow:0_2px_12px_rgb(0_0_0/0.85)]"
     >
       {rank}
     </span>

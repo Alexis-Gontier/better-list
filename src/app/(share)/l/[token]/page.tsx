@@ -5,10 +5,14 @@ import { notFound } from "next/navigation";
 import { RankNumeral } from "@/components/shared/rank-numeral";
 import { Separator } from "@/components/ui/separator";
 import {
-  itemCountLabel,
-  LIST_KIND_LABELS,
+  listCountsLine,
+  listHeadline,
+  sectionHeading,
 } from "@/features/lists/lib/list-labels";
-import { listSections } from "@/features/lists/lib/list-sections";
+import {
+  listSections,
+  sectionCounts,
+} from "@/features/lists/lib/list-sections";
 import { getSharedList } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 
@@ -120,10 +124,14 @@ export default async function SharedListPage({
           */}
           <p className="text-muted-foreground text-xs">
             Une liste de {list.ownerName} ·{" "}
-            {list.kind === "SELECTION"
-              ? ""
-              : `${LIST_KIND_LABELS[list.kind]} · `}
-            {itemCountLabel(list.items.length)}
+            {listHeadline(
+              list.kind,
+              list.cutoff,
+              listCountsLine(list.kind, list.cutoff, {
+                total: list.items.length,
+                ...sectionCounts(sections),
+              }),
+            )}
           </p>
         </div>
         <Separator />
@@ -145,7 +153,11 @@ export default async function SharedListPage({
             <section className="flex flex-col gap-4" key={section.key}>
               {section.label === null ? null : (
                 <h2 className="font-heading text-lg">
-                  {section.label} ({section.items.length})
+                  {sectionHeading(
+                    section.key,
+                    section.label,
+                    section.items.length,
+                  )}
                 </h2>
               )}
               <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">

@@ -22,6 +22,30 @@ export function itemCountLabel(count: number): string {
   return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }
 
+/**
+ * L'en-tête d'une liste : son genre, puis son décompte. Le genre est omis quand le décompte le dit
+ * déjà (« Top 10 ») ou qu'il n'apporte rien (« Sélection »).
+ */
+export function listHeadline(
+  kind: ListKind,
+  cutoff: number | null,
+  countsLine: string,
+): string {
+  const implicit =
+    kind === "SELECTION" ||
+    (kind === "RANKING" && cutoff !== null && countsLine.startsWith("Top "));
+  return implicit ? countsLine : `${LIST_KIND_LABELS[kind]} · ${countsLine}`;
+}
+
+/** Un intitulé de section avec son décompte, sauf pour le Top, dont l'intitulé porte déjà le chiffre. */
+export function sectionHeading(
+  key: string,
+  label: string,
+  count: number,
+): string {
+  return key === "top" ? label : `${label} (${count})`;
+}
+
 /** La ligne de décompte d'une liste, propre à son genre : sa carte et son en-tête la partagent. */
 export function listCountsLine(
   kind: ListKind,

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   itemCountLabel,
   listCountsLine,
+  listHeadline,
+  sectionHeading,
 } from "@/features/lists/lib/list-labels";
 
 describe("itemCountLabel", () => {
@@ -50,5 +52,30 @@ describe("listCountsLine", () => {
     expect(listCountsLine("WAIT_FOR_END", null, { ...counts, ready: 0 })).toBe(
       "Aucune prête sur 17",
     );
+  });
+});
+
+describe("listHeadline", () => {
+  it("ne répète pas le genre quand le décompte le dit déjà", () => {
+    expect(listHeadline("RANKING", 10, "Top 10 · 18 œuvres")).toBe(
+      "Top 10 · 18 œuvres",
+    );
+    expect(listHeadline("SELECTION", null, "4 œuvres")).toBe("4 œuvres");
+  });
+
+  it("nomme le genre sinon, y compris pour un classement vide", () => {
+    expect(listHeadline("RANKING", 10, "Aucune œuvre")).toBe(
+      "Classement · Aucune œuvre",
+    );
+    expect(listHeadline("WAIT_FOR_END", null, "8 prêtes sur 17")).toBe(
+      "Quand c'est fini · 8 prêtes sur 17",
+    );
+  });
+});
+
+describe("sectionHeading", () => {
+  it("ne double pas le chiffre du Top", () => {
+    expect(sectionHeading("top", "Top 10", 10)).toBe("Top 10");
+    expect(sectionHeading("ready", "Prêtes", 8)).toBe("Prêtes (8)");
   });
 });
