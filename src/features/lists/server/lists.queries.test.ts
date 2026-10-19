@@ -49,8 +49,33 @@ beforeEach(() => {
 });
 
 describe("getListSuggestions", () => {
-  it("cherche mes œuvres prévues absentes de la liste, les plus récentes d'abord", async () => {
-    await getListSuggestions("liste-1", {
+  it("suggère tous mes suivis absents d'une sélection, sans filtre de statut", async () => {
+    await getListSuggestions("liste-1", "SELECTION", {
+      includeAdult: true,
+      titleLanguage: "ROMAJI",
+    });
+
+    expect(entryFindMany.mock.calls[0]?.[0].where).toEqual({
+      userId: "membre-1",
+      media: { listItems: { none: { listId: "liste-1" } } },
+    });
+  });
+
+  it("suggère mes œuvres en parution mises de côté pour une attente de fin", async () => {
+    await getListSuggestions("liste-1", "WAIT_FOR_END", {
+      includeAdult: true,
+      titleLanguage: "ROMAJI",
+    });
+
+    const where = entryFindMany.mock.calls[0]?.[0].where;
+    expect(where?.status).toEqual({ in: ["PAUSED", "DROPPED", "PLANNING"] });
+    expect(where?.media.status).toEqual({
+      in: ["RELEASING", "HIATUS", "NOT_YET_RELEASED"],
+    });
+  });
+
+  it("suggère mes œuvres prévues absentes d'une file, les plus récentes d'abord", async () => {
+    await getListSuggestions("liste-1", "WATCHLIST", {
       includeAdult: true,
       titleLanguage: "ROMAJI",
     });
@@ -69,7 +94,7 @@ describe("getListSuggestions", () => {
   });
 
   it("écarte les œuvres adultes quand la préférence les masque", async () => {
-    await getListSuggestions("liste-1", {
+    await getListSuggestions("liste-1", "WATCHLIST", {
       includeAdult: false,
       titleLanguage: "ROMAJI",
     });
@@ -85,7 +110,7 @@ describe("getListSuggestions", () => {
       { status: "PLANNING", media: mirrorRow(7) },
     ]);
 
-    const [item] = await getListSuggestions("liste-1", {
+    const [item] = await getListSuggestions("liste-1", "WATCHLIST", {
       includeAdult: true,
       titleLanguage: "ENGLISH",
     });

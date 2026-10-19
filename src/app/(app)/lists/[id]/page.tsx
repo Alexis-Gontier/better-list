@@ -150,7 +150,10 @@ async function ListDetail({
     : await Promise.all([
         getLibraryEntriesFor(list.items.map((i) => i.media.id)),
         // Ce que la fenêtre d'ajout propose avant qu'on tape ; indépendant du suivi, donc en parallèle.
-        getListSuggestions(list.id, { includeAdult, titleLanguage }),
+        getListSuggestions(list.id, list.kind, {
+          includeAdult,
+          titleLanguage,
+        }),
       ]);
 
   /*

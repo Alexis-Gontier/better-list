@@ -3,6 +3,11 @@ import "server-only";
 import { cache } from "react";
 
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
+import { listCountsLine } from "@/features/lists/lib/list-labels";
+import {
+  listSections,
+  sectionCounts,
+} from "@/features/lists/lib/list-sections";
 import type { ListKind } from "@/features/lists/schemas/lists.schema";
 import {
   compactFromMirror,
@@ -10,9 +15,13 @@ import {
   MIRRORED_MEDIA_SELECT,
   mediaTitle,
 } from "@/features/media/lib/media-format";
-import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type {
+  MediaCompact,
+  MediaStatus,
+} from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
+import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -61,6 +70,8 @@ export type ListSummary = {
   title: string;
   description: string | null;
   itemCount: number;
+  /** La ligne de décompte propre au genre : « Top 10 · 18 œuvres », « 8 prêtes sur 17 ». */
+  countsLine: string;
   /** Au plus quatre, dans l'ordre `rank` de la liste. Vide quand la liste n'a rien. */
   covers: ListCover[];
 };
@@ -74,7 +85,8 @@ export type ListSummary = {
  * une requête par liste.
  *
  * **Ce qui est mesuré, et non supposé** (6 septembre 2026, journal `query` de Prisma, cinq listes).
- * Ce `findMany` émet **trois** requêtes, et ce nombre ne bouge pas avec le nombre de listes — donc
+ * Ce `findMany` émet **trois** requêtes (cinq avec les décomptes par genre, plus bas), et ce nombre
+ * ne bouge pas avec le nombre de listes — donc
  * **pas de N+1**, qui était la crainte :
  *
  * 1. les listes, le `_count` porté par un `LEFT JOIN` sur un `GROUP BY` de `list_items` ;
@@ -130,6 +142,8 @@ export async function getLists({
       id: true,
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
       _count: { select: { items: true } },
       items: {
         take: 4,
@@ -149,11 +163,49 @@ export async function getLists({
     },
   });
 
+  /*
+    Les décomptes « prêtes » et « vues » portent sur la liste entière, pas sur ses quatre jaquettes :
+    deux lectures étroites de plus (statut de parution, mon suivi), quel que soit le nombre de listes.
+  */
+  const statuses = await prisma.listItem.findMany({
+    where: { list: { ownerId } },
+    orderBy: { rank: "asc" },
+    select: {
+      listId: true,
+      mediaId: true,
+      media: { select: { status: true } },
+    },
+  });
+  const entries = await prisma.entry.findMany({
+    where: {
+      userId: ownerId,
+      mediaId: { in: [...new Set(statuses.map(({ mediaId }) => mediaId))] },
+    },
+    select: { mediaId: true, status: true },
+  });
+  const entryStatus = new Map(entries.map((e) => [e.mediaId, e.status]));
+
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
     description: row.description,
     itemCount: row._count.items,
+    countsLine: listCountsLine(row.kind, row.cutoff, {
+      total: row._count.items,
+      ...sectionCounts(
+        listSections(
+          row.kind,
+          row.cutoff,
+          statuses
+            .filter(({ listId }) => listId === row.id)
+            .map(({ mediaId, media }) => ({
+              item: mediaId,
+              mediaStatus: media.status,
+              entryStatus: entryStatus.get(mediaId) ?? null,
+            })),
+        ),
+      ),
+    }),
     /*
       Le titre sert d'`alt`, donc il doit dire quelque chose : le romaji d'abord, l'anglais en
       repli. Ce n'est pas `mediaTitle` — celle-ci honore la préférence `titleLanguage` du membre, ce
@@ -272,6 +324,8 @@ export const getList = cache(async function getList(
 export type ListMembership = {
   id: string;
   title: string;
+  kind: ListKind;
+  itemCount: number;
   contains: boolean;
 };
 
@@ -304,6 +358,8 @@ export async function getListMembership(
     select: {
       id: true,
       title: true,
+      kind: true,
+      _count: { select: { items: true } },
       items: { where: { mediaId }, select: { id: true }, take: 1 },
     },
   });
@@ -311,6 +367,8 @@ export async function getListMembership(
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
+    kind: row.kind,
+    itemCount: row._count.items,
     contains: row.items.length > 0,
   }));
 }
@@ -377,12 +435,30 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
   };
 }
 
+/**
+ * Ce que chaque genre suggère avant qu'on tape. Une attente de fin propose ce que j'ai mis de côté
+ * pendant sa parution — en production, c'est exactement le contenu de « A lire une fois fini ».
+ */
+const SUGGESTION_FILTERS: Record<
+  ListKind,
+  { entry?: EntryStatus[]; media?: MediaStatus[] }
+> = {
+  SELECTION: {},
+  RANKING: {},
+  WATCHLIST: { entry: ["PLANNING"] },
+  WAIT_FOR_END: {
+    entry: ["PAUSED", "DROPPED", "PLANNING"],
+    media: ["RELEASING", "HIATUS", "NOT_YET_RELEASED"],
+  },
+};
+
 /** Huit : ce que la fenêtre d'ajout montre sans défiler, sous le champ. */
 const SUGGESTION_COUNT = 8;
 
 /**
- * Ce que la fenêtre « Ajouter des œuvres » propose avant qu'on tape : mes œuvres prévues qui ne
- * sont pas encore dans cette liste, les dernières touchées d'abord.
+ * Ce que la fenêtre « Ajouter des œuvres » propose avant qu'on tape : mes œuvres qui ne sont pas
+ * encore dans cette liste, filtrées selon son genre (`SUGGESTION_FILTERS`), les dernières touchées
+ * d'abord.
  *
  * **Aucune lecture AniList** : tout vient du miroir et de mon suivi. La forme est celle d'une ligne
  * de la palette (`CommandSearchItem`), pour que la fenêtre dessine suggestions et résultats d'un
@@ -390,19 +466,22 @@ const SUGGESTION_COUNT = 8;
  */
 export async function getListSuggestions(
   listId: string,
+  kind: ListKind,
   {
     includeAdult,
     titleLanguage,
   }: { includeAdult: boolean; titleLanguage: TitleLanguage },
 ): Promise<CommandSearchItem[]> {
   const userId = await currentUserId();
+  const filter = SUGGESTION_FILTERS[kind];
 
   const rows = await prisma.entry.findMany({
     where: {
       userId,
-      status: { in: ["PLANNING"] },
+      ...(filter.entry ? { status: { in: filter.entry } } : {}),
       media: {
         listItems: { none: { listId } },
+        ...(filter.media ? { status: { in: filter.media } } : {}),
         ...(includeAdult ? {} : { isAdult: false }),
       },
     },
