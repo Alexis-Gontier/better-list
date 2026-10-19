@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
+import type { ListKind } from "@/features/lists/schemas/lists.schema";
 import {
   compactFromMirror,
   formatMediaFormat,
@@ -182,6 +183,9 @@ export type ListDetail = {
   id: string;
   title: string;
   description: string | null;
+  kind: ListKind;
+  /** La ligne de coupe d'un classement ; conservée hors classement, et ignorée. */
+  cutoff: number | null;
   /** Le nombre d'œuvres **réel**, avant le filtre 18+ : c'est ce que la suppression emporterait. */
   itemCount: number;
   /**
@@ -229,6 +233,8 @@ export const getList = cache(async function getList(
       id: true,
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
       shareToken: true,
       _count: { select: { items: true } },
       items: {
@@ -245,6 +251,8 @@ export const getList = cache(async function getList(
     id: list.id,
     title: list.title,
     description: list.description,
+    kind: list.kind,
+    cutoff: list.cutoff,
     itemCount: list._count.items,
     shareToken: list.shareToken,
     items: list.items.map(({ media }) => ({

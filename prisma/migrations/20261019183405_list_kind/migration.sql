@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "ListKind" AS ENUM ('SELECTION', 'RANKING', 'WATCHLIST', 'WAIT_FOR_END');
+
+-- AlterTable
+ALTER TABLE "lists" ADD COLUMN     "cutoff" INTEGER,
+ADD COLUMN     "kind" "ListKind" NOT NULL DEFAULT 'SELECTION';
