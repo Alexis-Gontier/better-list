@@ -83,6 +83,10 @@ export const createList = authActionClient
   .metadata({ actionName: "createList" })
   .inputSchema(createListSchema)
   .action(async ({ parsedInput, ctx }) => {
+    const { mediaId } = parsedInput;
+    // Le miroir d'abord : `ListItem` pointe vers `Media`, et la clé étrangère l'exige.
+    if (mediaId !== undefined) await ensureMediaMirror(mediaId);
+
     const list = await prisma.list.create({
       data: {
         ownerId: ctx.user.id,
@@ -90,11 +94,14 @@ export const createList = authActionClient
         description: parsedInput.description ?? null,
         kind: parsedInput.kind,
         cutoff: parsedInput.cutoff ?? null,
+        ...(mediaId !== undefined
+          ? { items: { create: { mediaId, rank: rankForAppend(null) } } }
+          : {}),
       },
       select: { id: true },
     });
 
-    revalidateLists();
+    revalidateLists(mediaId);
 
     return { id: list.id };
   });

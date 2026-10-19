@@ -86,3 +86,34 @@ test("créer une liste « Quand c'est fini », puis en faire un Top 3", async ({
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(visibleText(page, "Classement · Aucune œuvre")).toBeVisible();
 });
+
+test("créer une liste depuis la fiche, l'œuvre y est rangée @anilist", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop",
+    "écrit en base avec le seul compte membre : un viewport suffit",
+  );
+
+  const title = `E2E fiche ${Date.now()}`;
+
+  // One Piece, la fiche que `tracking.spec.ts` emploie déjà.
+  await page.goto(routes.media(21));
+  // La fiche rend sa barre d'actions en deux versions, mobile et bureau : on vise celle qui se voit.
+  await page
+    .getByRole("button", { name: /Ajouter à une liste — / })
+    .filter({ visible: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Ajouter à une liste" });
+  await expect(dialog).toBeVisible();
+  // Sans aucune liste, la saisie est déjà ouverte ; sinon, on l'ouvre. Les tests voisins, en
+  // parallèle, décident lequel des deux cas on rencontre.
+  const opener = dialog.getByRole("button", { name: "Nouvelle liste" });
+  if (await opener.isVisible()) await opener.click();
+  await dialog.getByPlaceholder("Nom de la liste").fill(title);
+  await dialog.getByRole("button", { name: "Créer et ranger" }).click();
+
+  const row = dialog.getByText(title).locator("xpath=ancestor::label");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await expect(row).toContainText("n° 1");
+});

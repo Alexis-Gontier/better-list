@@ -48,6 +48,11 @@ export const createListSchema = z.object({
   description: listDescriptionSchema,
   kind: listKindSchema.default("SELECTION"),
   cutoff: listCutoffSchema.optional(),
+  /**
+   * Une œuvre à y ranger d'emblée — la création depuis une fiche (D48). La liste naît avec elle,
+   * en une écriture : deux appels laisseraient une liste vide si le second échouait.
+   */
+  mediaId: mediaIdSchema.optional(),
 });
 
 /**

@@ -307,23 +307,26 @@ export type ListMembership = {
   kind: ListKind;
   itemCount: number;
   contains: boolean;
+  /** La place de l'œuvre dans la liste, à partir de 1 ; `null` quand elle n'y est pas. */
+  position: number | null;
+  /** La jaquette de tête de la liste, pour la reconnaître d'un coup d'œil. `null` si elle est vide. */
+  cover: string | null;
 };
 
 /**
- * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà.
+ * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà, et à quelle place.
  *
  * C'est ce que lit la fenêtre « Ajouter à une liste » de la fiche, et c'est pour ça qu'elle affiche
  * des **bascules** plutôt qu'un simple ajout — on voit où l'œuvre est rangée avant de choisir, et on
  * peut l'en retirer.
  *
- * **Une requête, pas deux.** Le `items` est filtré sur ce `mediaId` seul, donc chaque liste rapporte
- * zéro ou une ligne et `contains` s'en déduit. Lire toutes mes listes puis toutes leurs
- * appartenances séparément aurait coûté un aller-retour de plus pour la même information — et un
- * `take: 1` suffit puisque `@@unique([listId, mediaId])` garantit qu'il n'y en a jamais deux.
+ * **Une requête** : chaque liste rapporte ses items dans l'ordre, réduits à l'id de l'œuvre et à sa
+ * jaquette. C'est ce qui donne d'un coup l'appartenance, le rang (« n° 3 ») et la jaquette de tête ;
+ * des listes de quelques dizaines d'œuvres rendent cette lecture négligeable.
  *
- * **Aucun filtre 18+ ici**, contrairement à `getLists`. La préférence masque des *jaquettes* ; elle
- * n'a pas à masquer des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
- * ne contient que des œuvres adultes — ni l'en retirer.
+ * **Aucun filtre 18+ sur les listes**, contrairement à `getLists` : la préférence masque des
+ * *jaquettes*, pas des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
+ * n'en contient que d'adultes. La jaquette de tête, elle, saute les œuvres adultes.
  *
  * L'ordre est celui de `/lists` : la dernière modifiée en tête, donc celle qu'on vient de créer.
  */
@@ -339,18 +342,30 @@ export async function getListMembership(
       id: true,
       title: true,
       kind: true,
-      _count: { select: { items: true } },
-      items: { where: { mediaId }, select: { id: true }, take: 1 },
+      items: {
+        orderBy: { rank: "asc" },
+        select: {
+          mediaId: true,
+          media: { select: { coverImage: true, isAdult: true } },
+        },
+      },
     },
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    kind: row.kind,
-    itemCount: row._count.items,
-    contains: row.items.length > 0,
-  }));
+  return rows.map((row) => {
+    const index = row.items.findIndex((item) => item.mediaId === mediaId);
+
+    return {
+      id: row.id,
+      title: row.title,
+      kind: row.kind,
+      itemCount: row.items.length,
+      contains: index !== -1,
+      position: index === -1 ? null : index + 1,
+      cover:
+        row.items.find((item) => !item.media.isAdult)?.media.coverImage ?? null,
+    };
+  });
 }
 
 export type SharedList = {
