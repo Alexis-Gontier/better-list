@@ -40,7 +40,7 @@ export function SeriesHeader({
         `self-start` pour la même raison que sur les rangées de `/collection` : sans lui,
         l'étirement du flex écrase la hauteur calculée par `aspect-2/3`.
       */}
-      <div className="relative aspect-2/3 w-24 shrink-0 self-start overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <div className="relative aspect-2/3 w-24 shrink-0 self-start overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
         {cover ? (
           /*
             `priority` : c'est la plus grande image de la page, donc sa mesure de LCP. La différer

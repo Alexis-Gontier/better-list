@@ -1,11 +1,16 @@
 "use client";
 
 import { PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ListFormDialog } from "@/features/lists/components/list-form-dialog";
+import { routes } from "@/config/routes";
+import {
+  ListFormDialog,
+  parseCutoff,
+} from "@/features/lists/components/list-form-dialog";
 import { createList } from "@/features/lists/server/lists.actions";
 
 /**
@@ -25,6 +30,7 @@ import { createList } from "@/features/lists/server/lists.actions";
  * pour les deux emplacements, donc plus de propriété du tout.
  */
 export function CreateListDialog() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   /*
@@ -35,7 +41,14 @@ export function CreateListDialog() {
     donc il n'y a rien à recharger à la main ici.
   */
   const { execute, isPending, result } = useAction(createList, {
-    onSuccess: () => setOpen(false),
+    /*
+      Une liste vide ne sert à rien : on y emmène, fenêtre d'ajout ouverte, pour que le geste qui
+      suit la création soit déjà fait.
+    */
+    onSuccess: ({ data }) => {
+      setOpen(false);
+      if (data) router.push(routes.lists.fill(data.id));
+    },
     onError: ({ error }) =>
       toast.error(
         error.serverError ?? "La liste n'a pas été créée. Réessayez.",
@@ -53,16 +66,21 @@ export function CreateListDialog() {
         fieldErrors={result.validationErrors?.fieldErrors}
         heading="Nouvelle liste"
         onOpenChange={setOpen}
-        onSubmit={({ title, description }) =>
+        onSubmit={({ title, description, kind, cutoff }) =>
           /*
             La description part `undefined` quand elle est vide, et pas chaîne vide : le schéma la
             veut nullable et facultative, et « je n'ai rien écrit » n'est pas « j'ai écrit rien ».
           */
-          execute({ title, description: description.trim() || undefined })
+          execute({
+            title,
+            description: description.trim() || undefined,
+            kind,
+            cutoff: parseCutoff(cutoff),
+          })
         }
         open={open}
         pending={isPending}
-        submitLabel="Créer"
+        submitLabel="Créer et remplir"
       />
     </>
   );

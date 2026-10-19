@@ -1,6 +1,6 @@
 import Image from "next/image";
-
 import type { ListCover } from "@/features/lists/server/lists.queries";
+import { cn } from "@/lib/utils";
 
 /**
  * L'aperçu d'une liste : ses quatre premières jaquettes, côte à côte.
@@ -21,10 +21,20 @@ import type { ListCover } from "@/features/lists/server/lists.queries";
  * d'œuvres avant celui de la liste, qui est la seule chose qu'on cherche ici.
  */
 
-/** Quatre, et le nombre est structurel : c'est le `take` de `getLists`, et la largeur d'une carte. */
+/** Quatre, et le nombre est structurel : c'est `COVERS_PER_CARD` de `getLists`, et la largeur d'une carte. */
 const MOSAIC_SIZE = 4;
 
-export function ListCoverMosaic({ covers }: { covers: ListCover[] }) {
+export function ListCoverMosaic({
+  covers,
+  empty = false,
+}: {
+  covers: ListCover[];
+  /**
+   * La liste n'a aucune œuvre. Les cases gardent leur charpente (décision du 6 septembre 2026),
+   * mais passent en pointillés : pleines et grises, on les prenait pour un chargement.
+   */
+  empty?: boolean;
+}) {
   /*
     Des clés stables, et pas l'indice de boucle : les cases vides et les jaquettes cohabitent dans
     la même rangée, et un `key` d'indice ferait réutiliser à React le nœud d'une case vide pour une
@@ -36,7 +46,11 @@ export function ListCoverMosaic({ covers }: { covers: ListCover[] }) {
   }));
 
   return (
-    <div className="flex gap-1.5">
+    /*
+      En 2×2 sur téléphone, où la carte se couche : quatre jaquettes en ligne tomberaient sous les
+      40 px, le seuil où l'on reconnaît une illustration. En ligne dès `sm`, où la carte est debout.
+    */
+    <div className="grid w-24 shrink-0 grid-cols-2 gap-1 sm:flex sm:w-auto sm:gap-1.5">
       {cells.map(({ key, cover }) => (
         <div
           /*
@@ -44,7 +58,13 @@ export function ListCoverMosaic({ covers }: { covers: ListCover[] }) {
             `MediaCard` : il réserve la place avant le chargement, donc la carte ne saute pas quand
             les jaquettes arrivent. Le liseré est interne pour ne rien ajouter à la boîte.
           */
-          className="relative aspect-2/3 flex-1 overflow-hidden rounded-sm bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]"
+          // Le liseré vient du jeton `border` : codé en blanc, il disparaissait en thème clair.
+          className={cn(
+            "relative aspect-2/3 flex-1 overflow-hidden rounded-sm",
+            empty
+              ? "border border-border border-dashed"
+              : "bg-muted ring-1 ring-border ring-inset",
+          )}
           key={key}
         >
           {cover?.cover ? (
@@ -57,7 +77,7 @@ export function ListCoverMosaic({ covers }: { covers: ListCover[] }) {
                 large. Sans ces tailles, `next/image` servirait une image pleine largeur de fenêtre
                 pour une vignette de 90 px.
               */
-              sizes="(min-width: 1024px) 8vw, (min-width: 640px) 12vw, 22vw"
+              sizes="(min-width: 1024px) 8vw, (min-width: 640px) 12vw, 48px"
               src={cover.cover}
               title={cover.title || undefined}
             />

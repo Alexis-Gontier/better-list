@@ -66,7 +66,7 @@ function ShelfRow({
         toute la hauteur de la rangée, et une série longue — dont la réglette passe à trois lignes
         en 390 px — se retrouve avec une jaquette deux fois trop haute que `object-cover` rogne.
       */}
-      <div className="relative aspect-2/3 w-12 shrink-0 self-start overflow-hidden rounded-sm bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]">
+      <div className="relative aspect-2/3 w-12 shrink-0 self-start overflow-hidden rounded-sm bg-muted ring-1 ring-border ring-inset">
         {cover ? (
           <Image
             alt=""

@@ -3,15 +3,25 @@ import "server-only";
 import { cache } from "react";
 
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
+import { listCountsLine } from "@/features/lists/lib/list-labels";
+import {
+  listSections,
+  sectionCounts,
+} from "@/features/lists/lib/list-sections";
+import type { ListKind } from "@/features/lists/schemas/lists.schema";
 import {
   compactFromMirror,
   formatMediaFormat,
   MIRRORED_MEDIA_SELECT,
   mediaTitle,
 } from "@/features/media/lib/media-format";
-import type { MediaCompact } from "@/features/media/schemas/media.schema";
+import type {
+  MediaCompact,
+  MediaStatus,
+} from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
+import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -59,61 +69,47 @@ export type ListSummary = {
   id: string;
   title: string;
   description: string | null;
+  kind: ListKind;
+  cutoff: number | null;
+  /** La liste porte un lien de partage : la carte le signale, sans exposer le jeton. */
+  shared: boolean;
   itemCount: number;
-  /** Au plus quatre, dans l'ordre `rank` de la liste. Vide quand la liste n'a rien. */
+  /** La ligne de décompte propre au genre : « Top 10 · 18 œuvres », « 8 prêtes sur 17 ». */
+  countsLine: string;
+  /** Au plus quatre, dans l'ordre des sections du genre. Vide quand la liste n'a rien. */
   covers: ListCover[];
 };
 
+/** Quatre jaquettes par carte : c'est la largeur d'une carte, et ce que la mosaïque dessine. */
+const COVERS_PER_CARD = 4;
+
 /**
- * Mes listes, avec de quoi dessiner leur carte : le décompte et les quatre premières jaquettes.
+ * Mes listes, avec de quoi dessiner leur carte : le genre, le décompte, et quatre jaquettes.
  *
- * **`List` n'a ni `cover` ni compteur d'items** — `conception.md` §4.4 mentionne la première, elle
- * n'existe pas au schéma. Les deux se dérivent donc des `ListItem`, et c'était le seul vrai
- * problème de lecture de cet écran : quatre jaquettes par carte, sur une page de listes, sans faire
- * une requête par liste.
- *
- * **Ce qui est mesuré, et non supposé** (6 septembre 2026, journal `query` de Prisma, cinq listes).
- * Ce `findMany` émet **trois** requêtes, et ce nombre ne bouge pas avec le nombre de listes — donc
- * **pas de N+1**, qui était la crainte :
+ * **`List` n'a ni `cover` ni compteur d'items** : les deux se dérivent des `ListItem`. Trois
+ * requêtes, quel que soit le nombre de listes — **pas de N+1** :
  *
  * 1. les listes, le `_count` porté par un `LEFT JOIN` sur un `GROUP BY` de `list_items` ;
- * 2. `list_items WHERE "listId" IN (…) ORDER BY rank` — **sans `LIMIT`** ;
- * 3. `media WHERE id IN (…)`, pour les seules jaquettes retenues.
+ * 2. **tous** les items de mes listes, avec le statut de parution et la jaquette de chaque œuvre ;
+ * 3. mon suivi sur ces œuvres.
  *
- * **Le `take: 4` n'est pas poussé en SQL** : Prisma rapatrie tous les items de toutes mes listes,
- * puis tranche en mémoire. C'est le fait que la spec demandait d'établir, et il n'est pas celui
- * qu'on attendait — le coût n'est pas un aller-retour de trop, c'est une sur-lecture de la requête
- * 2. Elle reste **bornée et étroite** : trois colonnes (`id`, `mediaId`, `listId`), et surtout la
- * table large n'y passe pas — la requête 3 ne lit que les jaquettes réellement affichées. Sur un
- * cercle de quatre comptes aux listes de quelques dizaines d'œuvres, c'est sans conséquence ; ça
- * cesserait de l'être vers le millier d'items, et il faudrait alors une fenêtre
- * (`ROW_NUMBER() OVER (PARTITION BY "listId" ORDER BY rank)`) écrite à la main.
+ * La requête 2 lit tout, exprès : les décomptes « prêtes » et « vues » portent sur la liste
+ * entière, et la mosaïque d'une liste « Quand c'est fini » montre **ses prêtes d'abord**, donc elle
+ * a besoin de connaître toutes les œuvres pour choisir ses quatre. Sur un cercle de quatre comptes
+ * aux listes de quelques dizaines d'œuvres, c'est sans conséquence ; vers le millier d'items, il
+ * faudrait une fenêtre (`ROW_NUMBER() OVER (PARTITION BY "listId" …)`) écrite à la main.
+ * `relationLoadStrategy: "join"` n'est pas une issue : Prisma 7 le refuse avec le driver adapter.
  *
- * **`relationLoadStrategy: "join"` n'est pas une issue : il n'existe pas ici.** Essayé le même
- * jour, Prisma 7.9.1 rejette l'argument avec le générateur `prisma-client` et le driver adapter —
- * `Unknown argument relationLoadStrategy`. Le repli que la spec envisageait n'est donc pas
- * disponible, et c'est pour ça qu'on garde celui-ci en le documentant plutôt qu'en le contournant.
+ * **Les jaquettes suivent l'ordre des sections du genre** (`listSections`) : le rang pour une
+ * sélection ou un classement, les prêtes avant les en-parution, ce qui reste à voir avant le déjà vu.
+ * C'est l'ordre que `/lists/[id]` montrera, donc la carte ne ment pas sur ce qu'elle ouvre.
  *
- * `_count` plutôt que compter `items` en mémoire : la carte annonce « 8 œuvres » alors qu'on n'en
- * rapatrie que quatre, et compter en base est la seule façon d'avoir les deux.
+ * L'ordre des cartes suit `updatedAt` — l'index `@@index([ownerId, updatedAt])` est posé pour ça.
  *
- * **Les jaquettes se rangent par `rank`, jamais par `addedAt`.** C'est l'ordre que la liste a, et
- * celui que `/lists/[id]` montrera : deux ordres pour une même liste donneraient une carte qui ment
- * sur ce qu'elle ouvre.
- *
- * L'ordre des cartes suit `updatedAt` — l'index `@@index([ownerId, updatedAt])` est posé pour ça,
- * et c'est le seul ordre possible : `List` ne porte aucune colonne de rang, donc les listes ne se
- * réarrangent pas entre elles.
- *
- * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026,
- * prise en regardant l'écran. Le filtre est dans la requête et non en masque d'affichage, comme
- * partout ailleurs (.claude/skills/anilist-read/references/recherche-filtres.md §2.5) ; mais il ne porte que sur les quatre vignettes,
- * parce que le décompte parle de la liste et non de ce qu'on en montre. Une liste que j'ai composée
- * moi-même annonce donc toujours ce qu'elle contient, même quand sa préférence en cache l'aperçu.
- *
- * La conséquence à connaître : une liste **entièrement** 18+ montre quatre cases vides sur un
- * décompte non nul. C'est le seul cas où la mosaïque et le décompte ne parlent pas de la même
- * chose, et c'est précisément le décompte qui la distingue d'une liste réellement vide.
+ * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026 :
+ * le décompte parle de la liste, la mosaïque de ce qu'on en montre. Une liste **entièrement** 18+
+ * montre donc des cases vides sur un décompte non nul, et c'est le décompte qui la distingue d'une
+ * liste réellement vide.
  */
 export async function getLists({
   includeAdult,
@@ -129,43 +125,80 @@ export async function getLists({
       id: true,
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
+      shareToken: true,
       _count: { select: { items: true } },
-      items: {
-        take: 4,
-        orderBy: { rank: "asc" },
-        ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
+    },
+  });
+
+  const items = await prisma.listItem.findMany({
+    where: { list: { ownerId } },
+    orderBy: { rank: "asc" },
+    select: {
+      listId: true,
+      media: {
         select: {
-          media: {
-            select: {
-              id: true,
-              coverImage: true,
-              titleRomaji: true,
-              titleEnglish: true,
-            },
-          },
+          id: true,
+          status: true,
+          isAdult: true,
+          coverImage: true,
+          titleRomaji: true,
+          titleEnglish: true,
         },
       },
     },
   });
+  const entries = await prisma.entry.findMany({
+    where: {
+      userId: ownerId,
+      mediaId: { in: [...new Set(items.map(({ media }) => media.id))] },
+    },
+    select: { mediaId: true, status: true },
+  });
+  const entryStatus = new Map(entries.map((e) => [e.mediaId, e.status]));
 
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    itemCount: row._count.items,
-    /*
-      Le titre sert d'`alt`, donc il doit dire quelque chose : le romaji d'abord, l'anglais en
-      repli. Ce n'est pas `mediaTitle` — celle-ci honore la préférence `titleLanguage` du membre, ce
-      qui a du sens sur une carte d'œuvre, pas sur une vignette de 40 px qu'on ne lit pas. La chaîne
-      vide reste possible sur une ligne de miroir sans aucun titre, et c'est le bon `alt` : une
-      jaquette décorative dans une mosaïque qui porte déjà le nom de la liste.
-    */
-    covers: row.items.map((item) => ({
-      mediaId: item.media.id,
-      cover: item.media.coverImage,
-      title: item.media.titleRomaji ?? item.media.titleEnglish ?? "",
-    })),
-  }));
+  return rows.map((row) => {
+    const sections = listSections(
+      row.kind,
+      row.cutoff,
+      items
+        .filter(({ listId }) => listId === row.id)
+        .map(({ media }) => ({
+          item: media,
+          mediaStatus: media.status,
+          entryStatus: entryStatus.get(media.id) ?? null,
+        })),
+    );
+
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      kind: row.kind,
+      cutoff: row.cutoff,
+      shared: row.shareToken !== null,
+      itemCount: row._count.items,
+      countsLine: listCountsLine(row.kind, row.cutoff, {
+        total: row._count.items,
+        ...sectionCounts(sections),
+      }),
+      /*
+        Le titre sert d'`alt` : le romaji d'abord, l'anglais en repli. Ce n'est pas `mediaTitle`,
+        qui honore la préférence de langue — sans objet sur une vignette de 40 px qu'on ne lit pas.
+      */
+      covers: sections
+        .flatMap(({ items: sectionItems }) => sectionItems)
+        .map(({ item }) => item)
+        .filter((media) => includeAdult || !media.isAdult)
+        .slice(0, COVERS_PER_CARD)
+        .map((media) => ({
+          mediaId: media.id,
+          cover: media.coverImage,
+          title: media.titleRomaji ?? media.titleEnglish ?? "",
+        })),
+    };
+  });
 }
 
 /** Une œuvre d'une liste, dans la forme que `MediaCard` et la fenêtre d'édition rapide attendent. */
@@ -182,6 +215,9 @@ export type ListDetail = {
   id: string;
   title: string;
   description: string | null;
+  kind: ListKind;
+  /** La ligne de coupe d'un classement ; conservée hors classement, et ignorée. */
+  cutoff: number | null;
   /** Le nombre d'œuvres **réel**, avant le filtre 18+ : c'est ce que la suppression emporterait. */
   itemCount: number;
   /**
@@ -229,6 +265,8 @@ export const getList = cache(async function getList(
       id: true,
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
       shareToken: true,
       _count: { select: { items: true } },
       items: {
@@ -245,6 +283,8 @@ export const getList = cache(async function getList(
     id: list.id,
     title: list.title,
     description: list.description,
+    kind: list.kind,
+    cutoff: list.cutoff,
     itemCount: list._count.items,
     shareToken: list.shareToken,
     items: list.items.map(({ media }) => ({
@@ -264,24 +304,29 @@ export const getList = cache(async function getList(
 export type ListMembership = {
   id: string;
   title: string;
+  kind: ListKind;
+  itemCount: number;
   contains: boolean;
+  /** La place de l'œuvre dans la liste, à partir de 1 ; `null` quand elle n'y est pas. */
+  position: number | null;
+  /** La jaquette de tête de la liste, pour la reconnaître d'un coup d'œil. `null` si elle est vide. */
+  cover: string | null;
 };
 
 /**
- * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà.
+ * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà, et à quelle place.
  *
  * C'est ce que lit la fenêtre « Ajouter à une liste » de la fiche, et c'est pour ça qu'elle affiche
  * des **bascules** plutôt qu'un simple ajout — on voit où l'œuvre est rangée avant de choisir, et on
  * peut l'en retirer.
  *
- * **Une requête, pas deux.** Le `items` est filtré sur ce `mediaId` seul, donc chaque liste rapporte
- * zéro ou une ligne et `contains` s'en déduit. Lire toutes mes listes puis toutes leurs
- * appartenances séparément aurait coûté un aller-retour de plus pour la même information — et un
- * `take: 1` suffit puisque `@@unique([listId, mediaId])` garantit qu'il n'y en a jamais deux.
+ * **Une requête** : chaque liste rapporte ses items dans l'ordre, réduits à l'id de l'œuvre et à sa
+ * jaquette. C'est ce qui donne d'un coup l'appartenance, le rang (« n° 3 ») et la jaquette de tête ;
+ * des listes de quelques dizaines d'œuvres rendent cette lecture négligeable.
  *
- * **Aucun filtre 18+ ici**, contrairement à `getLists`. La préférence masque des *jaquettes* ; elle
- * n'a pas à masquer des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
- * ne contient que des œuvres adultes — ni l'en retirer.
+ * **Aucun filtre 18+ sur les listes**, contrairement à `getLists` : la préférence masque des
+ * *jaquettes*, pas des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
+ * n'en contient que d'adultes. La jaquette de tête, elle, saute les œuvres adultes.
  *
  * L'ordre est celui de `/lists` : la dernière modifiée en tête, donc celle qu'on vient de créer.
  */
@@ -296,20 +341,38 @@ export async function getListMembership(
     select: {
       id: true,
       title: true,
-      items: { where: { mediaId }, select: { id: true }, take: 1 },
+      kind: true,
+      items: {
+        orderBy: { rank: "asc" },
+        select: {
+          mediaId: true,
+          media: { select: { coverImage: true, isAdult: true } },
+        },
+      },
     },
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    contains: row.items.length > 0,
-  }));
+  return rows.map((row) => {
+    const index = row.items.findIndex((item) => item.mediaId === mediaId);
+
+    return {
+      id: row.id,
+      title: row.title,
+      kind: row.kind,
+      itemCount: row.items.length,
+      contains: index !== -1,
+      position: index === -1 ? null : index + 1,
+      cover:
+        row.items.find((item) => !item.media.isAdult)?.media.coverImage ?? null,
+    };
+  });
 }
 
 export type SharedList = {
   title: string;
   description: string | null;
+  kind: ListKind;
+  cutoff: number | null;
   /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
   ownerName: string;
   items: ListDetailItem[];
@@ -345,6 +408,8 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
     select: {
       title: true,
       description: true,
+      kind: true,
+      cutoff: true,
       owner: { select: { name: true, username: true } },
       items: {
         orderBy: { rank: "asc" },
@@ -358,6 +423,8 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
   return {
     title: list.title,
     description: list.description,
+    kind: list.kind,
+    cutoff: list.cutoff,
     // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
     ownerName: list.owner.name || list.owner.username || "un membre",
     items: list.items.map(({ media }) => ({
@@ -369,12 +436,30 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
   };
 }
 
+/**
+ * Ce que chaque genre suggère avant qu'on tape. Une attente de fin propose ce que j'ai mis de côté
+ * pendant sa parution : en pause, abandonné ou prévu, et toujours en cours de publication.
+ */
+const SUGGESTION_FILTERS: Record<
+  ListKind,
+  { entry?: EntryStatus[]; media?: MediaStatus[] }
+> = {
+  SELECTION: {},
+  RANKING: {},
+  WATCHLIST: { entry: ["PLANNING"] },
+  WAIT_FOR_END: {
+    entry: ["PAUSED", "DROPPED", "PLANNING"],
+    media: ["RELEASING", "HIATUS", "NOT_YET_RELEASED"],
+  },
+};
+
 /** Huit : ce que la fenêtre d'ajout montre sans défiler, sous le champ. */
 const SUGGESTION_COUNT = 8;
 
 /**
- * Ce que la fenêtre « Ajouter des œuvres » propose avant qu'on tape : mes œuvres prévues qui ne
- * sont pas encore dans cette liste, les dernières touchées d'abord.
+ * Ce que la fenêtre « Ajouter des œuvres » propose avant qu'on tape : mes œuvres qui ne sont pas
+ * encore dans cette liste, filtrées selon son genre (`SUGGESTION_FILTERS`), les dernières touchées
+ * d'abord.
  *
  * **Aucune lecture AniList** : tout vient du miroir et de mon suivi. La forme est celle d'une ligne
  * de la palette (`CommandSearchItem`), pour que la fenêtre dessine suggestions et résultats d'un
@@ -382,19 +467,22 @@ const SUGGESTION_COUNT = 8;
  */
 export async function getListSuggestions(
   listId: string,
+  kind: ListKind,
   {
     includeAdult,
     titleLanguage,
   }: { includeAdult: boolean; titleLanguage: TitleLanguage },
 ): Promise<CommandSearchItem[]> {
   const userId = await currentUserId();
+  const filter = SUGGESTION_FILTERS[kind];
 
   const rows = await prisma.entry.findMany({
     where: {
       userId,
-      status: { in: ["PLANNING"] },
+      ...(filter.entry ? { status: { in: filter.entry } } : {}),
       media: {
         listItems: { none: { listId } },
+        ...(filter.media ? { status: { in: filter.media } } : {}),
         ...(includeAdult ? {} : { isAdult: false }),
       },
     },

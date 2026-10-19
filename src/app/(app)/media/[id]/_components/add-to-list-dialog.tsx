@@ -1,7 +1,7 @@
 "use client";
 
-import { ListPlusIcon } from "lucide-react";
-import Link from "next/link";
+import { ListCheckIcon, ListPlusIcon, PlusIcon } from "lucide-react";
+import Image from "next/image";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
@@ -16,24 +16,33 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { routes } from "@/config/routes";
+import { ListKindGlyph } from "@/features/lists/components/list-kind-glyph";
+import {
+  itemCountLabel,
+  LIST_KIND_LABELS,
+} from "@/features/lists/lib/list-labels";
+import {
+  type ListKind,
+  listKindSchema,
+} from "@/features/lists/schemas/lists.schema";
 import {
   addToList,
+  createList,
   removeFromList,
 } from "@/features/lists/server/lists.actions";
 import type { ListMembership } from "@/features/lists/server/lists.queries";
@@ -42,21 +51,18 @@ import type { ListMembership } from "@/features/lists/server/lists.queries";
  * Ranger une œuvre dans mes listes, depuis sa fiche.
  *
  * **Des bascules, et pas un simple ajout** — décision d'Alexis du 6 septembre 2026. Une case cochée
- * veut dire « cette œuvre est dans cette liste » : on voit donc où elle est déjà rangée avant de
- * choisir, et un ajout par erreur se défait en décochant. C'était la condition pour livrer ce
- * chemin : sans elle, il n'y aurait eu **aucun écran** pour retirer une œuvre d'une liste.
+ * veut dire « cette œuvre est dans cette liste » : on voit où elle est déjà rangée, et à quelle
+ * place, avant de choisir ; un ajout par erreur se défait en décochant.
  *
- * **La fenêtre ne se referme pas sur un geste**, contrairement à `entry-quick-edit`. On range
- * souvent dans deux listes d'affilée, et une fermeture au premier clic obligerait à la rouvrir.
+ * **La fenêtre ne se referme pas sur un geste.** On range souvent dans deux listes d'affilée.
  *
- * **On ne crée pas de liste ici** — même décision, même jour : une liste naît à un seul endroit,
- * `/lists`, donc il n'y a qu'un formulaire à dessiner et à tenir. C'est ce qui rend le cas
- * « aucune liste » important plutôt qu'anecdotique, et il est traité plus bas.
+ * **On crée une liste ici aussi** (D48, qui révise la décision du 6 septembre) : « je veux mettre
+ * ça dans une nouvelle liste » est le cas le plus courant, et renvoyer vers `/lists` le cassait en
+ * deux visites. La création y reste courte — un nom, un genre — et range l'œuvre d'emblée ; le
+ * formulaire complet (description, Top) vit sur `/lists` et dans « Modifier ».
  *
- * **Pas de route handler**, bien que ce soit un composant client qui affiche une lecture : la fiche
- * est un Server Component, elle appelle `getListMembership` et passe le résultat en prop. La règle
- * de `CLAUDE.md` vise une lecture qu'un composant client doit aller **chercher** ; celui-ci n'a rien
- * à chercher, tout voyage avec le rendu de la page.
+ * **Pas de route handler** : la fiche est un Server Component, elle appelle `getListMembership` et
+ * passe le résultat en prop. Rien n'est à aller chercher depuis le navigateur.
  */
 export function AddToListDialog({
   mediaId,
@@ -68,75 +74,74 @@ export function AddToListDialog({
   title: string;
   lists: ListMembership[];
 }) {
+  const containing = lists.filter((list) => list.contains).length;
+  const hint =
+    containing === 0
+      ? "Ajouter à une liste"
+      : `Dans ${containing} liste${containing > 1 ? "s" : ""}`;
+
   return (
     <Dialog>
       {/*
-        **Une icône seule depuis le 19 septembre 2026** (décision d'Alexis), avec « Ma collection »
-        à côté. Deux boutons pleine largeur pour deux gestes secondaires écrasaient le seul qui
-        compte sur cette rangée — celui du suivi. L'infobulle rend ce que le libellé emportait,
-        et l'`aria-label` porte déjà le titre de l'œuvre pour un lecteur d'écran.
+        **Une icône seule depuis le 19 septembre 2026** (décision d'Alexis), à côté du cœur. Elle
+        dit maintenant si l'œuvre est déjà rangée, comme le cœur dit si elle est favorite : sans
+        ça, il fallait ouvrir la fenêtre pour le savoir.
       */}
       <Tooltip>
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
             <Button
-              aria-label={`Ajouter ${title} à une liste`}
+              aria-label={`${hint} — ${title}`}
+              className="relative"
               size="icon"
               variant="outline"
             >
-              <ListPlusIcon />
+              {containing > 0 ? <ListCheckIcon /> : <ListPlusIcon />}
+              {containing > 0 ? (
+                <span
+                  aria-hidden
+                  className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-foreground font-medium text-[10px] text-background tabular-nums"
+                >
+                  {containing}
+                </span>
+              ) : null}
             </Button>
           </DialogTrigger>
         </TooltipTrigger>
-        <TooltipContent>Ajouter à une liste</TooltipContent>
+        <TooltipContent>{hint}</TooltipContent>
       </Tooltip>
 
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(92svh,40rem)] flex-col gap-0 p-0 sm:max-w-md">
+        <DialogHeader className="px-6 pt-6 pb-3">
           <DialogTitle>Ajouter à une liste</DialogTitle>
           <DialogDescription>
-            Cochez les listes qui doivent contenir cette œuvre. Chaque case est
-            enregistrée aussitôt.
+            Chaque case est enregistrée aussitôt.
           </DialogDescription>
         </DialogHeader>
 
-        {lists.length === 0 ? (
-          /*
-            **Le cas qui découle directement de « on ne crée pas ici ».** Un membre sans aucune liste
-            ouvrirait une fenêtre vide : elle doit donc dire quoi faire et mener à `/lists`, sinon le
-            bouton s'ouvre sur du néant.
-          */
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ListPlusIcon />
-              </EmptyMedia>
-              <EmptyTitle>Aucune liste où la ranger</EmptyTitle>
-              <EmptyDescription>
-                Les listes se créent depuis « Mes listes ». Revenez ensuite ici,
-                l'œuvre vous attendra.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <Link href={routes.lists.root}>Aller à mes listes</Link>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          /*
-            Une liste de cases, pas un menu : on doit pouvoir en cocher plusieurs sans que l'écran
-            se referme, et voir d'un coup d'œil celles qui la contiennent déjà.
-
-            `max-h` et défilement : quelques dizaines de listes tiendraient sinon plus haut que la
-            fenêtre, et le bas deviendrait inatteignable.
-          */
-          <ul className="-mx-1 flex max-h-72 flex-col overflow-y-auto px-1">
+        {/*
+          `min-h-0` et défilement : quelques dizaines de listes tiendraient sinon plus haut que la
+          fenêtre, et la création, en bas, deviendrait inatteignable.
+        */}
+        {lists.length > 0 ? (
+          <ul className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
             {lists.map((list) => (
               <ListToggle key={list.id} list={list} mediaId={mediaId} />
             ))}
           </ul>
+        ) : (
+          <p className="px-6 pb-2 text-muted-foreground text-sm">
+            Aucune liste encore. Créez-en une : l'œuvre y sera rangée d'emblée.
+          </p>
         )}
+
+        <div className="border-t px-6 py-4">
+          <NewListInline
+            defaultOpen={lists.length === 0}
+            key={lists.length}
+            mediaId={mediaId}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -145,9 +150,8 @@ export function AddToListDialog({
 /**
  * Une liste, et la case qui dit si l'œuvre y est.
  *
- * **Chaque ligne porte ses propres actions**, et ce n'est pas un excès : cocher deux listes coup sur
- * coup lance deux écritures qui se chevauchent, et un `isPending` partagé désarmerait toute la
- * fenêtre — ou pire, montrerait la seconde ligne en attente pendant que c'est la première qui écrit.
+ * **Chaque ligne porte ses propres actions** : cocher deux listes coup sur coup lance deux écritures
+ * qui se chevauchent, et un `isPending` partagé désarmerait toute la fenêtre.
  */
 function ListToggle({
   list,
@@ -159,15 +163,12 @@ function ListToggle({
   const checkboxId = useId();
   const [checked, setChecked] = useState(list.contains);
 
-  /*
-    La prop refait autorité quand le serveur a répondu : `revalidatePath` sur la fiche renvoie une
-    nouvelle valeur de `contains`, et c'est elle qui fait foi — pas ce que le composant croyait.
-  */
+  // La prop refait autorité quand le serveur a répondu : c'est elle qui fait foi.
   useEffect(() => setChecked(list.contains), [list.contains]);
 
   const onError = ({ error }: { error: { serverError?: string } }) => {
     toast.error(error.serverError ?? "Le rangement n'a pas abouti. Réessayez.");
-    // On revient à l'état d'avant : la case ne doit jamais prétendre une écriture qui n'a pas eu lieu.
+    // La case ne doit jamais prétendre une écriture qui n'a pas eu lieu.
     setChecked(list.contains);
   };
 
@@ -175,25 +176,27 @@ function ListToggle({
   const remove = useAction(removeFromList, { onError });
   const pending = add.isPending || remove.isPending;
 
-  /*
-    **La case bouge avant la réponse.** Attendre l'aller-retour ferait une case qui se coche une
-    demi-seconde après le clic, ce qu'on lit comme un écran qui rame ; en cas d'échec, `onError` la
-    remet où elle était et le toast dit pourquoi.
-  */
+  // La case bouge avant la réponse ; en cas d'échec, `onError` la remet où elle était.
   const toggle = (next: boolean) => {
     setChecked(next);
     const run = next ? add.execute : remove.execute;
     run({ listId: list.id, mediaId });
   };
 
+  /*
+    La place n'est dite que pour une œuvre déjà rangée et confirmée par le serveur : juste après un
+    clic, on ne la connaît pas encore, et une place devinée serait fausse dès la suivante.
+  */
+  const placement =
+    checked && list.contains && list.position !== null
+      ? ` · n° ${list.position}`
+      : "";
+
   return (
     <li>
-      {/*
-        Le libellé enveloppe la case : toute la ligne devient cliquable, ce qui donne une cible
-        largement au-dessus du minimum tactile là où une case seule fait seize pixels.
-      */}
+      {/* Le libellé enveloppe la case : toute la ligne est une cible, bien au-delà de 16 px. */}
       <Label
-        className="flex w-full items-center gap-3 rounded-md px-2 py-2.5 font-normal hover:bg-muted/50"
+        className="flex w-full items-center gap-3 rounded-md px-2 py-2 font-normal hover:bg-muted/50"
         htmlFor={checkboxId}
       >
         <Checkbox
@@ -202,14 +205,140 @@ function ListToggle({
           id={checkboxId}
           onCheckedChange={(value) => toggle(value === true)}
         />
-        <span className="min-w-0 flex-1 truncate" title={list.title}>
-          {list.title}
+        {/* La jaquette de tête fait reconnaître une liste avant d'en lire le nom. */}
+        <span className="relative flex h-12 w-8 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted text-muted-foreground">
+          {list.cover ? (
+            <Image
+              alt=""
+              className="object-cover"
+              fill
+              sizes="32px"
+              src={list.cover}
+            />
+          ) : (
+            <ListKindGlyph className="h-4 w-7" kind={list.kind} />
+          )}
         </span>
-        {/* La place du témoin est réservée en permanence, sinon le titre sauterait à chaque clic. */}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate" title={list.title}>
+            {list.title}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {LIST_KIND_LABELS[list.kind]} · {itemCountLabel(list.itemCount)}
+            {placement}
+          </span>
+        </span>
+        {/* La place du témoin est réservée, sinon le titre sauterait à chaque clic. */}
         <span className="flex size-4 shrink-0 items-center justify-center">
           {pending ? <Spinner /> : null}
         </span>
       </Label>
     </li>
+  );
+}
+
+/**
+ * Créer une liste **et y ranger l'œuvre**, d'un geste (D48).
+ *
+ * Un nom et un genre, rien d'autre : c'est une création au fil de la lecture d'une fiche, pas un
+ * atelier. Elle part en une écriture (`createList` avec `mediaId`), donc une liste ne reste jamais
+ * vide sur un second appel raté. La nouvelle liste paraît en tête, cochée, quand la fiche revalide.
+ */
+function NewListInline({
+  mediaId,
+  defaultOpen,
+}: {
+  mediaId: number;
+  defaultOpen: boolean;
+}) {
+  const inputId = useId();
+  const [open, setOpen] = useState(defaultOpen);
+  const [name, setName] = useState("");
+  const [kind, setKind] = useState<ListKind>("SELECTION");
+
+  const create = useAction(createList, {
+    onSuccess: () => {
+      setName("");
+      setOpen(false);
+      toast.success("Liste créée, l'œuvre y est rangée.");
+    },
+    onError: ({ error }) =>
+      toast.error(
+        error.serverError ?? "La liste n'a pas été créée. Réessayez.",
+      ),
+  });
+  const titleError = create.result.validationErrors?.fieldErrors?.title?.[0];
+
+  if (!open) {
+    return (
+      <Button
+        className="-ml-2 text-muted-foreground"
+        onClick={() => setOpen(true)}
+        size="sm"
+        variant="ghost"
+      >
+        <PlusIcon data-icon="inline-start" />
+        Nouvelle liste
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        create.execute({ title: name, kind, mediaId });
+      }}
+    >
+      <Label htmlFor={inputId}>Nouvelle liste</Label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          aria-describedby={titleError ? `${inputId}-error` : undefined}
+          aria-invalid={titleError ? true : undefined}
+          autoFocus
+          className="flex-1"
+          id={inputId}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Nom de la liste"
+          value={name}
+        />
+        <Select
+          onValueChange={(value) => setKind(listKindSchema.parse(value))}
+          value={kind}
+        >
+          <SelectTrigger aria-label="Genre" className="sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {listKindSchema.options.map((option) => (
+              <SelectItem key={option} value={option}>
+                {LIST_KIND_LABELS[option]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {titleError ? (
+        <p className="text-destructive text-sm" id={`${inputId}-error`}>
+          {titleError}
+        </p>
+      ) : null}
+      <div className="flex justify-end gap-2">
+        <Button
+          disabled={create.isPending}
+          onClick={() => setOpen(false)}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Annuler
+        </Button>
+        <Button disabled={create.isPending} size="sm" type="submit">
+          {create.isPending ? <Spinner /> : null}
+          Créer et ranger
+        </Button>
+      </div>
+    </form>
   );
 }

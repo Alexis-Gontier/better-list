@@ -104,17 +104,18 @@ function ListsGridSkeleton() {
   return (
     <div className={GRID_COLUMNS}>
       {SKELETON_KEYS.map((key) => (
-        <div className="flex flex-col gap-3 rounded-lg p-3" key={key}>
-          <Skeleton className="aspect-8/3 w-full" />
+        // La charpente de `ListCard` : couchée sur téléphone, debout dès `sm`.
+        <div className="flex gap-3 rounded-lg border p-3 sm:flex-col" key={key}>
+          <Skeleton className="h-36 w-24 shrink-0 sm:h-auto sm:w-full sm:aspect-8/3" />
           {/*
             `gap-1` comme la carte, et les interlignes réels : le titre hérite du corps de texte
             (24 px), la description en fait deux de `text-sm` (40), le décompte un de `text-xs` (16).
           */}
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-10 w-full" />
+            <Skeleton className="mt-auto h-4 w-20" />
           </div>
-          <Skeleton className="h-4 w-20" />
         </div>
       ))}
     </div>

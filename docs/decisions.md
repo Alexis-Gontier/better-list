@@ -116,3 +116,10 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D46** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
   `/lists/[id]` cherche et range sans passer par la fiche. Révise la décision du 6 septembre 2026
   (« on remplit une liste depuis la fiche ») : dix-sept œuvres demandaient dix-sept allers-retours.
+- **D47** — Une liste a un genre : Sélection, Classement, À voir, Quand c'est fini. Il décide de
+  son affichage (rangs et ligne de coupe, progression, sections « Prêtes » et « Déjà vues ») ;
+  l'ordre reste unique. Précise D17 : le genre n'est pas une vue, et les vues restent reportées.
+- **D48** — Une liste peut aussi naître depuis la fiche d'une œuvre, avec un nom et un genre, et
+  l'œuvre y est rangée d'emblée. Révise la décision du 6 septembre 2026 (« une liste ne naît qu'à
+  un seul endroit ») : « je veux mettre ça dans une nouvelle liste » coûtait deux visites. Le
+  formulaire complet reste sur `/lists`.

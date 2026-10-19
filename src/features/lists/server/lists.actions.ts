@@ -83,16 +83,25 @@ export const createList = authActionClient
   .metadata({ actionName: "createList" })
   .inputSchema(createListSchema)
   .action(async ({ parsedInput, ctx }) => {
+    const { mediaId } = parsedInput;
+    // Le miroir d'abord : `ListItem` pointe vers `Media`, et la clé étrangère l'exige.
+    if (mediaId !== undefined) await ensureMediaMirror(mediaId);
+
     const list = await prisma.list.create({
       data: {
         ownerId: ctx.user.id,
         title: parsedInput.title,
         description: parsedInput.description ?? null,
+        kind: parsedInput.kind,
+        cutoff: parsedInput.cutoff ?? null,
+        ...(mediaId !== undefined
+          ? { items: { create: { mediaId, rank: rankForAppend(null) } } }
+          : {}),
       },
       select: { id: true },
     });
 
-    revalidateLists();
+    revalidateLists(mediaId);
 
     return { id: list.id };
   });
@@ -107,14 +116,16 @@ export const updateList = authActionClient
   .metadata({ actionName: "updateList" })
   .inputSchema(updateListSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { listId, title, description } = parsedInput;
+    const { listId, title, description, kind, cutoff } = parsedInput;
 
     await prisma.list.updateMany({
       where: { id: listId, ownerId: ctx.user.id },
-      data: { title, description: description ?? null },
+      data: { title, description: description ?? null, kind, cutoff },
     });
 
     revalidateLists();
+    // Le genre change l'affichage de la liste elle-même, pas seulement sa carte.
+    revalidatePath(routes.lists.detail(listId));
 
     return { updated: true };
   });

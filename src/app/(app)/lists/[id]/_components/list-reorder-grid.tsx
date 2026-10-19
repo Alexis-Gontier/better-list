@@ -21,14 +21,17 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon } from "lucide-react";
+import { GripVerticalIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { CatalogueGrid } from "@/components/shared/catalogue-grid";
-import { reorderListItem } from "@/features/lists/server/lists.actions";
+import {
+  removeFromList,
+  reorderListItem,
+} from "@/features/lists/server/lists.actions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -111,6 +114,23 @@ export function ListReorderGrid({
     }),
   );
 
+  /*
+    **Retirer, sans confirmation** — la règle du dépôt pour ce geste : l'œuvre se rajoute en un
+    clic, seule sa place est perdue. La jaquette part avant la réponse, et revient si l'écriture
+    échoue.
+  */
+  const remove = useAction(removeFromList, {
+    onError: ({ error }) => {
+      toast.error(error.serverError ?? "Le retrait n'a pas abouti. Réessayez.");
+      setItems(initialItems);
+    },
+  });
+
+  const handleRemove = (item: ReorderItem) => {
+    setItems((current) => current.filter((i) => i.mediaId !== item.mediaId));
+    remove.execute({ listId, mediaId: item.mediaId });
+  };
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
 
@@ -133,11 +153,16 @@ export function ListReorderGrid({
 
   return (
     <DndContext
+      /*
+        Un `id` stable : sans lui, dnd-kit numérote ses descriptions d'accessibilité avec un compteur
+        qui diffère entre le serveur et le navigateur, et l'hydratation ne correspond plus.
+      */
       accessibility={{
         announcements: ANNOUNCEMENTS,
         screenReaderInstructions: INSTRUCTIONS,
       }}
       collisionDetection={closestCenter}
+      id={`reorder-${listId}`}
       /* Rien ne sort de la grille : un déplacement est un échange de places, pas un déménagement. */
       modifiers={[restrictToParentElement]}
       onDragEnd={handleDragEnd}
@@ -154,6 +179,7 @@ export function ListReorderGrid({
               index={index}
               item={item}
               key={item.mediaId}
+              onRemove={() => handleRemove(item)}
               total={items.length}
             />
           ))}
@@ -175,10 +201,12 @@ function SortableCover({
   item,
   index,
   total,
+  onRemove,
 }: {
   item: ReorderItem;
   index: number;
   total: number;
+  onRemove: () => void;
 }) {
   const {
     attributes,
@@ -208,7 +236,7 @@ function SortableCover({
     >
       <div
         className={cn(
-          "relative aspect-2/3 cursor-grab overflow-hidden rounded-md bg-muted shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]",
+          "relative aspect-2/3 cursor-grab overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset",
           // L'anneau suit le focus clavier : c'est ce qui rend le déplacement au clavier visible.
           "group-focus-visible:ring-2 focus-visible:ring-2 focus-visible:ring-ring",
           isDragging && "cursor-grabbing ring-2 ring-ring",
@@ -231,6 +259,21 @@ function SortableCover({
         <div className="pointer-events-none absolute inset-0 flex items-start justify-end bg-gradient-to-b from-background/60 to-transparent p-1.5">
           <GripVerticalIcon className="size-4 text-foreground/80" />
         </div>
+
+        {/*
+          La croix est une vraie cible, posée sur la poignée : elle arrête la propagation du
+          pointeur et du clavier, sans quoi dnd-kit prendrait le clic pour le début d'un glisser.
+        */}
+        <button
+          aria-label={`Retirer ${item.title} de la liste`}
+          className="absolute top-1 left-1 flex size-8 items-center justify-center rounded-md bg-overlay text-foreground/90 transition-colors hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={onRemove}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          type="button"
+        >
+          <XIcon className="size-4" />
+        </button>
       </div>
 
       {/*

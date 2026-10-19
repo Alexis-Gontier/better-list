@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AddMediaDialog } from "@/app/(app)/lists/[id]/_components/add-media-dialog";
 import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
+import { ListProgress } from "@/app/(app)/lists/[id]/_components/list-progress";
 import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
 import {
   CatalogueGrid,
@@ -27,6 +28,17 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import {
+  itemCountLabel,
+  listCountsLine,
+  listHeadline,
+  sectionHeading,
+} from "@/features/lists/lib/list-labels";
+import {
+  listProgress,
+  listSections,
+  sectionCounts,
+} from "@/features/lists/lib/list-sections";
 import {
   getList,
   getListSuggestions,
@@ -119,7 +131,10 @@ async function ListDetail({
   searchParams: PageProps<"/lists/[id]">["searchParams"];
 }) {
   const { id } = await params;
-  const reordering = (await searchParams).mode === REORDER_MODE;
+  const query = await searchParams;
+  const reordering = query.mode === REORDER_MODE;
+  // Posé par la création (`routes.lists.fill`) : la liste neuve s'ouvre sur sa fenêtre d'ajout.
+  const filling = query.ajouter === "1";
   const { includeAdult, titleLanguage } = await getPreferences();
   const list = await getList(id, { includeAdult });
 
@@ -141,8 +156,35 @@ async function ListDetail({
     : await Promise.all([
         getLibraryEntriesFor(list.items.map((i) => i.media.id)),
         // Ce que la fenêtre d'ajout propose avant qu'on tape ; indépendant du suivi, donc en parallèle.
-        getListSuggestions(list.id, { includeAdult, titleLanguage }),
+        getListSuggestions(list.id, list.kind, {
+          includeAdult,
+          titleLanguage,
+        }),
       ]);
+
+  /*
+    Le genre décide des sections (D47). En mode réorganisation, il n'y en a pas : on réordonne la
+    liste entière, et le suivi n'y est pas lu.
+  */
+  const sections = listSections(
+    list.kind,
+    list.cutoff,
+    list.items.map((item) => ({
+      item,
+      mediaStatus: item.media.status,
+      entryStatus: entries.get(item.media.id)?.status ?? null,
+    })),
+  );
+  const counts = sectionCounts(sections);
+  const countsLine = listCountsLine(list.kind, list.cutoff, {
+    total: list.itemCount,
+    ...counts,
+  });
+  const hiddenCount = list.itemCount - list.items.length;
+  const progress = listProgress(list.kind, {
+    total: list.itemCount,
+    ...counts,
+  });
 
   return (
     <>
@@ -159,17 +201,35 @@ async function ListDetail({
           </Link>
         </Button>
 
-        <div className="flex items-start justify-between gap-4">
+        {/*
+          Empilé sur téléphone, en ligne à partir de `sm` : à côté de trois boutons, le titre était
+          coupé à « A voir (ani… » et la description tassée sur trois colonnes étroites.
+        */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="truncate text-2xl">{list.title}</h1>
+            {/* Deux lignes plutôt qu'une coupée : le nom est ce qu'on vient lire ici. */}
+            <h1 className="line-clamp-2 text-balance text-2xl">{list.title}</h1>
             {list.description ? (
               <p className="text-pretty text-muted-foreground text-sm">
                 {list.description}
               </p>
             ) : null}
             <p className="text-muted-foreground text-xs">
-              {itemLabel(list.itemCount)}
+              {reordering
+                ? itemCountLabel(list.itemCount)
+                : listHeadline(list.kind, list.cutoff, countsLine)}
+              {/*
+                Le décompte compte tout, la grille ne montre que ce que la préférence 18+ laisse
+                passer : sans cette mention, « 6 œuvres » au-dessus de cinq jaquettes se lit comme
+                une perte.
+              */}
+              {hiddenCount > 0
+                ? ` · ${hiddenCount} masquée${hiddenCount > 1 ? "s" : ""} par vos préférences`
+                : null}
             </p>
+            {!reordering && progress !== null ? (
+              <ListProgress label={progress.label} ratio={progress.ratio} />
+            ) : null}
           </div>
 
           {/*
@@ -184,14 +244,17 @@ async function ListDetail({
             {/* Ajouter est l'action principale de l'écran (D33), sauf pendant qu'on réordonne. */}
             {reordering ? null : (
               <AddMediaDialog
+                initialOpen={filling}
                 listId={list.id}
                 memberIds={list.items.map((item) => item.media.id)}
                 suggestions={suggestions}
               />
             )}
-            {list.items.length > 1 ? (
+            {/* Dès une œuvre : le mode sert aussi à retirer, pas seulement à réordonner. */}
+            {list.items.length > 0 ? (
               <Button
                 asChild
+                className="max-sm:h-10"
                 size="sm"
                 variant={reordering ? "default" : "outline"}
               >
@@ -229,10 +292,20 @@ async function ListDetail({
             premier geste arrive trop tard, et celle-ci nomme aussi le chemin clavier — sans quoi
             personne ne devinerait qu'Espace saisit.
           */}
+          {/*
+            L'aide suit le support : au doigt, la saisie demande un appui long (`TouchSensor`), et le
+            clavier n'y existe pas ; à la souris, on glisse tout de suite.
+          */}
           <p className="text-muted-foreground text-sm">
-            Faites glisser une jaquette pour la déplacer. Au clavier : Tab pour
-            l'atteindre, Espace pour la saisir, les flèches pour la déplacer,
-            Espace pour la reposer. Chaque déplacement est enregistré aussitôt.
+            <span className="pointer-coarse:hidden">
+              Faites glisser une jaquette pour la déplacer. Au clavier : Tab
+              pour l'atteindre, Espace pour la saisir, les flèches pour la
+              déplacer, Espace pour la reposer.
+            </span>
+            <span className="hidden pointer-coarse:inline">
+              Maintenez une jaquette, puis faites-la glisser.
+            </span>{" "}
+            La croix retire une œuvre. Tout est enregistré aussitôt.
           </p>
 
           <ListReorderGrid
@@ -245,36 +318,72 @@ async function ListDetail({
           />
         </>
       ) : (
-        <CatalogueGrid>
-          {list.items.map((item, index) => (
-            <MediaCard
-              action={
-                <EntryQuickEdit
-                  banner={item.banner}
-                  compact
-                  entry={entries.get(item.media.id) ?? null}
-                  mediaId={item.media.id}
-                  title={mediaTitle(item.media.title, titleLanguage)}
-                  total={item.total}
-                  unit={item.unit}
-                />
-              }
-              key={item.media.id}
-              marker={
-                entries.has(item.media.id) ? (
-                  <EntryStatusDot
-                    // biome-ignore lint/style/noNonNullAssertion: `has` vient d'être vérifié.
-                    status={entries.get(item.media.id)!.status}
+        <div className="flex flex-col gap-8">
+          {sections.map((section, sectionIndex) => {
+            const grid = (
+              <CatalogueGrid key={section.key}>
+                {section.items.map(({ item, rank }, index) => (
+                  <MediaCard
+                    action={
+                      <EntryQuickEdit
+                        banner={item.banner}
+                        compact
+                        entry={entries.get(item.media.id) ?? null}
+                        mediaId={item.media.id}
+                        title={mediaTitle(item.media.title, titleLanguage)}
+                        total={item.total}
+                        unit={item.unit}
+                      />
+                    }
+                    key={item.media.id}
+                    marker={
+                      entries.has(item.media.id) ? (
+                        <EntryStatusDot
+                          // biome-ignore lint/style/noNonNullAssertion: `has` vient d'être vérifié.
+                          status={entries.get(item.media.id)!.status}
+                        />
+                      ) : undefined
+                    }
+                    media={item.media}
+                    // La première rangée de la première section porte la mesure de LCP.
+                    priority={sectionIndex === 0 && index < WIDEST_COLUMN_COUNT}
+                    rank={list.kind === "RANKING" ? rank : undefined}
+                    titleLanguage={titleLanguage}
                   />
-                ) : undefined
-              }
-              media={item.media}
-              // La première rangée au palier le plus large : elle porte la mesure de LCP.
-              priority={index < WIDEST_COLUMN_COUNT}
-              titleLanguage={titleLanguage}
-            />
-          ))}
-        </CatalogueGrid>
+                ))}
+              </CatalogueGrid>
+            );
+
+            // Une section seule n'a rien à distinguer : son intitulé redirait l'en-tête.
+            if (section.label === null || sections.length === 1) {
+              return <div key={section.key}>{grid}</div>;
+            }
+
+            const heading = sectionHeading(
+              section.key,
+              section.label,
+              section.items.length,
+            );
+
+            /*
+              Une section repliée est un `<details>` natif : ouvrir « Déjà vues » ne coûte pas une
+              ligne de JavaScript, et la page reste serveur.
+            */
+            return section.collapsed ? (
+              <details className="flex flex-col" key={section.key}>
+                <summary className="cursor-pointer font-heading text-lg">
+                  {heading}
+                </summary>
+                <div className="pt-4">{grid}</div>
+              </details>
+            ) : (
+              <section className="flex flex-col gap-4" key={section.key}>
+                <h2 className="font-heading text-lg">{heading}</h2>
+                {grid}
+              </section>
+            );
+          })}
+        </div>
       )}
     </>
   );
@@ -327,7 +436,7 @@ function ListDetailSkeleton() {
           coup. Trois lignes à gauche et non deux, pour la même raison : le décompte (« 18 œuvres »)
           manquait, soit vingt pixels de moins que ce qui arrive.
         */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-5 w-96 max-w-full" />
@@ -346,10 +455,4 @@ function ListDetailSkeleton() {
       <CatalogueGridSkeleton />
     </>
   );
-}
-
-/** « 18 œuvres », « 1 œuvre », « Aucune œuvre » — la formulation de la carte de `/lists`. */
-function itemLabel(count: number): string {
-  if (count === 0) return "Aucune œuvre";
-  return count === 1 ? "1 œuvre" : `${count} œuvres`;
 }
