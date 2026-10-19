@@ -55,7 +55,7 @@ type FooterProps = {
 /**
  * Le pied de page.
  *
- * **Sa raison d'être est l'attribution AniList** (docs/PRODUCT.md §9 : usage non commercial,
+ * **Sa raison d'être est l'attribution AniList** (docs/conception.md §9 : usage non commercial,
  * attribution attendue). Tout le catalogue vient de chez eux et aucun écran ne le disait ; un pied
  * de page est exactement l'endroit d'une mention qu'on doit pouvoir trouver sans jamais avoir à la
  * chercher. Le reste — le plan, la signature — s'organise autour d'elle.

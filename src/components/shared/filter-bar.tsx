@@ -33,14 +33,14 @@ import {
  *
  * Elle a démarré dans `search/_components/search-filter-bar.tsx` et a été promue ici le 6 septembre
  * 2026, quand `/library` a demandé la même rangée : deuxième appelant, donc la règle de promotion
- * d'ARCHITECTURE.md s'applique. Elle atterrit dans `components/shared/` et non dans une feature
+ * d'CLAUDE.md s'applique. Elle atterrit dans `components/shared/` et non dans une feature
  * parce qu'elle ne connaît **aucune** entité — ni œuvre, ni entrée de suivi. Ce sont ses appelants
  * qui posent le vocabulaire : `search-filter-bar` parle de formats et de saisons,
  * `library-filter-bar` de statuts de suivi, et tous deux se ressemblent parce qu'ils composent les
  * mêmes pièces, pas parce que quelqu'un a recopié l'autre.
  *
  * C'est le premier gain de la refonte : `/search` et `/library` étaient le même écran écrit deux
- * fois (docs/STATE.md), et une barre dupliquée est l'endroit exact où les deux divergent au premier
+ * fois (voir l'historique git), et une barre dupliquée est l'endroit exact où les deux divergent au premier
  * correctif appliqué d'un seul côté.
  *
  * **Ce qui n'est pas ici** : le panneau de facettes de `/search` et ses primitives — colonnes,

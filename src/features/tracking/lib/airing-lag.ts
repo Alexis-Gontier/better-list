@@ -3,7 +3,7 @@
  *
  * Icotaku, Nautiljon, Myutaku et Crunchyroll disent ce qui sort ; ils ne disent pas où l'on en est,
  * parce qu'ils ne le savent pas. Seuls les suivis — Trakt, Sonarr — l'affichent, et c'est la
- * catégorie de Better-List (relevé du 8 septembre 2026, docs/JOURNAL.md). Ce fichier est donc la
+ * catégorie de Better-List (relevé du 8 septembre 2026, l'historique git). Ce fichier est donc la
  * seule chose de cet écran qu'on ne pouvait pas aller copier ailleurs.
  *
  * Fonctions pures et testées, comme `airing-week.ts` d'à côté : un décalage d'un épisode se lit mal
@@ -12,7 +12,7 @@
  * **Parti du `_lib/` de `/calendar`, promu ici le 14 septembre 2026, quand l'accueil en a eu
  * besoin** : sa rangée « Nouveaux épisodes » pose exactement la question du planning — combien
  * d'épisodes diffusés je n'ai pas vus. Deuxième route, donc `features/`, et `tracking/` plutôt que
- * `media/` : le retard n'existe que par `Entry.progress`. La règle de promotion d'ARCHITECTURE.md,
+ * `media/` : le retard n'existe que par `Entry.progress`. La règle de promotion d'CLAUDE.md,
  * appliquée comme elle l'a été pour `MediaCard`.
  */
 

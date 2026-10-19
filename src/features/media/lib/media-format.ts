@@ -93,7 +93,7 @@ const SOURCE_LABELS: Record<string, string> = {
  * Genres AniList, en français.
  *
  * **Cette table n'est pas un doublon du vocabulaire d'AniList, c'est sa traduction.** `GenreCollection`
- * rend « Slice of Life » ; l'interface est en français (docs/PRODUCT.md §7), donc il faut cette
+ * rend « Slice of Life » ; l'interface est en français (docs/conception.md §7), donc il faut cette
  * correspondance de toute façon — la fetcher n'y changerait rien. Ce sont les **valeurs** (les clés)
  * qui appartiennent à AniList et qui partent dans `genre_in` ; les libellés sont à nous.
  *
@@ -129,7 +129,7 @@ export function formatGenre(genre: string): string {
 
 /**
  * Statuts de suivi de la communauté AniList (`MediaListStatus`). Mêmes valeurs que `EntryStatus`
- * en base (docs/PRODUCT.md §4.2) : le jour où le suivi arrive, cette table lui sert aussi.
+ * en base (docs/conception.md §4.2) : le jour où le suivi arrive, cette table lui sert aussi.
  */
 const LIST_STATUS_LABELS: Record<StatusDistribution["status"], string> = {
   CURRENT: "En cours",
@@ -325,7 +325,7 @@ export function formatCountry(code: string | null): string | null {
 }
 
 /**
- * Titre à afficher, selon la préférence du compte (docs/PRODUCT.md §4.6).
+ * Titre à afficher, selon la préférence du compte (docs/conception.md §4.6).
  *
  * L'ordre de repli part du choix, puis descend vers ce qui existe : une œuvre sans titre anglais
  * doit s'afficher quand même. Le titre natif est le dernier recours par défaut — il est en japonais,
@@ -381,7 +381,7 @@ export type MirroredMedia = {
    * Les cinq colonnes du **panneau de survol** (14 septembre 2026).
    *
    * Elles étaient déjà dans la table `Media` — le miroir recopie toute la fiche depuis le début
-   * (docs/PRODUCT.md §4.1) —, seule la sélection les ignorait. Les ajouter ne coûte donc aucune
+   * (docs/conception.md §4.1) —, seule la sélection les ignorait. Les ajouter ne coûte donc aucune
    * requête, aucune migration : `/library`, `/lists/[id]` et `/l/[token]` disent désormais la même
    * chose que `/search` au survol, sans rien demander à AniList.
    */
@@ -593,7 +593,7 @@ export function formatSeason(
  *
  * **Promue ici le 14 septembre 2026** : elle était écrite dans le `_components/` de l'accueil, et le
  * panneau de survol de `MediaCard` en est le deuxième appelant — la règle de promotion
- * d'ARCHITECTURE.md. Elle atterrit dans `features/media/` et non dans `features/tracking/` parce
+ * d'CLAUDE.md. Elle atterrit dans `features/media/` et non dans `features/tracking/` parce
  * qu'`averageScore` est une propriété de l'œuvre, pas de mon suivi ; la conversion est la même que
  * celle de `scoreToStars`, mais la partager ferait dépendre le catalogue du domaine du suivi pour
  * une division.

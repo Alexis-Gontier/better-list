@@ -20,7 +20,7 @@ import {
  * **Second axe : la portée**, ajouté le 8 septembre 2026 sur décision d'Alexis. Ce fichier a porté
  * un seul axe jusque-là, et sa docstring le disait — l'écart est donc assumé et daté, pas subi.
  *
- * **Il a fait tomber une limite de `docs/PRODUCT.md` §9**, plutôt que de la contourner. §9 écartait
+ * **Il a fait tomber une limite de `docs/conception.md` §9**, plutôt que de la contourner. §9 écartait
  * le planning global en toutes lettres, et précisait que le proposer supposerait « une seconde
  * source ou un miroir des grilles horaires, **pas un réglage** » — c'est-à-dire exactement ce
  * paramètre. Son chiffre était faux : il annonçait cinq mille diffusions par semaine, la mesure en

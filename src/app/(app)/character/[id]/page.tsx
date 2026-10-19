@@ -99,7 +99,7 @@ async function CharacterContent({
   ]);
 
   if (!result) {
-    // Aucun repli : rien de ce qui fait cette page n'est stocké en base (PRODUCT.md §4.1).
+    // Aucun repli : rien de ce qui fait cette page n'est stocké en base (conception.md §4.1).
     return (
       <>
         <ReportAniListStatus down />

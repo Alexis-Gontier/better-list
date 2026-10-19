@@ -1,11 +1,11 @@
 ---
 name: new-feature
-description: Scaffold a new domain feature in this project following docs/ARCHITECTURE.md — creates src/features/<domaine>/ with components, server queries/actions, hooks, schemas, and wires the route. Use when adding a new business domain, a new page backed by data, or when asked "crée la feature X", "ajoute le domaine X", "nouvelle page X".
+description: Scaffold a new domain feature in this project following CLAUDE.md — creates src/features/<domaine>/ with components, server queries/actions, hooks, schemas, and wires the route. Use when adding a new business domain, a new page backed by data, or when asked "crée la feature X", "ajoute le domaine X", "nouvelle page X".
 ---
 
 # Créer une feature
 
-Ce projet suit une architecture hybride décrite dans `docs/ARCHITECTURE.md`. Lire ce fichier
+Ce projet suit une architecture hybride décrite dans `CLAUDE.md`. Lire ce fichier
 avant toute chose — ce qui suit en est la procédure d'application, pas un résumé complet.
 
 ## Avant de créer quoi que ce soit
@@ -43,7 +43,7 @@ src/features/<domaine>/
 └── lib/
 ```
 
-Pas de `types.ts` : `z.infer` sur le schéma a suffi aux six features existantes. Le créer d'avance
+Pas de `types.ts` : `z.infer` sur le schéma a toujours suffi jusqu'ici. Le créer d'avance
 donne une source de vérité en double qui finit par diverger.
 
 `lib/` n'accueille que les helpers **partagés par plusieurs routes**. Un helper qu'une seule route

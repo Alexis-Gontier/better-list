@@ -31,7 +31,7 @@ import { shareList, unshareList } from "@/features/lists/server/lists.actions";
 import type { ListDetail } from "@/features/lists/server/lists.queries";
 
 /**
- * Partager une liste par lien non listé, et cesser de la partager (docs/PRODUCT.md §4.4).
+ * Partager une liste par lien non listé, et cesser de la partager (docs/conception.md §4.4).
  *
  * **Deux états, et un seul fait qui les distingue** : la liste porte un jeton, ou elle n'en porte
  * pas. Il n'y a pas d'énumération de visibilité — elle a été retirée par migration parce que deux

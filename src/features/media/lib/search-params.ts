@@ -115,7 +115,7 @@ export const COUNTRY_OPTIONS = mediaCountrySchema.options.map((value) => ({
  *
  * `Hentai` est retiré de la **liste de filtres**, pas de la table de libellés : proposer une puce
  * qui ne rend rien tant que la préférence 18+ est éteinte serait un piège, et le filtre `isAdult`
- * se dérive du compte côté serveur, jamais de l'URL (docs/recherche-filtres.md §1.2). Une fiche
+ * se dérive du compte côté serveur, jamais de l'URL (.claude/skills/anilist-read/references/recherche-filtres.md §1.2). Une fiche
  * classée `Hentai` continue, elle, de s'afficher avec son genre traduit.
  */
 export const GENRE_OPTIONS = [
@@ -465,7 +465,7 @@ export type SelectiveFacet = {
 /**
  * La facette active la plus étroite, ou `null` s'il n'y en a aucune.
  *
- * Elle sert l'état « aucun résultat, filtres actifs » de docs/recherche-filtres.md §5, qui demande
+ * Elle sert l'état « aucun résultat, filtres actifs » de .claude/skills/anilist-read/references/recherche-filtres.md §5, qui demande
  * de **proposer un geste** plutôt que d'annoncer « rien trouvé ». Proposer de tout effacer ferait
  * perdre un panneau qu'on vient de remplir ; proposer la facette la plus étroite retire d'abord
  * celle qui a le plus de chances d'être seule responsable du vide.

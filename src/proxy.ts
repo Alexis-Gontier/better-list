@@ -22,7 +22,7 @@ import { safeRedirectPath } from "@/lib/security/safe-redirect";
  *   encore `PENDING` sur la liste d'attente.
  *
  * **La vérification qui fait autorité est dans `app/(app)/layout.tsx`** : session réellement
- * validée, et statut `APPROVED` contrôlé (`docs/PRODUCT.md` §7.1). Le proxy évite juste un
+ * validée, et statut `APPROVED` contrôlé (`docs/conception.md` §7.1). Le proxy évite juste un
  * aller-retour visible à l'utilisateur non connecté.
  */
 

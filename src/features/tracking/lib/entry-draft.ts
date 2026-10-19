@@ -15,7 +15,7 @@ import type { SaveEntryInput } from "@/features/tracking/schemas/tracking.schema
  *   coup, et une écriture par frappe y serait une écriture par hésitation.
  *
  * Ce que les deux partagent est l'invariant qui compte : **on n'envoie jamais l'état complet**
- * (docs/PRODUCT.md §4.2). Un onglet ouvert depuis dix minutes qui réécrirait ses huit champs
+ * (docs/conception.md §4.2). Un onglet ouvert depuis dix minutes qui réécrirait ses huit champs
  * effacerait, en cochant « favori », une progression saisie ailleurs entre-temps. Le formulaire
  * respecte donc la même règle que les contrôles, par différence plutôt que par construction.
  *
@@ -73,7 +73,7 @@ export function entryDraftFrom(entry: EntryState | null): EntryDraft {
  * Ce qui a bougé entre l'état chargé et le brouillon — et **rien d'autre**.
  *
  * Un champ absent du résultat vaut `undefined` pour la Server Action, c'est-à-dire « je n'y touche
- * pas, garde ton automatisme » (docs/PRODUCT.md §4.2). C'est ce qui laisse la transition dater la
+ * pas, garde ton automatisme » (docs/conception.md §4.2). C'est ce qui laisse la transition dater la
  * fin d'une série au dernier épisode alors que le formulaire affichait une date vide : ne pas
  * l'avoir touchée n'est pas l'avoir effacée.
  *

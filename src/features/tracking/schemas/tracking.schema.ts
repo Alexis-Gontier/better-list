@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 /**
- * Formes du suivi (docs/PRODUCT.md §4.2).
+ * Formes du suivi (docs/conception.md §4.2).
  *
  * Les énumérations sont recopiées ici plutôt qu'importées du client Prisma : ces schémas valident
  * des entrées venues du navigateur, et un schéma de validation ne doit pas dépendre d'un module

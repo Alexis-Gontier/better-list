@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
  * contenu.
  *
  * Deux appelants dès la première ligne — « Compte » et « Affichage » —, ce qui est précisément le
- * seuil de la règle de promotion d'ARCHITECTURE.md. Il reste dans le `_components/` de la route
+ * seuil de la règle de promotion d'CLAUDE.md. Il reste dans le `_components/` de la route
  * parce que ces deux appelants y sont : c'est `/settings` qui a des sections, pas l'application.
  *
  * Composant **serveur** : il ne rend que du texte et ses enfants.

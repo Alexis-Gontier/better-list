@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * Elle était écrite trois fois le 19 septembre 2026 : dans la rangée de `/collection`, dans
  * l'en-tête d'une série, et dans le tableau des tomes. Les trois avaient déjà divergé, et aucune
  * ne savait dire le cas des tomes au-delà du total. C'est la phrase, pas la réglette, qui porte la
- * réponse de l'écran (docs/PRODUCT.md §8 item 8) : elle mérite un seul endroit.
+ * réponse de l'écran (docs/conception.md §8 item 8) : elle mérite un seul endroit.
  *
  * **Elle est écrite pour être lue debout dans un rayon** (décision d'Alexis, 19 septembre 2026).
  * Le retournement qui la gouverne : en librairie, le présentoir dit déjà quels tomes existent, donc

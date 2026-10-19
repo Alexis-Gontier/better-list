@@ -19,7 +19,7 @@ export const metadata: Metadata = {
  * Mes listes — la grille de cartes, chacune avec ses quatre premières jaquettes.
  *
  * **La page ne fait aucun `await`.** Un `await` ici la rendrait dynamique en entier et annulerait
- * la frontière posée dessous (docs/ARCHITECTURE.md) : le titre et le trait sont statiques, et ils
+ * la frontière posée dessous (CLAUDE.md) : le titre et le trait sont statiques, et ils
  * doivent s'afficher pendant que la base répond. Une frontière par zone, jamais de `loading.tsx` de
  * segment.
  */

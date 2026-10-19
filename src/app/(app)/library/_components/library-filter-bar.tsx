@@ -34,7 +34,7 @@ import { useUrlFilters } from "@/hooks/use-url-filters";
  *    saisie ne protégerait rien et rendrait le champ moins vif pour rien.
  * 2. **Pas de bouton « Filtres », donc pas de panneau.** Le statut — de loin le plus employé — a
  *    déjà sa rangée en tête d'écran, et ce qui reste tient en trois contrôles alignés. Le jour où
- *    ma note, ma progression ou le cœur rejoindront le contrat (docs/recherche-filtres.md §2.1),
+ *    ma note, ma progression ou le cœur rejoindront le contrat (.claude/skills/anilist-read/references/recherche-filtres.md §2.1),
  *    le panneau se justifiera — et les primitives de `/search` seront à promouvoir à ce moment-là,
  *    pas avant.
  *

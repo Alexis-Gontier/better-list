@@ -23,7 +23,7 @@ import { prisma } from "@/lib/db/prisma";
  * Les lectures de l'étagère — **mes lignes `OwnedVolume`, jamais AniList.**
  *
  * Rien de ce qui est ici ne vient d'une API : AniList n'a aucune donnée au niveau du tome
- * (docs/PRODUCT.md §9), donc l'étagère est entièrement en base. C'est le seul écran du produit
+ * (docs/conception.md §9), donc l'étagère est entièrement en base. C'est le seul écran du produit
  * dans ce cas, et c'est ce qui le rend gratuit — aucun quota, aucun repli de panne à prévoir.
  *
  * **Aucun `"use cache"` dans ce fichier, et ce n'est pas un oubli** : `OwnedVolume` est personnel,
@@ -221,7 +221,7 @@ export type ShelfSummary = {
 };
 
 /**
- * Les chiffres de l'étagère — PRODUCT.md §8 item 12.
+ * Les chiffres de l'étagère — conception.md §8 item 12.
  *
  * Elle prend l'étagère déjà lue plutôt que de la relire : la page en a besoin des deux côtés, et
  * compter deux fois la même chose laisserait un jour les deux se contredire.
@@ -262,7 +262,7 @@ export async function getSeriesShelf(
 
   /*
     L'édition par défaut, ou celle où j'ai des tomes. Il n'y en a qu'une dans les faits — le
-    sélecteur multi-éditions n'est pas construit (docs/STATE.md) —, d'où le `findFirst` plutôt
+    sélecteur multi-éditions n'est pas construit (docs/conception.md) —, d'où le `findFirst` plutôt
     qu'une liste : `isDefault` d'abord garantit qu'on prend toujours la même.
 
     Elle peut exister sans que je possède un seul tome : `Edition` est **partagée** (§4.5), donc

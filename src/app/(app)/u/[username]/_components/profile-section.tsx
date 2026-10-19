@@ -17,7 +17,7 @@ import {
  * espacements différents.
  *
  * Elle naît dans le `_components/` de la route et n'en sortira que si un deuxième écran en veut —
- * c'est la règle de promotion d'ARCHITECTURE.md, et rien ici ne justifie de l'anticiper.
+ * c'est la règle de promotion d'CLAUDE.md, et rien ici ne justifie de l'anticiper.
  *
  * **La description n'est pas décorative.** Un graphe muet oblige à deviner ce qu'il compte ;
  * « chaque case est une journée » ou « une barre par demi-étoile » règle la question avant qu'elle

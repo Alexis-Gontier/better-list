@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Les préférences du compte (docs/PRODUCT.md §4.6).
+ * Les préférences du compte (docs/conception.md §4.6).
  *
  * **Deux réglages, et c'est tout ce qu'il y a à régler.** L'échelle de notation n'en est plus un —
  * les notes sont sur cinq étoiles pour tout le monde — et la langue de l'interface non plus :

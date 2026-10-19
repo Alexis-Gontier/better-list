@@ -8,7 +8,7 @@ import { routes } from "@/config/routes";
  * Ce fichier ne contient aucune URL en dur : un chemin qui n'existe pas dans `routes.ts` n'a rien
  * à faire dans la nav.
  *
- * Elle suit la carte de `docs/PRODUCT.md` §5 — la découverte (chercher, planning) et deux espaces
+ * Elle suit la carte de `docs/conception.md` §5 — la découverte (chercher, planning) et deux espaces
  * personnels (bibliothèque, listes). Il n'y a **pas** de section de découverte sociale : le cercle
  * est privé, il n'y a pas de communauté à explorer.
  *

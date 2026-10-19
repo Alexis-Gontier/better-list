@@ -8,7 +8,7 @@ const inter = Inter({
 /**
  * Le titrage. Une grotesque large et lourde, qui donne son caractère à la direction « Obsidienne »
  * là où la couleur reste volontairement neutre — l'identité passe par la typographie et la matière,
- * pas par la teinte (docs/superpowers/specs/2026-09-02-refonte-design-ui-design.md).
+ * pas par la teinte (docs/decisions.md, D33).
  */
 const archivo = Archivo({
   variable: "--font-archivo",

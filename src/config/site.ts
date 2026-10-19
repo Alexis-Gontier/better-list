@@ -4,7 +4,7 @@ export const site = {
     "Créez, partagez et suivez des listes. Vos favoris, vos envies, vos découvertes — au même endroit.",
 
   /**
-   * La source de tout le catalogue, et **l'attribution que ses CGU attendent** (docs/PRODUCT.md
+   * La source de tout le catalogue, et **l'attribution que ses CGU attendent** (docs/conception.md
    * §9 : usage non commercial, attribution attendue). Elle est due partout où l'on affiche leurs
    * données, c'est-à-dire sur l'application comme sur une liste partagée.
    *

@@ -2,7 +2,7 @@
  * Le titre d'un écran et la ligne qui dit ce qu'on y fait.
  *
  * Il naît **directement dans `components/shared/`**, ce qui est l'exception et pas l'oubli : la
- * règle de promotion d'ARCHITECTURE.md fait démarrer un composant dans le `_components/` de sa
+ * règle de promotion d'CLAUDE.md fait démarrer un composant dans le `_components/` de sa
  * route et ne l'en sort qu'au deuxième appelant — or il en a deux dès la première ligne, `/search`
  * et `/library`, qui l'ont demandé ensemble. Le faire naître dans l'un pour l'en sortir dans la
  * même passe serait la lettre de la règle contre son objet.

@@ -12,7 +12,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
 /**
- * Les lectures de mes listes (docs/PRODUCT.md §4.4).
+ * Les lectures de mes listes (docs/conception.md §4.4).
  *
  * **Jamais de `"use cache"`**, pour la raison de `library.queries.ts` : ces lectures dépendent du
  * visiteur, elles n'ont donc rien à mémoriser entre deux visiteurs.
@@ -27,7 +27,7 @@ import { prisma } from "@/lib/db/prisma";
  * Le compte courant, pour un écran qui vit **sous la garde du layout**.
  *
  * `requireApprovedUser()` est appelée une fois et une seule, dans `app/(app)/layout.tsx`
- * (docs/ARCHITECTURE.md) : la redemander ici serait une deuxième garde, c'est-à-dire deux endroits
+ * (CLAUDE.md) : la redemander ici serait une deuxième garde, c'est-à-dire deux endroits
  * où l'on peut se tromper. Arriver sans session est donc un défaut de câblage — une route sortie du
  * groupe `(app)` —, pas un cas d'usage à traiter en silence. Renvoyer une page sans liste le
  * masquerait précisément le jour où il compte.
@@ -63,7 +63,7 @@ export type ListSummary = {
 /**
  * Mes listes, avec de quoi dessiner leur carte : le décompte et les quatre premières jaquettes.
  *
- * **`List` n'a ni `cover` ni compteur d'items** — `PRODUCT.md` §4.4 mentionne la première, elle
+ * **`List` n'a ni `cover` ni compteur d'items** — `conception.md` §4.4 mentionne la première, elle
  * n'existe pas au schéma. Les deux se dérivent donc des `ListItem`, et c'était le seul vrai
  * problème de lecture de cet écran : quatre jaquettes par carte, sur une page de listes, sans faire
  * une requête par liste.
@@ -103,7 +103,7 @@ export type ListSummary = {
  *
  * **`includeAdult` filtre les jaquettes, pas le décompte** — décision d'Alexis du 6 septembre 2026,
  * prise en regardant l'écran. Le filtre est dans la requête et non en masque d'affichage, comme
- * partout ailleurs (docs/recherche-filtres.md §2.5) ; mais il ne porte que sur les quatre vignettes,
+ * partout ailleurs (.claude/skills/anilist-read/references/recherche-filtres.md §2.5) ; mais il ne porte que sur les quatre vignettes,
  * parce que le décompte parle de la liste et non de ce qu'on en montre. Une liste que j'ai composée
  * moi-même annonce donc toujours ce qu'elle contient, même quand sa préférence en cache l'aperçu.
  *
@@ -312,7 +312,7 @@ export type SharedList = {
 };
 
 /**
- * Une liste ouverte **par son jeton**, sans session (docs/PRODUCT.md §4.4).
+ * Une liste ouverte **par son jeton**, sans session (docs/conception.md §4.4).
  *
  * **C'est la seule lecture du dépôt qui ne demande à personne qui il est**, et c'est délibéré :
  * `/l/[token]` vit hors du groupe `(app)`, donc `requireApprovedUser()` ne la couvre pas. La garde,

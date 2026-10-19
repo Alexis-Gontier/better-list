@@ -6,7 +6,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 
 /**
- * Le jeton d'un lien non listé (docs/PRODUCT.md §4.4).
+ * Le jeton d'un lien non listé (docs/conception.md §4.4).
  *
  * **C'est un secret, pas un identifiant lisible.** Toute la protection d'une liste partagée tient à
  * l'impossibilité de deviner ce jeton : il n'y a ni session à valider ni compte à reconnaître

@@ -3,7 +3,7 @@
  *
  * **À quoi ça sert.** La moitié des écrans du produit ne se voient pas sur une base vide, et
  * certains ne se voient pas non plus sur une base fraîche : « À reprendre » ne montre quelque chose
- * qu'avec des séries laissées de côté depuis des mois (docs/PRODUCT.md §8.4), et le journal ne se
+ * qu'avec des séries laissées de côté depuis des mois (docs/conception.md §8.4), et le journal ne se
  * regroupe par journée qu'avec des événements étalés dans le temps. Les fabriquer à la main
  * demandait une soirée de clics ; c'est le rôle de ce fichier.
  *
@@ -644,7 +644,7 @@ async function seedLists(userId: string, catalogue: MirroredMedia[]) {
  *
  * **Le jeu est choisi pour que l'écran ait quelque chose à dire.** Une étagère entièrement
  * complète ne montrerait jamais la phrase des manquants, qui est la raison d'être de
- * `/collection` (docs/PRODUCT.md §8 item 8) ; une étagère entièrement trouée ne montrerait jamais
+ * `/collection` (docs/conception.md §8 item 8) ; une étagère entièrement trouée ne montrerait jamais
  * la pastille « Complète » ni l'onglet qui les regroupe. On veut les deux, et le cas limite entre
  * les deux — une série où il ne manque qu'un tome au milieu.
  */

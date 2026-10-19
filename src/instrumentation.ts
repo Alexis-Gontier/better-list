@@ -37,7 +37,7 @@ export const onRequestError: Instrumentation.onRequestError = (
   /**
    * L'erreur n'est pas toujours celle qui a été levée : React la retraite quand elle survient
    * pendant le rendu d'un Server Component. C'est la même contrainte que celle du cache décrite
-   * dans ARCHITECTURE.md — on lit ce qui a survécu au transport, pas l'instance d'origine.
+   * dans CLAUDE.md — on lit ce qui a survécu au transport, pas l'instance d'origine.
    */
   const message = error instanceof Error ? error.message : String(error);
   const digest =

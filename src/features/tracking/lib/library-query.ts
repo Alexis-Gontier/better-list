@@ -22,7 +22,7 @@ import {
  * plus — sans erreur de compilation, et sans que rien ne se voie à la relecture.
  *
  * **`includeAdult` est appliqué dans la requête**, jamais par un masque d'affichage : la règle vaut
- * ici comme sur la fiche et sur la recherche (docs/recherche-filtres.md §2.5). Une ligne écartée à
+ * ici comme sur la fiche et sur la recherche (.claude/skills/anilist-read/references/recherche-filtres.md §2.5). Une ligne écartée à
  * l'affichage a quand même traversé le réseau, fausse les décomptes et compte dans la pagination.
  */
 export function mediaConditions({
@@ -79,7 +79,7 @@ const nullsLast = (sort: Order) => ({ sort, nulls: "last" as const });
  * des lignes.** Le départage ne suit pas le sens choisi : il n'est pas la question posée.
  *
  * `nulls: "last"` sur toute colonne qui peut manquer : « pas encore noté » n'est pas zéro
- * (docs/PRODUCT.md §4.2), et une œuvre jamais commencée n'a pas commencé « il y a très longtemps ».
+ * (docs/conception.md §4.2), et une œuvre jamais commencée n'a pas commencé « il y a très longtemps ».
  * Les remonter en tête quand on renverse le sens serait le contraire de la question posée.
  *
  * Le tri par titre suit **la langue d'affichage du compte**, repli compris (`TITLE_SORT_FIELD`) :

@@ -10,7 +10,7 @@ import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
 /**
- * Les préférences d'affichage du compte courant (docs/PRODUCT.md §4.6).
+ * Les préférences d'affichage du compte courant (docs/conception.md §4.6).
  *
  * **Pas de `"use cache"` ici, et ce n'est pas un oubli** : la fonction dépend de l'identité du
  * visiteur. Une entrée mémorisée servirait la préférence d'un compte à un autre — un titre en

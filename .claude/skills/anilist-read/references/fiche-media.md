@@ -1,13 +1,17 @@
 # La fiche d'une œuvre — inventaire de ce qu'on peut y mettre
 
+> Référence de la skill `anilist-read`, déplacée depuis `docs/` le 19 octobre 2026. Les cases
+> cochées disent ce qui était branché ce jour-là : vérifier dans le code avant de s'y fier. Les
+> « §4.1 », « §8 »… renvoient à [docs/conception.md](../../../../docs/conception.md).
+
 > **Ce document est une liste à cocher, pas une spécification.** Une case cochée veut dire
 > « c'est affiché sur `/media/[id]` aujourd'hui », pas « c'est décidé ». Ce qui reste décoché
 > n'est pas une promesse : c'est du disponible, et la question de savoir si ça mérite une place à
 > l'écran se tranche au cas par cas.
 
 Il répond à une question qu'on se pose à chaque séance de refonte — *qu'est-ce qu'on a, au juste ?*
-— et évite d'y répondre de mémoire. [PRODUCT.md](./PRODUCT.md) dit ce qu'on veut construire ;
-[STATE.md](./STATE.md) dit où en est le dépôt ; celui-ci ne parle que d'un écran.
+— et évite d'y répondre de mémoire. [conception.md](../../../../docs/conception.md) dit ce qu'on veut construire ;
+[conception.md §5](../../../../docs/conception.md) dit où en est le dépôt ; celui-ci ne parle que d'un écran.
 
 Relevé le **6 septembre 2026**.
 
@@ -97,7 +101,7 @@ ici ne demande donc aucun budget de quota : la donnée est dans l'objet, elle at
 
 **Les liens vers d'autres œuvres**
 
-- [x] `relations` — **groupées par nature de lien**, chaque groupe en jaquettes (`MediaCard`) sous son intitulé et son compte. C'est la première fois que cet écran ressemble à l'ordre de visionnage d'une franchise (PRODUCT.md §8) : la structure est la mise en page, pas une étiquette à lire ligne par ligne. Les groupes suivent `RELATION_ORDER` ; la colonne vertébrale — origine, préquelle, suite, œuvre principale, adaptation — reste dépliée, le contexte se replie. **Pas de requête dédiée** : le champ n'accepte aucune pagination chez AniList, donc la requête de fiche les a déjà toutes
+- [x] `relations` — **groupées par nature de lien**, chaque groupe en jaquettes (`MediaCard`) sous son intitulé et son compte. C'est la première fois que cet écran ressemble à l'ordre de visionnage d'une franchise (conception.md §8) : la structure est la mise en page, pas une étiquette à lire ligne par ligne. Les groupes suivent `RELATION_ORDER` ; la colonne vertébrale — origine, préquelle, suite, œuvre principale, adaptation — reste dépliée, le contexte se replie. **Pas de requête dédiée** : le champ n'accepte aucune pagination chez AniList, donc la requête de fiche les a déjà toutes
 - [x] `recommendations` — **six dans l'aperçu, vingt dans l'onglet** (`MEDIA_RECOMMENDATIONS_QUERY`), en `MediaCard` telle quelle : la même carte que `/search` et `/library`. Le `rating` n'est pas affiché — c'est l'ordre qui le porte
 
 **Ailleurs**
@@ -130,7 +134,7 @@ seulement en japonais. Et `characters` / `staff` / `recommendations` sont pagin�
 
 ### 1.3 Ce qu'AniList n'a pas — à ne jamais promettre
 
-Ces quatre points sont déjà dans PRODUCT.md §9. Ils sont rappelés ici parce que c'est sur cette page
+Ces quatre points sont déjà dans conception.md §9. Ils sont rappelés ici parce que c'est sur cette page
 qu'on est tenté de les oublier.
 
 - **Ni synopsis ni titre français.**
@@ -143,17 +147,17 @@ qu'on est tenté de les oublier.
 ## 2. Ce que le site fournit lui-même
 
 C'est ici que se joue la différence avec AniList et MyAnimeList : ces données n'existent nulle part
-ailleurs, et ce sont elles qui font le produit (PRODUCT.md §8).
+ailleurs, et ce sont elles qui font le produit (conception.md §8).
 
 **La barre de suivi enregistre pour de bon depuis le 6 septembre 2026.** Elle a passé une séance en
 coquille — ses contrôles répondaient au clic et leur état disparaissait au rechargement, le temps que
 la mise en page soit validée. `saveEntry` et `removeEntry` existent
-([`tracking.actions.ts`](../src/features/tracking/server/tracking.actions.ts)), et ce sont les
+([`tracking.actions.ts`](../../../../src/features/tracking/server/tracking.actions.ts)), et ce sont les
 premières Server Actions du dépôt.
 
 **Elle enregistre au geste**, là où la fenêtre d'édition enregistre au bouton : sur une fiche on
 vient poser *un* geste, et un bouton « Enregistrer » ajouterait une confirmation à une décision déjà
-prise. Dans les deux cas on n'envoie que **ce qui a changé**, jamais l'état complet (PRODUCT.md
+prise. Dans les deux cas on n'envoie que **ce qui a changé**, jamais l'état complet (conception.md
 §4.2).
 
 **Et la fenêtre est là aussi**, depuis le 6 septembre : la barre porte le statut, la progression et

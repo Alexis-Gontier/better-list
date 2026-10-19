@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Tests de bout en bout — les parcours critiques (docs/PRODUCT.md §7).
+ * Tests de bout en bout — les parcours critiques (docs/conception.md §7, D26).
  *
  * En local, on réutilise le `pnpm dev` déjà lancé s'il y en a un. En CI, on sert le build de
  * production : c'est ce que la doc Next recommande, et c'est ce qui tourne chez Vercel.

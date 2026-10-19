@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
  * pas par un effet d'affiche. Le cran de plus tient à l'écran : il n'a rien d'autre à montrer.
  *
  * **Aucun mot n'y est mis en couleur.** L'accent a un seul emploi par écran, l'action principale
- * (docs/superpowers/specs/2026-09-02-refonte-design-ui-design.md) — ici, le bouton de connexion.
+ * (docs/decisions.md, D33) — ici, le bouton de connexion.
  */
 export function AuthTitle({ children }: { children: ReactNode }) {
   return (

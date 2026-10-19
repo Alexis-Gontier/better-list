@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
  * L'avatar d'un membre : sa photo GitHub, ou ses initiales quand elle manque.
  *
  * Il naît dans `components/shared/` parce qu'il a deux appelants — le menu du compte dans l'en-tête
- * et le bloc « Compte » des paramètres. C'est la promotion prévue par ARCHITECTURE.md, pas une
+ * et le bloc « Compte » des paramètres. C'est la promotion prévue par CLAUDE.md, pas une
  * exception : le composant vivait déjà dans `layout/user-menu.tsx`, il en sort au deuxième usage.
  *
  * Il atterrit dans `shared/` et non dans `features/` parce qu'il ne connaît aucune entité : il met

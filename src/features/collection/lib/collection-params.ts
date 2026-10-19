@@ -12,7 +12,7 @@ import {
  * changement.
  *
  * Il n'y a **qu'un** paramètre, et c'est délibéré. La question de l'écran est « il me manque
- * lesquels ? » (docs/PRODUCT.md §8 item 8) : « incomplètes » est la réponse à cette question, pas
+ * lesquels ? » (docs/conception.md §8 item 8) : « incomplètes » est la réponse à cette question, pas
  * une facette parmi d'autres. Un tri, un type, une recherche viendront s'il manquent — pas
  * d'avance.
  *
@@ -20,7 +20,7 @@ import {
  * que `library-params.ts` vit dans `features/tracking/lib/` : **la lecture le consomme aussi.**
  * `getShelf` prend un `CollectionState`, et un contrat d'URL dont le serveur dépend ne peut pas
  * rester privé à une route — ce serait `features/` qui importerait `app/`, à contresens
- * d'ARCHITECTURE.md.
+ * d'CLAUDE.md.
  */
 
 /**

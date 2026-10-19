@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
  * n'envoie qu'une valeur**, jamais par choix d'interface : le format, le statut et le pays passent
  * en `format` / `status` / `countryOfOrigin` au singulier. Les genres, eux, partent déjà en
  * `genre_in` — le document les accepte au pluriel depuis toujours, donc ce sont les seuls à être
- * multiples aujourd'hui (docs/recherche-filtres.md §1.3).
+ * multiples aujourd'hui (.claude/skills/anilist-read/references/recherche-filtres.md §1.3).
  */
 
 /** L'absence de filtre, côté interface. Radix réserve la chaîne vide à « rien de sélectionné ». */

@@ -13,14 +13,14 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
  * La tête d'une série de l'étagère : la jaquette, le titre, le compte, et ce qui manque.
  *
  * **L'édition est muette** — décision du 19 septembre 2026, après avoir vu les deux à l'écran.
- * PRODUCT.md §4.5 veut qu'on n'ait rien à remplir dans le cas courant, et l'écran va jusqu'au
+ * conception.md §4.5 veut qu'on n'ait rien à remplir dans le cas courant, et l'écran va jusqu'au
  * bout : tant qu'il n'y a qu'une édition, il n'en écrit pas le nom. « Ki-oon · Édition simple ·
  * 30 tomes » sous chaque titre était une ligne vraie et inutile — dans un cercle de quatre
  * comptes, presque personne n'a deux éditions d'une même série.
  *
  * Ce qui reste, c'est **la porte** (`edition-menu.tsx`), parce que « ne rien dire » ne peut pas
  * vouloir dire « ne rien offrir ». Le jour où une deuxième édition existe, un sélecteur prendra la
- * place du silence — ce cas n'a pas d'écran (docs/STATE.md).
+ * place du silence — ce cas n'a pas d'écran (docs/conception.md).
  *
  * Composant **serveur** ; seul le menu est un îlot.
  */

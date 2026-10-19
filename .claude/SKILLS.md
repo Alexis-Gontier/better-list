@@ -17,8 +17,8 @@ Ce fichier remplace le lock manquant : il dit d'où vient chaque skill et quand 
 
 | Skill | Rôle |
 | --- | --- |
-| `new-feature` | Créer une feature selon `docs/ARCHITECTURE.md` |
-| `anilist-read` | Ajouter une lecture AniList : document, schéma, cache, quota |
+| `new-feature` | Créer une feature selon `CLAUDE.md` et `.claude/rules/` |
+| `anilist-read` | Ajouter une lecture AniList : document, schéma, cache, quota. Ses `references/` portent l'inventaire des champs et des filtres AniList |
 | `e2e-test` | Écrire un test Playwright ici : comptes de test, tag `@anilist`, lancement |
 
 ## Copies figées de skills externes
@@ -29,14 +29,11 @@ Copiées depuis les skills personnelles (`~/.claude/skills/`) le **7 août 2026*
 | --- | --- |
 | `better-auth-best-practices` | Better Auth |
 | `better-auth-security-best-practices` | Better Auth |
-| `create-auth` | Better Auth |
-| `email-and-password-best-practices` | Better Auth |
 | `prisma-cli` | Prisma |
 | `prisma-client-api` | Prisma |
-| `prisma-database-setup` | Prisma |
 | `upfetch` | up-fetch |
 
-Ces huit-là existent aussi en version personnelle sur la machine actuelle, donc **en double dans
+Ces cinq-là existent aussi en version personnelle sur la machine actuelle, donc **en double dans
 la liste des skills**. Le doublon est le prix de la portabilité : il est assumé, pas accidentel.
 
 Copiées le **11 octobre 2026**, pour les tests de bout en bout.
@@ -60,9 +57,15 @@ cp -r ~/.claude/skills/<nom> .claude/skills/<nom>
 Puis mettre à jour la date ci-dessus. À faire quand la bibliothèque sous-jacente change de version
 majeure — Better Auth, Prisma, up-fetch — pas au fil de l'eau.
 
+## Retirées le 19 octobre 2026
+
+`create-auth` et `prisma-database-setup` servaient à installer l'auth et la base, ce qui est fait.
+`email-and-password-best-practices` décrivait un mode de connexion désactivé (GitHub seul). Si
+l'un de ces besoins revient, recopier la skill depuis `~/.claude/skills/`.
+
 ## Agents
 
 | Agent | Rôle |
 | --- | --- |
-| `convention-reviewer` | Relit un diff contre `ARCHITECTURE.md` et `PRODUCT.md` |
+| `convention-reviewer` | Relit un diff contre `CLAUDE.md`, `.claude/rules/` et `docs/decisions.md` |
 | `next-docs` | Répond sur Next 16 depuis `node_modules/next/dist/docs/` |

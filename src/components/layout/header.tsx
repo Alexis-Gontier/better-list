@@ -54,7 +54,7 @@ export function Header({ user }: { user: SessionUser }) {
           {/*
             La recherche est **la première du groupe de droite** : c'est un geste de navigation, et
             les trois qui suivent sont des réglages du compte. Elle revient le 13 septembre 2026,
-            réécrite depuis une page blanche (docs/STATE.md).
+            réécrite depuis une page blanche (voir l'historique git).
           */}
           <div className="flex items-center gap-2">
             <CommandSearch />

@@ -14,7 +14,7 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
  * Elle a démarré dans le `_components/` de `/search` et **a été promue ici le 6 septembre 2026,
  * quand `/library` en a eu besoin** : deuxième route, donc `features/media/components/`, la maison
  * d'un composant qui connaît une entité métier (`MediaCompact`, `mediaTitle`, `routes.media`).
- * C'est la règle de promotion d'ARCHITECTURE.md appliquée à la lettre — celle qui avait été
+ * C'est la règle de promotion d'CLAUDE.md appliquée à la lettre — celle qui avait été
  * enfreinte en connaissance de cause pour les contrôles de suivi, promus avant leur deuxième
  * appelant.
  *
@@ -132,7 +132,7 @@ export function MediaCard({
             qui entrent dans le champ de vision. Chaque préchargement de `/media/[id]` exécute la
             `generateMetadata` de la fiche, qui appelle AniList : sur une grille de vingt et une cartes,
             faire défiler la recherche pourrait donc dépenser jusqu'à vingt et une des trente requêtes
-            que la minute partage entre tous les visiteurs (docs/recherche-filtres.md), sans que
+            que la minute partage entre tous les visiteurs (.claude/skills/anilist-read/references/recherche-filtres.md), sans que
             personne n'ait cliqué.
 
             **Non vérifié à l'écran, et ça ne peut pas l'être ici** : Next désactive le préchargement

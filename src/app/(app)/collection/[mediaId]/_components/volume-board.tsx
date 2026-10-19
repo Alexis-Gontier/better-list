@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
  * plage.
  *
  * Retenu le 19 septembre 2026 contre une fenêtre « du tome … au tome … », sur un critère
- * d'Alexis : **un seul clic pour ajouter**. La saisie par plage (docs/PRODUCT.md §8 item 9) n'est
+ * d'Alexis : **un seul clic pour ajouter**. La saisie par plage (docs/conception.md §8 item 9) n'est
  * donc pas un mode à part, c'est le même geste tenu plus longtemps — et l'action reçoit deux
  * bornes dans les deux cas, `from === to` pour un clic.
  *
@@ -129,7 +129,7 @@ export function VolumeBoard({
    * déclaré doit rester visible, sinon il devient impossible à décocher tout en continuant de
    * compter. Le cas arrive pour de vrai — on saisit les tomes d'une série en cours, puis AniList
    * publie un `volumes` plus court que ce qu'on a sur l'étagère, parce qu'il ne compte pas la même
-   * édition (docs/PRODUCT.md §9).
+   * édition (docs/conception.md §9).
    *
    * Et au moins une case, pour qu'une série vierge ait quelque chose à cliquer.
    */

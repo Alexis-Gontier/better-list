@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 /**
- * Formes de la collection physique (docs/PRODUCT.md §4.5).
+ * Formes de la collection physique (docs/conception.md §4.5).
  *
  * **Ce que ces schémas ne couvrent pas est une décision, pas un oubli.** `OwnedVolume` porte aussi
  * `price`, `acquiredAt`, `condition` et `notes` ; aucun écran ne les remplit — retirés le

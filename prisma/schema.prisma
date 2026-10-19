@@ -1,6 +1,6 @@
 // Better-List — schéma de données
 //
-// Le modèle de domaine et ses justifications sont dans docs/PRODUCT.md §4. Ce fichier en est la
+// Le modèle de domaine et ses justifications sont dans docs/conception.md §4. Ce fichier en est la
 // traduction, pas la source : une décision de modélisation se prend là-bas, puis se code ici.
 //
 // Trois séparations gouvernent tout le reste :
@@ -11,7 +11,7 @@
 
 generator client {
   provider = "prisma-client"
-  // Sous `src/` pour rester joignable par l'alias unique `@/*` (docs/ARCHITECTURE.md).
+  // Sous `src/` pour rester joignable par l'alias unique `@/*` (CLAUDE.md).
   // Généré, donc gitignoré et exclu de Biome comme de knip.
   output   = "../src/generated/prisma"
 }
@@ -262,7 +262,7 @@ model UserPreferences {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// Pas d'échelle de notation : les notes sont sur cinq étoiles, demies comprises, pour tout le
-  /// monde (docs/PRODUCT.md §4.2). Le stockage d'`Entry.score` reste sur 0–100 — c'est ce qui garde
+  /// monde (docs/conception.md §4.2). Le stockage d'`Entry.score` reste sur 0–100 — c'est ce qui garde
   /// leur précision aux notes importées d'AniList, pas un réglage d'affichage.
   titleLanguage TitleLanguage @default(ROMAJI)
   /// Filtre 18+. Appliqué côté serveur, jamais par un masque d'affichage.
@@ -416,7 +416,7 @@ model Entry {
 /// 2026.
 ///
 /// **Une œuvre pointe vers le miroir, une personne garde un instantané.** Les personnages et le
-/// staff ne sont pas en base (PRODUCT.md §4.1) : le nom et le portrait sont recopiés au moment du
+/// staff ne sont pas en base (conception.md §4.1) : le nom et le portrait sont recopiés au moment du
 /// like, pour que le profil ne fasse aucune requête AniList et reste lisible pendant une panne.
 model Favorite {
   id String @id @default(cuid())

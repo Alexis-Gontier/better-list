@@ -13,7 +13,7 @@ import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
 import { cn } from "@/lib/utils";
 
 /**
- * Le statut de suivi d'une œuvre (docs/PRODUCT.md §4.2).
+ * Le statut de suivi d'une œuvre (docs/conception.md §4.2).
  *
  * **L'ordre des options n'est pas celui de l'énumération**, et c'est délibéré : `EntryStatus`
  * commence par `CURRENT` parce qu'il recopie `MediaListStatus` d'AniList, mais on choisit ici dans

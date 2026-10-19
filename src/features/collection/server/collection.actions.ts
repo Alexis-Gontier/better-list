@@ -14,7 +14,7 @@ import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
 /**
- * Les écritures de l'étagère physique (docs/PRODUCT.md §4.5).
+ * Les écritures de l'étagère physique (docs/conception.md §4.5).
  *
  * Deux gestes, et deux seulement : poser ou retirer une plage de tomes, et corriger le nombre de
  * tomes d'une édition. C'est tout ce que l'écran offre, et c'est délibéré — prix, date

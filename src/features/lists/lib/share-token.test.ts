@@ -6,7 +6,7 @@ import { generateShareToken } from "@/features/lists/lib/share-token";
  * Ce fichier teste **le seul secret du projet**.
  *
  * Une liste partagée s'ouvre sur `/l/<jeton>` sans session, sans compte et sans garde : il n'y a
- * rien derrière ce jeton que le jeton lui-même (docs/PRODUCT.md §4.4). Chacune des propriétés
+ * rien derrière ce jeton que le jeton lui-même (docs/conception.md §4.4). Chacune des propriétés
  * vérifiées ici est donc une façon dont la confidentialité tomberait sans que rien ne casse par
  * ailleurs — un jeton trop court, un alphabet qui oblige à échapper, un générateur prévisible :
  * l'application continuerait de fonctionner parfaitement dans les trois cas.

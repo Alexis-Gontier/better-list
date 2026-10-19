@@ -37,7 +37,7 @@ export async function generateMetadata({
  * - **Le geste de saisie est la grille qu'on peint**, pas une fenêtre « du tome … au tome … ».
  *   Le critère était « un seul clic pour ajouter » : poser le tome qu'on vient d'acheter coûte un
  *   clic ici, contre une fenêtre à ouvrir, remplir et refermer là-bas. La saisie par plage
- *   (PRODUCT.md §8 item 9) n'est pas un mode à part, c'est le même geste tenu.
+ *   (conception.md §8 item 9) n'est pas un mode à part, c'est le même geste tenu.
  * - **Prix, date d'acquisition et état sont retirés de l'écran.** Ils ne vivaient que dans la
  *   fenêtre, et elle part avec l'arbitrage. Les colonnes restent au schéma — les retirer coûterait
  *   une migration pour rien —, mais plus rien ne les remplit, et le « budget cumulé » de §8

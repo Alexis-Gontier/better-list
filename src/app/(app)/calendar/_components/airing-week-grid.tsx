@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
  * ⚠️ **C'est un retour en arrière assumé sur le relevé du 8 septembre 2026**, et il faut le savoir
  * en lisant ce fichier. Douze plannings en service avaient été relevés — Nautiljon, Icotaku,
  * Myutaku, Animesphere, aniSearch.fr, LiveChart, AnimeSchedule, MyAnimeList, Trakt — et **les douze
- * rendent une liste verticale groupée par jour, aucun une grille** (docs/JOURNAL.md). La liste a
+ * rendent une liste verticale groupée par jour, aucun une grille** (voir l'historique git). La liste a
  * donc été livrée d'abord, puis remplacée sur demande d'Alexis, qui la préfère en grille. C'est sa
  * décision et elle est nette ; ce commentaire n'existe que pour qu'on ne redécouvre pas le relevé
  * dans six mois en croyant à un oubli.

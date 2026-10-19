@@ -26,7 +26,7 @@ import { anilistQuery, tryAniList } from "@/lib/http/anilist";
 /**
  * La fiche servie depuis le **miroir local**, quand AniList ne répond pas.
  *
- * Le miroir ne stocke que de quoi afficher une carte et trier (docs/PRODUCT.md §4.1) : ni synopsis,
+ * Le miroir ne stocke que de quoi afficher une carte et trier (docs/conception.md §4.1) : ni synopsis,
  * ni personnages, ni relations, ni liens de streaming. Une fiche reconstruite ici est donc
  * **volontairement pauvre** — c'est le prix d'un écran qui reste debout un jour de coupure, et
  * l'appelant doit le dire au visiteur plutôt que de le laisser croire à une œuvre sans contenu.
@@ -195,7 +195,7 @@ function toMirrorRow(media: MediaMirror, syncedAt: Date) {
  * Copier l'œuvre dans le miroir **avant toute écriture qui y pointe** — et ne rien faire si elle y
  * est déjà et n'est pas périmée.
  *
- * C'est le garde-fou de PRODUCT.md §4.1, reposé avec la première Server Action. Il est
+ * C'est le garde-fou de conception.md §4.1, reposé avec la première Server Action. Il est
  * **obligatoire** et pas optimiste : `Entry.mediaId` porte une clé étrangère vers `Media`, donc
  * suivre depuis `/search` une œuvre que personne n'a jamais croisée échouerait au niveau de la base.
  * Le miroir n'est pas un index du catalogue, c'est la mémoire de ce que ce cercle a rencontré : il
@@ -226,7 +226,7 @@ export async function ensureMediaMirror(mediaId: number): Promise<void> {
     Passer la préférence du visiteur ferait renvoyer `null` sur une œuvre classée adulte, et donc
     échouer l'écriture — alors que la question « est-ce que je montre cette œuvre à *ce* compte ? »
     est déjà tranchée en amont, à la lecture, et l'est dans la requête plutôt que par un masque
-    (docs/recherche-filtres.md §2.5). Quelqu'un qui arrive ici a forcément déjà vu la fiche.
+    (.claude/skills/anilist-read/references/recherche-filtres.md §2.5). Quelqu'un qui arrive ici a forcément déjà vu la fiche.
   */
   const media = await tryAniList(() =>
     getMediaById(mediaId, { includeAdult: true }),
@@ -291,7 +291,7 @@ export type MirrorRefreshSummary = {
 };
 
 /**
- * Rafraîchit les lignes périmées du miroir. **C'est le corps du cron** (docs/PRODUCT.md §4.1).
+ * Rafraîchit les lignes périmées du miroir. **C'est le corps du cron** (docs/conception.md §4.1).
  *
  * Quatre points portent la correction de cette fonction.
  *
@@ -466,7 +466,7 @@ export type MirrorSearchResult = {
  * la mémoire de ce que ce cercle a croisé.
  *
  * `includeAdult` est appliqué **dans la requête**, jamais par un masque d'affichage — la règle vaut
- * ici comme ailleurs (docs/recherche-filtres.md §2.5).
+ * ici comme ailleurs (.claude/skills/anilist-read/references/recherche-filtres.md §2.5).
  */
 export async function searchMediaInMirror({
   filters,

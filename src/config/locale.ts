@@ -1,7 +1,7 @@
 /**
  * Langue et fuseau de l'application.
  *
- * **Les deux sont des constantes, pas des préférences** (docs/PRODUCT.md §7). L'interface est en
+ * **Les deux sont des constantes, pas des préférences** (docs/conception.md §7). L'interface est en
  * français uniquement, et l'heure est celle de Paris quoi qu'il arrive.
  *
  * Le fuseau est le point à ne pas rater : une date rendue sans fuseau explicite est calculée avec

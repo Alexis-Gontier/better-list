@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * PreToolUse hook — refuse une écriture qui viole une règle non négociable de
- * `docs/ARCHITECTURE.md`.
+ * `CLAUDE.md`.
  *
  * Ne contient que des règles **déterministes** : chacune se vérifie par un chemin ou une regex,
  * sans jugement. Une règle qui demanderait de l'interprétation n'a rien à faire ici — elle va
@@ -35,7 +35,7 @@ const ENV_ALLOWED_PREFIXES = [".claude/", "e2e/"];
 
 /**
  * Les seuls fichiers tolérés à la racine de `src/lib/` — le reste est rangé par sujet
- * (`auth/`, `db/`, `http/`, `security/`), voir ARCHITECTURE.md.
+ * (`auth/`, `db/`, `http/`, `security/`), voir CLAUDE.md.
  *
  * `utils.ts` est immobile pour une raison extérieure au projet : `components.json` déclare
  * `aliases.utils`, et tout ce que shadcn génère importe `@/lib/utils`.

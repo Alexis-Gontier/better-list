@@ -23,7 +23,7 @@ export const metadata: Metadata = { title: "Connexion" };
  */
 export const instant = false;
 
-/** Ce que le produit fait, en quatre mots — les quatre piliers de docs/PRODUCT.md. */
+/** Ce que le produit fait, en quatre mots — les quatre piliers de docs/conception.md. */
 const FEATURES = ["Suivi", "Journal", "Collection", "Listes"] as const;
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {

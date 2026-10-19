@@ -19,7 +19,7 @@ import {
  * a eu besoin** : elle pose exactement la question de la rangée « En cours » — combien d'épisodes
  * diffusés je n'ai pas vus —, mais depuis les dix routes au lieu d'une seule. Deuxième consommateur,
  * donc `features/`, et `tracking/` parce que le retard n'existe que par `Entry.progress`. La règle
- * de promotion d'ARCHITECTURE.md, la même qui a fait monter `airing-lag.ts` d'à côté.
+ * de promotion d'CLAUDE.md, la même qui a fait monter `airing-lag.ts` d'à côté.
  */
 
 const HOUR_IN_SECONDS = 3600;

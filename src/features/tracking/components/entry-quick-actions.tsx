@@ -17,7 +17,7 @@ import { saveEntry } from "@/features/tracking/server/tracking.actions";
  * Les gestes posés sur une jaquette : la fenêtre d'édition, et **un « +1 » qui paraît au-dessus
  * d'elle quand on l'approche**.
  *
- * Avancer d'un cran est le geste le plus fréquent du produit (docs/PRODUCT.md §6) ; le faire passer
+ * Avancer d'un cran est le geste le plus fréquent du produit (docs/conception.md §6) ; le faire passer
  * par la fenêtre d'édition lui coûtait deux clics et un aller-retour modal. Il vit donc à côté du
  * bouton qui l'ouvre, révélé par le même mouvement de souris — et non ajouté en permanence, ce qui
  * mettrait deux boutons concurrents sur chaque jaquette du catalogue.

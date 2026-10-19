@@ -39,7 +39,7 @@ import { saveEntry } from "@/features/tracking/server/tracking.actions";
  * pas, et donnent à croire qu'on peut noter une œuvre qu'on ne suit pas. Les trois contrôles
  * apparaissent une fois l'entrée créée, c'est-à-dire quand ils ont quelque chose à dire. C'est aussi
  * la case « l'œuvre pas encore suivie, distinguée de l'œuvre suivie à zéro » de
- * docs/fiche-media.md §2.7.
+ * .claude/skills/anilist-read/references/fiche-media.md §2.7.
  *
  * **Elle enregistre au geste, là où la fenêtre d'une vignette enregistre au bouton**, et l'écart est
  * décrit dans `entry-draft.ts` avant d'exister ici. La différence n'est pas de goût : sur une fiche,
@@ -47,7 +47,7 @@ import { saveEntry } from "@/features/tracking/server/tracking.actions";
  * ajouterait une confirmation à une décision déjà prise. Dans une fenêtre, on vient corriger trois
  * choses d'un coup, et une écriture par frappe y serait une écriture par hésitation.
  *
- * **Ce qui part est toujours le seul champ touché**, jamais l'état complet (docs/PRODUCT.md §4.2) :
+ * **Ce qui part est toujours le seul champ touché**, jamais l'état complet (docs/conception.md §4.2) :
  * c'est ce qui laisse la transition dater la fin d'une série au dernier épisode, et ce qui empêche
  * un onglet ouvert depuis dix minutes d'écraser une progression saisie ailleurs.
  *
@@ -62,7 +62,7 @@ type EntryActionBarProps = {
    * Le lien vers `/collection/[mediaId]`, rendu par le serveur et posé en fin de rangée.
    *
    * Un emplacement, pas une notion : cette barre parle du **suivi**, et la collection est l'autre
-   * axe (docs/PRODUCT.md §4.5 — posséder et avoir lu sont indépendants). Lui faire connaître
+   * axe (docs/conception.md §4.5 — posséder et avoir lu sont indépendants). Lui faire connaître
    * l'étagère pour un lien serait le même couplage que celui que `MediaCard` refuse avec ses
    * `marker` et `action`.
    *

@@ -26,7 +26,7 @@ export type EntryChanges = Omit<
  * persister le résultat — et cette logique-là, qui est celle qui se trompe, est testable
  * (`entry-transition.test.ts`).
  *
- * Deux idées gouvernent le fichier, toutes deux de docs/PRODUCT.md §4.2 et §4.3 :
+ * Deux idées gouvernent le fichier, toutes deux de docs/conception.md §4.2 et §4.3 :
  *
  * - **L'état est écrasé, la mémoire est ajoutée.** `next` remplace la ligne `Entry` ; `events`
  *   s'insère par-dessus l'existant et n'est jamais modifié.

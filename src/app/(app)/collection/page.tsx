@@ -34,7 +34,7 @@ export const metadata: Metadata = {
  * Trois formes ont été dessinées côte à côte le 19 septembre 2026 ; celle-ci a été retenue parce
  * qu'elle est la seule à répondre à « il me manque lesquels ? » **sans qu'on ouvre une série**.
  * Une grille de jaquettes montre ce qu'on possède déjà ; l'écran doit montrer ce qui manque
- * (docs/PRODUCT.md §8 item 8). Les deux autres sont décrites dans le journal.
+ * (docs/conception.md §8 item 8). Les deux autres sont décrites dans le journal.
  *
  * **Tout vient de la base, rien d'AniList** : il n'a aucune donnée au niveau du tome (§9). C'est
  * le seul écran du produit sans quota ni repli de panne à prévoir.
@@ -95,7 +95,7 @@ async function ShelfControls({
   return (
     <div className="flex flex-col gap-4">
       {/*
-        Les statistiques d'étagère de PRODUCT.md §8 item 12, dans leur forme la plus courte :
+        Les statistiques d'étagère de conception.md §8 item 12, dans leur forme la plus courte :
         quatre nombres sur une ligne. **Le budget cumulé n'y est pas** — `price` n'est plus rempli
         par aucun écran depuis le 19 septembre 2026, et une somme toujours nulle serait un chiffre
         faux.

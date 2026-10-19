@@ -70,7 +70,7 @@ describe("mediaCredit", () => {
   describe("sur un manga", () => {
     /**
      * AniList ne fournit **aucun éditeur** pour un manga, et son champ `studios` y revient vide
-     * (docs/PRODUCT.md §9). L'auteur est la seule attribution réellement disponible : c'est elle
+     * (docs/conception.md §9). L'auteur est la seule attribution réellement disponible : c'est elle
      * qui occupe la cinquième colonne de la ligne de faits.
      */
     it("retient l'auteur de l'histoire plutôt qu'un rôle secondaire", () => {

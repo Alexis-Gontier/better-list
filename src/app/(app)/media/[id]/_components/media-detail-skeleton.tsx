@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  *
  * **Il a les proportions de ce qu'il remplace**, et c'est tout son intérêt : un squelette générique
  * ne ressemble à rien de ce qui va s'afficher, donc il déplace la mise en page au moment où il s'en
- * va (docs/ARCHITECTURE.md). La bande de bannière déborde ici comme là, sinon le contenu remonterait
+ * va (CLAUDE.md). La bande de bannière déborde ici comme là, sinon le contenu remonterait
  * de deux cents pixels à l'arrivée des données.
  */
 export function MediaDetailSkeleton() {

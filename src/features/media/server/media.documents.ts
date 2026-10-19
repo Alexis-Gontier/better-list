@@ -102,7 +102,7 @@ export const MEDIA_COMPACT_FIELDS = /* GraphQL */ `
 `;
 
 /**
- * Sélection du **miroir local** — exactement les colonnes de la table `Media` (docs/PRODUCT.md §4.1),
+ * Sélection du **miroir local** — exactement les colonnes de la table `Media` (docs/conception.md §4.1),
  * ni plus ni moins.
  *
  * Ce n'est pas `MediaFields` : celui-là embarque `description`, `siteUrl` et les dates floues, qui ne
@@ -167,14 +167,14 @@ export const MEDIA_MIRROR_QUERY = /* GraphQL */ `
  *
  * **Aucun champ `media` dans la sélection, et c'est tout l'intérêt.** L'appelant part de sa propre
  * bibliothèque : il a déjà les jaquettes, les titres et les plafonds dans le miroir local
- * (docs/PRODUCT.md §4.1). Redemander ces colonnes à AniList les paierait une seconde fois et — pire
+ * (docs/conception.md §4.1). Redemander ces colonnes à AniList les paierait une seconde fois et — pire
  * — afficherait un titre qui ignore la préférence de langue du compte (§4.6). Ne reviennent donc
  * que les trois informations qu'on n'a pas : quel média, quel épisode, à quelle heure.
  *
  * `mediaId_in` est ce qui rend la page tenable. Sans lui, une semaine de diffusion, c'est **cinq
  * mille** entrées chez AniList — mesuré, pas estimé — soit cent requêtes sur un quota de trente par
  * minute partagé par tous les visiteurs. Le planning est donc filtré à la source par ce qu'on suit,
- * ce qui est de toute façon ce qu'il promet (docs/PRODUCT.md §5).
+ * ce qui est de toute façon ce qu'il promet (docs/conception.md §5).
  *
  * `sort: [TIME]` trie côté API : la journée arrive déjà dans l'ordre où elle se vit.
  */

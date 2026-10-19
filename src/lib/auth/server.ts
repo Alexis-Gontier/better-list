@@ -11,7 +11,7 @@ import { prisma } from "@/lib/db/prisma";
 /**
  * Configuration Better Auth.
  *
- * **GitHub OAuth uniquement, pas de mot de passe** (docs/PRODUCT.md §7). Ce choix supprime d'un
+ * **GitHub OAuth uniquement, pas de mot de passe** (docs/conception.md §7). Ce choix supprime d'un
  * coup la vérification d'email, le reset, l'envoi de mails et toute la surface brute-force —
  * pour un cercle privé de quatre comptes, c'est du périmètre en moins sans perte.
  *

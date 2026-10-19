@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Une liste ouverte par lien non listé (docs/PRODUCT.md §4.4).
+ * Une liste ouverte par lien non listé (docs/conception.md §4.4).
  *
  * **La seule page du produit qui répond sans session, et sa garde est le jeton.** Elle vit hors du
  * groupe `(app)`, donc `requireApprovedUser()` ne la couvre pas — ce n'est pas un contournement de

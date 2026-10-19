@@ -6,7 +6,7 @@ import { LOCALE, TIMEZONE } from "@/config/locale";
  * Fonctions pures et testées (`airing-week.test.ts`), comme `media-season.ts` — et pour la même
  * raison : un décalage d'un jour est le genre d'erreur qui ne se voit pas en la relisant.
  *
- * **Tout est calculé à Paris** (docs/PRODUCT.md §7). Ce n'est pas une coquetterie d'affichage : un
+ * **Tout est calculé à Paris** (docs/conception.md §7). Ce n'est pas une coquetterie d'affichage : un
  * épisode diffusé le mardi à 1 h 30 heure française tombe le lundi en UTC, donc un planning calculé
  * dans le fuseau du serveur rangerait la moitié des animes de la nuit dans la mauvaise colonne. Les
  * bornes envoyées à AniList sont donc des minuits **parisiens**, pas des minuits UTC.

@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 /**
- * Les préférences d'affichage d'un compte (docs/PRODUCT.md §4.6).
+ * Les préférences d'affichage d'un compte (docs/conception.md §4.6).
  *
  * L'énumération est recopiée ici plutôt qu'importée du client Prisma : ces schémas valident des
  * entrées venues du navigateur, et un schéma de validation ne doit pas dépendre d'un module généré

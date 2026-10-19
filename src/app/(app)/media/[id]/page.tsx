@@ -71,7 +71,7 @@ function parseMediaId(raw: string): number | null {
  *
  * Le rattrapage est **ici, hors du `"use cache"` de la lecture AniList**. Rattrapé dedans, il
  * mémoriserait l'absence pour toute la durée du `cacheLife` — soit un jour d'écran dégradé après le
- * retour du service (docs/ARCHITECTURE.md).
+ * retour du service (CLAUDE.md).
  */
 async function loadMediaDetail(
   id: number,
@@ -135,7 +135,7 @@ export async function generateMetadata({
  * **La page n'attend rien elle-même** : elle transmet la promesse `params` à l'enfant suspendu.
  * Awaiter ici bloquerait tout le rendu jusqu'à la réponse d'AniList, alors qu'en descendant
  * l'accès sous un `<Suspense>` la coquille part immédiatement et le contenu arrive en flux
- * (docs/ARCHITECTURE.md — une frontière par zone, jamais de `loading.tsx` de segment).
+ * (CLAUDE.md — une frontière par zone, jamais de `loading.tsx` de segment).
  *
  * **Le bas de la fiche est en onglets** (décision d'Alexis du 11 septembre 2026) : aperçu,
  * personnages, équipe, œuvres liées, tags. La pile de sections qui les précédait n'aura tenu qu'une
@@ -152,7 +152,7 @@ export async function generateMetadata({
  * affiché, là où des panneaux tous montés la laissaient tout parcourir.
  *
  * Ce qui n'est pas encore là : les chiffres de la communauté, le journal, les tomes possédés, et ce
- * que le cercle en pense (docs/fiche-media.md).
+ * que le cercle en pense (.claude/skills/anilist-read/references/fiche-media.md).
  */
 export default function MediaPage({
   params,
@@ -209,7 +209,7 @@ async function MediaDetailContent({
 
   /*
     **Un onglet dont le panneau serait vide n'est pas ouvert**, barre comprise. C'est la règle que
-    l'ancienne fiche appliquait déjà avant la mise à blanc (`buildTabs`, docs/JOURNAL.md).
+    l'ancienne fiche appliquait déjà avant la mise à blanc (`buildTabs`, l'historique git).
 
     Elle se décide **sur l'échantillon de la requête de fiche**, jamais sur les lectures dédiées : un
     onglet vide doit pouvoir être écarté sans dépenser le crédit de quota qui servirait à le

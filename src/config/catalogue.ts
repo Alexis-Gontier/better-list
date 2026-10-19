@@ -30,7 +30,7 @@ export const CATALOGUE_PAGE_SIZE = 21;
  * Déclarées ici et pas dans `components/shared/view-toggle.tsx`, qui est un îlot client : les
  * parseurs d'URL de la recherche et de la bibliothèque en ont besoin côté serveur, et faire
  * remonter une valeur depuis un module `"use client"` vers un module serveur brouille la frontière
- * que `docs/ARCHITECTURE.md` demande de garder lisible au nom du fichier.
+ * que `CLAUDE.md` demande de garder lisible au nom du fichier.
  *
  * `grid` par défaut : la première question posée à un catalogue est « qu'est-ce qu'il y a ? », et
  * la jaquette y répond mieux que le titre. La liste sert quand on sait déjà ce qu'on cherche.

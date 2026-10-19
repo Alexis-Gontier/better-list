@@ -10,7 +10,7 @@ import { defineConfig, env } from "prisma/config";
  *
  * `dotenv/config` est explicite parce que Prisma 7 ne charge plus `.env` tout seul. Il ne
  * s'exécute que côté CLI — l'application, elle, passe par `@/config/env` et n'a jamais accès à
- * `process.env` (docs/ARCHITECTURE.md).
+ * `process.env` (CLAUDE.md).
  */
 export default defineConfig({
   schema: "prisma/schema.prisma",

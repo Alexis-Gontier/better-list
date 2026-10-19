@@ -55,7 +55,7 @@ export async function generateMetadata({
   return {
     title: list?.title ?? "Liste",
     description: "Une liste d'œuvres.",
-    // Une liste est privée par défaut (docs/PRODUCT.md §4.4), et l'app est derrière une garde :
+    // Une liste est privée par défaut (docs/conception.md §4.4), et l'app est derrière une garde :
     // rien à indexer.
     robots: { index: false, follow: false },
   };
@@ -81,7 +81,7 @@ export async function generateMetadata({
  *   là où l'envie naît — décision d'Alexis, même jour.
  *
  * **La page n'attend rien elle-même** : elle transmet la promesse `params` à l'enfant suspendu, ce
- * qui laisse la coquille s'afficher pendant que la base répond (docs/ARCHITECTURE.md).
+ * qui laisse la coquille s'afficher pendant que la base répond (CLAUDE.md).
  */
 export default function ListPage({
   params,

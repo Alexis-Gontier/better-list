@@ -1,161 +1,35 @@
 {
   "$schema": "./node_modules/knip/schema.json",
 
-  // Les hooks de l'agent sont des points d'entrée : rien dans `src/` ne les importe, c'est
-  // Claude Code qui les exécute.
+  // Les hooks de l'agent sont des points d'entrée : c'est Claude Code qui les exécute.
   "entry": [".claude/hooks/*.mjs"],
 
   // Le plugin Playwright de knip ne voit que les `*.spec.ts` : les projets `setup` et `teardown`
-  // de playwright.config.ts déclarent leur `testMatch` en expression régulière, qu'il ne lit pas.
+  // déclarent leur `testMatch` en expression régulière, qu'il ne lit pas.
   "playwright": {
     "entry": ["e2e/**/*.spec.ts", "e2e/auth.{setup,teardown}.ts"]
   },
 
-  // `src/components/ui/` est généré par shadcn : ses composants exportent volontairement plus que
-  // ce qu'on consomme, et les supprimer casserait la prochaine régénération. (`src/generated/`,
-  // produit par Prisma, est déjà écarté par le .gitignore.)
-  //
-  // `scripts/legacy-import.ts` est un script de CLI lancé à la main (`tsx scripts/legacy-import.ts
-  // <newUrl> <oldUrl>`) : rien ne l'importe, et c'est normal. Il est gardé au dépôt — la reprise
-  // des données de l'ancienne app peut être rejouée sur une autre branche Neon.
-  //
-  // Il vivait dans `prisma/`, où seul son préfixe `_` le cachait de la CLI Prisma ; `scripts/` dit
-  // ce qu'il est — un exécutable manuel — sans avoir à le camoufler, d'où la perte du préfixe.
+  // `src/components/ui/` est généré par shadcn et exporte volontairement plus qu'on ne consomme.
+  // `scripts/legacy-import.ts` est un script lancé à la main (reprise des données de l'ancienne
+  // app) : rien ne l'importe, c'est normal.
   "ignore": ["src/components/ui/**", "scripts/legacy-import.ts"],
 
-  // Un export utilisé uniquement dans son propre fichier n'est pas du code mort : c'est souvent
-  // un helper testable ou une constante exposée pour un test à venir.
+  // Un export utilisé uniquement dans son propre fichier n'est pas du code mort.
   "ignoreExportsUsedInFile": true,
 
-  // ─────────────────────────────────────────────────────────────────────────────────────────────
-  // GEL DE LA MISE À BLANC — posé le 5 septembre 2026, élargi le même jour.
-  //
-  // Les dix routes de l'app sont des placeholders (`docs/STATE.md`). Ce qui reste sous `src/` est
-  // donc, presque entièrement, du code **sans écran** : personne n'importe `media.documents.ts`
-  // parce qu'aucune page n'interroge AniList, pas parce que ces documents GraphQL seraient devenus
-  // faux. Le gel dit « en attente », jamais « inutile ».
-  //
-  // Ce qui est gelé a été choisi, pas subi. Trois natures, et rien d'autre :
-  //
-  //   1. **des contrats d'URL** — `calendar-params`, `profile-params`, `search-params` : ils fixent
-  //      la forme des liens qu'on peut envoyer, une décision produit que la refonte ne rejoue pas ;
-  //   2. **des schémas Zod et les types qui en dérivent** — la forme du domaine, dont `z.infer`
-  //      tient lieu de `src/types/` (ARCHITECTURE.md) ;
-  //   3. **des acquis coûteux à réécrire** — `media.documents.ts` et ses 488 lignes de GraphQL
-  //      AniList, `lib/safe-action.ts` qui porte `actionClient` et `authActionClient`, et les
-  //      helpers purs couverts par les 133 tests épargnés.
-  //
-  // Tout le rendu, lui, a été supprimé plutôt que gelé : geler du code qu'on sait devoir jeter,
-  // c'est se promettre de le relire une fois de trop.
-  //
-  // Le gel est posé par **chemin**, jamais en `exclude` global : knip continue de signaler le code
-  // mort partout ailleurs. Chaque entrée nomme l'écran qu'elle attend — c'est la liste de
-  // reconstruction, et elle se vide par le bas.
-  //
-  // **Si ce bloc existe encore une fois les routes reconstruites, c'est un oubli, pas une
-  // décision.** Le dernier à partir emporte `ignoreIssues` et `ignoreDependencies` avec lui.
-  //
-  // **L'accueil est passé le 14 septembre 2026, et c'était la dernière route.** `ignoreDependencies`
-  // est parti avec, comme promis. `ignoreIssues` survit à cinq entrées près, et c'est une décision
-  // écrite : chacune nomme désormais **ce qui la lèvera** — les facettes de `/search` et les chiffres
-  // de la communauté sur la fiche. La liste est dans docs/STATE.md, « Le prochain pas ».
-  //
-  // **L'arbitrage sur `BROWSE_CATALOGUE_QUERY` est rendu le 11 octobre 2026 : supprimé.** Il avait
-  // perdu l'écran pour lequel il avait été gelé, et l'accueil a choisi l'inverse de ce qu'il
-  // proposait — une zone, une requête, pour que le carrousel n'attende pas les rangées du dessous.
-  // Le regrouper aurait rendu ce défaut contre un gain nul : chaque `searchMedia` est déjà
-  // mémorisée par `"use cache"` et partagée entre les visiteurs. Son fragment, son schéma, `MediaBrowse`,
-  // `PageInfo` et `SearchMediaInput` sont partis avec.
-  // ─────────────────────────────────────────────────────────────────────────────────────────────
+  // Gel : du code sans appelant **en attente d'un écran nommé**, pas du code inutile. Posé par
+  // chemin, jamais en `exclude` global, pour que knip signale le code mort partout ailleurs.
+  // Chaque entrée dit ce qui la lèvera ; une entrée dont la condition a expiré se supprime.
   "ignoreIssues": {
-    // ── Fichiers sans importateur ───────────────────────────────────────────────────────────────
-    // `calendar-params.ts` est **sorti du gel le 8 septembre 2026**, avec `/calendar` : la page
-    // consomme `loadCalendarParams` pour lire le décalage, et la navigation de semaine
-    // `serializeCalendarParams` pour bâtir ses deux liens. Le contrat d'URL qu'il fixait — la
-    // semaine en décalage entier, jamais en date — a été respecté tel quel, ce qui est bien la
-    // raison pour laquelle il avait été épargné. Quatrième entrée à disparaître entièrement plutôt
-    // qu'à se rétrograder en gel « exports », après `library-params.ts`, `search-params.ts` et
-    // `lists.schema.ts`.
-    // `profile-params.ts` est **sorti du gel le 12 septembre 2026**, avec `/u/[username]` : la page
-    // consomme `loadProfileFilters` pour lire la page du journal et `serializeProfileFilters` pour
-    // bâtir les liens de pagination. Le contrat d'URL qu'il fixait — la page en entier, jamais un
-    // curseur — a été respecté tel quel, exactement comme `calendar-params.ts` quatre jours plus
-    // tôt : c'est la deuxième fois que le gel d'un contrat d'URL sert à ce pour quoi il a été posé.
-    // Cinquième entrée à disparaître entièrement plutôt qu'à se rétrograder en gel « exports ».
-    // `command.schema.ts` a **quitté le gel le 12 septembre 2026 par la porte de sortie** : le
-    // fichier est supprimé, pas consommé. Il était épargné parce qu'il portait seul la règle du
-    // « +1 » ; `entry-progress-stepper.tsx`, arrivé depuis avec `/library`, porte la même borne.
-    // Première entrée à disparaître parce que sa raison d'être avait expiré — d'où la leçon : **un
-    // gel devrait nommer la condition qui le lève, pas seulement celle qui l'a posé.**
-    // `library-params.ts` est **sorti du gel le 6 septembre 2026** : `/library` le consomme de bout
-    // en bout — les parseurs et les listes d'options par la barre, `loadLibraryFilters` par la page,
-    // `serializeLibraryFilters` par la rangée de statuts. Première entrée à disparaître pour de bon
-    // plutôt qu'à se rétrograder en gel « exports ».
-    // `use-debounced-value.ts` est **sorti du gel le 13 septembre 2026** : la palette de recherche de
-    // l'en-tête (`command-search.tsx`) est la saisie de recherche qu'il attendait nommément.
-    // `use-reduced-motion.ts` est **sorti du gel le 14 septembre 2026** : le carrousel de tête de
-    // l'accueil est exactement ce qu'il attendait — il coupe la transition d'Embla et laisse
-    // l'autoplay tranquille quand le système demande moins d'animation.
-    // `safe-action.ts` est **sorti du gel le 6 septembre 2026** : `tracking.actions.ts` consomme
-    // `authActionClient`, et c'est la première Server Action du dépôt. `actionClient`, lui, reste
-    // couvert par `ignoreExportsUsedInFile` — il n'a pas d'appelant direct, il est la base sur
-    // laquelle `authActionClient` est construit dans le même fichier.
-
-    // ── Exports et types sans appelant ──────────────────────────────────────────────────────────
-    // Deux formateurs, et non plus neuf : les sept autres ont trouvé leur écran. `formatListStatus`
-    // et `formatRanking` attendent les **chiffres de la communauté** sur la fiche — la répartition
-    // des statuts et les classements —, qui sont la dernière chose absente de `/media/[id]`.
+    // `formatListStatus`, `formatRanking` → les chiffres de la communauté sur la fiche.
     "src/features/media/lib/media-format.ts": ["exports"],
-    // Le fichier a retrouvé un importateur avec la fiche du 6 septembre : il sort du gel « files »
-    // pour le gel « exports ». `MEDIA_BY_ID_QUERY` et `SEARCH_MEDIA_QUERY` sont consommées, et
-    // **`MEDIA_MIRROR_QUERY` l'est depuis le 7 septembre 2026** — le cron l'envoie par lots de
-    // cinquante —, et **`AIRING_SCHEDULE_QUERY` depuis le 8 septembre 2026**, avec `/calendar` :
-    // ses 488 lignes de GraphQL avaient été gelées en pariant qu'un écran finirait par les
-    // demander, et celle-là n'en avait jamais eu. Restent deux documents sans écran : le catalogue
-    // de l'accueil — supprimé le 11 octobre 2026 — et le vocabulaire de filtres, qui attend les
-    // facettes de `/search`.
+    // `FILTER_VOCABULARY_QUERY` → les facettes genres et tags de `/search`.
     "src/features/media/server/media.documents.ts": ["exports"],
-    // `media-freshness.ts` est **sorti du gel le 7 septembre 2026**, avec le cron de
-    // rafraîchissement : `refreshStaleMirror` consomme `mirrorStaleCutoffs`, les deux listes de
-    // statuts et les deux plafonds, et `MEDIA_MIRROR_QUERY` est la requête qu'il envoie. L'entrée
-    // disait mot pour mot ce qu'elle attendait — « les bornes du miroir attendent le cron » — et
-    // elle part avec, comme `library-params.ts` et `search-params.ts` avant elle.
-    // `lists.schema.ts` **est sorti du gel pour de bon le 6 septembre 2026** : ses sept entrées ont
-    // toutes trouvé leur appelant, la dernière étant `shareListSchema` avec `/l/[token]`. Troisième
-    // entrée à disparaître entièrement plutôt qu'à se rétrograder, après `library-params.ts` et
-    // `search-params.ts`.
-    // `search-params.ts` est **sorti du gel** : la grille de résultats a consommé ses deux derniers
-    // exports gelés — `loadSearchFilters` pour lire les filtres côté serveur,
-    // `serializeSearchFilters` pour bâtir les liens de pagination. C'était exactement ce que
-    // l'entrée précédente disait attendre, et elle part avec, comme `library-params.ts` avant elle.
-    // Deux types, et plus aucun export : `browseCatalogueDataSchema`, `MediaBrowse` et `PageInfo`
-    // sont tombés avec `BROWSE_CATALOGUE_QUERY` le 11 octobre 2026. `MediaTagOption` attend les
-    // facettes ; `ScoreDistribution` attend les chiffres de la communauté.
+    // `MediaTagOption` → les facettes ; `ScoreDistribution` → les chiffres de la communauté.
     "src/features/media/schemas/media.schema.ts": ["types"]
-    // `search-media.schema.ts` est **sorti du gel le 11 octobre 2026** : son seul type gelé,
-    // `SearchMediaInput`, n'avait pas d'appelant et est parti avec le catalogue de l'accueil.
-    // `preferences.schema.ts` est **sorti du gel le 14 septembre 2026**, et par constat plutôt que
-    // par travail : ses défauts avaient trouvé leur appelant avec `/settings`, le 7 septembre. Une
-    // entrée de gel qui ne gèle plus rien est un mensonge qui dort — c'est la passe de l'accueil,
-    // qui devait solder ce bloc, qui l'a réveillé.
-    // `entry-format.ts` a **quitté le gel le 12 septembre 2026** : `formatEventTime` attendait le
-    // journal nommément, et le journal est arrivé avec `/u/[username]`. Le fichier y a même gagné
-    // un export — `dayKey`, jusque-là privé, que le calendrier d'activité partage désormais avec le
-    // regroupement du journal pour qu'il n'existe qu'une définition de « un jour » dans le projet.
-    // `removeEntry` et `removeEntrySchema` sont **sortis du gel le 13 septembre 2026** : le geste de
-    // retrait est revenu dans la fenêtre d'édition du suivi (`entry-remove-button.tsx`), sous
-    // confirmation `alert-dialog`. Huitième entrée à disparaître, et la seule qui y était revenue.
   }
 
-  // **`ignoreDependencies` a disparu le 14 septembre 2026**, avec la dernière route de la refonte,
-  // comme le gel ci-dessus l'avait promis. Les six familles qu'il portait sont toutes reprises —
-  // `next-safe-action` et `@dnd-kit` le 6 septembre, `cmdk` et `use-debounced-value` le 13, `embla`
-  // le 14 avec les carrousels de l'accueil — sauf une : `react-hotkeys-hook` n'a pas été regelée,
-  // elle a été **désinstallée**. La palette `⌘K` est revenue sans elle, sur un `keydown` nu, donc la
-  // condition qui la gardait au `package.json` — « la refonte la reprendra » — est tombée.
-
-  // Les règles restent au défaut (`error`) : le réglage temporaire en `warn`, posé le temps que
-  // `/search` et la première Server Action arrivent, a été retiré le 19 août 2026 — les deux
-  // existent. Un garde-fou qu'on laisse en `warn` finit par ne plus rien garder. Le gel ci-dessus
-  // est la même dette sous une autre forme, et porte donc la même date de péremption.
+  // Les règles restent au défaut (`error`) : un garde-fou laissé en `warn` finit par ne plus rien
+  // garder.
 }

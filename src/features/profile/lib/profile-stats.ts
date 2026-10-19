@@ -39,7 +39,7 @@ export const TOP_GENRES = 8;
  * Les notes brutes → les dix paliers d'étoiles.
  *
  * **Le regroupement est indispensable, il n'est pas cosmétique.** `Entry.score` est stocké sur
- * 0–100 (docs/PRODUCT.md §4.2) et les notes importées d'AniList occupent toute cette plage : un
+ * 0–100 (docs/conception.md §4.2) et les notes importées d'AniList occupent toute cette plage : un
  * `groupBy` sur la colonne rend jusqu'à cent lignes distinctes, dont un histogramme de dix barres
  * ne peut rien faire. `scoreToStars` est la même conversion que celle du panneau de suivi et du
  * journal — une note de 85 tombe sur 4,5, ici comme ailleurs.
@@ -117,7 +117,7 @@ export function topGenres(
  * Minutes par épisode, faute de mieux.
  *
  * **C'est une estimation, et le miroir ne permet pas d'en faire une meilleure** : `Media` ne stocke
- * pas `duration` (docs/PRODUCT.md §4.1 — on n'y garde que de quoi afficher une carte et trier), et
+ * pas `duration` (docs/conception.md §4.1 — on n'y garde que de quoi afficher une carte et trier), et
  * aller la chercher chez AniList pour chaque œuvre suivie coûterait le quota entier pour un chiffre
  * décoratif. Vingt-quatre minutes est la durée d'un épisode de série télévisée standard ; les films
  * et les OVA la sous-estiment, les formats courts la surestiment.

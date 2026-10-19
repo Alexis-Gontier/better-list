@@ -7,9 +7,9 @@ import * as React from "react";
  *
  * Sans ce délai, une recherche à la frappe part une fois par caractère : « frieren » coûterait sept
  * requêtes, dont six dont personne ne verra le résultat. Sur une API plafonnée à 30 requêtes par
- * minute et par IP, ce n'est pas un gaspillage, c'est une panne en puissance (docs/PRODUCT.md §4.1).
+ * minute et par IP, ce n'est pas un gaspillage, c'est une panne en puissance (docs/conception.md §4.1).
  *
- * Générique et sans notion de métier, d'où `src/hooks/` et non `features/` (docs/ARCHITECTURE.md).
+ * Générique et sans notion de métier, d'où `src/hooks/` et non `features/` (CLAUDE.md).
  *
  * Le nettoyage n'est pas optionnel : sans lui, chaque frappe laisserait un `setTimeout` en vol, et
  * celui d'un composant démonté écrirait dans un état qui n'existe plus.

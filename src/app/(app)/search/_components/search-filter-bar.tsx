@@ -93,7 +93,7 @@ const barParsers = {
  *
  * `year` n'y est pas et n'est plus piloté par rien : le curseur l'a remplacé par `yearMin` /
  * `yearMax`. Son parseur reste au contrat pour qu'une adresse déjà partagée continue de se relire
- * (STATE.md, « les contrats d'URL »), mais aucun contrôle ne l'écrit plus.
+ * (voir l'historique git), mais aucun contrôle ne l'écrit plus.
  */
 const RESET_FILTERS = {
   q: EMPTY_FILTERS.q,
@@ -127,7 +127,7 @@ export function SearchFilterBar({ yearBounds }: SearchFilterBarProps) {
     /*
       Sans anti-rebond, une frappe coûte une requête AniList : « frieren » en dépenserait sept, dont
       six dont personne ne verra le résultat, sur les trente que la minute partage entre tous les
-      visiteurs (docs/recherche-filtres.md). Il est posé maintenant, avant que la grille n'existe,
+      visiteurs (.claude/skills/anilist-read/references/recherche-filtres.md). Il est posé maintenant, avant que la grille n'existe,
       parce que c'est le jour où elle arrivera qu'on aurait oublié de le mettre.
 
       Il est posé **au niveau de l'URL** et non sur la valeur du champ : `useUrlFilters` demande

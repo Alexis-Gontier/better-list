@@ -147,7 +147,7 @@ export type ScoreDistribution = z.infer<typeof scoreDistributionSchema>;
 
 /**
  * Répartition des statuts de suivi. L'énumération est `MediaListStatus`, la même que celle qu'on
- * a recopiée dans `EntryStatus` (docs/PRODUCT.md §4.2) — un import AniList reste une
+ * a recopiée dans `EntryStatus` (docs/conception.md §4.2) — un import AniList reste une
  * correspondance triviale, et le libellé se partage.
  */
 export const statusDistributionSchema = z.object({
@@ -335,7 +335,7 @@ export const mediaDetailSchema = mediaSchema.extend({
 export type MediaDetail = z.infer<typeof mediaDetailSchema>;
 
 /**
- * Ce que le miroir local stocke (docs/PRODUCT.md §4.1), vu du côté AniList.
+ * Ce que le miroir local stocke (docs/conception.md §4.1), vu du côté AniList.
  *
  * Volontairement **plus étroit** que `mediaSchema` : le cron de rafraîchissement n'a besoin que des
  * colonnes de la table, et une sélection de cinquante fiches paie chaque champ superflu. `MediaDetail`
@@ -441,7 +441,7 @@ export const mediaByIdDataSchema = z.object({
  * Réponses des lectures **par onglet** de la fiche.
  *
  * Les trois portent `isAdult` pour une raison unique et non cosmétique : la préférence de contenu
- * du compte s'applique **hors du cache**, sur des données déjà en mémoire (docs/PRODUCT.md §4.1).
+ * du compte s'applique **hors du cache**, sur des données déjà en mémoire (docs/conception.md §4.1).
  * Sans ce champ, l'onglet d'une œuvre classée adulte s'afficherait alors que sa fiche est refusée —
  * chaque lecture doit donc pouvoir répondre à la question toute seule, sans dépendre d'une autre.
  *

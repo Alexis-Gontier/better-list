@@ -157,7 +157,7 @@ let lastOutageAt: number | null = null;
 /**
  * AniList est-elle tombée récemment — **la seule mémoire qu'on ait de l'incident**.
  *
- * Elle existe parce que l'avis de panne doit être global (docs/ARCHITECTURE.md) alors que la panne
+ * Elle existe parce que l'avis de panne doit être global (CLAUDE.md) alors que la panne
  * ne se constate qu'en interrogeant AniList : `/settings` ou `/lists` n'appellent jamais l'API et
  * ne peuvent donc rien savoir par eux-mêmes. Sonder l'API depuis le layout pour le leur dire
  * coûterait une requête par affichage de n'importe quelle page — sur un quota de trente par minute

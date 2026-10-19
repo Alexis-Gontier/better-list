@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "En attente d'approbation" };
 export const instant = false;
 
 /**
- * Le compte existe, l'accès n'est pas encore ouvert (docs/PRODUCT.md §7.1).
+ * Le compte existe, l'accès n'est pas encore ouvert (docs/conception.md §7.1).
  *
  * La page se garde elle-même dans les deux sens : sans session on n'a rien à y faire, et un
  * compte déjà approuvé serait bloqué sur un écran d'attente qui ne le concerne plus.
