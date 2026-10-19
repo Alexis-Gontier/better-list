@@ -153,11 +153,16 @@ export function ListReorderGrid({
 
   return (
     <DndContext
+      /*
+        Un `id` stable : sans lui, dnd-kit numérote ses descriptions d'accessibilité avec un compteur
+        qui diffère entre le serveur et le navigateur, et l'hydratation ne correspond plus.
+      */
       accessibility={{
         announcements: ANNOUNCEMENTS,
         screenReaderInstructions: INSTRUCTIONS,
       }}
       collisionDetection={closestCenter}
+      id={`reorder-${listId}`}
       /* Rien ne sort de la grille : un déplacement est un échange de places, pas un déménagement. */
       modifiers={[restrictToParentElement]}
       onDragEnd={handleDragEnd}
