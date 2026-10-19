@@ -113,3 +113,6 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D44** — Les réglages s'enregistrent un par un, sans bouton.
 - **D45** — Chaque écran prévoit ses états : chargement, vide, aucun résultat, et le repli quand
   AniList ne répond pas.
+- **D47** — Une liste se remplit aussi depuis elle-même : la fenêtre « Ajouter des œuvres » de
+  `/lists/[id]` cherche et range sans passer par la fiche. Révise la décision du 6 septembre 2026
+  (« on remplit une liste depuis la fiche ») : dix-sept œuvres demandaient dix-sept allers-retours.

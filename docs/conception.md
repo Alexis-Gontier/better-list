@@ -89,7 +89,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
-| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D47) | livré |
 | `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
 | `/l/[token]` | Une liste partagée, **sans session** | livré |
 | `/u/[username]` | Profil : favoris, statistiques, calendrier d'activité, journal | livré |

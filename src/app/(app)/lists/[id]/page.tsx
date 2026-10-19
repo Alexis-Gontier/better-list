@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AddMediaDialog } from "@/app/(app)/lists/[id]/_components/add-media-dialog";
 import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
 import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
 import {
@@ -26,7 +27,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
-import { getList } from "@/features/lists/server/lists.queries";
+import {
+  getList,
+  getListSuggestions,
+} from "@/features/lists/server/lists.queries";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
@@ -77,8 +81,8 @@ export async function generateMetadata({
  * **Ce que cet écran n'a pas**, et ce sont des décisions, pas des oublis :
  *
  * - **Pas de partage.** `generateShareToken` attend `/l/[token]`, qui est une autre branche.
- * - **Pas de bouton « ajouter une œuvre » ici.** On remplit une liste depuis la fiche d'une œuvre,
- *   là où l'envie naît — décision d'Alexis, même jour.
+ * - **On remplit aussi la liste d'ici** (D47) : la fenêtre « Ajouter des œuvres » cherche et range
+ *   sans passer par la fiche. Celle de la fiche reste, pour ranger une œuvre dans plusieurs listes.
  *
  * **La page n'attend rien elle-même** : elle transmet la promesse `params` à l'enfant suspendu, ce
  * qui laisse la coquille s'afficher pendant que la base répond (CLAUDE.md).
@@ -132,9 +136,13 @@ async function ListDetail({
     clé absente veut dire « pas encore suivie », et c'est elle qui décide qu'aucune pastille ne
     s'affiche.
   */
-  const entries = reordering
-    ? new Map()
-    : await getLibraryEntriesFor(list.items.map((i) => i.media.id));
+  const [entries, suggestions] = reordering
+    ? [new Map(), []]
+    : await Promise.all([
+        getLibraryEntriesFor(list.items.map((i) => i.media.id)),
+        // Ce que la fenêtre d'ajout propose avant qu'on tape ; indépendant du suivi, donc en parallèle.
+        getListSuggestions(list.id, { includeAdult, titleLanguage }),
+      ]);
 
   return (
     <>
@@ -173,6 +181,14 @@ async function ListDetail({
             entrées d'historique à force d'entrer et de sortir du mode.
           */}
           <div className="flex shrink-0 items-center gap-2">
+            {/* Ajouter est l'action principale de l'écran (D33), sauf pendant qu'on réordonne. */}
+            {reordering ? null : (
+              <AddMediaDialog
+                listId={list.id}
+                memberIds={list.items.map((item) => item.media.id)}
+                suggestions={suggestions}
+              />
+            )}
             {list.items.length > 1 ? (
               <Button
                 asChild
@@ -290,7 +306,7 @@ function ListContentEmpty({
         <EmptyDescription>
           {hiddenByPreference
             ? "Toutes les œuvres de cette liste sont marquées adultes, et votre préférence les masque. Elles sont toujours là."
-            : "Ouvrez la fiche d'une œuvre et choisissez « Ajouter à une liste » pour la ranger ici."}
+            : "Ajoutez une première œuvre avec « Ajouter des œuvres », ou depuis la fiche d'une œuvre."}
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -319,6 +335,7 @@ function ListDetailSkeleton() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <Skeleton className="h-8 w-40" />
             <Skeleton className="h-8 w-32" />
             <Skeleton className="size-9" />
           </div>
