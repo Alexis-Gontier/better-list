@@ -2,6 +2,7 @@
 
 import { ListCheckIcon, ListPlusIcon, PlusIcon } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
@@ -252,6 +253,7 @@ function NewListInline({
   defaultOpen: boolean;
 }) {
   const inputId = useId();
+  const router = useRouter();
   const [open, setOpen] = useState(defaultOpen);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<ListKind>("SELECTION");
@@ -260,6 +262,12 @@ function NewListInline({
     onSuccess: () => {
       setName("");
       setOpen(false);
+      /*
+        La revalidation de l'action renvoie normalement la fiche à jour ; sous la charge des E2E en
+        parallèle, la fenêtre restait parfois sur « Aucune liste encore ». Un rafraîchissement
+        explicite garantit que la nouvelle liste paraît, cochée.
+      */
+      router.refresh();
       toast.success("Liste créée, l'œuvre y est rangée.");
     },
     onError: ({ error }) =>
