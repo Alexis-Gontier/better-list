@@ -258,6 +258,8 @@ export const addToList = authActionClient
     });
 
     revalidateLists(mediaId);
+    // La grille de la liste est derrière la fenêtre d'ajout : elle doit suivre chaque geste.
+    revalidatePath(routes.lists.detail(listId));
 
     return { added: true };
   });
@@ -285,6 +287,8 @@ export const removeFromList = authActionClient
     });
 
     revalidateLists(mediaId);
+    // La grille de la liste est derrière la fenêtre d'ajout : elle doit suivre chaque geste.
+    revalidatePath(routes.lists.detail(listId));
 
     return { removed: true };
   });
