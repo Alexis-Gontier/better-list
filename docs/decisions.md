@@ -76,7 +76,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D27** — Une lecture demandée par un composant client passe par un route handler `GET`
   (annulable, et les réponses ne se doublent pas). Les Server Actions ne servent qu'aux mutations.
 - **D28** — Une panne AniList se rattrape hors du `"use cache"`, et l'erreur se reconnaît à son
-  `name`.
+  `name` (révisée par D51 : son `digest`).
 - **D29** — Pas de `loading.tsx` de segment : une frontière `<Suspense>` par zone, avec un squelette
   à la forme de cette zone.
 - **D30** — Notifications Discord : un webhook par compte, posté par `api/cron/discord` qu'appelle
@@ -130,3 +130,10 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   cron Discord horaire l'annonce une fois, si son lecteur ne l'a pas déjà finie. On part de zéro :
   une œuvre déjà prête à l'ajout, au passage d'une liste dans ce genre ou à la mise en service n'est
   pas une nouvelle. `ListItem.readyNotifiedAt` retient l'annonce, posé seulement après l'envoi.
+- **D51** — Une panne AniList se reconnaît à son `digest`, posé à la construction de l'erreur, et
+  non plus seulement à son `name`. Révise D28 : en production, une erreur qui traverse
+  `"use cache"` n'emporte que son `digest`, et l'accueil est tombé le 21 octobre 2026 pendant une
+  vraie coupure au lieu de se replier.
+- **D52** — Aucune lecture AniList au build : un prérendu échoue sur toute erreur d'un
+  `"use cache"`, même rattrapée, si bien qu'une panne d'AniList bloquait tout déploiement. Le mur
+  de jaquettes de `/login` et `/signup` est lu à la requête (`connection()`).
