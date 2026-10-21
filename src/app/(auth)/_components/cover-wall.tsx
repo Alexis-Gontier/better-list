@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { connection } from "next/server";
 
 import { searchMedia } from "@/features/media/server/media.queries";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,9 @@ const ROUNDS = ["a", "b", "c", "d"] as const;
  * Le mouvement s'arrête quand le système demande de réduire les animations.
  */
 export async function CoverWall() {
+  // Lu à la requête, jamais au build : Next fait échouer un prérendu sur toute erreur d'un
+  // `"use cache"`, même rattrapée, et une panne d'AniList bloquait alors tout déploiement (D52).
+  await connection();
   const trending = await searchMedia({
     page: 1,
     perPage: 20,

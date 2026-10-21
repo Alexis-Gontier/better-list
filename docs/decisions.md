@@ -134,3 +134,6 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   non plus seulement à son `name`. Révise D28 : en production, une erreur qui traverse
   `"use cache"` n'emporte que son `digest`, et l'accueil est tombé le 21 octobre 2026 pendant une
   vraie coupure au lieu de se replier.
+- **D52** — Aucune lecture AniList au build : un prérendu échoue sur toute erreur d'un
+  `"use cache"`, même rattrapée, si bien qu'une panne d'AniList bloquait tout déploiement. Le mur
+  de jaquettes de `/login` et `/signup` est lu à la requête (`connection()`).
