@@ -44,14 +44,17 @@ const anilistEnvelopeSchema = z.object({
 });
 
 /**
- * Le `name` que porte une erreur de **panne** — API coupée, en erreur, ou quota épuisé.
+ * Le `name` **et le `digest`** que porte une erreur de **panne** — API coupée, en erreur, ou
+ * quota épuisé.
  *
- * Ce n'est pas une coquetterie de nommage, c'est le seul canal disponible. Une erreur levée
- * dans une fonction `"use cache"` est **resérialisée** en franchissant la frontière : côté
- * appelant, ce n'est plus une `AniListError` mais un `Error` nu, dont il ne reste que `name`,
- * `message` et un `digest` (mesuré le 15 août 2026 avec Next 16.3). `instanceof` répond `false`
- * et `status` vaut `undefined`. Le tri doit donc être fait **avant** la frontière, à la
- * construction, et déposé dans le seul champ qui la traverse.
+ * Une erreur levée dans une fonction `"use cache"` est **resérialisée** en franchissant la
+ * frontière : côté appelant, `instanceof` répond `false` et `status` vaut `undefined`. Le tri se
+ * fait donc **avant** la frontière, à la construction, et se dépose dans ce qui la traverse.
+ *
+ * ⚠️ **Le `name` ne la traverse qu'en développement.** En production, React Flight n'émet que le
+ * `digest` (`emitErrorChunk`) et l'appelant reçoit un `Error` générique : le 21 octobre 2026,
+ * pendant une vraie coupure d'AniList, l'accueil est tombé sur `error.tsx` au lieu de se replier.
+ * Next respecte un `digest` posé d'avance plutôt que d'en calculer un : c'est lui le canal fiable.
  */
 const ANILIST_OUTAGE_ERROR = "AniListOutageError";
 
@@ -82,12 +85,15 @@ function isOutageStatus(status: number) {
  */
 export class AniListError extends Error {
   readonly status: number;
+  /** Lu par Next comme référence de l'erreur, et seul champ que la production transporte. */
+  readonly digest?: string;
 
   constructor(message: string, status: number) {
     super(message);
-    // Le nom encode la catégorie parce que lui seul survit à `"use cache"` — voir
-    // `ANILIST_OUTAGE_ERROR`.
-    this.name = isOutageStatus(status) ? ANILIST_OUTAGE_ERROR : "AniListError";
+    // La catégorie est encodée là où elle survit à `"use cache"` — voir `ANILIST_OUTAGE_ERROR`.
+    const outage = isOutageStatus(status);
+    this.name = outage ? ANILIST_OUTAGE_ERROR : "AniListError";
+    if (outage) this.digest = ANILIST_OUTAGE_ERROR;
     this.status = status;
   }
 
@@ -109,11 +115,15 @@ export function isAniListError(error: unknown): error is AniListError {
 /**
  * AniList ne répond pas : coupure, erreur serveur ou quota épuisé.
  *
- * Se contente du `name`, sans `instanceof` : c'est ce qui la rend vraie **des deux côtés** d'un
- * `"use cache"`, là où un `instanceof` ne l'est qu'en amont.
+ * Lit le `digest` ou le `name`, sans `instanceof` : c'est ce qui la rend vraie **des deux côtés**
+ * d'un `"use cache"`, en production (le `digest` seul) comme en développement (le `name`).
  */
 export function isAniListOutage(error: unknown): boolean {
-  return error instanceof Error && error.name === ANILIST_OUTAGE_ERROR;
+  return (
+    error instanceof Error &&
+    (error.name === ANILIST_OUTAGE_ERROR ||
+      ("digest" in error && error.digest === ANILIST_OUTAGE_ERROR))
+  );
 }
 
 /**
@@ -135,7 +145,7 @@ export async function tryAniList<T>(read: () => Promise<T>): Promise<T | null> {
     return result;
   } catch (error) {
     if (isAniListOutage(error)) {
-      lastOutageAt = Date.now();
+      lastOutageAt = performance.now();
       return null;
     }
     throw error;
@@ -152,6 +162,10 @@ export async function tryAniList<T>(read: () => Promise<T>): Promise<T | null> {
  */
 const OUTAGE_MEMORY_MS = 5 * 60 * 1000;
 
+/**
+ * En `performance.now()`, pas en `Date.now()` : seule une durée compte ici, et le prérendu de
+ * `cacheComponents` refuse l'heure courante (constaté sur `/signup` pendant une panne).
+ */
 let lastOutageAt: number | null = null;
 
 /**
@@ -171,7 +185,9 @@ let lastOutageAt: number | null = null;
  * ce qu'elle apporterait pour un cercle de quatre comptes.
  */
 export function isAniListDown(): boolean {
-  return lastOutageAt !== null && Date.now() - lastOutageAt < OUTAGE_MEMORY_MS;
+  return (
+    lastOutageAt !== null && performance.now() - lastOutageAt < OUTAGE_MEMORY_MS
+  );
 }
 
 type AniListQueryOptions<TSchema extends z.ZodType> = {

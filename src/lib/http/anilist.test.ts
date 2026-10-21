@@ -202,13 +202,34 @@ describe("tryAniList", () => {
   /**
    * Le test qui garde la mécanique honnête.
    *
-   * Une erreur levée sous `"use cache"` arrive à l'appelant resérialisée : un `Error` nu, sans
-   * `status` et sans sa classe (mesuré le 15 août 2026, Next 16.3). C'est cette forme-là — la seule
-   * que l'accueil voie réellement — qui est reconstituée ici à la main. Si le tri repassait un jour
-   * par `instanceof` ou par `status`, tout marcherait encore en test unitaire et le repli
-   * retomberait en panne sur la vraie page.
+   * En production, une erreur levée sous `"use cache"` arrive à l'appelant réduite à son `digest` :
+   * classe, `name`, `message` et `status` sont remplacés par un `Error` générique (React Flight,
+   * `emitErrorChunk`). C'est cette forme-là — la seule que l'accueil voie en production — qui est
+   * reconstituée ici. Le développement garde le `name`, d'où la panne du 21 octobre 2026 qu'aucun
+   * test ni `pnpm dev` n'avait vue.
    */
-  it("rattrape une erreur qui a perdu sa classe en traversant `use cache`", async () => {
+  it("rattrape une panne réduite à son `digest` en traversant `use cache`", async () => {
+    const { anilistQuery, tryAniList } = await importAnilist(
+      vi.fn(async () =>
+        jsonResponse({ errors: [{ message: "Down.", status: 503 }] }, 503),
+      ) as never,
+    );
+    const original: unknown = await anilistQuery({
+      query: "query {}",
+      schema,
+    }).catch((error: unknown) => error);
+
+    const transported = Object.assign(
+      new Error("An error occurred in the Server Components render."),
+      { digest: (original as { digest?: string }).digest },
+    );
+
+    await expect(
+      tryAniList(() => Promise.reject(transported)),
+    ).resolves.toBeNull();
+  });
+
+  it("rattrape aussi la forme du développement, qui garde le `name`", async () => {
     const { tryAniList } = await importAnilist(vi.fn() as never);
 
     const transported = new Error(
