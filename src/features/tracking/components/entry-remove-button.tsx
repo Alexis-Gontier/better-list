@@ -62,14 +62,15 @@ export function EntryRemoveButton({
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogTrigger asChild>
         {/*
-          `ghost` et poussé à gauche du pied : il ne doit pas se lire comme la suite logique
-          d'« Enregistrer ». Le rouge ne vient qu'au texte, jamais en fond — un bouton plein
-          destructif à côté du bouton principal serait celui que l'œil trouve en premier.
+          Poussé à gauche du pied : il ne doit pas se lire comme la suite logique d'« Enregistrer ».
+
+          `destructive` est un fond rouge pâle, pas un aplat : la forme d'un bouton, sans être celui
+          que l'œil trouve en premier à côté d'« Enregistrer ».
         */}
         <Button
-          className="text-destructive hover:text-destructive sm:mr-auto"
+          className="sm:mr-auto"
           disabled={disabled || isPending}
-          variant="ghost"
+          variant="destructive"
         >
           <Trash2Icon />
           Retirer de ma bibliothèque

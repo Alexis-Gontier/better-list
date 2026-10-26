@@ -8,7 +8,10 @@ import {
   listSections,
   sectionCounts,
 } from "@/features/lists/lib/list-sections";
-import type { ListKind } from "@/features/lists/schemas/lists.schema";
+import type {
+  ListKind,
+  ListMembership,
+} from "@/features/lists/schemas/lists.schema";
 import {
   compactFromMirror,
   formatMediaFormat,
@@ -300,23 +303,11 @@ export const getList = cache(async function getList(
   };
 });
 
-/** Une de mes listes, et si cette œuvre y est déjà. */
-export type ListMembership = {
-  id: string;
-  title: string;
-  kind: ListKind;
-  itemCount: number;
-  contains: boolean;
-  /** La place de l'œuvre dans la liste, à partir de 1 ; `null` quand elle n'y est pas. */
-  position: number | null;
-  /** La jaquette de tête de la liste, pour la reconnaître d'un coup d'œil. `null` si elle est vide. */
-  cover: string | null;
-};
-
 /**
  * Mes listes, vues depuis **une** œuvre : lesquelles la contiennent déjà, et à quelle place.
  *
- * C'est ce que lit la fenêtre « Ajouter à une liste » de la fiche, et c'est pour ça qu'elle affiche
+ * C'est ce que lit la fenêtre « Ajouter à une liste » de la fiche — et, par `api/lists/membership`,
+ * celle d'édition rapide d'une vignette. C'est pour ça qu'elles affichent
  * des **bascules** plutôt qu'un simple ajout — on voit où l'œuvre est rangée avant de choisir, et on
  * peut l'en retirer.
  *
@@ -326,7 +317,7 @@ export type ListMembership = {
  *
  * **Aucun filtre 18+ sur les listes**, contrairement à `getLists` : la préférence masque des
  * *jaquettes*, pas des *listes*, sans quoi on ne pourrait plus ranger une œuvre dans une liste qui
- * n'en contient que d'adultes. La jaquette de tête, elle, saute les œuvres adultes.
+ * n'en contient que d'adultes.
  *
  * L'ordre est celui de `/lists` : la dernière modifiée en tête, donc celle qu'on vient de créer.
  */
@@ -344,10 +335,7 @@ export async function getListMembership(
       kind: true,
       items: {
         orderBy: { rank: "asc" },
-        select: {
-          mediaId: true,
-          media: { select: { coverImage: true, isAdult: true } },
-        },
+        select: { mediaId: true },
       },
     },
   });
@@ -362,8 +350,6 @@ export async function getListMembership(
       itemCount: row.items.length,
       contains: index !== -1,
       position: index === -1 ? null : index + 1,
-      cover:
-        row.items.find((item) => !item.media.isAdult)?.media.coverImage ?? null,
     };
   });
 }

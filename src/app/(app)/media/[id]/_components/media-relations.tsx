@@ -48,8 +48,8 @@ export async function MediaRelations({
   if (relations.length === 0) return null;
 
   /*
-    **Mon statut sur chaque œuvre liée** (demande d'Alexis, 29 septembre 2026) : la pastille et le
-    « +1 », comme partout ailleurs. C'est la rangée où il compte le plus — « ai-je vu la saison 2 ? »
+    **Mon statut sur chaque œuvre liée** (demande d'Alexis, 29 septembre 2026) : la pastille et la
+    fenêtre d'édition, comme partout ailleurs. C'est la rangée où il compte le plus — « ai-je vu la saison 2 ? »
     est la question qu'on vient poser ici. Une requête Prisma pour toute la rangée, sur l'index
     `[userId, mediaId]` ; rien ne part chez AniList.
   */

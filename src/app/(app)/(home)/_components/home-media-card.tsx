@@ -2,7 +2,6 @@ import type { TrackedItem } from "@/app/(app)/(home)/_lib/home-data";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
-import { EntryQuickActions } from "@/features/tracking/components/entry-quick-actions";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import { formatLag } from "@/features/tracking/lib/airing-lag";
@@ -67,23 +66,16 @@ export function TrackedMediaCard({
     <MediaCard
       details={details}
       action={
-        <EntryQuickActions
+        <EntryQuickEdit
+          banner={item.banner}
+          cover={item.media.coverImage?.large ?? null}
+          compact
+          entry={item.entry}
           mediaId={item.media.id}
-          progress={item.entry.progress}
+          title={mediaTitle(item.media.title, titleLanguage)}
           total={item.total}
-          tracked
           unit={item.unit}
-        >
-          <EntryQuickEdit
-            banner={item.banner}
-            compact
-            entry={item.entry}
-            mediaId={item.media.id}
-            title={mediaTitle(item.media.title, titleLanguage)}
-            total={item.total}
-            unit={item.unit}
-          />
-        </EntryQuickActions>
+        />
       }
       marker={<EntryStatusDot status={item.entry.status} />}
       media={item.media}

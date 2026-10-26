@@ -8,8 +8,8 @@ import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-med
 import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
 
 /**
- * La grille d'œuvres d'une personne : la carte du catalogue, **avec la pastille de suivi et le
- * « +1 »** comme sur `/search` — une œuvre a la même apparence et le même geste partout. Sous
+ * La grille d'œuvres d'une personne : la carte du catalogue, **avec la pastille de suivi et la
+ * fenêtre d'édition** comme sur `/search` — une œuvre a la même apparence et le même geste partout. Sous
  * chaque carte, ce que la page y pose (le doubleur, le personnage, le rôle).
  *
  * Les entrées de suivi sont lues ici, en une requête pour la grille, sur l'index

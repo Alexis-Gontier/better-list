@@ -220,6 +220,7 @@ function AiringCard({
         <div className="absolute right-1 bottom-1">
           <EntryQuickEdit
             banner={cell.banner}
+            cover={media.coverImage?.large ?? null}
             compact
             entry={entry}
             mediaId={media.id}

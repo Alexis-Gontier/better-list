@@ -327,6 +327,7 @@ async function ListDetail({
                     action={
                       <EntryQuickEdit
                         banner={item.banner}
+                        cover={item.media.coverImage?.large ?? null}
                         compact
                         entry={entries.get(item.media.id) ?? null}
                         mediaId={item.media.id}

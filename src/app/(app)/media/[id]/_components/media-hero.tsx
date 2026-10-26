@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { routes } from "@/config/routes";
 import { FavoriteButton } from "@/features/favorites/components/favorite-button";
-import type { ListMembership } from "@/features/lists/server/lists.queries";
+import type { ListMembership } from "@/features/lists/schemas/lists.schema";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
@@ -160,6 +160,7 @@ export function MediaHero({
               />
             }
             banner={media.bannerImage}
+            cover={media.coverImage?.large ?? null}
             entry={entry}
             lists={lists}
             mediaId={media.id}

@@ -113,16 +113,16 @@ test("créer une liste depuis la fiche, l'œuvre y est rangée @anilist", async 
     .click();
   const dialog = page.getByRole("dialog", { name: "Ajouter à une liste" });
   await expect(dialog).toBeVisible();
-  // Sans aucune liste, la saisie est déjà ouverte ; sinon, on l'ouvre. Les tests voisins, en
-  // parallèle, décident lequel des deux cas on rencontre.
-  const opener = dialog.getByRole("button", { name: "Nouvelle liste" });
-  if (await opener.isVisible()) await opener.click();
-  await dialog.getByPlaceholder("Nom de la liste").fill(title);
-  await dialog.getByRole("button", { name: "Créer et ranger" }).click();
+  // Un seul champ cherche et crée : un nom nouveau devient « Créer « … » ».
+  await dialog.getByRole("combobox").fill(title);
+  await dialog.getByRole("option", { name: /^Créer/ }).click();
 
-  const row = dialog.getByText(title).locator("xpath=ancestor::label");
+  // La ligne de la liste est une option, cochée par `aria-checked`.
+  const row = dialog.getByRole("option", { name: new RegExp(title) });
   // La fiche se rend à nouveau après la création, lectures AniList comprises : sous la charge des
   // tests en parallèle, cinq secondes ne suffisent pas toujours.
-  await expect(row.getByRole("checkbox")).toBeChecked({ timeout: 15_000 });
+  await expect(row).toHaveAttribute("aria-checked", "true", {
+    timeout: 15_000,
+  });
   await expect(row).toContainText("n° 1");
 });

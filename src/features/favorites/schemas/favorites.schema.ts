@@ -46,3 +46,13 @@ export const setFavoriteSchema = z.object({
   target: favoriteTargetSchema,
   favorite: z.boolean(),
 });
+
+/**
+ * La question posée à `api/favorites/media` par la fenêtre d'édition d'une vignette (D53).
+ * `coerce` : elle arrive par l'URL, donc en texte.
+ */
+export const mediaFavoriteQuerySchema = z.object({
+  mediaId: z.coerce.number().int().positive(),
+});
+
+export const mediaFavoriteStateSchema = z.object({ favorite: z.boolean() });
