@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { ListMembership } from "@/features/lists/server/lists.queries";
+import type { ListMembership } from "@/features/lists/schemas/lists.schema";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryScoreRating } from "@/features/tracking/components/entry-score-rating";
@@ -83,6 +83,8 @@ type EntryActionBarProps = {
    */
   title: string;
   banner: string | null;
+  /** La jaquette, pour l'en-tête des deux fenêtres que la barre ouvre. */
+  cover: string | null;
   /** Mon suivi tel qu'il est en base. `null` — l'œuvre n'est pas encore suivie — n'affiche que l'ajout. */
   entry: EntryState | null;
   /** Ce qu'on compte : des épisodes sur un anime, des chapitres sur tout le reste. */
@@ -124,6 +126,7 @@ export function EntryActionBar({
   mediaId,
   title,
   banner,
+  cover,
   entry,
   unit,
   total,
@@ -266,6 +269,7 @@ export function EntryActionBar({
           */}
           <EntryQuickEdit
             banner={banner}
+            cover={cover}
             entry={entry}
             mediaId={mediaId}
             title={title}
@@ -278,6 +282,7 @@ export function EntryActionBar({
             tooltip
             total={total}
             unit={unit}
+            withExtras={false}
           />
         </>
       ) : (
@@ -318,7 +323,12 @@ export function EntryActionBar({
       */}
       {favorite}
 
-      <AddToListDialog lists={lists} mediaId={mediaId} title={title} />
+      <AddToListDialog
+        cover={cover}
+        lists={lists}
+        mediaId={mediaId}
+        title={title}
+      />
 
       {collection}
     </div>

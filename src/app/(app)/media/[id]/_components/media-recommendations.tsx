@@ -27,7 +27,7 @@ type MediaRecommendationsProps = {
  * question posée a reçu sa réponse.
  *
  * Il réutilise la carte du catalogue, **avec mon statut** depuis le 29 septembre 2026 (demande
- * d'Alexis) : pastille et « +1 », comme sur `/search`, `/library` et l'accueil. Une recommandation
+ * d'Alexis) : pastille et fenêtre d'édition, comme sur `/search`, `/library` et l'accueil. Une recommandation
  * que je suis déjà doit se voir d'un coup d'œil — sans quoi on ouvre une fiche pour découvrir
  * qu'on l'a finie l'an dernier.
  *

@@ -126,7 +126,7 @@ export function MediaCard({
       {/*
         **Le panneau de survol enveloppe le lien, pas la carte entière.** Radix attache son
         déclencheur à l'élément qu'on lui donne : sur l'enveloppe, il capterait aussi le survol du
-        bouton d'action, qui est son frère — approcher la souris du « +1 » ouvrirait un panneau
+        bouton d'action, qui est son frère — approcher la souris du crayon ouvrirait un panneau
         par-dessus le geste qu'on vise. Sur le lien, il couvre exactement la jaquette et le titre,
         c'est-à-dire ce qu'on survole quand on regarde une œuvre. Et le lien étant focusable, le
         panneau vient aussi au clavier.
@@ -232,9 +232,8 @@ export function MediaCard({
           La version précédente était le voile de la spec du 2 septembre — une barre pleine largeur
           montée depuis le bas au survol, portant « Modifier ». Elle marchait, mais elle coûtait un
           tiers de la jaquette et ne se transposait pas au catalogue, où la plupart des cartes ne
-          sont pas encore suivies. **Le voile reviendra quand il aura de quoi le remplir** : la spec
-          lui destine le « +1 » et la progression en barre fine, qui demandent l'un et l'autre une
-          écriture qui n'existe pas encore.
+          sont pas encore suivies. Le « +1 » que la spec lui destinait a vécu un temps au-dessus
+          de l'action, puis a été retiré (D53) : tout passe par la fenêtre d'édition.
 
           `aspect-2/3` reproduit exactement la boîte de la jaquette, qui est le premier enfant du
           lien et occupe toute la largeur : l'action se pose donc **sur l'illustration, jamais sur

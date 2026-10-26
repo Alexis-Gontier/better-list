@@ -38,6 +38,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TIMEZONE } from "@/config/locale";
+import { MediaFavoriteToggle } from "@/features/favorites/components/media-favorite-toggle";
+import { MediaListsField } from "@/features/lists/components/media-lists-field";
 import { EntryProgressStepper } from "@/features/tracking/components/entry-progress-stepper";
 import { EntryRemoveButton } from "@/features/tracking/components/entry-remove-button";
 import { EntryRepeatStepper } from "@/features/tracking/components/entry-repeat-stepper";
@@ -51,6 +53,7 @@ import {
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import { saveEntry } from "@/features/tracking/server/tracking.actions";
+import { cn } from "@/lib/utils";
 
 /**
  * L'édition rapide du suivi, **depuis une vignette** — le bouton posé sur la jaquette, et la
@@ -104,6 +107,11 @@ type EntryQuickEditProps = {
   /** La bannière de l'œuvre. `null` sur la plupart des mangas — le cas est traité, pas subi. */
   banner: string | null;
   /**
+   * La jaquette, posée à cheval sur la bannière comme dans l'éditeur d'AniList (D53). Sans elle, on
+   * lisait un titre sans voir l'œuvre — la carte qu'on vient de cliquer est sous le voile.
+   */
+  cover?: string | null;
+  /**
    * Mon suivi, tel qu'il est en base — **ou `null` quand l'œuvre n'est pas encore suivie**.
    *
    * Les deux cas ouvrent la même fenêtre et c'est voulu : le geste est le même, seul le point de
@@ -144,17 +152,24 @@ type EntryQuickEditProps = {
    * expliquer la demande ; les autres s'en passent.
    */
   tooltip?: boolean;
+  /**
+   * Montrer mes listes et le cœur dans la fenêtre (D53). **Sauf sur la fiche**, qui porte déjà sa
+   * fenêtre de rangement et son cœur juste à côté de ce bouton.
+   */
+  withExtras?: boolean;
 };
 
 export function EntryQuickEdit({
   mediaId,
   title,
   banner,
+  cover = null,
   entry,
   unit,
   total,
   compact = false,
   tooltip = false,
+  withExtras = true,
 }: EntryQuickEditProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<EntryDraft>(() => entryDraftFrom(entry));
@@ -230,11 +245,9 @@ export function EntryQuickEdit({
         déjà la même chose, en toutes lettres ; l'icône la donne à l'œil.
 
         **Un signet et non un plus, et c'est un correctif du 17 septembre 2026** (relevé par
-        Alexis). Le plus était déjà pris : `EntryQuickActions` en pose un juste au-dessus, sur les
-        œuvres suivies, pour avancer d'un épisode. Le même dessin portait donc deux gestes sans
-        rapport — « +1 » ici, « ajouter à ma bibliothèque » là —, et rien ne les distinguait d'une
-        carte à sa voisine. `BookmarkPlus` dit ce que ce bouton-ci fait vraiment : ranger une œuvre
-        chez soi, pas incrémenter quoi que ce soit.
+        Alexis). Le plus portait alors aussi le « +1 » des vignettes (retiré depuis, D53), et le
+        même dessin disait deux gestes sans rapport. `BookmarkPlus` dit ce que ce bouton-ci fait
+        vraiment : ranger une œuvre chez soi, pas incrémenter quoi que ce soit.
 
         **Et il est plein, quand celui d'une œuvre suivie reste en `outline`** (même décision).
         C'est le renversement d'une règle écrite ici le 6 septembre : « un bouton plein tire l'œil
@@ -303,7 +316,13 @@ export function EntryQuickEdit({
         largeur de l'autre barre. Rien ici n'est censé défiler latéralement : la grille retombe sur
         une colonne, le texte des notes revient à la ligne, le titre est tronqué.
       */}
-      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-x-hidden overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent
+        className={cn(
+          "max-h-[calc(100dvh-2rem)] gap-0 overflow-x-hidden overflow-y-auto p-0 sm:max-w-2xl",
+          // La colonne des listes prend 18 rem à côté du formulaire, qui garde au moins sa largeur d'avant.
+          withExtras && "lg:max-w-5xl",
+        )}
+      >
         <EntryQuickEditBanner src={banner} />
 
         {/*
@@ -318,17 +337,43 @@ export function EntryQuickEdit({
             `DialogContent`. Sans elle, un titre long — et le catalogue en est plein — glisse
             dessous : `truncate` le coupe au bord de son conteneur, pas au bord du bouton.
           */}
-          <DialogHeader className="gap-1 pr-8">
-            <DialogTitle className="truncate">{title}</DialogTitle>
-            {/*
+          {/*
+            **La jaquette, le titre et le cœur sur une rangée**, à la manière d'AniList (D53). La
+            jaquette remonte sur la bannière quand il y en a une — c'est ce qui la fait lire comme
+            l'en-tête de l'œuvre et non comme une vignette de plus. Sans bannière, la croix de
+            fermeture est dans le corps : `pr-8` lui garde sa place à côté du cœur.
+          */}
+          <div className={cn("flex items-end gap-4", !banner && "pr-8")}>
+            {cover ? (
+              <div
+                aria-hidden
+                className={cn(
+                  "relative aspect-2/3 w-20 shrink-0 overflow-hidden rounded-md bg-muted shadow-lg ring-1 ring-border sm:w-24",
+                  banner && "-mt-14 sm:-mt-20",
+                )}
+              >
+                <Image
+                  alt=""
+                  className="object-cover"
+                  fill
+                  sizes="96px"
+                  src={cover}
+                />
+              </div>
+            ) : null}
+            <DialogHeader className="min-w-0 flex-1 gap-1 text-left">
+              <DialogTitle className="truncate text-lg">{title}</DialogTitle>
+              {/*
               Une ligne, parce qu'elle ne sert qu'à dire où va le reste. La version longue énumérait
               les dates, les notes personnelles et le journal — or les dates et les notes sont ici
               désormais, et il ne reste vraiment que le journal.
             */}
-            <DialogDescription>
-              Le journal de cette œuvre se lit sur sa fiche.
-            </DialogDescription>
-          </DialogHeader>
+              <DialogDescription>
+                Le journal de cette œuvre se lit sur sa fiche.
+              </DialogDescription>
+            </DialogHeader>
+            {withExtras ? <MediaFavoriteToggle mediaId={mediaId} /> : null}
+          </div>
 
           {/*
             **Trois colonnes, et la disposition est dictée** (Alexis, 6 septembre 2026) : statut,
@@ -347,123 +392,155 @@ export function EntryQuickEdit({
             En dessous de `sm`, tout retombe sur une colonne : trois contrôles de front sur 390 px
             donneraient trois contrôles illisibles.
           */}
-          <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-3">
-            <Field label="Statut">
-              <EntryStatusSelect
-                className="w-full"
-                onValueChange={(status) => edit({ status })}
-                value={draft.status}
-              />
-            </Field>
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-3 gap-y-3 self-start sm:grid-cols-3">
+              <Field label="Statut">
+                <EntryStatusSelect
+                  className="w-full"
+                  onValueChange={(status) => edit({ status })}
+                  value={draft.status}
+                />
+              </Field>
 
-            <Field
-              label={unit === "episode" ? "Épisodes vus" : "Chapitres lus"}
-            >
-              <EntryProgressStepper
-                className="w-full"
-                onValueChange={(progress) => edit({ progress })}
-                total={total}
-                unit={unit}
-                value={draft.progress}
-              />
-            </Field>
+              <Field
+                label={unit === "episode" ? "Épisodes vus" : "Chapitres lus"}
+              >
+                <EntryProgressStepper
+                  className="w-full"
+                  onValueChange={(progress) => edit({ progress })}
+                  total={total}
+                  unit={unit}
+                  value={draft.progress}
+                />
+              </Field>
 
-            <Field label="Commencé le">
-              {/*
+              <Field label="Commencé le">
+                {/*
                 Deux bornes hautes, dont la plus contraignante gagne : on ne commence pas dans le
                 futur, et on ne commence pas après avoir fini. La seconde ne s'applique que quand
                 la date de fin est renseignée — sur une série en cours, il n'y a rien à borner.
               */}
-              <DateField
-                label="la date de début"
-                max={earliest(today, draft.finishedAt)}
-                onValueChange={(startedAt) => edit({ startedAt })}
-                value={draft.startedAt}
-              />
-            </Field>
+                <DateField
+                  label="la date de début"
+                  max={earliest(today, draft.finishedAt)}
+                  onValueChange={(startedAt) => edit({ startedAt })}
+                  value={draft.startedAt}
+                />
+              </Field>
 
-            <Field label="Ma note">
-              <EntryScoreRating
-                className="w-full"
-                onScoreChange={(score) => edit({ score })}
-                score={draft.score}
-              />
-            </Field>
+              <Field label="Ma note">
+                <EntryScoreRating
+                  className="w-full"
+                  onScoreChange={(score) => edit({ score })}
+                  score={draft.score}
+                />
+              </Field>
 
-            <Field label="Relectures">
-              {/*
+              <Field label="Relectures">
+                {/*
                 **Deux crans depuis le 19 septembre 2026** (décision d'Alexis). Ce champ était nu,
                 au motif qu'on ne relit pas assez souvent pour avoir besoin d'un « +1 ». L'argument
                 tenait sur la fréquence et pas sur la forme : dans une grille où la progression
                 juste au-dessus porte ses deux boutons, un champ seul se lit comme un contrôle
                 d'une autre nature, alors que les deux ajustent le même genre d'entier.
               */}
-              <EntryRepeatStepper
-                className="w-full"
-                onValueChange={(repeatCount) => edit({ repeatCount })}
-                value={draft.repeatCount}
-              />
-            </Field>
+                <EntryRepeatStepper
+                  className="w-full"
+                  onValueChange={(repeatCount) => edit({ repeatCount })}
+                  value={draft.repeatCount}
+                />
+              </Field>
 
-            <Field label="Terminé le">
-              {/*
+              <Field label="Terminé le">
+                {/*
                 Le pendant du champ précédent : on ne finit pas dans le futur, et on ne finit pas
                 avant d'avoir commencé. Les deux contraintes sont donc posées **une fois chacune**,
                 de part et d'autre, plutôt que dupliquées — c'est ce qui les empêche de diverger.
               */}
-              <DateField
-                label="la date de fin"
-                max={today}
-                min={draft.startedAt || undefined}
-                onValueChange={(finishedAt) => edit({ finishedAt })}
-                value={draft.finishedAt}
-              />
-            </Field>
+                <DateField
+                  label="la date de fin"
+                  max={today}
+                  min={draft.startedAt || undefined}
+                  onValueChange={(finishedAt) => edit({ finishedAt })}
+                  value={draft.finishedAt}
+                />
+              </Field>
 
-            {/*
+              {/*
               Les notes prennent les trois colonnes : c'est du texte libre, et deux lignes de
               soixante caractères ne s'écrivent pas dans un tiers de fenêtre.
             */}
-            <div className="sm:col-span-3">
-              <Field label="Mes notes">
-                <Textarea
-                  className="min-h-16 resize-y"
-                  onChange={(event) => edit({ notes: event.target.value })}
-                  placeholder="Ce que j'en ai pensé, où j'en étais, ce qu'il faut que je me rappelle…"
-                  value={draft.notes}
-                />
-              </Field>
+              <div className="sm:col-span-3">
+                <Field label="Mes notes">
+                  <Textarea
+                    /*
+                      Plus haute sur `lg` quand le panneau des listes est à côté : c'est elle qui
+                      donne sa hauteur à la rangée, donc la place des cases (D53).
+                    */
+                    className={cn(
+                      "min-h-16 resize-y",
+                      withExtras && "lg:min-h-32",
+                    )}
+                    onChange={(event) => edit({ notes: event.target.value })}
+                    placeholder="Ce que j'en ai pensé, où j'en étais, ce qu'il faut que je me rappelle…"
+                    value={draft.notes}
+                  />
+                </Field>
+              </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            {/*
+            {withExtras ? (
+              /*
+                **Un panneau à droite, comme l'éditeur d'AniList** (D53) : le
+                suivi à gauche, le rangement à côté. Ce sont deux sujets qui ne s'enregistrent pas
+                de la même façon, et un fond à lui le dit mieux qu'une ligne de plus sous les notes.
+
+                **Sur `lg`, il prend exactement la hauteur du formulaire** et défile au-delà : le
+                contenu est posé en absolu dans un `relative` que la rangée étire. Sans ça, dix
+                listes ou le champ de création ouvert allongeaient la fenêtre et laissaient un trou
+                sous les notes. Sous `lg`, il retombe sous le formulaire, à sa hauteur naturelle.
+              */
+              <aside className="relative lg:w-72 lg:shrink-0">
+                <div className="flex flex-col rounded-lg bg-muted/40 ring-1 ring-border ring-inset lg:absolute lg:inset-0">
+                  <MediaListsField mediaId={mediaId} />
+                </div>
+              </aside>
+            ) : null}
+          </div>
+        </div>
+
+        {/*
+          **Le pied est hors du corps, sous un trait qui court sur toute la largeur.** Avec le
+          panneau des listes, il y a deux façons d'enregistrer dans la même fenêtre (D53) : le trait
+          dit que ces boutons-ci valent pour le suivi, pas pour les cases au-dessus d'eux.
+        */}
+        <DialogFooter className="border-t px-4 py-3">
+          {/*
               Seulement sur une œuvre suivie : on ne retire pas ce qui n'est pas là.
             */}
-            {entry ? (
-              <EntryRemoveButton
-                disabled={isPending}
-                mediaId={mediaId}
-                onRemoved={() => setOpen(false)}
-                title={title}
-              />
-            ) : null}
-            <DialogClose asChild>
-              <Button disabled={isPending} variant="outline">
-                Annuler
-              </Button>
-            </DialogClose>
-            {/*
+          {entry ? (
+            <EntryRemoveButton
+              disabled={isPending}
+              mediaId={mediaId}
+              onRemoved={() => setOpen(false)}
+              title={title}
+            />
+          ) : null}
+          <DialogClose asChild>
+            <Button disabled={isPending} variant="outline">
+              Annuler
+            </Button>
+          </DialogClose>
+          {/*
               Désarmé pendant l'aller-retour : sans ça, un double clic envoie deux fois le même
               geste, et le journal garde deux lignes pour une seule décision — or il est
               *append-only*, donc la seconde ne se retire pas.
             */}
-            <Button disabled={isPending} onClick={save}>
-              {isPending ? <Spinner /> : null}
-              {entry ? "Enregistrer" : "Ajouter"}
-            </Button>
-          </DialogFooter>
-        </div>
+          <Button disabled={isPending} onClick={save}>
+            {isPending ? <Spinner /> : null}
+            {entry ? "Enregistrer" : "Ajouter"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

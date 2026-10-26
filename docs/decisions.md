@@ -101,7 +101,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   fenêtre d'édition, un bouton valide. Dans les deux cas, on n'envoie que ce qui a bougé.
 - **D38** — Une œuvre non suivie n'a sur sa fiche qu'un bouton « Ajouter à ma bibliothèque ».
 - **D39** — Le « +1 » vit sur les vignettes des œuvres suivies, pas dans la palette ⌘K. Dans la
-  palette, `Entrée` mène à `/search`.
+  palette, `Entrée` mène à `/search`. *(Révisée par D53 : plus de « +1 » sur les vignettes.)*
 - **D40** — Supprimer une liste demande de recopier son nom : c'est le seul geste qu'on ne peut pas
   défaire.
 - **D41** — `/search` et `/library` partagent leur coquille. Les filtres qui portent sur nos propres
@@ -122,7 +122,8 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D48** — Une liste peut aussi naître depuis la fiche d'une œuvre, avec un nom et un genre, et
   l'œuvre y est rangée d'emblée. Révise la décision du 6 septembre 2026 (« une liste ne naît qu'à
   un seul endroit ») : « je veux mettre ça dans une nouvelle liste » coûtait deux visites. Le
-  formulaire complet reste sur `/lists`.
+  formulaire complet reste sur `/lists`. *(Révisée par D53 : créée depuis le sélecteur, une liste
+  prend le genre « Sélection ».)*
 - **D49** — Sur la page partagée, une œuvre 18+ arrive floutée, titre masqué, et se révèle d'un
   clic ; l'aperçu du lien n'en montre jamais. Rien n'est retiré, le décompte reste juste. Révise la
   décision du 6 septembre 2026 (« rien n'est masqué ») : le lien peut sortir du cercle.
@@ -137,3 +138,12 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D52** — Aucune lecture AniList au build : un prérendu échoue sur toute erreur d'un
   `"use cache"`, même rattrapée, si bien qu'une panne d'AniList bloquait tout déploiement. Le mur
   de jaquettes de `/login` et `/signup` est lu à la requête (`connection()`).
+- **D53** — La fenêtre d'édition rapide d'une vignette range aussi l'œuvre dans mes listes, dans
+  une colonne à droite du formulaire comme l'éditeur d'AniList, avec la jaquette et le cœur en
+  en-tête ; le « +1 » posé au-dessus de la jaquette disparaît (révise D39). Ranger passe partout
+  par un sélecteur `Command` : un champ qui cherche et crée, une ligne par liste cochée à droite.
+  Créer depuis ce champ pose le genre « Sélection », modifiable sur `/lists` (révise D48, qui
+  demandait le genre à la création). Les cases s'enregistrent aussitôt, le reste de la fenêtre
+  attend « Enregistrer » (D37). Listes et cœur sont lus à l'ouverture (`api/lists/membership`,
+  `api/favorites/media`), pas au rendu de la grille. Maintenus, les crans +/− répètent et
+  accélèrent (400 ms, puis de 120 à 30 ms).

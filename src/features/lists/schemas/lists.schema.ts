@@ -96,6 +96,26 @@ export const removeFromListSchema = z.object({
   mediaId: mediaIdSchema,
 });
 
+/** Une de mes listes, vue depuis une œuvre : si elle y est déjà, et à quelle place. */
+export const listMembershipSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  kind: listKindSchema,
+  itemCount: z.number().int(),
+  contains: z.boolean(),
+  /** La place de l'œuvre dans la liste, à partir de 1 ; `null` quand elle n'y est pas. */
+  position: z.number().int().nullable(),
+});
+export type ListMembership = z.infer<typeof listMembershipSchema>;
+
+/**
+ * La question posée à `api/lists/membership` par la fenêtre d'une vignette. `coerce` : elle arrive
+ * par l'URL, donc en texte.
+ */
+export const listMembershipQuerySchema = z.object({
+  mediaId: z.coerce.number().int().positive(),
+});
+
 /**
  * Déplacer une œuvre dans une liste (V1.5).
  *

@@ -30,7 +30,7 @@ import type { TitleLanguage } from "@/features/preferences/schemas/preferences.s
  *
  * **Il ne dit plus rien de mon suivi** (décision d'Alexis, 17 septembre 2026). Une ligne « Mon
  * suivi » fermait le panneau — « En cours · ép. 12 / 26 », ou « Prévu » tout seul. Elle est partie
- * avec le filet qui l'annonçait : la pastille de statut sur la carte et le « +1 » au survol disent
+ * avec le filet qui l'annonçait : la pastille de statut sur la carte et le crayon au survol disent
  * déjà que l'œuvre est suivie, et le panneau redevient ce qu'AniList sait de l'œuvre, sans mélange.
  *
  * **La jaquette est passée à gauche le 17 septembre 2026** (demande d'Alexis), et le panneau s'est

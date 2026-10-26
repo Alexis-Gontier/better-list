@@ -5,7 +5,6 @@ import type {
   MediaCompact,
 } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
-import { EntryQuickActions } from "@/features/tracking/components/entry-quick-actions";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
@@ -39,23 +38,16 @@ export function CatalogueMediaCard({
   return (
     <MediaCard
       action={
-        <EntryQuickActions
+        <EntryQuickEdit
+          banner={media.bannerImage ?? null}
+          cover={media.coverImage?.large ?? null}
+          compact
+          entry={entry}
           mediaId={media.id}
-          progress={entry?.progress ?? 0}
+          title={mediaTitle(media.title, titleLanguage)}
           total={total}
-          tracked={entry !== null}
           unit={unit}
-        >
-          <EntryQuickEdit
-            banner={media.bannerImage ?? null}
-            compact
-            entry={entry}
-            mediaId={media.id}
-            title={mediaTitle(media.title, titleLanguage)}
-            total={total}
-            unit={unit}
-          />
-        </EntryQuickActions>
+        />
       }
       details={details}
       footer={footer}
