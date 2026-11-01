@@ -9,6 +9,7 @@ seule. **Tout est en français** : interface, commentaires, commits, docs, répo
 - Décisions en vigueur : `docs/decisions.md` (« D18 »). Une décision qui gêne se révise par une
   nouvelle, écrite dans ce registre dans la même PR.
 - Déploiement : `docs/deploiement.md`.
+- Maquettes OpenPencil : `docs/design/` (D54). Elles suivent le code, jamais l'inverse.
 - Consignes par zone, chargées avec leurs fichiers : `.claude/rules/` (`app-routing`,
   `components`, `server`, `anilist`, `outside-next`).
 
