@@ -128,6 +128,12 @@ ajoutées à `UserPreferences`, toutes à `true` par défaut (l'état actuel) :
 - `showJournal`, `showStats`, `showActivityCalendar`, `showFavorites` — une par section du profil,
   lues seulement si `profileVisible`.
 
+- `showAdult` — « Œuvres 18+ sur mon profil », **`false` par défaut**. Faux : mes œuvres 18+ sont
+  traitées comme `Entry.private` pour les autres sur tout le profil (journal, favoris,
+  statistiques), compteurs compris. Vrai : elles apparaissent, mais seulement aux membres qui ont
+  eux-mêmes `includeAdult` (D7 reste vrai). Les listes n'en dépendent pas : le filtre du lecteur
+  s'y applique déjà.
+
 C'est ainsi que se règle le « suivi privé » : couper journal et statistiques cache ce que je
 regarde. `Entry.private` reste, pour cacher une seule œuvre partout. Le propriétaire voit toujours
 tout son profil.
@@ -274,7 +280,7 @@ sans 18+.
 - `User` : champs du plugin `admin` (`role`, `banned`, `banReason`, `banExpires`).
 - `Session` : `impersonatedBy` (exigé par le plugin, inutilisé).
 - `UserPreferences` : `profileVisible`, `showJournal`, `showStats`, `showActivityCalendar`,
-  `showFavorites`.
+  `showFavorites` (défaut `true`), `showAdult` (défaut `false`).
 - `List` : `visibility ListVisibility @default(MEMBERS)`.
 - Nouvelles tables : `ListLike`, `Notification` ; nouveaux enums : `ListVisibility`,
   `NotificationType`.
