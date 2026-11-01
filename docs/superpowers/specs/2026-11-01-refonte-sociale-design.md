@@ -1,4 +1,4 @@
-# Refonte : entrée, confidentialité, listes sociales, accueil
+# Refonte : entrée, confidentialité, listes sociales, accueil, tier lists
 
 Spec du 1er novembre 2026, validée section par section avec Alexis. Document de chantier : une fois
 fusionné, ses décisions passent dans `docs/decisions.md` et la spec est supprimée (CLAUDE.md).
@@ -24,10 +24,11 @@ listes mises en avant, position « Publique » d'une liste.
 
 ## Livraison
 
-Quatre lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente et déployable.
+Cinq lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente et déployable.
 
 **Maquettes d'abord** (révise D54, demande d'Alexis) : les écrans nouveaux ou modifiés de chaque
-lot sont dessinés dans `docs/design/better-list.fig`, en 1440 et 390 px, et **validés par Alexis
+lot sont dessinés dans `docs/design/better-list.fig` (lot 1) puis `docs/design/refonte.fig` (lots 2 à 5,
+le premier fichier ayant atteint la limite de nœuds d'OpenPencil), en 1440 et 390 px, et **validés par Alexis
 avant le code** du lot. Les tokens restent ceux de `globals.css` et les composants ceux de `src/` :
 la maquette compose l'existant, elle n'invente pas de style. Une fois le lot livré, la maquette se
 réaligne sur le code (D54 reste vrai après livraison).
@@ -36,6 +37,7 @@ réaligne sur le code (D54 reste vrai après livraison).
 2. **Confidentialité** (§2)
 3. **Listes sociales et notifications** (§3, §4) — les notifications naissent des likes et des forks
 4. **Accueil** (§5) — sa rangée communautaire réutilise la carte du lot 3
+5. **Tier lists** (§6) — s'appuie sur les likes, la copie et les notifications du lot 3
 
 ## 1. Entrée et comptes
 
@@ -279,6 +281,62 @@ Obsidienne. L'idée : le mur des jaquettes reste fixe pendant qu'on lit.
 Les fragments ne montrent aucune donnée de membre réelle. Mur de jaquettes lu à la requête (D52),
 sans 18+.
 
+## 6. Tier lists
+
+Inspirées de TierMaker (analyse du 1er novembre 2026) : ses rangées pastel, son menu de palier, sa
+réserve d'œuvres non classées et son principe de « modèle » qu'on classe chacun à sa façon. On
+comble ses manques : pas de clavier, glisser pénible sur mobile, enregistrement local.
+
+### Modèle
+
+- `ListKind.TIER`, cinquième genre de liste. Une tier list est une liste : likes, copie,
+  Communauté, visibilité et lien de partage s'y appliquent sans rien d'autre.
+- `List.tiers` (JSON) : `[{ label: "S", color: "#FF7F7F" }, …]`. Défaut S, A, B, C, D aux pastels de
+  TierMaker (`#FF7F7F`, `#FFBF7F`, `#FFDF7F`, `#FFFF7F`, `#BFFF7F`). Huit au plus. Validé par Zod.
+- `ListItem.tierIndex Int?` : le palier ; `null` = réserve « Pas encore classées », où arrive toute
+  œuvre ajoutée. `rank` ordonne les œuvres dans leur palier.
+- Une liste qui quitte le genre garde ses paliers et ses `tierIndex` (comme `cutoff`, D47).
+- Supprimer un palier renvoie ses œuvres dans la réserve et décale les `tierIndex` au-dessus, dans
+  une transaction.
+- `List.versionOfId` (distinct de `forkedFromId`, `onDelete: SetNull`) relie une « version » à
+  l'original.
+- Les tables `ListView` et `ListViewItem` sont supprimées par migration : **révise D17**, la tier
+  list est un genre, pas une vue.
+- **Exception à D33** : les étiquettes de palier portent leur couleur pastel. C'est le code visuel
+  universel des tier lists ; elles sont la seule couleur hors jaquettes.
+
+### L'éditeur (`/lists/[id]`, genre Tier list, propriétaire)
+
+- Une rangée par palier : étiquette colorée à gauche (le nom, en noir sur le pastel), jaquettes au
+  milieu, menu « ⋯ » à droite. La réserve en bas, sur fond `card`.
+- Déplacer : glisser-déposer `dnd-kit` (souris, appui long au doigt, clavier : Espace puis flèches,
+  comme le réordonnancement actuel). Geste rapide : un clic sur une jaquette ouvre un menu « Mettre
+  en S / A / … / Retirer du classement ».
+- Menu d'un palier : renommer, couleur (11 pastels et 4 gris de TierMaker), ajouter au-dessus ou en
+  dessous, monter ou descendre, vider (vers la réserve), supprimer.
+- Chaque geste part aussitôt (D37) : Server Actions `moveTierItem` et `updateTiers`, mises à jour
+  optimistes.
+- « Ajouter des œuvres » (D46) verse dans la réserve.
+
+### Ailleurs
+
+- Lecture (liste d'un autre) : les mêmes rangées, sans poignées ni réserve, ♥ et « Copier ».
+- Carte de liste : la mosaïque prend les jaquettes du palier le plus haut ; glyphe du genre.
+- Fiche, « Dans les listes » : le palier remplace le rang (« Sora · S »).
+- `/l/[token]` : les rangées, 18+ retirées avec « + N réservées aux membres » (§2).
+
+### Copier une tier list
+
+« Copier » ouvre un choix :
+
+- **Copier avec son classement** : la copie du §3, paliers et placements compris.
+- **Faire ma version** : mêmes œuvres et mêmes paliers, tout dans la réserve ; privée ; liée par
+  `versionOfId`. L'original affiche « N versions » avec les avatars, chaque version mène à
+  l'original. Notification `LIST_VERSIONED` à l'auteur : « Léo a fait sa version de *…* ».
+
+Hors périmètre pour l'instant : l'export en image (proposé, non tranché), le classement moyen des
+versions (à la « Community Rank » de TierMaker), roue aléatoire, sondage.
+
 ## Données : récapitulatif des migrations
 
 - `User` : champs du plugin `admin` (`role`, `banned`, `banReason`, `banExpires`).
@@ -288,8 +346,10 @@ sans 18+.
 - `List` : `visibility ListVisibility @default(MEMBERS)`.
 - Nouvelles tables : `ListLike`, `Notification` ; nouveaux enums : `ListVisibility`,
   `NotificationType`.
+- Lot 5 : `ListKind.TIER`, `List.tiers`, `List.versionOfId`, `ListItem.tierIndex`,
+  `NotificationType.LIST_VERSIONED` ; suppression de `ListView` et `ListViewItem` (vides).
 
-Toutes additives, avec des défauts qui reproduisent le comportement actuel : déployables sans
+Toutes additives (sauf la suppression des deux tables vides), avec des défauts qui reproduisent le comportement actuel : déployables sans
 reprise de données.
 
 ## Erreurs et cas limites
@@ -306,18 +366,20 @@ reprise de données.
 
 - **Unitaires (Vitest)** : `canViewProfileSection`, `visibleListsWhere`, la copie d'une liste (ce
   qui est recopié ou non), les règles de notification (pas de doublon, suppression au retrait),
-  la dérivation du `username` par fournisseur, `requireAdmin`.
+  la dérivation du `username` par fournisseur, `requireAdmin`, les paliers (suppression d'un palier,
+  décalage des `tierIndex`, « Faire ma version » qui vide les placements).
 - **E2E (Playwright)** : `/` anonyme montre la landing et `/` connecté l'accueil ; `/signup`
   redirige ; liker et copier une liste d'un autre compte ; une liste privée absente de la
   Communauté ; `/l/[token]` sans session ne montre pas une œuvre 18+ ; `/admin/users` refusé à un
-  non-admin. Comptes de test de la skill `e2e-test`.
+  non-admin ; ranger une œuvre dans un palier au clavier. Comptes de test de la skill `e2e-test`.
 - Vérification visuelle de chaque écran touché, en 1440 et 390 px.
 
 ## Documentation à mettre à jour (dans les PR des lots)
 
 - `docs/decisions.md` : révise **D1** (dizaine de comptes, social limité aux likes, forks et
   notifications), **D7** (confidentialité réglable), **D8** (`/` indexable), **D23** (trois
-  fournisseurs), **D24** (approbation dans l'app), **D31**, **D49** ; précise **D6**, **D16**.
+  fournisseurs), **D24** (approbation dans l'app), **D31**, **D49**, **D17** (tier list = genre),
+  **D33** (couleurs de palier) ; précise **D6**, **D16**.
   Nouvelles décisions à partir de **D55**.
 - `docs/conception.md` : §2, §4.4, §4.6, §5 (routes), §6, §7.1.
 - `CLAUDE.md` : « cercle privé d'environ quatre comptes, connexion GitHub seule ».
