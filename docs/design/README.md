@@ -77,9 +77,13 @@ supprimé.
 - **Une image se pose par `openpencil eval --stdin`**, avec l'API de plugin
   (`figma.createImage(bytes)` puis une peinture `IMAGE` sur le rectangle) : `set_image_fill` prend
   l'image en base64 dans l'appel, ce qui la fait transiter par l'agent.
-- **Un titre peut s'afficher brouillé à l'ouverture** (glyphes mélangés, surtout en Archivo). Le
-  texte enregistré est intact : c'est le moteur de rendu. Changer la taille du texte puis la
-  remettre corrige l'affichage, le temps de la séance.
+- **Des titres s'affichent brouillés après réouverture** (glyphes mélangés, surtout les Archivo en
+  500 à 700 : titre de la diapositive, « Activité », « Apparitions »). C'est un bug d'OpenPencil
+  0.16 à l'enregistrement : il range dans le fichier les contours des glyphes de chaque texte, et en
+  raccroche quelques-uns aux mauvais contours — un lot différent à chaque enregistrement. Le texte
+  lui-même est intact. Pour voir juste le temps d'une séance, effacer ces glyphes
+  (`figma.graph.updateNode(id, { derivedTextGlyphs: null })` dans `openpencil eval`) ou changer la
+  taille du texte puis la remettre ; rien ne l'empêche durablement.
 - **Le moteur de rendu peut planter** (« memory access out of bounds », « table index is out of
   bounds ») et laisser l'onglet mort : plus rien ne s'exporte. Le fichier n'est pas en cause ;
   quitter complètement OpenPencil et le relancer.
