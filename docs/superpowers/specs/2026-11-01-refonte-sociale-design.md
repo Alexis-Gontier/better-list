@@ -1,0 +1,286 @@
+# Refonte : entrée, confidentialité, listes sociales, accueil
+
+Spec du 1er novembre 2026, validée section par section avec Alexis. Document de chantier : une fois
+fusionné, ses décisions passent dans `docs/decisions.md` et la spec est supprimée (CLAUDE.md).
+
+## Contexte et périmètre
+
+Better-List sort du cercle de deux personnes pour **une dizaine de comptes** (cent au plus, jamais
+visé). Le social est donc dimensionné pour dix : pas de classement par période, pas de
+gamification, pas de file de modération, pas de fil d'activité.
+
+**Rien n'est public**, hormis une landing page et le lien de partage d'une liste, qui existe déjà.
+Pas de profil public, pas de fiche publique, pas de SEO au-delà de `/`. C'est ce qui garde le quota
+AniList (§4.1) à l'abri des visiteurs et des robots.
+
+Inspirations retenues (analyse des sites du 1er novembre 2026) : les « Collections de la
+communauté » de mangas-origines (mosaïque, ♥, tri « plus aimées / récentes », « Signaler »), les
+rangées de listes de Letterboxd, la vitrine d'AniList pour l'anonyme.
+
+**Écarté explicitement** par Alexis : fil d'activité, like d'une activité, abonnements entre
+membres, chiffres des membres sur la fiche, affinité, commentaires sur une liste, note par œuvre
+d'une liste (`ListItem.note` reste au schéma sans écran), « X % vu » sur une liste, slugs de liste,
+listes mises en avant, position « Publique » d'une liste.
+
+## Livraison
+
+Quatre lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente et déployable.
+
+1. **Entrée et comptes** (§1)
+2. **Confidentialité** (§2)
+3. **Listes sociales et notifications** (§3, §4) — les notifications naissent des likes et des forks
+4. **Accueil** (§5) — sa rangée communautaire réutilise la carte du lot 3
+
+## 1. Entrée et comptes
+
+### Routes
+
+- **`/`** : sans cookie de session, `proxy.ts` **réécrit** (`NextResponse.rewrite`, l'URL reste `/`)
+  vers une route publique `/welcome`, hors du groupe `(app)`. Avec un cookie, c'est l'accueil actuel.
+  La réécriture, et pas un test dans la page, parce que la garde vit dans le layout `(app)` (D25) et
+  ne doit pas avoir de trou. Un cookie expiré mène à `/login` par la garde, comme aujourd'hui : c'est
+  le comportement attendu, pas la landing.
+- **`/welcome`** : la landing (§5.2). Accessible directement aussi ; `routes.welcome`.
+- **`/login`** : trois boutons, GitHub, Discord, Google. Badge « Dernière utilisée » sur le
+  fournisseur de la fois précédente.
+- **`/signup` disparaît**, fusionné dans `/login` : en OAuth seul, s'inscrire et se connecter sont le
+  même geste. Une redirection permanente `/signup` → `/login` garde les anciens liens.
+- **`/waitlist`** : inchangé.
+- **`/admin/users`** : réservé au rôle `admin` (§1.3).
+- **`robots.ts`** : autorise `/` seulement, interdit tout le reste. `/welcome` porte une balise
+  `canonical` vers `/`. `/login` et `/waitlist` restent `noindex`.
+
+### Fournisseurs et liaison
+
+- Better Auth : GitHub (existant), **Discord**, **Google**. Variables d'environnement ajoutées à
+  `config/env.ts` et à `docs/deploiement.md`.
+- **`account.accountLinking`** activé, avec `trustedProviders: ["github", "discord", "google"]` : une
+  personne qui arrive par deux fournisseurs avec le même e-mail vérifié a **un seul compte**, et ne
+  repasse pas par la liste d'attente.
+- `databaseHooks.user.create.before` dérive aujourd'hui le `username` du login GitHub. Il le dérive
+  désormais du profil du fournisseur (login GitHub, nom d'utilisateur Discord, partie locale de
+  l'e-mail Google), normalisé et rendu unique comme aujourd'hui.
+
+### Plugins Better Auth
+
+- **`admin`** : ajoute `role`, `banned`, `banReason`, `banExpires` à `User` et `impersonatedBy` à
+  `Session` (migration Prisma). Utilisé pour : lister les comptes, poser un rôle, bannir et débannir
+  avec un motif, révoquer les sessions, supprimer un compte. Un compte banni ne peut plus se
+  connecter, c'est Better Auth qui le refuse. **L'usurpation (`impersonateUser`) est désactivée**
+  par les permissions du plugin : entre amis, ce serait lire leur compte.
+- **`lastLoginMethod`** : cookie seul (`storeInDatabase: false`), lu par `/login` pour le badge.
+- `status` (`PENDING` / `APPROVED` / `REJECTED`) **reste** : la liste d'attente n'est pas couverte par
+  le plugin. `REJECTED` sert au refus d'une demande ; le bannissement d'un membre approuvé passe par
+  `banned`. `requireApprovedUser()` est inchangé.
+
+### Administration
+
+`/admin/users`, garde `requireAdmin()` (session approuvée **et** `role === "admin"`), appelée dans
+le layout du segment.
+
+- **Demandes** : les comptes `PENDING`, du plus ancien au plus récent, avec avatar, pseudo,
+  fournisseur et date. Boutons « Approuver » et « Refuser ».
+- **Membres** : les comptes `APPROVED`, avec « Bannir » (motif facultatif) et « Débannir ».
+- Un administrateur ne peut ni se bannir ni retirer son propre rôle.
+- Le premier administrateur se pose une fois à la main (Prisma Studio, ou un script de `scripts/`).
+
+Approuver ne prévient pas le demandeur : il n'y a pas d'e-mail. `/waitlist` le dit (« Revenez plus
+tard, ou prévenez Alexis »).
+
+### Suppression de compte
+
+Dans `/settings`, une zone « Supprimer mon compte » qui demande de recopier son pseudo (comme D40).
+Supprime l'utilisateur ; le schéma cascade déjà tout (suivi, journal, listes, collection, favoris,
+webhook, notifications). Une liste copiée par d'autres perd sa mention d'origine (`SetNull`). Le
+dernier administrateur ne peut pas se supprimer.
+
+## 2. Confidentialité entre membres
+
+Tout se joue entre membres connectés : il n'y a plus de public.
+
+### Profil
+
+Dans `/settings`, rubrique « Confidentialité », enregistrement un par un (D44). Colonnes booléennes
+ajoutées à `UserPreferences`, toutes à `true` par défaut (l'état actuel) :
+
+- `profileVisible` — « Profil visible des membres ». Faux : mon profil ne montre aux autres que mon
+  avatar, mon pseudo et mes listes « Membres ».
+- `showJournal`, `showStats`, `showActivityCalendar`, `showFavorites` — une par section du profil,
+  lues seulement si `profileVisible`.
+
+C'est ainsi que se règle le « suivi privé » : couper journal et statistiques cache ce que je
+regarde. `Entry.private` reste, pour cacher une seule œuvre partout. Le propriétaire voit toujours
+tout son profil.
+
+### Listes
+
+- Colonne `List.visibility` : enum `ListVisibility { PRIVATE MEMBERS }`, défaut `MEMBERS`
+  (l'état actuel). Choisie dans le formulaire de liste et dans son menu d'actions.
+- **Privée** : visible de son propriétaire seul. Absente de la page Communauté, de « Présente dans
+  N listes », du profil, des compteurs de copies.
+- **Le lien de partage `/l/[token]` reste** (D16) et fonctionne quelle que soit la visibilité : le
+  partager est un geste volontaire.
+- **Sur `/l/[token]`, les œuvres 18+ sont retirées** pour un visiteur sans session, avec la mention
+  « + N œuvres réservées aux membres ». Révise D49 (floutées jusqu'ici). L'aperçu du lien n'en
+  montre toujours aucune.
+
+### Où la règle s'applique
+
+Deux helpers serveur, testés en unitaire, par lesquels passent **toutes** les requêtes concernées :
+
+- `canViewProfileSection(viewerId, owner, section)` dans `features/profile/lib/` ;
+- `visibleListsWhere(viewerId)` dans `features/lists/server/` : une clause Prisma `where` (mes
+  listes, ou celles des autres en `MEMBERS`).
+
+Aucun écran ne filtre lui-même.
+
+## 3. Listes sociales
+
+### Likes
+
+- Table `ListLike` : `userId`, `listId`, `createdAt` ; `@@unique([userId, listId])`,
+  `@@index([listId])` ; cascade des deux côtés.
+- On ne like pas sa propre liste ; on ne like qu'une liste visible (`visibleListsWhere`).
+- Bouton ♥ + compteur en tête de `/lists/[id]` (liste d'un autre) et sur chaque carte. Mise à jour
+  optimiste, Server Action `toggleListLike`.
+- Pas de compteur dénormalisé : `_count` suffit à dix comptes.
+
+### Fork
+
+- « Copier dans mes listes » sur la liste d'un autre membre. Une transaction crée la copie : titre,
+  description, `kind`, `cutoff`, et tous les items avec leurs `rank`. La copie naît **`PRIVATE`**.
+  `forkedFromId` (déjà au schéma) pointe vers l'original. On est redirigé vers la copie.
+- Ne sont pas recopiés : `shareToken`, likes, `ListItem.note`, `readyNotifiedAt`.
+- La copie affiche « Copiée de *Titre* · Pseudo » avec un lien, si l'original existe et m'est
+  visible. Original supprimé : `SetNull`, la mention disparaît.
+- L'original affiche « Copiée N fois », en ne comptant que les copies visibles du lecteur.
+- Copier une de ses propres listes n'est pas proposé (le formulaire de création suffit).
+
+### Page Communauté
+
+- Route **`/lists/community`** (segment statique, prioritaire sur `[id]` ; précise D6).
+  `routes.lists.community`.
+- Les listes `MEMBERS` des **autres** membres, non vides. Tri `?tri=aimees` (défaut : nombre de
+  likes, puis `updatedAt`) ou `?tri=recentes` (`createdAt`). Pagination « Voir plus » par l'URL.
+- Carte : `ListCoverMosaic` existante, titre, avatar et pseudo de l'auteur, nombre d'œuvres, ♥ et
+  compteur, glyphe du genre. Cette carte est partagée avec la rangée de l'accueil (§5).
+- `/lists` devient « Mes listes » ; un onglet en tête bascule entre « Mes listes » et
+  « Communauté ».
+- États (D45) : aucune liste dans la communauté ; chargement.
+
+### « Présente dans N listes » sur la fiche
+
+- Bloc de `/media/[id]` : les listes visibles qui contiennent l'œuvre, les miennes comprises. Six
+  petites cartes au plus, puis « Voir les N » (une fenêtre avec la liste complète). Caché si N = 0.
+- Lecture de base uniquement, frontière `<Suspense>` propre (D29).
+
+## 4. Notifications sociales
+
+### Modèle
+
+Table `Notification` :
+
+- `id`, `recipientId`, `actorId`, `type` (enum `NotificationType`), `listId?`, `createdAt`,
+  `readAt?`.
+- `@@index([recipientId, readAt, createdAt])` ; cascade sur destinataire, acteur et liste.
+- Précise D31 : le retard d'épisodes reste calculé, seules les notifications sociales sont stockées.
+
+Types :
+
+- `LIST_LIKED` — « Sora a aimé *Best of isekai* ».
+- `LIST_FORKED` — « Léo a copié *Best of isekai* ».
+- `SIGNUP_PENDING` — pour chaque administrateur : « Nouvelle demande : Pseudo (via Discord) »,
+  lien vers `/admin/users`. Écrite par le hook de création de compte.
+
+### Règles
+
+- Écrite dans la même transaction que le like ou le fork.
+- Retirer un like supprime sa notification **non lue**. Un like remis ne crée pas de doublon non lu
+  (on cherche une `LIST_LIKED` non lue du même acteur sur la même liste avant d'écrire).
+- Approuver ou refuser une demande marque lues les `SIGNUP_PENDING` qui la concernent, chez tous les
+  administrateurs.
+- Pas de regroupement, pas de préférences par type, pas d'envoi Discord ni e-mail.
+
+### La cloche
+
+- `notifications-menu.tsx` prend deux onglets : « Épisodes » (l'existant) et « Activité ».
+- Pastille : épisodes en retard + notifications non lues.
+- Ouvrir l'onglet « Activité » marque lues ses notifications (Server Action `markNotificationsRead`).
+- `api/notifications` renvoie les deux sources (D27). Sa garde reste la sienne (session approuvée).
+
+## 5. Accueil
+
+### 5.1 Accueil connecté
+
+De haut en bas :
+
+1. Carrousel « À la une » — inchangé.
+2. « En cours » — inchangé.
+3. Trait — inchangé.
+4. **« Listes de la communauté »** (nouveau) : les 8 listes les plus aimées des autres, carte de
+   §3, lien « Tout voir » vers `/lists/community`. Cachée s'il n'y en a aucune. Lecture de base.
+5. **« Tendances » avec onglets** Anime, Manga, Manhwa, Light novel. Une requête AniList cachée par
+   onglet (même `cacheLife`), les quatre rendues côté serveur, la bascule est client et sans
+   rechargement, l'onglet choisi est retenu en `localStorage` (lecture et écriture sous
+   `try/catch`). « Tout voir » ouvre `/search` filtré. Chaque onglet a son repli de panne (D45,
+   D51). Ce n'est pas la rangée « Du moment » retirée le 14 septembre 2026 : pas de rangée en plus,
+   pas d'onglet 18+, et l'onglet Anime remplace les tendances actuelles.
+6. « Cette saison » — inchangé (animes seulement).
+7. « Recommandé pour vous » — inchangé.
+
+### 5.2 Landing (`/welcome`)
+
+- En-tête minimal : logo, « Se connecter ».
+- Accroche (« Ce que vous regardez, ce que vous avez vu, ce que vous possédez »), bouton
+  « Se connecter ».
+- Trois blocs : le suivi et le retard d'épisodes ; le journal ; les listes et la collection.
+  Illustrés par des captures ou des compositions de l'interface, jamais par des données de membres.
+- Mur de jaquettes de `/login`, lu à la requête (D52), sans 18+.
+- Appel final, pied de page avec l'attribution AniList.
+- Direction artistique dans Obsidienne (D34, D33) ; travaillée avec la skill de design au moment du
+  lot 4. En 1440 et 390 px.
+
+## Données : récapitulatif des migrations
+
+- `User` : champs du plugin `admin` (`role`, `banned`, `banReason`, `banExpires`).
+- `Session` : `impersonatedBy` (exigé par le plugin, inutilisé).
+- `UserPreferences` : `profileVisible`, `showJournal`, `showStats`, `showActivityCalendar`,
+  `showFavorites`.
+- `List` : `visibility ListVisibility @default(MEMBERS)`.
+- Nouvelles tables : `ListLike`, `Notification` ; nouveaux enums : `ListVisibility`,
+  `NotificationType`.
+
+Toutes additives, avec des défauts qui reproduisent le comportement actuel : déployables sans
+reprise de données.
+
+## Erreurs et cas limites
+
+- Liker, copier ou voir une liste devenue privée entre-temps : l'action renvoie une erreur métier
+  (« Cette liste n'est plus disponible »), la page passe en `notFound()`.
+- Fork d'une liste de plusieurs centaines d'œuvres : un `createMany` dans la transaction.
+- Compte banni pendant une session : Better Auth révoque ses sessions au bannissement.
+- Fournisseur qui ne renvoie pas d'e-mail vérifié : pas de liaison, un compte distinct naît
+  `PENDING` — c'est le comportement sûr.
+- AniList en panne : landing (mur de jaquettes) et onglets de tendances ont chacun leur repli.
+
+## Tests
+
+- **Unitaires (Vitest)** : `canViewProfileSection`, `visibleListsWhere`, la copie d'une liste (ce
+  qui est recopié ou non), les règles de notification (pas de doublon, suppression au retrait),
+  la dérivation du `username` par fournisseur, `requireAdmin`.
+- **E2E (Playwright)** : `/` anonyme montre la landing et `/` connecté l'accueil ; `/signup`
+  redirige ; liker et copier une liste d'un autre compte ; une liste privée absente de la
+  Communauté ; `/l/[token]` sans session ne montre pas une œuvre 18+ ; `/admin/users` refusé à un
+  non-admin. Comptes de test de la skill `e2e-test`.
+- Vérification visuelle de chaque écran touché, en 1440 et 390 px.
+
+## Documentation à mettre à jour (dans les PR des lots)
+
+- `docs/decisions.md` : révise **D1** (dizaine de comptes, social limité aux likes, forks et
+  notifications), **D7** (confidentialité réglable), **D8** (`/` indexable), **D23** (trois
+  fournisseurs), **D24** (approbation dans l'app), **D31**, **D49** ; précise **D6**, **D16**.
+  Nouvelles décisions à partir de **D55**.
+- `docs/conception.md` : §2, §4.4, §4.6, §5 (routes), §6, §7.1.
+- `CLAUDE.md` : « cercle privé d'environ quatre comptes, connexion GitHub seule ».
+- `docs/deploiement.md` : identifiants OAuth Discord et Google, URL de rappel.
+- `docs/design/better-list.fig` (D54), après coup : landing, Communauté, `/admin/users`, cloche.
