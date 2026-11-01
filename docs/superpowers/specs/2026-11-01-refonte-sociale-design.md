@@ -173,7 +173,9 @@ Aucun écran ne filtre lui-même.
 
 ### Fork
 
-- « Copier dans mes listes » sur la liste d'un autre membre. Une transaction crée la copie : titre,
+- « Copier dans mes listes » (icône de copie, bouton `outline`) sur la liste d'un autre membre, à
+  côté du bouton ♥ qui porte le compteur ; l'en-tête dit « Sora · Top 10 · copiée 2 fois ». Un
+  toast confirme « Copiée dans vos listes, en privé » avec « Ouvrir ». Une transaction crée la copie : titre,
   description, `kind`, `cutoff`, et tous les items avec leurs `rank`. La copie naît **`PRIVATE`**.
   `forkedFromId` (déjà au schéma) pointe vers l'original. On est redirigé vers la copie.
 - Ne sont pas recopiés : `shareToken`, likes, `ListItem.note`, `readyNotifiedAt`.
@@ -196,8 +198,10 @@ Aucun écran ne filtre lui-même.
 
 ### « Présente dans N listes » sur la fiche
 
-- Bloc de `/media/[id]` : les listes visibles qui contiennent l'œuvre, les miennes comprises. Six
-  petites cartes au plus, puis « Voir les N » (une fenêtre avec la liste complète). Caché si N = 0.
+- Bloc « Dans les listes · N » de `/media/[id]` : les listes visibles qui contiennent l'œuvre, les
+  miennes comprises. Quatre petites cartes au plus (deux jaquettes, titre, auteur, et le rang de
+  l'œuvre si la liste est un classement), puis « Tout voir » (une fenêtre avec la liste complète).
+  Caché si N = 0.
 - Lecture de base uniquement, frontière `<Suspense>` propre (D29).
 
 ## 4. Notifications sociales
