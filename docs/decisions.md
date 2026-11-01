@@ -147,3 +147,9 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   attend « Enregistrer » (D37). Listes et cœur sont lus à l'ouverture (`api/lists/membership`,
   `api/favorites/media`), pas au rendu de la grille. Maintenus, les crans +/− répètent et
   accélèrent (400 ms, puis de 120 à 30 ms).
+- **D54** — Les maquettes vivent dans un fichier OpenPencil, `docs/design/better-list.fig`, qui
+  **suit** le code et ne le précède pas : `globals.css` reste la source des tokens et les
+  composants de `src/` celle des composants. Une variable du fichier porte le nom de sa variable
+  CSS ; ce que Tailwind écrit avec une opacité (`bg-input/30`) y devient un token `mix/…`, parce
+  qu'OpenPencil ne lie pas une variable et une opacité sur la même peinture. Écrans en 1440 et
+  390 px, thème Obsidienne seul. Mode d'emploi : `docs/design/README.md`.
