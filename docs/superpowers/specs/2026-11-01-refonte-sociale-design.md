@@ -26,6 +26,12 @@ listes mises en avant, position « Publique » d'une liste.
 
 Quatre lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente et déployable.
 
+**Maquettes d'abord** (révise D54, demande d'Alexis) : les écrans nouveaux ou modifiés de chaque
+lot sont dessinés dans `docs/design/better-list.fig`, en 1440 et 390 px, et **validés par Alexis
+avant le code** du lot. Les tokens restent ceux de `globals.css` et les composants ceux de `src/` :
+la maquette compose l'existant, elle n'invente pas de style. Une fois le lot livré, la maquette se
+réaligne sur le code (D54 reste vrai après livraison).
+
 1. **Entrée et comptes** (§1)
 2. **Confidentialité** (§2)
 3. **Listes sociales et notifications** (§3, §4) — les notifications naissent des likes et des forks
@@ -41,8 +47,11 @@ Quatre lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente e
   ne doit pas avoir de trou. Un cookie expiré mène à `/login` par la garde, comme aujourd'hui : c'est
   le comportement attendu, pas la landing.
 - **`/welcome`** : la landing (§5.2). Accessible directement aussi ; `routes.welcome`.
-- **`/login`** : trois boutons, GitHub, Discord, Google. Badge « Dernière utilisée » sur le
-  fournisseur de la fois précédente.
+- **`/login`** : le bloc shadcn `login-02`, formulaire centré à gauche, mur de jaquettes à droite
+  (caché sur mobile). Trois boutons `outline` identiques, logo de marque et libellé centrés : GitHub,
+  Discord, Google. Sur celui de la fois précédente, une pastille « Dernière » (badge `default`)
+  posée à cheval sur le bord supérieur droit, comme chez Neon ou Clerk. Le nom accessible du bouton
+  la contient.
 - **`/signup` disparaît**, fusionné dans `/login` : en OAuth seul, s'inscrire et se connecter sont le
   même geste. Une redirection permanente `/signup` → `/login` garde les anciens liens.
 - **`/waitlist`** : inchangé.
@@ -78,9 +87,20 @@ Quatre lots, une PR chacun, dans cet ordre. Chaque lot laisse l'app cohérente e
 `/admin/users`, garde `requireAdmin()` (session approuvée **et** `role === "admin"`), appelée dans
 le layout du segment.
 
-- **Demandes** : les comptes `PENDING`, du plus ancien au plus récent, avec avatar, pseudo,
-  fournisseur et date. Boutons « Approuver » et « Refuser ».
-- **Membres** : les comptes `APPROVED`, avec « Bannir » (motif facultatif) et « Débannir ».
+Composée comme le bloc shadcn `dashboard-01` (maquette validée le 1er novembre 2026) : trois
+onglets avec compteurs, **En attente**, **Membres**, **Bannis**, chacun une `Table`.
+
+- **En attente** : les comptes `PENDING`, du plus ancien au plus récent, avec avatar, pseudo,
+  fournisseur (logo) et ancienneté de la demande. « Refuser » et « Approuver » par ligne, et une
+  sélection multiple avec une barre « Approuver la sélection ». Chaque action confirme par un toast
+  avec « Annuler ».
+- **Membres** : avatar, comptes liés (logos), rôle, date d'arrivée, et un menu « ⋯ » : Voir le
+  profil, Nommer administrateur, Bannir….
+- **Bannir** ouvre un `AlertDialog` : durée (7 jours, 30 jours, définitif — `banExpires`) et motif,
+  visible des seuls administrateurs. Les listes d'un membre banni sortent de la communauté et de
+  « Présente dans N listes » ; rien n'est supprimé.
+- **Bannis** : le motif, la fin du bannissement et « Réintégrer ».
+- Sur mobile, chaque ligne devient une carte.
 - Un administrateur ne peut ni se bannir ni retirer son propre rôle.
 - Le premier administrateur se pose une fois à la main (Prisma Studio, ou un script de `scripts/`).
 
@@ -230,15 +250,24 @@ De haut en bas :
 
 ### 5.2 Landing (`/welcome`)
 
-- En-tête minimal : logo, « Se connecter ».
-- Accroche (« Ce que vous regardez, ce que vous avez vu, ce que vous possédez »), bouton
-  « Se connecter ».
-- Trois blocs : le suivi et le retard d'épisodes ; le journal ; les listes et la collection.
-  Illustrés par des captures ou des compositions de l'interface, jamais par des données de membres.
-- Mur de jaquettes de `/login`, lu à la requête (D52), sans 18+.
-- Appel final, pied de page avec l'attribution AniList.
-- Direction artistique dans Obsidienne (D34, D33) ; travaillée avec la skill de design au moment du
-  lot 4. En 1440 et 390 px.
+Maquette validée le 1er novembre 2026 (page « Refonte — Lot 1 » de `better-list.fig`). Direction
+« split stage » tirée par la skill `design-taste-frontend`, dans les couleurs et la typographie
+Obsidienne. L'idée : le mur des jaquettes reste fixe pendant qu'on lit.
+
+1. **Hero** : à gauche, le mur de jaquettes (`position: sticky`) ; à droite, la navigation (Le
+   suivi, Le journal, Les listes, L'étagère, « Se connecter » en contour), la phrase « Le carnet
+   privé où une dizaine d'amis suivent leurs animes, mangas et webtoons, épisode par épisode. » et le
+   seul bouton d'accent, « Se connecter ». Le nom « better-list » en très grand (`h1`) traverse le
+   coin du mur.
+2. **Un épisode, une trace** : deux champs côte à côte, le geste (« ép. 13 → 14 ») et le journal
+   qu'il produit (calendrier d'activité, entrées datées).
+3. **Le carnet complet** : le titre tient pendant que passent quatre blocs, chacun un fragment
+   d'interface et une liste courte : le suivi, l'étagère, les listes, entre vous.
+4. **Entrez dans le cercle** : la vraie fenêtre de connexion, déjà ouverte.
+5. Pied sur une ligne : ce que c'est, les liens, l'attribution AniList.
+
+Les fragments ne montrent aucune donnée de membre réelle. Mur de jaquettes lu à la requête (D52),
+sans 18+.
 
 ## Données : récapitulatif des migrations
 
@@ -283,4 +312,6 @@ reprise de données.
 - `docs/conception.md` : §2, §4.4, §4.6, §5 (routes), §6, §7.1.
 - `CLAUDE.md` : « cercle privé d'environ quatre comptes, connexion GitHub seule ».
 - `docs/deploiement.md` : identifiants OAuth Discord et Google, URL de rappel.
-- `docs/design/better-list.fig` (D54), après coup : landing, Communauté, `/admin/users`, cloche.
+- `docs/design/better-list.fig` : maquettes validées avant chaque lot, réalignées après (D54 révisée).
+- `docs/decisions.md` : nouvelle décision qui révise D54 (maquette avant le code pour un écran
+  nouveau ou modifié, réalignée après livraison).
