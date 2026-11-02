@@ -257,6 +257,14 @@ De haut en bas :
    `try/catch`). « Tout voir » ouvre `/search` filtré. Chaque onglet a son repli de panne (D45,
    D51). Ce n'est pas la rangée « Du moment » retirée le 14 septembre 2026 : pas de rangée en plus,
    pas d'onglet 18+, et l'onglet Anime remplace les tendances actuelles.
+   **La rangée devient « Top 10 du moment »** (validé le 2 novembre 2026, d'après mangas-origines) :
+   dix jaquettes par onglet au lieu de vingt, chacune précédée de son rang en grand chiffre plein
+   (`muted-foreground` pour 1 à 3, `border` ensuite, pas de contour : illisible en mode clair), le
+   reste derrière « Tout voir ». **Une seule rangée qui défile**, pas une grille de deux lignes :
+   l'accueil n'est fait que de rangées, et 2 × 5 ne tient pas à 390 px. « Du moment » plutôt que
+   « de la semaine » : le tri `TRENDING_DESC` d'AniList mesure l'activité récente, pas une semaine.
+   Pas de flèches de progression (↑3, « nouveau ») : il faudrait stocker un classement par jour.
+   Le rang est lu par les lecteurs d'écran (« 1er », dans le nom accessible de la carte).
 6. « Cette saison » — inchangé (animes seulement).
 7. « Recommandé pour vous » — inchangé.
 
