@@ -4,7 +4,9 @@ import { cache } from "react";
 
 import {
   DEFAULT_PREFERENCES,
+  PREFERENCES_SELECT,
   type Preferences,
+  type ProfilePrivacy,
 } from "@/features/preferences/schemas/preferences.schema";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
@@ -29,10 +31,32 @@ export const getPreferences = cache(async (): Promise<Preferences> => {
 
   const preferences = await prisma.userPreferences.findUnique({
     where: { userId: session.user.id },
-    select: { titleLanguage: true, includeAdult: true },
+    select: PREFERENCES_SELECT,
   });
 
   // Un compte qui n'a jamais ouvert les réglages n'a pas de ligne : les défauts du schéma Zod
   // sont alignés sur ceux de `prisma/schema.prisma`, donc les deux chemins disent la même chose.
   return preferences ?? DEFAULT_PREFERENCES;
 });
+
+/**
+ * Les réglages de confidentialité **du propriétaire** d'un profil, pas du visiteur (D64). Sans
+ * ligne, ce sont les défauts : un compte qui n'a jamais ouvert ses réglages a un profil visible.
+ */
+export const getPrivacyOf = cache(
+  async (userId: string): Promise<ProfilePrivacy> => {
+    const row = await prisma.userPreferences.findUnique({
+      where: { userId },
+      select: {
+        profileVisible: true,
+        showJournal: true,
+        showStats: true,
+        showActivityCalendar: true,
+        showFavorites: true,
+        showAdult: true,
+      },
+    });
+
+    return row ?? DEFAULT_PREFERENCES;
+  },
+);
