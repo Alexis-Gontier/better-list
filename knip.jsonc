@@ -16,7 +16,8 @@
   "ignore": [
     "src/components/ui/**",
     "scripts/legacy-import.ts",
-    "scripts/set-admin.ts"
+    "scripts/set-admin.ts",
+    "scripts/capture-screenshots.ts"
   ],
 
   // Un export utilisé uniquement dans son propre fichier n'est pas du code mort.

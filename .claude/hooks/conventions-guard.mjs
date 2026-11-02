@@ -28,6 +28,7 @@ const ENV_ALLOWLIST = [
   "postcss.config.mjs",
   "prisma/seed.ts",
   "scripts/set-admin.ts",
+  "scripts/capture-screenshots.ts",
   "playwright.config.ts",
 ];
 
