@@ -59,7 +59,10 @@ test.describe("confidentialité entre membres", () => {
     const adminPage = await admin.newPage();
 
     await memberPage.goto(routes.lists.root);
-    await memberPage.getByRole("button", { name: "Nouvelle liste" }).click();
+    await memberPage
+      .getByRole("button", { name: "Nouvelle liste" })
+      .first()
+      .click();
     await memberPage.getByLabel("Nom").fill("Brouillon secret");
     await memberPage.getByRole("radio", { name: "Privée" }).click();
     await memberPage.getByRole("button", { name: "Créer et remplir" }).click();
