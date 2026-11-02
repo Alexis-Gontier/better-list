@@ -124,6 +124,12 @@ Sans ordre imposé :
 6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
 7. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
    recommandation, pourquoi tel rang.
+8. **Un compte de démonstration ouvert à tous**, en **lecture seule** : un bouton « Essayer sans
+   compte » sur la landing ouvre une session `@demo` (« Membre démo », celui des captures, D63)
+   pour naviguer dans le site, sans **aucune** action possible. Il ne voit que son propre contenu,
+   les membres ne le voient pas, et il est soumis à une limite de requêtes stricte pour épargner le
+   quota AniList. À faire après le lot 2 de la refonte, dont les règles de visibilité portent
+   l'isolation.
 
 ## 7. Choix techniques
 
