@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon } from "lucide-react";
+import { LockIcon, PlusIcon, UsersIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ListKindGlyph } from "@/features/lists/components/list-kind-glyph";
 import {
   LIST_KIND_HINTS,
@@ -24,7 +25,9 @@ import {
 } from "@/features/lists/lib/list-labels";
 import {
   type ListKind,
+  type ListVisibility,
   listKindSchema,
+  listVisibilitySchema,
 } from "@/features/lists/schemas/lists.schema";
 
 /**
@@ -60,6 +63,7 @@ export type ListFormValues = {
   kind: ListKind;
   /** Des chiffres seuls tant qu'on tape : l'appelant le convertit avec `parseCutoff`. */
   cutoff: string;
+  visibility: ListVisibility;
 };
 
 /** Vide devient `null`. Le champ ne laisse passer que des chiffres, donc jamais de `NaN` ici. */
@@ -96,6 +100,7 @@ const EMPTY: ListFormValues = {
   description: "",
   kind: "SELECTION",
   cutoff: "",
+  visibility: "MEMBERS",
 };
 
 /** Un exemple de nom qui suit le genre choisi : il souffle un nom pertinent plutôt qu'un modèle. */
@@ -273,6 +278,36 @@ export function ListFormDialog({
                 ) : null}
               </div>
             ) : null}
+
+            <div className="flex flex-col gap-2">
+              <Label id="list-visibility-label">Visibilité</Label>
+              <ToggleGroup
+                aria-labelledby="list-visibility-label"
+                className="w-fit"
+                onValueChange={(visibility) => {
+                  if (visibility) {
+                    set({ visibility: listVisibilitySchema.parse(visibility) });
+                  }
+                }}
+                type="single"
+                value={values.visibility}
+                variant="outline"
+              >
+                <ToggleGroupItem value="MEMBERS">
+                  <UsersIcon data-icon="inline-start" />
+                  Membres
+                </ToggleGroupItem>
+                <ToggleGroupItem value="PRIVATE">
+                  <LockIcon data-icon="inline-start" />
+                  Privée
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <p className="text-muted-foreground text-xs">
+                {values.visibility === "PRIVATE"
+                  ? "Privée : vous seul la voyez. Le lien de partage, s'il existe, continue de marcher."
+                  : "Membres : les autres membres la voient sur votre profil."}
+              </p>
+            </div>
 
             {describing ? (
               <div className="flex flex-col gap-2">

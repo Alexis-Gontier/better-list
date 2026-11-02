@@ -43,11 +43,16 @@ export type ListKind = z.infer<typeof listKindSchema>;
 /** Un « Top 100 » est déjà une liste entière ; au-delà, une ligne de coupe ne coupe plus rien. */
 const listCutoffSchema = z.number().int().min(1).max(100).nullable();
 
+/** « Membres » ou « Privée » (D64). Le lien de partage marche quelle que soit la visibilité. */
+export const listVisibilitySchema = z.enum(["MEMBERS", "PRIVATE"]);
+export type ListVisibility = z.infer<typeof listVisibilitySchema>;
+
 export const createListSchema = z.object({
   title: listTitleSchema,
   description: listDescriptionSchema,
   kind: listKindSchema.default("SELECTION"),
   cutoff: listCutoffSchema.optional(),
+  visibility: listVisibilitySchema.default("MEMBERS"),
   /**
    * Une œuvre à y ranger d'emblée — la création depuis une fiche (D48). La liste naît avec elle,
    * en une écriture : deux appels laisseraient une liste vide si le second échouait.
@@ -73,6 +78,7 @@ export const updateListSchema = z.object({
   kind: listKindSchema,
   /** Toujours envoyée, même hors classement : la garder permet de retrouver son Top en y revenant. */
   cutoff: listCutoffSchema,
+  visibility: listVisibilitySchema,
 });
 
 export const deleteListSchema = z.object({ listId: listIdSchema });

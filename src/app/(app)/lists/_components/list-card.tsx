@@ -84,6 +84,7 @@ export function ListCard({ list }: { list: ListSummary }) {
         <p className="mt-auto flex items-center gap-1.5 pt-2 text-muted-foreground text-xs">
           <span className="truncate">
             {listHeadline(list.kind, list.cutoff, list.countsLine)}
+            {list.visibility === "PRIVATE" ? " · Privée" : null}
           </span>
           {list.shared ? (
             <span className="flex shrink-0 items-center gap-1">

@@ -113,6 +113,7 @@ export const createList = authActionClient
         description: parsedInput.description ?? null,
         kind: parsedInput.kind,
         cutoff: parsedInput.cutoff ?? null,
+        visibility: parsedInput.visibility,
         ...(mediaId !== undefined
           ? {
               items: {
@@ -139,11 +140,18 @@ export const updateList = authActionClient
   .metadata({ actionName: "updateList" })
   .inputSchema(updateListSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { listId, title, description, kind, cutoff } = parsedInput;
+    const { listId, title, description, kind, cutoff, visibility } =
+      parsedInput;
 
     await prisma.list.updateMany({
       where: { id: listId, ownerId: ctx.user.id },
-      data: { title, description: description ?? null, kind, cutoff },
+      data: {
+        title,
+        description: description ?? null,
+        kind,
+        cutoff,
+        visibility,
+      },
     });
 
     /*
