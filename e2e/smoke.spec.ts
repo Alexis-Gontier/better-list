@@ -8,7 +8,7 @@ test.describe("anonyme", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Suivez tout ce que vous regardez",
+        name: "Connexion à Better-List",
       }),
     ).toBeVisible();
   });
