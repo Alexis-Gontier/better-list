@@ -251,20 +251,12 @@ De haut en bas :
 3. Trait — inchangé.
 4. **« Listes de la communauté »** (nouveau) : les 8 listes les plus aimées des autres, carte de
    §3, lien « Tout voir » vers `/lists/community`. Cachée s'il n'y en a aucune. Lecture de base.
-5. **« Tendances » avec onglets** Anime, Manga, Manhwa, Light novel. Une requête AniList cachée par
-   onglet (même `cacheLife`), les quatre rendues côté serveur, la bascule est client et sans
-   rechargement, l'onglet choisi est retenu en `localStorage` (lecture et écriture sous
-   `try/catch`). « Tout voir » ouvre `/search` filtré. Chaque onglet a son repli de panne (D45,
-   D51). Ce n'est pas la rangée « Du moment » retirée le 14 septembre 2026 : pas de rangée en plus,
-   pas d'onglet 18+, et l'onglet Anime remplace les tendances actuelles.
-   **La rangée devient « Top 10 du moment »** (validé le 2 novembre 2026, d'après mangas-origines) :
-   dix jaquettes par onglet au lieu de vingt, chacune précédée de son rang en grand chiffre plein
-   (`muted-foreground` pour 1 à 3, `border` ensuite, pas de contour : illisible en mode clair), le
-   reste derrière « Tout voir ». **Une seule rangée qui défile**, pas une grille de deux lignes :
-   l'accueil n'est fait que de rangées, et 2 × 5 ne tient pas à 390 px. « Du moment » plutôt que
-   « de la semaine » : le tri `TRENDING_DESC` d'AniList mesure l'activité récente, pas une semaine.
-   Pas de flèches de progression (↑3, « nouveau ») : il faudrait stocker un classement par jour.
-   Le rang est lu par les lecteurs d'écran (« 1er », dans le nom accessible de la carte).
+5. « Tendances » — inchangé (animes, sans onglets). **Décision du 2 novembre 2026** : l'accueil
+   reste celui d'aujourd'hui, on n'y ajoute que la rangée des listes. Les onglets Anime, Manga,
+   Manhwa, Light novel et un « Top 10 » numéroté ont été maquettés puis écartés : ils rouvraient le
+   second catalogue retiré le 14 septembre 2026, que `/search` fait mieux. Pour mémoire, un vrai
+   « Top 10 de la semaine » est faisable (`Page.mediaTrends`, relevés quotidiens, environ
+   8 requêtes par type et par jour) si la question revient.
 6. « Cette saison » — inchangé (animes seulement).
 7. « Recommandé pour vous » — inchangé.
 
@@ -368,7 +360,7 @@ reprise de données.
 - Compte banni pendant une session : Better Auth révoque ses sessions au bannissement.
 - Fournisseur qui ne renvoie pas d'e-mail vérifié : pas de liaison, un compte distinct naît
   `PENDING` — c'est le comportement sûr.
-- AniList en panne : landing (mur de jaquettes) et onglets de tendances ont chacun leur repli.
+- AniList en panne : la landing (mur de jaquettes) a son repli ; l'accueil garde les siens.
 
 ## Tests
 
