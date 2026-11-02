@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
-import { AdultItem } from "@/app/(share)/l/[token]/_components/adult-item";
 import { RankNumeral } from "@/components/shared/rank-numeral";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -79,7 +78,7 @@ export const metadata: Metadata = {
  *
  * **Rien n'est retiré, mais le 18+ est flouté** (D49). Il n'y a pas de compte, donc pas de
  * préférence : la page montre la liste **telle qu'elle a été partagée**, décompte compris, mais une
- * œuvre adulte arrive floutée, titre masqué, et se révèle d'un clic (`AdultItem`). Le lien peut
+ * œuvre adulte est retirée et comptée sous la grille (D64, révise D49). Le lien peut
  * partir hors du cercle, vers quelqu'un qui n'a rien demandé.
  */
 export default async function SharedListPage({
@@ -108,6 +107,11 @@ export default async function SharedListPage({
     })),
   );
   const ranked = list.kind === "RANKING";
+  /*
+    Les œuvres 18+ sont **retirées** du lien, et comptées (D64, révise D49). Retirées après le
+    découpage en sections : un classement garde ses rangs, le n° 4 reste le n° 4.
+  */
+  const hiddenAdult = list.items.filter((item) => item.media.isAdult).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -164,53 +168,49 @@ export default async function SharedListPage({
                 </h2>
               )}
               <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">
-                {section.items.map(({ item, rank }) => {
-                  /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le
+                {section.items
+                  .filter(({ item }) => !item.media.isAdult)
+                  .map(({ item, rank }) => {
+                    /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le
                      repli de `mediaTitle` sur le romaji est exactement ce qu'on veut afficher. */
-                  const title = mediaTitle(item.media.title, "ROMAJI");
-                  const cover =
-                    item.media.coverImage?.extraLarge ??
-                    item.media.coverImage?.large ??
-                    null;
+                    const title = mediaTitle(item.media.title, "ROMAJI");
+                    const cover =
+                      item.media.coverImage?.extraLarge ??
+                      item.media.coverImage?.large ??
+                      null;
 
-                  if (item.media.isAdult) {
                     return (
                       <li className="flex flex-col gap-2" key={item.media.id}>
-                        <AdultItem
-                          cover={cover}
-                          rank={ranked ? rank : undefined}
-                          title={title}
-                        />
+                        <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
+                          {cover ? (
+                            <Image
+                              alt=""
+                              className="object-cover"
+                              fill
+                              sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
+                              src={cover}
+                            />
+                          ) : null}
+                          {ranked ? <RankNumeral rank={rank} /> : null}
+                        </div>
+                        <p className="min-w-0 truncate text-sm" title={title}>
+                          {ranked ? (
+                            <span className="sr-only">Numéro {rank}, </span>
+                          ) : null}
+                          {title}
+                        </p>
                       </li>
                     );
-                  }
-
-                  return (
-                    <li className="flex flex-col gap-2" key={item.media.id}>
-                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
-                        {cover ? (
-                          <Image
-                            alt=""
-                            className="object-cover"
-                            fill
-                            sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
-                            src={cover}
-                          />
-                        ) : null}
-                        {ranked ? <RankNumeral rank={rank} /> : null}
-                      </div>
-                      <p className="min-w-0 truncate text-sm" title={title}>
-                        {ranked ? (
-                          <span className="sr-only">Numéro {rank}, </span>
-                        ) : null}
-                        {title}
-                      </p>
-                    </li>
-                  );
-                })}
+                  })}
               </ul>
             </section>
           ))}
+          {hiddenAdult > 0 ? (
+            <p className="text-muted-foreground text-sm">
+              + {hiddenAdult} œuvre{hiddenAdult > 1 ? "s" : ""} réservée
+              {hiddenAdult > 1 ? "s" : ""} aux membres
+            </p>
+          ) : null}
         </div>
       )}
     </div>
