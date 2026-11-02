@@ -6,12 +6,10 @@ import { site } from "@/config/site";
 import { CoverWall } from "@/features/media/components/cover-wall";
 
 /**
- * **Hors index, pour les trois pages d'un coup.**
+ * **Hors index, pour les deux pages d'un coup.**
  *
- * Posé sur le layout et non page par page : `/login`, `/signup` et `/waitlist` sont les seules
- * pages du produit qui répondent vraiment à un visiteur sans session — tout le reste de `(app)`
- * redirige avant de rendre quoi que ce soit —, et une garde répétée trois fois est une garde qu'on
- * oubliera sur la quatrième.
+ * Posé sur le layout et non page par page : une garde répétée page par page est une garde qu'on
+ * oubliera sur la suivante. La landing, elle, est indexable et vit hors de ce groupe.
  *
  * **Ce n'est pas un doublon de `robots.ts`, ce sont deux mécanismes distincts.** `robots.txt`
  * demande de **ne pas parcourir** ; cette balise demande de **ne pas indexer**. Certains robots

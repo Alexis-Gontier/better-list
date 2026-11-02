@@ -16,6 +16,11 @@ export const routes = {
    * (docs/conception.md §5).
    */
   home: "/",
+  /**
+   * La landing, **servie à l'adresse `/`** à qui n'a pas de session : `proxy.ts` y réécrit `/`.
+   * Accessible aussi directement ; sa balise `canonical` renvoie à `/`.
+   */
+  welcome: "/welcome",
 
   /**
    * Recherche du catalogue. Les filtres vivent dans les `searchParams`, pas dans le chemin.
@@ -93,7 +98,6 @@ export const routes = {
 
   auth: {
     login: "/login",
-    signup: "/signup",
     /** Compte créé, en attente d'approbation (conception.md §7.1). */
     waitlist: "/waitlist",
   },

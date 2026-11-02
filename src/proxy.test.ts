@@ -35,12 +35,31 @@ describe("proxy", () => {
 
   it("laisse passer les routes publiques", () => {
     for (const route of [
+      routes.welcome,
       routes.auth.login,
-      routes.auth.signup,
       routes.auth.waitlist,
     ]) {
       expect(proxy(request(route)).status).toBe(200);
     }
+  });
+
+  /**
+   * `/` sert deux pages à la même adresse : la landing à qui n'a pas de cookie, l'accueil aux
+   * autres (spec refonte §1). Une **réécriture**, pas une redirection : l'adresse reste `/`.
+   */
+  it("sert la landing à un visiteur sans session sur /", () => {
+    const response = proxy(request("/"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-rewrite")).toBe(
+      "http://localhost:3000/welcome",
+    );
+  });
+
+  it("laisse un porteur de cookie atteindre l'accueil", () => {
+    const response = proxy(request("/", { signedIn: true }));
+
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
   });
 
   /**

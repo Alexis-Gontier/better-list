@@ -89,8 +89,8 @@ export const mainNav: NavSection[] = [
  * distinctes finiraient par diverger, et la divergence ouvrirait un trou d'accès.
  */
 export const publicRoutes: string[] = [
+  routes.welcome,
   routes.auth.login,
-  routes.auth.signup,
   routes.auth.waitlist,
 ];
 

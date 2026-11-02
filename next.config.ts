@@ -38,6 +38,11 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+
+  /** En OAuth seul, s'inscrire et se connecter sont le même geste : `/signup` n'est plus qu'un ancien lien. */
+  async redirects() {
+    return [{ source: "/signup", destination: "/login", permanent: true }];
+  },
 };
 
 export default nextConfig;
