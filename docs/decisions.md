@@ -11,7 +11,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 ## Produit et périmètre
 
 - **D1** — Cercle privé d'environ quatre comptes. Pas de découverte sociale, de modération, de
-  commentaires, de messagerie, d'interface d'administration ni de rate limiting applicatif.
+  commentaires, de messagerie, d'interface d'administration ni de rate limiting applicatif. *(Révisée par D55.)*
 - **D2** — Tout part d'un `Media` AniList : pas d'œuvre saisie à la main, pas de scraping. Une
   seconde source (TMDB pour le live-action, la BnF pour les tomes) serait une décision structurante
   à prendre exprès.
@@ -24,7 +24,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D7** — Profils, statistiques et bibliothèques sont visibles entre membres. `Entry.private`
   cache l'entrée **partout**, compteurs compris. `includeAdult` dépend du compte qui regarde, pas
   du profil regardé.
-- **D8** — `robots.ts` interdit tout. `/login`, `/signup` et `/waitlist` sont en `noindex`.
+- **D8** — `robots.ts` interdit tout. `/login`, `/signup` et `/waitlist` sont en `noindex`. *(Révisée par D58.)*
 
 ## Données
 
@@ -62,9 +62,9 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 
 ## Authentification
 
-- **D23** — Better Auth, OAuth GitHub seul, pas de mot de passe ni d'e-mail.
+- **D23** — Better Auth, OAuth GitHub seul, pas de mot de passe ni d'e-mail. *(Révisée par D56.)*
 - **D24** — Liste d'attente : tout compte naît `PENDING` (forcé côté serveur). L'approbation se
-  fait à la main dans Prisma Studio.
+  fait à la main dans Prisma Studio. *(Révisée par D57.)*
 - **D25** — La garde est `requireApprovedUser()` dans `app/(app)/layout.tsx`, une seule fois. Le
   proxy ne fait qu'une redirection optimiste sur la présence du cookie.
 
@@ -137,7 +137,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   vraie coupure au lieu de se replier.
 - **D52** — Aucune lecture AniList au build : un prérendu échoue sur toute erreur d'un
   `"use cache"`, même rattrapée, si bien qu'une panne d'AniList bloquait tout déploiement. Le mur
-  de jaquettes de `/login` et `/signup` est lu à la requête (`connection()`).
+  de jaquettes de `/login` et `/signup` est lu à la requête (`connection()`). *(Révisée par D61.)*
 - **D53** — La fenêtre d'édition rapide d'une vignette range aussi l'œuvre dans mes listes, dans
   une colonne à droite du formulaire comme l'éditeur d'AniList, avec la jaquette et le cœur en
   en-tête ; le « +1 » posé au-dessus de la jaquette disparaît (révise D39). Ranger passe partout
@@ -152,4 +152,32 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   composants de `src/` celle des composants. Une variable du fichier porte le nom de sa variable
   CSS ; ce que Tailwind écrit avec une opacité (`bg-input/30`) y devient un token `mix/…`, parce
   qu'OpenPencil ne lie pas une variable et une opacité sur la même peinture. Écrans en 1440 et
-  390 px, thème Obsidienne seul. Mode d'emploi : `docs/design/README.md`.
+  390 px, thème Obsidienne seul. Mode d'emploi : `docs/design/README.md`. *(Révisée par D59.)*
+- **D55** — Une dizaine de comptes, plus quatre (révise D1). Le social se limite aux likes, aux
+  copies et aux notifications (lots 3 à 5 de la refonte). Rien n'est public hormis la landing et le
+  lien de partage.
+- **D56** — Connexion par GitHub, Discord ou Google, sans mot de passe ni e-mail (révise D23). Une
+  même adresse vérifiée lie les comptes : revenir par un autre fournisseur retrouve le sien au lieu
+  d'en créer un second. Le dernier fournisseur utilisé porte la pastille « Dernière » (plugin
+  `lastLoginMethod`, cookie seul, rien en base).
+- **D57** — Approuver, refuser, bannir (7 jours, 30 jours, définitif) et nommer un administrateur
+  se font depuis `/admin/users` (révise D24 ; plugin `admin`, usurpation désactivée). `status`
+  garde la liste d'attente, `role` dit qui peut faire entrer les autres. Chaque décision s'annule
+  depuis son toast. Le premier administrateur se pose une fois par `scripts/set-admin.ts`.
+- **D58** — `/` sert la landing à qui n'a pas de cookie de session, par une réécriture du proxy :
+  l'adresse reste `/`. Elle seule est indexable (`allow: "/$"`) ; tout le reste demeure fermé
+  (révise D8). `/signup` redirige vers `/login` : en OAuth seul, les deux gestes n'en font qu'un.
+- **D59** — La maquette d'un écran nouveau ou modifié **précède** le code et Alexis la valide ;
+  une fois l'écran livré, elle se réaligne sur lui (révise D54). `docs/design/refonte.fig` prend le
+  relais de `better-list.fig`, qui a atteint la limite de nœuds d'OpenPencil.
+- **D60** — Chacun peut supprimer son compte depuis `/settings`, en recopiant son identifiant
+  (comme pour une liste, D40) ; tout part en cascade. Le dernier administrateur est refusé : plus
+  personne ne pourrait approuver les demandes.
+- **D61** — La landing suit Letterboxd et `/login` suit Linear, après deux essais écartés (une
+  colonne « discrète », puis un cadre à la Firecrawl) : ce sont les images d'œuvres qui donnent
+  envie, pas l'outil. Hero sur la bannière d'une tendance du moment, trois phrases et un bouton,
+  six jaquettes, six tuiles « vous permet de… », connexion en fin de page ; `/login` est une
+  colonne centrée sur cette bannière floutée. La vitrine (`getShowcase`) réutilise la requête des
+  tendances de l'accueil, déjà en cache, et coûte une fiche par jour pour la bannière. Le mur de
+  jaquettes incliné disparaît (révise D52 pour ce qui le concerne ; la règle « rien au build »
+  tient toujours).

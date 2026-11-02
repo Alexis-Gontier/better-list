@@ -16,9 +16,10 @@ et par les listes.
 
 ## 2. Pour qui
 
-**Un cercle privé d'environ quatre comptes** (D1). Inscription par GitHub, puis liste d'attente.
-Le partage passe par un lien non listé, sans graphe social (D16). Ce qui découle de cette taille :
-pas de découverte sociale, pas de modération, pas d'administration, pas de quota par utilisateur.
+**Un cercle privé d'une dizaine de comptes** (D55). Inscription par GitHub, Discord ou Google
+(D56), puis liste d'attente, que les administrateurs tiennent depuis `/admin/users` (D57). Le
+partage passe par un lien non listé (D16). Ce qui découle de cette taille : pas de découverte
+publique, une modération réduite au bannissement, pas de quota par utilisateur.
 
 ## 3. Les œuvres
 
@@ -89,6 +90,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 
 | Route | Rôle | État |
 | --- | --- | --- |
+| `/` (anonyme) · `/welcome` | La landing, servie à `/` par réécriture du proxy (D58, D61) : bannière du moment, tendances, ce que l'outil permet, connexion | livré |
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
@@ -100,8 +102,9 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/u/[username]` | Profil : favoris, statistiques, calendrier d'activité, journal | livré |
 | `/calendar` | Planning de diffusion, retard épisode par épisode | livré |
 | `/collection` · `/collection/[mediaId]` | L'étagère, les tomes manquants | livré, une seule édition par série |
-| `/settings` | Compte, langue des titres, 18+, webhook Discord | livré |
-| `/login` · `/signup` · `/waitlist` | Connexion GitHub, liste d'attente | livré |
+| `/settings` | Compte et comptes liés, langue des titres, 18+, webhook Discord, suppression du compte (D60) | livré |
+| `/login` · `/waitlist` | Connexion GitHub, Discord ou Google, pastille « Dernière » (D56) ; liste d'attente. `/signup` redirige vers `/login` | livré |
+| `/admin/users` | Demandes, membres, bannis : approuver, refuser, bannir, nommer (D57) | livré, réservé aux administrateurs |
 
 Route handlers (chacun porte sa propre garde) : `api/auth/[...all]`, `api/search` et
 `api/notifications` (session approuvée), `api/cron/refresh-media` et `api/cron/discord`
@@ -133,7 +136,9 @@ En OAuth, on ne peut pas inviter quelqu'un à l'avance : le contrôle a donc lie
 création du compte (D24). `databaseHooks.user.create.before` (`lib/auth/server.ts`) rend le
 `username` unique et force `PENDING`. `requireApprovedUser()` (`lib/auth/session.ts`) vérifie la
 session et le statut, et le layout `(app)` l'appelle une seule fois (D25). L'approbation se fait
-dans Prisma Studio.
+sur `/admin/users`, derrière `requireAdmin()` posé dans le layout du segment ; ses actions passent
+par `adminActionClient`. Le bannissement et le rôle sont ceux du plugin `admin` de Better Auth, qui
+refuse lui-même la connexion d'un banni (D57).
 
 ## 8. Ce qui nous distingue
 

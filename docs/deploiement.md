@@ -11,7 +11,9 @@ Validées au build par `src/config/env.ts`. Le modèle est dans `.env.example`.
 | --- | --- |
 | `DATABASE_URL` | Neon, chaîne **poolée** (`-pooler` dans l'hôte), `sslmode=verify-full` |
 | `BETTER_AUTH_SECRET` | signe les sessions et les URL des cartes d'épisode (HMAC). 32 octets au moins |
-| `GITHUB_CLIENT_ID` · `GITHUB_CLIENT_SECRET` | l'application OAuth GitHub, seul fournisseur |
+| `GITHUB_CLIENT_ID` · `GITHUB_CLIENT_SECRET` | l'application OAuth GitHub |
+| `DISCORD_CLIENT_ID` · `DISCORD_CLIENT_SECRET` | l'application OAuth Discord (Developer Portal), rappel `<APP_URL>/api/auth/callback/discord` |
+| `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` | le client OAuth Google (Cloud Console), rappel `<APP_URL>/api/auth/callback/google` |
 | `NEXT_PUBLIC_APP_URL` | URL publique : `baseURL` de Better Auth, origine de confiance, `Referer` envoyé à AniList |
 | `CRON_SECRET` | jeton porteur de `api/cron/*`. 32 caractères au moins |
 
@@ -39,8 +41,10 @@ Vercel).
 
 ## Comptes
 
-L'inscription passe par GitHub et crée un compte `PENDING`. On l'approuve en passant `status` à
-`APPROVED` dans Prisma Studio (`pnpm db:studio`, pointé sur la base de production).
+L'inscription passe par GitHub, Discord ou Google et crée un compte `PENDING`. Un administrateur
+l'approuve depuis `/admin/users` (D57). Le premier administrateur se pose **une fois**, après la
+migration `admin_plugin`, avec `DATABASE_URL` pointée sur la production :
+`pnpm tsx scripts/set-admin.ts <username>`. Les suivants se nomment depuis l'écran.
 
 ## CI
 
