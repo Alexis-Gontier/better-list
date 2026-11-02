@@ -7,6 +7,7 @@ import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
+import { ENABLED_PROVIDERS_LABEL } from "@/lib/auth/providers";
 
 /**
  * Le hero, d'après Letterboxd : une œuvre en plein écran, trois phrases courtes qui disent tout le
@@ -57,7 +58,7 @@ export function LandingHero() {
             </Link>
           </Button>
           <span className="text-muted-foreground text-sm">
-            Avec GitHub, Discord ou Google
+            Avec {ENABLED_PROVIDERS_LABEL}
           </span>
         </div>
       </div>

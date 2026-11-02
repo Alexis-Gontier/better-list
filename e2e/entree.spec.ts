@@ -18,13 +18,12 @@ test.describe("visiteur sans compte", () => {
     ).toBeVisible();
   });
 
-  test("trouve les trois fournisseurs sur /login", async ({ page }) => {
+  // Discord et Google n'apparaissent qu'avec leurs identifiants (D62) : GitHub est le seul garanti.
+  test("trouve la connexion GitHub sur /login", async ({ page }) => {
     await page.goto(routes.auth.login);
-    for (const name of ["GitHub", "Discord", "Google"]) {
-      await expect(
-        page.getByRole("button", { name: `Continuer avec ${name}` }),
-      ).toBeVisible();
-    }
+    await expect(
+      page.getByRole("button", { name: "Continuer avec GitHub" }),
+    ).toBeVisible();
   });
 
   test("est renvoyé de /signup vers /login", async ({ page }) => {

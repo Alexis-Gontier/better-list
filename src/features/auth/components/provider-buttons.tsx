@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   PROVIDER_LABELS,
-  PROVIDERS,
   type Provider,
   ProviderLogo,
 } from "@/features/auth/components/provider-logos";
@@ -24,9 +23,12 @@ import { signIn } from "@/lib/auth/client";
 export function ProviderButtons({
   callbackUrl,
   lastUsed,
+  providers,
 }: {
   callbackUrl: string;
   lastUsed: Provider | null;
+  /** Ceux qui ont des identifiants (`ENABLED_PROVIDERS`) : un bouton sans fournisseur échouerait. */
+  providers: readonly Provider[];
 }) {
   const [pending, setPending] = useState<Provider | null>(null);
 
@@ -48,7 +50,7 @@ export function ProviderButtons({
 
   return (
     <div className="flex w-full flex-col gap-3.5">
-      {PROVIDERS.map((provider) => (
+      {providers.map((provider) => (
         <div className="relative" key={provider}>
           <Button
             className="w-full"

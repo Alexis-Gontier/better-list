@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { routes } from "@/config/routes";
 import { ProviderButtons } from "@/features/auth/components/provider-buttons";
 import { getLastLoginMethod } from "@/lib/auth/last-login-method";
+import { ENABLED_PROVIDERS } from "@/lib/auth/providers";
 import { getSession } from "@/lib/auth/session";
 import { safeRedirectPath } from "@/lib/security/safe-redirect";
 
@@ -49,6 +50,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <ProviderButtons
         callbackUrl={destination}
         lastUsed={await getLastLoginMethod()}
+        providers={ENABLED_PROVIDERS}
       />
       <p className="text-muted-foreground text-sm">
         Première connexion ? Votre compte est créé, puis un membre le valide.

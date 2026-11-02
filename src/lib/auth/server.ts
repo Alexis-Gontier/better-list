@@ -84,20 +84,31 @@ export const auth = betterAuth({
        */
       mapProfileToUser: (profile) => ({ username: profile.login }),
     },
-    discord: {
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
-      /** `username` est le nom Discord moderne, sans le `#1234` d'autrefois. */
-      mapProfileToUser: (profile) => ({ username: profile.username }),
-    },
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      /** Google n'a pas de pseudo : la partie locale de l'adresse en tient lieu. */
-      mapProfileToUser: (profile) => ({
-        username: profile.email.split("@")[0],
-      }),
-    },
+    // Facultatifs (D62) : sans identifiants, le fournisseur n'est pas déclaré du tout.
+    ...(env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
+      ? {
+          discord: {
+            clientId: env.DISCORD_CLIENT_ID,
+            clientSecret: env.DISCORD_CLIENT_SECRET,
+            /** `username` est le nom Discord moderne, sans le `#1234` d'autrefois. */
+            mapProfileToUser: (profile: { username: string }) => ({
+              username: profile.username,
+            }),
+          },
+        }
+      : {}),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            /** Google n'a pas de pseudo : la partie locale de l'adresse en tient lieu. */
+            mapProfileToUser: (profile: { email: string }) => ({
+              username: profile.email.split("@")[0],
+            }),
+          },
+        }
+      : {}),
   },
 
   /**

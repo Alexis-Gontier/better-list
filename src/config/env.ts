@@ -24,13 +24,14 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
 
-    /** Application OAuth Discord (D56). Rappel : `<APP_URL>/api/auth/callback/discord`. */
-    DISCORD_CLIENT_ID: z.string().min(1),
-    DISCORD_CLIENT_SECRET: z.string().min(1),
-
-    /** Client OAuth Google. Rappel : `<APP_URL>/api/auth/callback/google`. */
-    GOOGLE_CLIENT_ID: z.string().min(1),
-    GOOGLE_CLIENT_SECRET: z.string().min(1),
+    /**
+     * Discord et Google sont **facultatifs** (D62) : sans la paire, le fournisseur n'existe pas et
+     * son bouton disparaît. Rappels : `<APP_URL>/api/auth/callback/discord` et `/google`.
+     */
+    DISCORD_CLIENT_ID: z.string().min(1).optional(),
+    DISCORD_CLIENT_SECRET: z.string().min(1).optional(),
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 
     /**
      * Jeton porteur du cron Vercel (conception.md §4.1).

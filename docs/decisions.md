@@ -181,3 +181,8 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   tendances de l'accueil, déjà en cache, et coûte une fiche par jour pour la bannière. Le mur de
   jaquettes incliné disparaît (révise D52 pour ce qui le concerne ; la règle « rien au build »
   tient toujours).
+- **D62** — Discord et Google sont facultatifs : sans leur paire d'identifiants, le fournisseur
+  n'est pas déclaré à Better Auth, son bouton disparaît de `/login` et de la landing, et la phrase
+  « Avec GitHub, Discord ou Google » se raccourcit (`ENABLED_PROVIDERS`). GitHub reste obligatoire.
+  On peut ainsi déployer avant d'avoir créé les applications OAuth, et les ajouter ensuite sans
+  toucher au code.

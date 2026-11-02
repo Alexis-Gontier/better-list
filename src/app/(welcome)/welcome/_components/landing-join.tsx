@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
 import { ProviderButtons } from "@/features/auth/components/provider-buttons";
 import { getLastLoginMethod } from "@/lib/auth/last-login-method";
+import { ENABLED_PROVIDERS } from "@/lib/auth/providers";
 
 /**
  * La fin de page, connexion comprise : pas besoin de passer par `/login`. Lit le cookie de dernière
@@ -18,7 +19,11 @@ export async function LandingJoin() {
       <p className="text-muted-foreground">
         Une connexion suffit. Un membre valide ensuite votre compte.
       </p>
-      <ProviderButtons callbackUrl={routes.home} lastUsed={lastUsed} />
+      <ProviderButtons
+        callbackUrl={routes.home}
+        lastUsed={lastUsed}
+        providers={ENABLED_PROVIDERS}
+      />
     </div>
   );
 }
