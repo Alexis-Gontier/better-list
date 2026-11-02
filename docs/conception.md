@@ -96,13 +96,13 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
-| `/lists` · `/lists/[id]` | Mes listes, une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture (D64) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
 | `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
-| `/l/[token]` | Une liste partagée, **sans session**, 18+ flouté (D49) | livré |
-| `/u/[username]` | Profil : favoris, statistiques, calendrier d'activité, journal | livré |
+| `/l/[token]` | Une liste partagée, **sans session**, 18+ retirées et comptées (D64) | livré |
+| `/u/[username]` | Profil : listes, favoris, statistiques, calendrier d'activité, journal, chacun selon les réglages du membre (D64) | livré |
 | `/calendar` | Planning de diffusion, retard épisode par épisode | livré |
 | `/collection` · `/collection/[mediaId]` | L'étagère, les tomes manquants | livré, une seule édition par série |
-| `/settings` | Compte et comptes liés, langue des titres, 18+, webhook Discord, suppression du compte (D60) | livré |
+| `/settings` | Compte et comptes liés, langue des titres, 18+, confidentialité (D64), webhook Discord, suppression du compte (D60) | livré |
 | `/login` · `/waitlist` | Connexion GitHub, Discord ou Google, pastille « Dernière » (D56) ; liste d'attente. `/signup` redirige vers `/login` | livré |
 | `/admin/users` | Demandes, membres, bannis : approuver, refuser, bannir, nommer (D57) | livré, réservé aux administrateurs |
 

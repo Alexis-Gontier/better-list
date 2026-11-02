@@ -23,7 +23,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   liste s'adresse par son `id`, pas par un slug.
 - **D7** — Profils, statistiques et bibliothèques sont visibles entre membres. `Entry.private`
   cache l'entrée **partout**, compteurs compris. `includeAdult` dépend du compte qui regarde, pas
-  du profil regardé.
+  du profil regardé. *(Révisée par D64.)*
 - **D8** — `robots.ts` interdit tout. `/login`, `/signup` et `/waitlist` sont en `noindex`. *(Révisée par D58.)*
 
 ## Données
@@ -126,7 +126,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   prend le genre « Sélection ».)*
 - **D49** — Sur la page partagée, une œuvre 18+ arrive floutée, titre masqué, et se révèle d'un
   clic ; l'aperçu du lien n'en montre jamais. Rien n'est retiré, le décompte reste juste. Révise la
-  décision du 6 septembre 2026 (« rien n'est masqué ») : le lien peut sortir du cercle.
+  décision du 6 septembre 2026 (« rien n'est masqué ») : le lien peut sortir du cercle. *(Révisée par D64.)*
 - **D50** — Quand une œuvre d'une liste « Quand c'est fini » termine (ou arrête) sa parution, le
   cron Discord horaire l'annonce une fois, si son lecteur ne l'a pas déjà finie. On part de zéro :
   une œuvre déjà prête à l'ajout, au passage d'une liste dans ce genre ou à la mise en service n'est
@@ -191,3 +191,14 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   au navigateur Playwright, l'indicateur de Next et la barre de défilement masqués, et se refont
   quand un de ces écrans change. **Jamais sur un vrai compte** : le profil affiche nom et avatar. On
   prend `@demo` (« Membre démo », sans avatar), rempli par `pnpm db:seed --user=demo`.
+- **D64** — Chaque membre règle ce que les autres voient de son profil (révise D7) : « Profil
+  visible des membres », puis journal, statistiques, calendrier d'activité et favoris, tous ouverts
+  par défaut, et « Œuvres 18+ », fermé par défaut. Un profil caché ne montre que l'avatar, le pseudo,
+  un encart et les listes « Membres ». Le propriétaire voit toujours tout. Le 18+ d'un profil
+  n'apparaît à un autre que si le propriétaire le montre **et** si le lecteur l'accepte. Une liste
+  est « Membres » (défaut) ou « Privée » ; la liste d'un autre membre s'ouvre en lecture, sans ajout,
+  réorganisation ni menu, et son lien de partage n'est jamais renvoyé. Toutes ces lectures passent
+  par `canViewProfileSection`, `profileAdultFilter` et `visibleListsWhere` ; aucun écran ne filtre
+  lui-même. Sur `/l/[token]`, les œuvres 18+ sont **retirées pour tout visiteur** et comptées sous
+  la grille, « + N œuvres réservées aux membres » (révise D49) : la page reste publique et ne lit
+  aucune session, un membre retrouve la liste entière dans l'app. Un classement garde ses rangs.
