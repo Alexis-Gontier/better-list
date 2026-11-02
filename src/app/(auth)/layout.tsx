@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { type ReactNode, Suspense } from "react";
+import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Logo } from "@/components/layout/logo";
+import { routes } from "@/config/routes";
 import { site } from "@/config/site";
-import { CoverWall } from "@/features/media/components/cover-wall";
 
 /**
  * **Hors index, pour les deux pages d'un coup.**
@@ -26,50 +27,28 @@ export const metadata: Metadata = {
 };
 
 /**
- * Chrome minimal des pages d'authentification : pas de header, pas de navigation — il n'y a rien
- * à naviguer tant qu'on n'est pas entré.
+ * Chrome minimal des pages d'authentification : pas de navigation — il n'y a rien à naviguer tant
+ * qu'on n'est pas entré.
  *
- * **Deux colonnes à `lg`** (mise en page `login-02` de shadcn, maquette lot 1) : le contenu centré
- * à gauche, le mur de jaquettes à droite sur `bg-muted`. Sous `lg`, le mur disparaît : sur un
- * téléphone, il ne ferait que repousser les boutons.
- *
- * Le mur est dans sa propre frontière : il attend AniList, la page n'a pas à l'attendre.
+ * **Une colonne étroite, au calme**, comme la landing (direction « l'instrument discret ») : le
+ * nom en haut, le contenu centré, rien d'autre. Pas de jaquettes : cet écran ne se regarde pas, il
+ * se traverse.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <header className="flex items-center gap-2.5">
-          <Logo className="size-7" />
-          <span className="font-heading font-semibold text-lg tracking-tight">
+    <div className="flex min-h-svh flex-col px-4 py-6 sm:px-8">
+      <header>
+        <Link className="inline-flex items-center gap-2.5" href={routes.home}>
+          <Logo className="size-6" />
+          <span className="font-heading font-semibold tracking-tight">
             {site.name}
           </span>
-        </header>
+        </Link>
+      </header>
 
-        <main className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700 motion-reduce:animate-none">
-            {children}
-          </div>
-        </main>
-      </div>
-
-      <div className="relative hidden overflow-hidden bg-muted lg:block">
-        <Suspense fallback={null}>
-          <CoverWall />
-        </Suspense>
-        {/* Les jaquettes viennent d'AniList, et ses CGU demandent qu'on le dise là où on les montre. */}
-        <p className="absolute right-6 bottom-6 text-muted-foreground text-xs">
-          Jaquettes :{" "}
-          <a
-            className="underline-offset-4 hover:text-foreground hover:underline"
-            href={site.attribution.url}
-            rel="noreferrer"
-            target="_blank"
-          >
-            {site.attribution.name}
-          </a>
-        </p>
-      </div>
+      <main className="flex flex-1 items-center justify-center pb-[10svh]">
+        <div className="w-full max-w-sm">{children}</div>
+      </main>
     </div>
   );
 }

@@ -37,21 +37,19 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   );
 
   return (
-    <div className="flex w-full flex-col items-center gap-6 text-center">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="font-heading font-semibold text-2xl tracking-tight">
-          Connexion à Better-List
+        <h1 className="font-heading font-medium text-[32px] leading-tight tracking-tight">
+          Connexion
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Avec le compte que vous utilisez déjà.
-        </p>
+        <p className="text-lg">Avec le compte que vous utilisez déjà.</p>
       </div>
       <ProviderButtons
         callbackUrl={destination}
         lastUsed={await getLastLoginMethod()}
       />
-      <p className="text-muted-foreground text-xs leading-relaxed">
-        Première connexion ? Votre compte sera créé, puis validé par un membre.
+      <p className="text-muted-foreground text-sm">
+        Première connexion ? Votre compte est créé, puis un membre le valide.
       </p>
     </div>
   );
