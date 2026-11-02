@@ -46,10 +46,16 @@ export async function createSession(account: TestAccount) {
   await withClient(async (client) => {
     // `updatedAt` est un `@updatedAt` Prisma : aucun défaut SQL, il faut le poser.
     await client.query(
-      `insert into "user" (id, name, email, "emailVerified", username, status, "createdAt", "updatedAt")
-       values ($1, $2, $3, true, $2, $4, now(), now())
-       on conflict (id) do update set status = excluded.status, "updatedAt" = now()`,
-      [account.id, account.username, account.email, account.status],
+      `insert into "user" (id, name, email, "emailVerified", username, status, role, "createdAt", "updatedAt")
+       values ($1, $2, $3, true, $2, $4, $5, now(), now())
+       on conflict (id) do update set status = excluded.status, role = excluded.role, "updatedAt" = now()`,
+      [
+        account.id,
+        account.username,
+        account.email,
+        account.status,
+        account.role,
+      ],
     );
     await client.query(
       `insert into session (id, token, "userId", "expiresAt", "createdAt", "updatedAt")
