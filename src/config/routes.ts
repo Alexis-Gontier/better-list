@@ -96,6 +96,8 @@ export const routes = {
 
   settings: "/settings",
 
+  admin: { users: "/admin/users" },
+
   auth: {
     login: "/login",
     /** Compte créé, en attente d'approbation (conception.md §7.1). */

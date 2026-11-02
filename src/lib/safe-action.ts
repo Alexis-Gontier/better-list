@@ -4,6 +4,7 @@ import { createSafeActionClient } from "next-safe-action";
 import * as z from "zod";
 
 import { env } from "@/config/env";
+import { isAdmin } from "@/lib/auth/roles";
 import { getSession } from "@/lib/auth/session";
 
 /**
@@ -57,4 +58,16 @@ export const authActionClient = actionClient.use(async ({ next }) => {
   }
 
   return next({ ctx: { user: session.user } });
+});
+
+/**
+ * Les actions de `/admin/users`. La page est déjà gardée par `requireAdmin()`, mais une action est
+ * un point d'entrée HTTP à part entière : elle se garde elle-même.
+ */
+export const adminActionClient = authActionClient.use(async ({ next, ctx }) => {
+  if (!isAdmin(ctx.user)) {
+    throw new Error("Réservé aux administrateurs.");
+  }
+
+  return next({ ctx });
 });
