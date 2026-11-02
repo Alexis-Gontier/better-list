@@ -12,7 +12,7 @@ import type { MetadataRoute } from "next";
  *
  * `disallow: "/"` couvre donc les trois publics d'un seul geste : l'application authentifiée, les
  * écrans de connexion, et les listes partagées. Une seule exception, explicite : `/` lui-même, qui
- * sert la landing à qui n'a pas de session (spec refonte §1, révise D8).
+ * sert la landing à qui n'a pas de session (D58, qui révise D8).
  *
  * Ce que ce fichier **ne fait pas**, et qu'il ne faut pas lui prêter : il n'interdit rien. Un robot
  * poli le respecte, un aspirateur d'URLs l'ignore, et il ne protège en rien contre quelqu'un qui

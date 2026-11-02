@@ -24,7 +24,7 @@ export const env = createEnv({
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
 
-    /** Application OAuth Discord (spec refonte §1). Rappel : `<APP_URL>/api/auth/callback/discord`. */
+    /** Application OAuth Discord (D56). Rappel : `<APP_URL>/api/auth/callback/discord`. */
     DISCORD_CLIENT_ID: z.string().min(1),
     DISCORD_CLIENT_SECRET: z.string().min(1),
 

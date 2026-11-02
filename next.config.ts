@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 // Valide les variables d'environnement au build : un secret manquant casse ici,
 // pas en production sur une requête utilisateur.
 import "./src/config/env";
+import { routes } from "./src/config/routes";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -41,7 +42,13 @@ const nextConfig: NextConfig = {
 
   /** En OAuth seul, s'inscrire et se connecter sont le même geste : `/signup` n'est plus qu'un ancien lien. */
   async redirects() {
-    return [{ source: "/signup", destination: "/login", permanent: true }];
+    return [
+      {
+        source: routes.legacy.signup,
+        destination: routes.auth.login,
+        permanent: true,
+      },
+    ];
   },
 };
 

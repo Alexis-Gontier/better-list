@@ -45,7 +45,7 @@ describe("proxy", () => {
 
   /**
    * `/` sert deux pages à la même adresse : la landing à qui n'a pas de cookie, l'accueil aux
-   * autres (spec refonte §1). Une **réécriture**, pas une redirection : l'adresse reste `/`.
+   * autres (D58). Une **réécriture**, pas une redirection : l'adresse reste `/`.
    */
   it("sert la landing à un visiteur sans session sur /", () => {
     const response = proxy(request("/"));

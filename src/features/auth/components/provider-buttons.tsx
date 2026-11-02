@@ -17,7 +17,7 @@ import { signIn } from "@/lib/auth/client";
 /**
  * Les trois fournisseurs, **tous en contour** : aucun n'est l'action principale, c'est la personne
  * qui sait lequel est le sien. Celui de la dernière fois porte la pastille « Dernière », à cheval
- * sur le bord haut du bouton (maquette lot 1, d'après Neon).
+ * sur le bord haut du bouton (D56, d'après Neon).
  *
  * L'état de chargement ne revient pas à `false` en cas de succès : la page part chez le fournisseur.
  */

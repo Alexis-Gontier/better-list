@@ -3,7 +3,8 @@
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
-
+import type * as z from "zod";
+import { ProviderIcons } from "@/app/(app)/admin/users/_components/provider-icons";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,12 +16,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ProviderIcons } from "@/features/admin/components/provider-icons";
+import type { setUsersStatusSchema } from "@/features/admin/schemas/admin.schema";
 import { setUsersStatus } from "@/features/admin/server/admin.actions";
 import type { AdminMember } from "@/features/admin/server/admin.queries";
 import { formatSince } from "@/features/tracking/lib/entry-format";
 
-type Decision = "APPROVED" | "REJECTED";
+type Decision = Exclude<
+  z.infer<typeof setUsersStatusSchema>["status"],
+  "PENDING"
+>;
 
 /**
  * Les demandes en attente. Approuver est le geste attendu, donc **le seul accent** de l'écran, sur

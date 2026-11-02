@@ -28,7 +28,7 @@ test.describe("visiteur sans compte", () => {
   });
 
   test("est renvoyé de /signup vers /login", async ({ page }) => {
-    await page.goto("/signup");
+    await page.goto(routes.legacy.signup);
     await expect(page).toHaveURL(routes.auth.login);
   });
 });

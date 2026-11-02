@@ -8,6 +8,7 @@ import {
   getMediaById,
   searchMedia,
 } from "@/features/media/server/media.queries";
+import { tryAniList } from "@/lib/http/anilist";
 
 export type Showcase = {
   banner: { src: string; title: string } | null;
@@ -45,16 +46,16 @@ export const getShowcase = cache(async (): Promise<Showcase> => {
 
   // La première tendance qui a une bannière : toutes n'en ont pas.
   for (const cover of covers.slice(0, 3)) {
-    try {
-      const media = await getMediaById(cover.id, { includeAdult: false });
-      if (media?.bannerImage) {
-        return {
-          banner: { src: media.bannerImage, title: cover.title },
-          covers,
-        };
-      }
-    } catch {
-      break;
+    const media = await tryAniList(() =>
+      getMediaById(cover.id, { includeAdult: false }),
+    );
+    // `null` : AniList est en panne, inutile d'essayer la suivante.
+    if (media === null) break;
+    if (media?.bannerImage) {
+      return {
+        banner: { src: media.bannerImage, title: cover.title },
+        covers,
+      };
     }
   }
 

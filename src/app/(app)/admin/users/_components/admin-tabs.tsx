@@ -31,7 +31,7 @@ export function AdminTabs({
             "inline-flex h-8 items-center gap-2 rounded-md px-3 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground",
             tab.value === active && "bg-background text-foreground shadow-sm",
           )}
-          href={`${routes.admin.users}?onglet=${tab.value}`}
+          href={routes.admin.usersTab(tab.value)}
           key={tab.value}
         >
           {tab.label}

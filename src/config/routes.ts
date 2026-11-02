@@ -96,7 +96,13 @@ export const routes = {
 
   settings: "/settings",
 
-  admin: { users: "/admin/users" },
+  admin: {
+    users: "/admin/users",
+    usersTab: (onglet: string) => `/admin/users?onglet=${onglet}` as const,
+  },
+
+  /** Les anciennes adresses, gardées pour leurs redirections (`next.config.ts`). */
+  legacy: { signup: "/signup" },
 
   auth: {
     login: "/login",

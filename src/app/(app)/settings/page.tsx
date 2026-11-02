@@ -80,7 +80,7 @@ export default function SettingsPage() {
 
       <Separator />
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<DeleteAccountSectionSkeleton />}>
         <DeleteAccountSection />
       </Suspense>
     </div>
@@ -136,6 +136,19 @@ async function DeleteAccountSection() {
     >
       <DeleteAccount username={session.user.username} />
     </SettingsSection>
+  );
+}
+
+/** Titre de section (28 px), une description sur deux lignes, le bouton (36). */
+function DeleteAccountSectionSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-10 w-full max-w-xl" />
+      </div>
+      <Skeleton className="h-9 w-48" />
+    </div>
   );
 }
 

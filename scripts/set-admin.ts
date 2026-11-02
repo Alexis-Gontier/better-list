@@ -6,7 +6,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 
 /** Dans une fonction : `tsx` compile ce fichier en CommonJS, qui refuse le `await` de premier niveau. */
 async function main() {

@@ -17,7 +17,7 @@ import { prisma } from "@/lib/db/prisma";
 /**
  * Configuration Better Auth.
  *
- * **OAuth seulement, trois fournisseurs** (GitHub, Discord, Google ; spec refonte §1). Ni mot de
+ * **OAuth seulement, trois fournisseurs** (GitHub, Discord, Google ; D56). Ni mot de
  * passe ni e-mail : pas de vérification, de reset, ni de surface brute-force.
  *
  * **L'inscription est ouverte, l'accès ne l'est pas.** On ne peut pas inviter quelqu'un à l'avance
@@ -51,7 +51,7 @@ async function resolveUsername(candidate: string) {
 
 /**
  * Les droits du plugin `admin`, **sans l'usurpation**. Elle permettrait de se connecter en tant
- * qu'un autre membre, donc de lire son compte : entre amis, rien ne la justifie (spec refonte §1).
+ * qu'un autre membre, donc de lire son compte : entre amis, rien ne la justifie (D57).
  */
 const accessControl = createAccessControl(defaultStatements);
 const roles = {

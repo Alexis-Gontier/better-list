@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
-
+import { BanDialog } from "@/app/(app)/admin/users/_components/ban-dialog";
+import { ProviderIcons } from "@/app/(app)/admin/users/_components/provider-icons";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,8 +27,6 @@ import {
 } from "@/components/ui/table";
 import { LOCALE, TIMEZONE } from "@/config/locale";
 import { routes } from "@/config/routes";
-import { BanDialog } from "@/features/admin/components/ban-dialog";
-import { ProviderIcons } from "@/features/admin/components/provider-icons";
 import {
   setMemberRole,
   unbanMember,

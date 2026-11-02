@@ -144,7 +144,7 @@ model User {
   status UserStatus @default(PENDING)
 
   /// Rôle Better Auth (plugin `admin`) : `"admin"` ou `null`. Distinct de `status` : le statut dit
-  /// si l'on est entré, le rôle si l'on peut faire entrer les autres (spec refonte §1).
+  /// si l'on est entré, le rôle si l'on peut faire entrer les autres (D57).
   role       String?
   /// Bannissement d'un membre déjà approuvé. C'est Better Auth qui refuse la connexion.
   banned     Boolean?  @default(false)

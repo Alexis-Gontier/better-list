@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-
+import {
+  ADMIN_TABS,
+  type AdminTab,
+  AdminTabs,
+} from "@/app/(app)/admin/users/_components/admin-tabs";
+import { MembersTable } from "@/app/(app)/admin/users/_components/members-table";
+import { PendingTable } from "@/app/(app)/admin/users/_components/pending-table";
 import { PageHeading } from "@/components/shared/page-heading";
 import {
   Empty,
@@ -9,15 +15,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ADMIN_TABS,
-  type AdminTab,
-  AdminTabs,
-} from "@/features/admin/components/admin-tabs";
-import { MembersTable } from "@/features/admin/components/members-table";
-import { PendingTable } from "@/features/admin/components/pending-table";
 import { getAdminOverview } from "@/features/admin/server/admin.queries";
-import { requireAdmin } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Membres" };
 
@@ -30,10 +29,10 @@ async function AdminBoard({
 }: {
   searchParams: PageProps<"/admin/users">["searchParams"];
 }) {
-  const [{ onglet }, overview, self] = await Promise.all([
+  const [{ onglet }, overview, session] = await Promise.all([
     searchParams,
     getAdminOverview(),
-    requireAdmin(),
+    getSession(),
   ]);
   const active = parseTab(onglet);
   const counts = {
@@ -69,7 +68,7 @@ async function AdminBoard({
         <MembersTable
           members={active === "bannis" ? overview.banned : overview.members}
           mode={active === "bannis" ? "banned" : "members"}
-          selfId={self.id}
+          selfId={session?.user.id ?? ""}
         />
       )}
     </div>
@@ -89,7 +88,7 @@ function AdminBoardSkeleton() {
   );
 }
 
-/** L'administration du cercle (spec refonte §1) : la garde du rôle est dans le layout du segment. */
+/** L'administration du cercle (D57) : la garde du rôle est dans le layout du segment. */
 export default function AdminUsersPage({
   searchParams,
 }: PageProps<"/admin/users">) {
