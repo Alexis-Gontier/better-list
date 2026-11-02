@@ -73,6 +73,8 @@ test.describe("administrateur", () => {
   test.use({ storageState: accounts.admin.storageState });
 
   test("approuve une demande, puis annule", async ({ page }) => {
+    // Desktop et mobile tournent en parallèle sur la même demande : l'un la ferait disparaître à l'autre.
+    test.skip(test.info().project.name !== "desktop", "demande unique");
     await page.goto(routes.admin.users);
     const row = page.getByRole("row", { name: /e2e-request/ });
     await expect(row).toBeVisible();
