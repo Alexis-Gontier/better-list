@@ -119,13 +119,23 @@ const COVERS_PER_CARD = 4;
  */
 export async function getLists({
   includeAdult,
+  ownerId,
 }: {
   includeAdult: boolean;
+  /**
+   * Les listes d'un autre membre, sur son profil (D64) : seulement celles qu'il montre, par
+   * `visibleListsWhere`. Absent : mes listes, toutes.
+   */
+  ownerId?: string;
 }): Promise<ListSummary[]> {
-  const ownerId = await currentUserId();
+  const viewerId = await currentUserId();
+  const isOwn = ownerId === undefined || ownerId === viewerId;
+  const where = isOwn
+    ? { ownerId: viewerId }
+    : { ownerId, ...visibleListsWhere(viewerId) };
 
   const rows = await prisma.list.findMany({
-    where: { ownerId },
+    where,
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
@@ -140,7 +150,7 @@ export async function getLists({
   });
 
   const items = await prisma.listItem.findMany({
-    where: { list: { ownerId } },
+    where: { list: where },
     orderBy: { rank: "asc" },
     select: {
       listId: true,
@@ -156,9 +166,10 @@ export async function getLists({
       },
     },
   });
+  // Mon suivi, même sur les listes d'un autre : les sections « à voir » parlent de moi.
   const entries = await prisma.entry.findMany({
     where: {
-      userId: ownerId,
+      userId: viewerId,
       mediaId: { in: [...new Set(items.map(({ media }) => media.id))] },
     },
     select: { mediaId: true, status: true },
@@ -184,7 +195,8 @@ export async function getLists({
       description: row.description,
       kind: row.kind,
       cutoff: row.cutoff,
-      shared: row.shareToken !== null,
+      // Le partage d'un autre ne me regarde pas : la carte ne le signale qu'à son propriétaire.
+      shared: isOwn && row.shareToken !== null,
       visibility: row.visibility,
       itemCount: row._count.items,
       countsLine: listCountsLine(row.kind, row.cutoff, {
