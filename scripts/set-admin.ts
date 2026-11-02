@@ -8,19 +8,30 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/generated/prisma/client";
 
-const username = process.argv[2];
-if (!username) {
-  throw new Error("Usage : pnpm tsx scripts/set-admin.ts <username>");
+/** Dans une fonction : `tsx` compile ce fichier en CommonJS, qui refuse le `await` de premier niveau. */
+async function main() {
+  const username = process.argv[2];
+  if (!username) {
+    throw new Error("Usage : pnpm tsx scripts/set-admin.ts <username>");
+  }
+
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  });
+
+  try {
+    const user = await prisma.user.update({
+      where: { username },
+      data: { role: "admin", status: "APPROVED" },
+      select: { username: true },
+    });
+    console.log(`@${user.username} est administrateur.`);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
 });
-
-const user = await prisma.user.update({
-  where: { username },
-  data: { role: "admin", status: "APPROVED" },
-  select: { username: true },
-});
-console.log(`@${user.username} est administrateur.`);
-await prisma.$disconnect();
