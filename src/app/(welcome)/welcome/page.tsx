@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { LandingClose } from "@/app/(welcome)/welcome/_components/landing-close";
-import { LandingDoors } from "@/app/(welcome)/welcome/_components/landing-doors";
-import { LandingEpisode } from "@/app/(welcome)/welcome/_components/landing-episode";
+import { LandingCircle } from "@/app/(welcome)/welcome/_components/landing-circle";
+import { LandingFaq } from "@/app/(welcome)/welcome/_components/landing-faq";
+import { LandingFeatures } from "@/app/(welcome)/welcome/_components/landing-features";
 import { LandingFooter } from "@/app/(welcome)/welcome/_components/landing-footer";
-import { LandingNotebook } from "@/app/(welcome)/welcome/_components/landing-notebook";
+import { LandingHero } from "@/app/(welcome)/welcome/_components/landing-hero";
+import { LandingJoin } from "@/app/(welcome)/welcome/_components/landing-join";
 import { routes } from "@/config/routes";
 
 export const metadata: Metadata = {
@@ -18,19 +19,23 @@ export const metadata: Metadata = {
 /**
  * La landing (spec refonte §5.2) : servie à `/` par `proxy.ts` à qui n'a pas de session.
  *
- * **Aucune donnée de membre, aucune requête AniList** : les fragments d'interface et leurs
- * jaquettes sont écrits en dur. Seule la fin de page lit un cookie, dans sa propre frontière.
+ * Mise en page d'après Firecrawl : un cadre de rails, un hero à widget, une grille bordée, un
+ * bandeau d'accent, les questions et l'appel final. **Aucune donnée de membre, aucune requête
+ * AniList** : les fragments et leurs jaquettes sont écrits en dur.
  */
 export default function WelcomePage() {
   return (
-    <div className="flex min-h-svh flex-col bg-background">
-      <LandingDoors />
-      <LandingEpisode />
-      <LandingNotebook />
-      <Suspense fallback={null}>
-        <LandingClose />
-      </Suspense>
-      <LandingFooter />
+    <div className="min-h-svh overflow-x-clip bg-background px-0 sm:px-6">
+      <div className="mx-auto max-w-6xl border-border sm:border-x">
+        <LandingHero />
+        <LandingFeatures />
+        <LandingCircle />
+        <LandingFaq />
+        <Suspense fallback={null}>
+          <LandingJoin />
+        </Suspense>
+        <LandingFooter />
+      </div>
     </div>
   );
 }

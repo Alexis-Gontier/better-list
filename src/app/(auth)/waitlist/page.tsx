@@ -29,10 +29,10 @@ export default async function WaitlistPage() {
   return (
     <div className="flex flex-col items-start gap-8">
       <div className="flex flex-col gap-2">
-        <h1 className="font-heading font-medium text-[32px] leading-tight tracking-tight">
+        <h1 className="font-heading font-semibold text-2xl tracking-tight">
           Vous y êtes presque
         </h1>
-        <p className="text-pretty text-lg">
+        <p className="text-pretty text-muted-foreground">
           Bonjour {session.user.name}. Votre compte est créé : un membre doit
           maintenant l'approuver.
         </p>

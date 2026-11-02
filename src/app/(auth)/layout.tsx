@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Logo } from "@/components/layout/logo";
+import { GridBackdrop } from "@/components/shared/grid-backdrop";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 
@@ -30,14 +31,13 @@ export const metadata: Metadata = {
  * Chrome minimal des pages d'authentification : pas de navigation — il n'y a rien à naviguer tant
  * qu'on n'est pas entré.
  *
- * **Une colonne étroite, au calme**, comme la landing (direction « l'instrument discret ») : le
- * nom en haut, le contenu centré, rien d'autre. Pas de jaquettes : cet écran ne se regarde pas, il
- * se traverse.
+ * Même langage que la landing : le quadrillage en fond, le contenu dans un panneau bordé au centre.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-svh flex-col px-4 py-6 sm:px-8">
-      <header>
+    <div className="relative flex min-h-svh flex-col overflow-hidden px-4 py-6 sm:px-8">
+      <GridBackdrop />
+      <header className="relative">
         <Link className="inline-flex items-center gap-2.5" href={routes.home}>
           <Logo className="size-6" />
           <span className="font-heading font-semibold tracking-tight">
@@ -46,8 +46,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </Link>
       </header>
 
-      <main className="flex flex-1 items-center justify-center pb-[10svh]">
-        <div className="w-full max-w-sm">{children}</div>
+      <main className="relative flex flex-1 items-center justify-center pb-[8svh]">
+        <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-2xl sm:p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
