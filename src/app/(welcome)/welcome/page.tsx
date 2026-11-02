@@ -12,6 +12,7 @@ import {
   LandingJoin,
   LandingJoinSkeleton,
 } from "@/app/(welcome)/welcome/_components/landing-join";
+import { LandingPreview } from "@/app/(welcome)/welcome/_components/landing-preview";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
  * La landing (D58, D61) : servie à `/` par `proxy.ts` à qui n'a pas de session.
  *
  * **D'après Letterboxd** : une œuvre en plein écran, trois phrases et un bouton, les jaquettes du
- * moment, ce que l'outil permet en six tuiles, puis la connexion. Ce sont les jaquettes qui donnent
+ * moment, des captures de l'app (D63), ce que l'outil permet en six tuiles, puis la connexion. Ce sont les jaquettes qui donnent
  * envie ; elles viennent des tendances d'AniList, déjà en cache pour l'accueil.
  */
 export default function WelcomePage() {
@@ -42,6 +43,10 @@ export default function WelcomePage() {
           <Suspense fallback={<LandingCoversSkeleton />}>
             <LandingCovers />
           </Suspense>
+        </section>
+
+        <section>
+          <LandingPreview />
         </section>
 
         <section>

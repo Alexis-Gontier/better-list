@@ -186,3 +186,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   « Avec GitHub, Discord ou Google » se raccourcit (`ENABLED_PROVIDERS`). GitHub reste obligatoire.
   On peut ainsi déployer avant d'avoir créé les applications OAuth, et les ajouter ensuite sans
   toucher au code.
+- **D63** — La landing et le README montrent l'app par quatre captures (accueil, fiche, bibliothèque,
+  profil) en 1440 × 900, thème sombre, JPEG qualité 82, dans `public/screenshots/`. Elles se prennent
+  au navigateur Playwright sur une session de membre, l'indicateur de Next et la barre de défilement
+  masqués, et se refont quand un de ces écrans change. Elles montrent le vrai contenu d'Alexis.
