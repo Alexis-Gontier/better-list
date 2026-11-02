@@ -37,10 +37,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8 text-center">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading font-semibold text-2xl tracking-tight">
-          Connexion à <span className="text-primary">Better-List</span>
+          Connexion à Better-List
         </h1>
         <p className="text-muted-foreground">
           Avec le compte que vous utilisez déjà.

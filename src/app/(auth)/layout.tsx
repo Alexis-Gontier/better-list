@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
+import { BannerBackdrop } from "@/app/(auth)/_components/banner-backdrop";
 
 import { Logo } from "@/components/layout/logo";
-import { GridBackdrop } from "@/components/shared/grid-backdrop";
 import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 
@@ -31,25 +31,20 @@ export const metadata: Metadata = {
  * Chrome minimal des pages d'authentification : pas de navigation — il n'y a rien à naviguer tant
  * qu'on n'est pas entré.
  *
- * Même langage que la landing : le quadrillage en fond, le contenu dans un panneau bordé au centre.
+ * **Une colonne centrée, d'après Linear et Vercel** : le logo, le titre, les fournisseurs. En fond,
+ * la bannière du moment, floue, dans sa propre frontière : la page n'attend pas AniList.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative flex min-h-svh flex-col overflow-hidden px-4 py-6 sm:px-8">
-      <GridBackdrop />
-      <header className="relative">
-        <Link className="inline-flex items-center gap-2.5" href={routes.home}>
-          <Logo className="size-6" />
-          <span className="font-heading font-semibold tracking-tight">
-            {site.name}
-          </span>
+    <div className="relative isolate flex min-h-svh flex-col items-center justify-center px-4 py-12">
+      <Suspense fallback={null}>
+        <BannerBackdrop />
+      </Suspense>
+      <main className="flex w-full max-w-[360px] flex-col items-center gap-8">
+        <Link aria-label={site.name} href={routes.home}>
+          <Logo className="size-10" />
         </Link>
-      </header>
-
-      <main className="relative flex flex-1 items-center justify-center pb-[8svh]">
-        <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-2xl sm:p-8">
-          {children}
-        </div>
+        <div className="w-full">{children}</div>
       </main>
     </div>
   );

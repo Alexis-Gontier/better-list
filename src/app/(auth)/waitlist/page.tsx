@@ -27,7 +27,7 @@ export default async function WaitlistPage() {
   if (session.user.status === "APPROVED") redirect(routes.home);
 
   return (
-    <div className="flex flex-col items-start gap-8">
+    <div className="flex flex-col items-center gap-8 text-center">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading font-semibold text-2xl tracking-tight">
           Vous y êtes presque
