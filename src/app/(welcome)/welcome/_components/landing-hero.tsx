@@ -1,3 +1,4 @@
+import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -50,7 +51,10 @@ export function LandingHero() {
         </p>
         <div className="flex flex-col items-center gap-2">
           <Button asChild size="lg">
-            <Link href={routes.auth.login}>Rejoindre le cercle</Link>
+            <Link href={routes.auth.login}>
+              Rejoindre le cercle
+              <ArrowRightIcon data-icon="inline-end" />
+            </Link>
           </Button>
           <span className="text-muted-foreground text-sm">
             Avec GitHub, Discord ou Google
