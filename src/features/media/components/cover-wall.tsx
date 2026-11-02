@@ -22,13 +22,12 @@ const COLUMNS = [
 const ROUNDS = ["a", "b", "c", "d"] as const;
 
 /**
- * Le mur de jaquettes des pages d'authentification : **les tendances du moment, inclinées, qui
+ * Le mur de jaquettes de `/login` et de la landing : **les tendances du moment, inclinées, qui
  * défilent**.
  *
  * Inspiré de la page premium d'Ortega Scans (demande d'Alexis, 2 octobre 2026) : une grille de
- * quatre colonnes tournée en perspective, chaque colonne en boucle verticale, fondue dans le fond
- * par deux masques — vers le bas et le haut pour qu'elle n'ait pas de bord, vers la gauche pour
- * laisser le texte lisible.
+ * quatre colonnes tournée en perspective, chaque colonne en boucle verticale, fondue en haut et en
+ * bas pour qu'elle n'ait pas de bord. Il remplit le cadre que lui donne son parent (`relative`).
  *
  * **Aucune requête de plus au quota AniList.** Les paramètres sont exactement ceux de la rangée
  * « Tendances » de l'accueil pour un compte sans contenu adulte : `searchMedia` sert donc la même
@@ -69,9 +68,9 @@ export async function CoverWall() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-full overflow-hidden opacity-20 [mask-image:linear-gradient(to_bottom,transparent,#000_20%,#000_70%,transparent)] lg:w-[52vw] lg:opacity-100"
+      className="pointer-events-none absolute inset-0 overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,#000_20%,#000_70%,transparent)]"
     >
-      <div className="absolute inset-0 [mask-image:linear-gradient(to_right,transparent,rgb(0_0_0/0.55)_26%,#000_62%)]">
+      <div className="absolute inset-0">
         <div className="absolute -inset-y-64 -right-16 -left-24 perspective-[1500px]">
           <div className="grid h-full rotate-y-[-17deg] rotate-z-[-5deg] grid-cols-4 gap-4 transform-3d">
             {columns.map((column) => (

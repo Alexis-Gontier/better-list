@@ -2,7 +2,6 @@ import { ClockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AuthTitle } from "@/app/(auth)/_components/auth-title";
 import { SignOutButton } from "@/components/layout/sign-out-button";
 import { Badge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
@@ -29,16 +28,18 @@ export default async function WaitlistPage() {
   if (session.user.status === "APPROVED") redirect(routes.home);
 
   return (
-    <div className="flex flex-col items-start gap-8">
-      <div className="flex flex-col items-start gap-5">
-        <Badge variant="outline">
-          <ClockIcon data-icon="inline-start" />
-          En attente d'approbation
-        </Badge>
-        <AuthTitle>Vous y êtes presque</AuthTitle>
-        <p className="max-w-md text-pretty text-lg text-muted-foreground">
-          Bonjour {session.user.name}. L'accès est réservé à un petit cercle :
-          votre compte a bien été créé, il doit maintenant être approuvé.
+    <div className="flex flex-col items-center gap-6 text-center">
+      <Badge variant="outline">
+        <ClockIcon data-icon="inline-start" />
+        En attente d'approbation
+      </Badge>
+      <div className="flex flex-col gap-2">
+        <h1 className="font-heading font-semibold text-2xl tracking-tight">
+          Vous y êtes presque
+        </h1>
+        <p className="text-pretty text-muted-foreground text-sm">
+          Bonjour {session.user.name}. Votre compte a bien été créé : un membre
+          doit maintenant l'approuver.
         </p>
       </div>
 

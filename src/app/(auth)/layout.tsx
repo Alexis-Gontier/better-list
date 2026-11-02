@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { type ReactNode, Suspense } from "react";
 
-import { CoverWall } from "@/app/(auth)/_components/cover-wall";
 import { Logo } from "@/components/layout/logo";
 import { site } from "@/config/site";
+import { CoverWall } from "@/features/media/components/cover-wall";
 
 /**
  * **Hors index, pour les trois pages d'un coup.**
@@ -31,45 +31,47 @@ export const metadata: Metadata = {
  * Chrome minimal des pages d'authentification : pas de header, pas de navigation — il n'y a rien
  * à naviguer tant qu'on n'est pas entré.
  *
- * **Le texte à gauche, le mur de jaquettes à droite** (refonte du 2 octobre 2026 : la mise en page
- * vient de la page premium d'Ortega Scans, la voix reste celle du site). Chaque page porte son propre titre : la connexion se présente,
- * l'attente explique où en est le compte — un titre commun ne dirait ni l'un ni l'autre.
+ * **Deux colonnes à `lg`** (mise en page `login-02` de shadcn, maquette lot 1) : le contenu centré
+ * à gauche, le mur de jaquettes à droite sur `bg-muted`. Sous `lg`, le mur disparaît : sur un
+ * téléphone, il ne ferait que repousser les boutons.
  *
- * Le mur est dans sa propre frontière : il attend AniList, la page n'a pas à l'attendre. Sous
- * `lg`, il passe derrière le texte, atténué, plutôt que de disparaître.
+ * Le mur est dans sa propre frontière : il attend AniList, la page n'a pas à l'attendre.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative isolate flex min-h-svh flex-col overflow-hidden">
-      <Suspense fallback={null}>
-        <CoverWall />
-      </Suspense>
+    <div className="grid min-h-svh lg:grid-cols-2">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <header className="flex items-center gap-2.5">
+          <Logo className="size-7" />
+          <span className="font-heading font-semibold text-lg tracking-tight">
+            {site.name}
+          </span>
+        </header>
 
-      <header className="mx-auto flex w-full max-w-6xl items-center gap-2.5 px-6 py-6 sm:px-10">
-        <Logo className="size-7" />
-        <span className="font-heading font-semibold text-lg tracking-tight">
-          {site.name}
-        </span>
-      </header>
+        <main className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-700 motion-reduce:animate-none">
+            {children}
+          </div>
+        </main>
+      </div>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-6 py-10 sm:px-10">
-        <div className="w-full max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700 motion-reduce:animate-none">
-          {children}
-        </div>
-      </main>
-
-      {/* Les jaquettes viennent d'AniList, et ses CGU demandent qu'on le dise là où on les montre. */}
-      <footer className="mx-auto w-full max-w-6xl px-6 py-6 text-muted-foreground text-xs sm:px-10">
-        Jaquettes :{" "}
-        <a
-          className="underline-offset-4 hover:text-foreground hover:underline"
-          href={site.attribution.url}
-          rel="noreferrer"
-          target="_blank"
-        >
-          {site.attribution.name}
-        </a>
-      </footer>
+      <div className="relative hidden overflow-hidden bg-muted lg:block">
+        <Suspense fallback={null}>
+          <CoverWall />
+        </Suspense>
+        {/* Les jaquettes viennent d'AniList, et ses CGU demandent qu'on le dise là où on les montre. */}
+        <p className="absolute right-6 bottom-6 text-muted-foreground text-xs">
+          Jaquettes :{" "}
+          <a
+            className="underline-offset-4 hover:text-foreground hover:underline"
+            href={site.attribution.url}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {site.attribution.name}
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
