@@ -9,6 +9,7 @@ import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 import { CommandSearch } from "@/features/command/components/command-search";
 import { NotificationsMenu } from "@/features/tracking/components/notifications-menu";
+import { isAdmin } from "@/lib/auth/roles";
 import type { SessionUser } from "@/lib/auth/server";
 
 /**
@@ -63,6 +64,7 @@ export function Header({ user }: { user: SessionUser }) {
             <UserMenu
               email={user.email}
               image={user.image ?? undefined}
+              isAdmin={isAdmin(user)}
               name={user.name}
               username={user.username}
             />

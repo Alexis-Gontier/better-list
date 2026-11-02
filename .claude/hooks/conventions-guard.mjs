@@ -27,6 +27,7 @@ const ENV_ALLOWLIST = [
   "next.config.ts",
   "postcss.config.mjs",
   "prisma/seed.ts",
+  "scripts/set-admin.ts",
   "playwright.config.ts",
 ];
 

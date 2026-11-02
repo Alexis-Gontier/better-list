@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon, ShieldIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { UserAvatar } from "@/components/shared/user-avatar";
@@ -29,9 +29,17 @@ type UserMenuProps = {
    */
   username?: string | null;
   image?: string;
+  /** Ouvre l'entrée « Administration » ; la garde réelle reste `requireAdmin()`. */
+  isAdmin?: boolean;
 };
 
-export function UserMenu({ name, email, username, image }: UserMenuProps) {
+export function UserMenu({
+  name,
+  email,
+  username,
+  image,
+  isAdmin = false,
+}: UserMenuProps) {
   const { signOut, isPending } = useSignOut();
 
   return (
@@ -58,6 +66,14 @@ export function UserMenu({ name, email, username, image }: UserMenuProps) {
               <Link href={routes.profile(username)}>
                 <UserIcon />
                 Profil
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
+          {isAdmin ? (
+            <DropdownMenuItem asChild>
+              <Link href={routes.admin.users}>
+                <ShieldIcon />
+                Administration
               </Link>
             </DropdownMenuItem>
           ) : null}
