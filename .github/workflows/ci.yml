@@ -42,6 +42,10 @@ jobs:
       CRON_SECRET: ci-placeholder-not-a-real-secret-111111
       GITHUB_CLIENT_ID: ci-placeholder
       GITHUB_CLIENT_SECRET: ci-placeholder
+      DISCORD_CLIENT_ID: ci-placeholder
+      DISCORD_CLIENT_SECRET: ci-placeholder
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
 
     steps:
       - uses: actions/checkout@v7
@@ -103,6 +107,10 @@ jobs:
       CRON_SECRET: ci-placeholder-not-a-real-secret-111111
       GITHUB_CLIENT_ID: ci-placeholder
       GITHUB_CLIENT_SECRET: ci-placeholder
+      DISCORD_CLIENT_ID: ci-placeholder
+      DISCORD_CLIENT_SECRET: ci-placeholder
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
 
     steps:
       - uses: actions/checkout@v7

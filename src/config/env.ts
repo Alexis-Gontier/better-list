@@ -20,9 +20,17 @@ export const env = createEnv({
     /** Secret de signature des sessions Better Auth. 32 octets minimum. */
     BETTER_AUTH_SECRET: z.string().min(32),
 
-    /** Application OAuth GitHub — seul fournisseur d'authentification (conception.md §7). */
+    /** Application OAuth GitHub. */
     GITHUB_CLIENT_ID: z.string().min(1),
     GITHUB_CLIENT_SECRET: z.string().min(1),
+
+    /** Application OAuth Discord (spec refonte §1). Rappel : `<APP_URL>/api/auth/callback/discord`. */
+    DISCORD_CLIENT_ID: z.string().min(1),
+    DISCORD_CLIENT_SECRET: z.string().min(1),
+
+    /** Client OAuth Google. Rappel : `<APP_URL>/api/auth/callback/google`. */
+    GOOGLE_CLIENT_ID: z.string().min(1),
+    GOOGLE_CLIENT_SECRET: z.string().min(1),
 
     /**
      * Jeton porteur du cron Vercel (conception.md §4.1).

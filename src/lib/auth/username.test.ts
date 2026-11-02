@@ -13,9 +13,7 @@ describe("normalizeUsername", () => {
   });
 
   it("prend la partie locale d'une adresse Google", () => {
-    expect(normalizeUsername("lea.rousseau@gmail.com".split("@")[0])).toBe(
-      "lea-rousseau",
-    );
+    expect(normalizeUsername("lea.rousseau")).toBe("lea-rousseau");
   });
 
   it("ne laisse pas de tiret au bord", () => {

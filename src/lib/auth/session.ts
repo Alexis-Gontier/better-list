@@ -1,10 +1,11 @@
 import "server-only";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { routes } from "@/config/routes";
+import { isAdmin } from "@/lib/auth/roles";
 import { auth, type SessionUser } from "@/lib/auth/server";
 
 /**
@@ -36,4 +37,16 @@ export async function requireApprovedUser(): Promise<SessionUser> {
   if (session.user.status !== "APPROVED") redirect(routes.auth.waitlist);
 
   return session.user;
+}
+
+/**
+ * Exige un **administrateur** approuvé. Posée dans le layout de `(app)/admin`, une fois : le layout
+ * `(app)` a déjà vérifié la session et le statut, celle-ci ne vérifie que le rôle.
+ */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireApprovedUser();
+
+  if (!isAdmin(user)) forbidden();
+
+  return user;
 }
