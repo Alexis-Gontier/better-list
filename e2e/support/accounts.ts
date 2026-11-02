@@ -39,6 +39,15 @@ export const accounts = {
     role: null,
     storageState: "e2e/.auth/request.json",
   },
+  /** Le membre qui supprime son compte : il n'existe plus après son test. */
+  leaver: {
+    id: "e2e-leaver",
+    username: "e2e-leaver",
+    email: "e2e-leaver@example.invalid",
+    status: "APPROVED",
+    role: null,
+    storageState: "e2e/.auth/leaver.json",
+  },
 } as const;
 
 export type TestAccount = (typeof accounts)[keyof typeof accounts];

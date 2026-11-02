@@ -5,6 +5,7 @@ import {
   AccountSection,
   AccountSectionSkeleton,
 } from "@/app/(app)/settings/_components/account-section";
+import { DeleteAccount } from "@/app/(app)/settings/_components/delete-account";
 import { DiscordSettings } from "@/app/(app)/settings/_components/discord-settings";
 import { DisplaySettings } from "@/app/(app)/settings/_components/display-settings";
 import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
@@ -13,10 +14,12 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDiscordWebhookStatus } from "@/features/notifications/server/discord.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Paramètres",
-  description: "Langue des titres, contenu adulte, notifications Discord.",
+  description:
+    "Langue des titres, contenu adulte, notifications Discord, comptes liés.",
 };
 
 /**
@@ -74,6 +77,12 @@ export default function SettingsPage() {
       <Suspense fallback={<NotificationsSectionSkeleton />}>
         <NotificationsSection />
       </Suspense>
+
+      <Separator />
+
+      <Suspense fallback={null}>
+        <DeleteAccountSection />
+      </Suspense>
     </div>
   );
 }
@@ -111,6 +120,21 @@ async function NotificationsSection() {
       title="Notifications Discord"
     >
       <DiscordSettings status={status} />
+    </SettingsSection>
+  );
+}
+
+/** La sortie du cercle, en dernier : elle lit l'identifiant à recopier pour confirmer. */
+async function DeleteAccountSection() {
+  const session = await getSession();
+  if (!session?.user.username) return null;
+
+  return (
+    <SettingsSection
+      description="Votre suivi, votre journal, vos listes, votre collection et vos favoris partent avec lui. On ne peut pas revenir en arrière."
+      title="Supprimer mon compte"
+    >
+      <DeleteAccount username={session.user.username} />
     </SettingsSection>
   );
 }

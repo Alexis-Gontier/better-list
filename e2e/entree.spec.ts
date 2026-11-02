@@ -44,6 +44,31 @@ test.describe("membre", () => {
   });
 });
 
+test.describe("membre qui s'en va", () => {
+  test.use({ storageState: accounts.leaver.storageState });
+
+  test("supprime son compte et retrouve la landing", async ({ page }) => {
+    // Un seul compte à supprimer : le projet mobile le trouverait déjà parti.
+    test.skip(test.info().project.name !== "desktop", "compte unique");
+    await page.goto(routes.settings);
+    await page.getByRole("button", { name: "Supprimer mon compte" }).click();
+    const confirm = page.getByRole("button", {
+      name: "Supprimer",
+      exact: true,
+    });
+    await expect(confirm).toBeDisabled();
+    await page.getByLabel(/Recopiez/).fill(accounts.leaver.username);
+    await confirm.click();
+    await expect(page).toHaveURL(routes.home);
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: /Suivez ce que vous regardez/,
+      }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("administrateur", () => {
   test.use({ storageState: accounts.admin.storageState });
 
