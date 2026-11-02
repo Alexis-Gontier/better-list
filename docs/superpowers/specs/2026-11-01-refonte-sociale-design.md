@@ -249,14 +249,15 @@ De haut en bas :
 1. Carrousel « À la une » — inchangé.
 2. « En cours » — inchangé.
 3. Trait — inchangé.
-4. **« Listes de la communauté »** (nouveau) : les 8 listes les plus aimées des autres, carte de
-   §3, lien « Tout voir » vers `/lists/community`. Cachée s'il n'y en a aucune. Lecture de base.
-5. « Tendances » — inchangé (animes, sans onglets). **Décision du 2 novembre 2026** : l'accueil
+4. « Tendances » — inchangé (animes, sans onglets). **Décision du 2 novembre 2026** : l'accueil
    reste celui d'aujourd'hui, on n'y ajoute que la rangée des listes. Les onglets Anime, Manga,
    Manhwa, Light novel et un « Top 10 » numéroté ont été maquettés puis écartés : ils rouvraient le
    second catalogue retiré le 14 septembre 2026, que `/search` fait mieux. Pour mémoire, un vrai
    « Top 10 de la semaine » est faisable (`Page.mediaTrends`, relevés quotidiens, environ
    8 requêtes par type et par jour) si la question revient.
+5. **« Listes de la communauté »** (nouveau), **sous les tendances** (demande d'Alexis) : les
+   8 listes les plus aimées des autres, carte de §3, lien « Tout voir » vers `/lists/community`.
+   Cachée s'il n'y en a aucune. Lecture de base.
 6. « Cette saison » — inchangé (animes seulement).
 7. « Recommandé pour vous » — inchangé.
 
