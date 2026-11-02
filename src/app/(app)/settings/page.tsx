@@ -8,6 +8,7 @@ import {
 import { DeleteAccount } from "@/app/(app)/settings/_components/delete-account";
 import { DiscordSettings } from "@/app/(app)/settings/_components/discord-settings";
 import { DisplaySettings } from "@/app/(app)/settings/_components/display-settings";
+import { PrivacySettings } from "@/app/(app)/settings/_components/privacy-settings";
 import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
@@ -19,7 +20,7 @@ import { getSession } from "@/lib/auth/session";
 export const metadata: Metadata = {
   title: "Paramètres",
   description:
-    "Langue des titres, contenu adulte, notifications Discord, comptes liés.",
+    "Langue des titres, contenu adulte, confidentialité, notifications Discord, comptes liés.",
 };
 
 /**
@@ -74,6 +75,12 @@ export default function SettingsPage() {
 
       <Separator />
 
+      <Suspense fallback={<PrivacySectionSkeleton />}>
+        <PrivacySection />
+      </Suspense>
+
+      <Separator />
+
       <Suspense fallback={<NotificationsSectionSkeleton />}>
         <NotificationsSection />
       </Suspense>
@@ -121,6 +128,36 @@ async function NotificationsSection() {
     >
       <DiscordSettings status={status} />
     </SettingsSection>
+  );
+}
+
+/** Ce que les autres membres voient de mon profil (D64) : mes propres réglages, lus comme ceux d'un autre. */
+async function PrivacySection() {
+  const preferences = await getPreferences();
+
+  return (
+    <SettingsSection
+      description="Ce que les autres membres voient de vous. Vous, vous voyez toujours tout. Rien n'est jamais public."
+      title="Confidentialité"
+    >
+      <PrivacySettings privacy={preferences} />
+    </SettingsSection>
+  );
+}
+
+/** Titre, description, puis sept lignes de réglage (40 px) et la note finale. */
+function PrivacySectionSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-7 w-40" />
+        <Skeleton className="h-5 w-96 max-w-full" />
+      </div>
+      {["a", "b", "c", "d", "e", "f"].map((key) => (
+        <Skeleton className="h-10 w-full" key={key} />
+      ))}
+      <Skeleton className="h-5 w-3/4" />
+    </div>
   );
 }
 
