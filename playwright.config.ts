@@ -17,7 +17,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  workers: isCI ? 1 : undefined,
+  /*
+    Deux en local et pas un par cœur : la suite tourne contre `next dev`, qui compile chaque route à
+    la demande. À vingt workers, des clics et des navigations dépassaient les 5 s d'attente et
+    faisaient échouer au hasard les tests qui créent une liste (vu le 6 novembre 2026).
+  */
+  workers: isCI ? 1 : 2,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL,
