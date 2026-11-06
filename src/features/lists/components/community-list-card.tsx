@@ -3,6 +3,7 @@ import Link from "next/link";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { routes } from "@/config/routes";
 import { ListCoverMosaic } from "@/features/lists/components/list-cover-mosaic";
+import { TierPreview } from "@/features/lists/components/tier-preview";
 import { LIST_KIND_LABELS } from "@/features/lists/lib/list-labels";
 import type { ListSummary } from "@/features/lists/server/lists.queries";
 import { LikeButton } from "@/features/social/components/like-button";
@@ -32,11 +33,15 @@ export function CommunityListCard({
         stacked ? "flex-col" : "sm:flex-col",
       )}
     >
-      <ListCoverMosaic
-        covers={list.covers}
-        empty={list.itemCount === 0}
-        stacked={stacked}
-      />
+      {list.tierPreview ? (
+        <TierPreview rows={list.tierPreview} stacked={stacked} />
+      ) : (
+        <ListCoverMosaic
+          covers={list.covers}
+          empty={list.itemCount === 0}
+          stacked={stacked}
+        />
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <Heading className="truncate font-medium" title={list.title}>

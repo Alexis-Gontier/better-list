@@ -2,6 +2,7 @@ import { LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { routes } from "@/config/routes";
 import { ListCoverMosaic } from "@/features/lists/components/list-cover-mosaic";
+import { TierPreview } from "@/features/lists/components/tier-preview";
 import { listHeadline } from "@/features/lists/lib/list-labels";
 import type { ListSummary } from "@/features/lists/server/lists.queries";
 
@@ -51,7 +52,11 @@ export function ListCard({ list }: { list: ListSummary }) {
         C'est aussi ce qui rend lisible la liste entièrement 18+ d'une préférence qui la masque :
         elle a la même mosaïque vide, et son décompte la distingue.
       */}
-      <ListCoverMosaic covers={list.covers} empty={list.itemCount === 0} />
+      {list.tierPreview ? (
+        <TierPreview rows={list.tierPreview} />
+      ) : (
+        <ListCoverMosaic covers={list.covers} empty={list.itemCount === 0} />
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/*
