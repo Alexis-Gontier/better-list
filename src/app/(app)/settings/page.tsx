@@ -145,18 +145,41 @@ async function PrivacySection() {
   );
 }
 
-/** Titre, description, puis sept lignes de réglage (40 px) et la note finale. */
+/**
+ * Titre et description, puis la structure de `PrivacySettings` : le profil visible, le bloc indenté
+ * de ses quatre sections sous son intitulé, le 18+ et la note finale.
+ */
 function PrivacySectionSkeleton() {
+  const row = (key: string) => (
+    <div
+      className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
+      key={key}
+    >
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-5 w-72 max-w-full" />
+      </div>
+      <div className="shrink-0">
+        <Skeleton className="h-5 w-9" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-5 w-96 max-w-full" />
       </div>
-      {["a", "b", "c", "d", "e", "f"].map((key) => (
-        <Skeleton className="h-10 w-full" key={key} />
-      ))}
-      <Skeleton className="h-5 w-3/4" />
+      <div className="flex flex-col gap-6">
+        {row("profil")}
+        <div className="flex flex-col gap-5 border-l pl-4">
+          <Skeleton className="h-5 w-44" />
+          {["journal", "stats", "calendrier", "favoris"].map(row)}
+        </div>
+        {row("adulte")}
+        <Skeleton className="h-5 w-3/4" />
+      </div>
     </div>
   );
 }
