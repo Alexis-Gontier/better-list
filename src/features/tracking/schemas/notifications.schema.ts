@@ -1,5 +1,7 @@
 import * as z from "zod";
 
+import { activitySchema } from "@/features/social/schemas/social.schema";
+
 /**
  * Ce que la cloche de l'en-tête annonce — **un épisode sorti que je n'ai pas vu**, rien d'autre.
  *
@@ -34,3 +36,13 @@ export const episodeNotificationsSchema = z.object({
   items: z.array(episodeNotificationSchema),
 });
 export type EpisodeNotifications = z.infer<typeof episodeNotificationsSchema>;
+
+/**
+ * Ce que renvoie `api/notifications` depuis le lot 3 : les deux onglets de la cloche, les épisodes
+ * (calculés) et l'activité sociale (stockée).
+ */
+export const bellSchema = z.object({
+  episodes: episodeNotificationsSchema,
+  activity: activitySchema,
+});
+export type Bell = z.infer<typeof bellSchema>;
