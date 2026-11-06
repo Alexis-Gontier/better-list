@@ -9,10 +9,7 @@ import {
   listHeadline,
   sectionHeading,
 } from "@/features/lists/lib/list-labels";
-import {
-  listSections,
-  sectionCounts,
-} from "@/features/lists/lib/list-sections";
+import { sectionCounts } from "@/features/lists/lib/list-sections";
 import { getSharedList } from "@/features/lists/server/lists.queries";
 import { mediaTitle } from "@/features/media/lib/media-format";
 
@@ -76,10 +73,9 @@ export const metadata: Metadata = {
  * d'attente. Même raison que l'absence de navigation dans le layout `(share)`. Les jaquettes ne sont
  * donc pas cliquables, et c'est délibéré plutôt que faute de temps.
  *
- * **Rien n'est retiré, mais le 18+ est flouté** (D49). Il n'y a pas de compte, donc pas de
- * préférence : la page montre la liste **telle qu'elle a été partagée**, décompte compris, mais une
- * œuvre adulte est retirée et comptée sous la grille (D64, révise D49). Le lien peut
- * partir hors du cercle, vers quelqu'un qui n'a rien demandé.
+ * **Les œuvres 18+ sont retirées pour tout visiteur et comptées sous la grille** (D64, révise
+ * D49) : le lien peut partir hors du cercle, vers quelqu'un qui n'a rien demandé. `getSharedList`
+ * les retire déjà ; la page ne fait qu'afficher.
  */
 export default async function SharedListPage({
   params,
@@ -93,25 +89,8 @@ export default async function SharedListPage({
   */
   if (!list) notFound();
 
-  /*
-    Sans suivi : le visiteur n'a pas celui du propriétaire, et le montrer dévoilerait sa
-    bibliothèque. `entryStatus: null` partout, donc « Déjà vues » ne paraît jamais ici.
-  */
-  const sections = listSections(
-    list.kind,
-    list.cutoff,
-    list.items.map((item) => ({
-      item,
-      mediaStatus: item.media.status,
-      entryStatus: null,
-    })),
-  );
+  const { sections, hiddenAdultCount: hiddenAdult } = list;
   const ranked = list.kind === "RANKING";
-  /*
-    Les œuvres 18+ sont **retirées** du lien, et comptées (D64, révise D49). Retirées après le
-    découpage en sections : un classement garde ses rangs, le n° 4 reste le n° 4.
-  */
-  const hiddenAdult = list.items.filter((item) => item.media.isAdult).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,7 +122,7 @@ export default async function SharedListPage({
         <Separator />
       </div>
 
-      {list.items.length === 0 ? (
+      {list.items.length === 0 && hiddenAdult === 0 ? (
         <p className="text-muted-foreground text-sm">
           Cette liste est vide pour l'instant.
         </p>
@@ -168,40 +147,38 @@ export default async function SharedListPage({
                 </h2>
               )}
               <ul className="grid grid-cols-3 gap-x-3 gap-y-4 lg:grid-cols-6">
-                {section.items
-                  .filter(({ item }) => !item.media.isAdult)
-                  .map(({ item, rank }) => {
-                    /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le
+                {section.items.map(({ item, rank }) => {
+                  /* Pas de `titleLanguage` : il n'y a pas de compte, donc pas de préférence. Le
                      repli de `mediaTitle` sur le romaji est exactement ce qu'on veut afficher. */
-                    const title = mediaTitle(item.media.title, "ROMAJI");
-                    const cover =
-                      item.media.coverImage?.extraLarge ??
-                      item.media.coverImage?.large ??
-                      null;
+                  const title = mediaTitle(item.media.title, "ROMAJI");
+                  const cover =
+                    item.media.coverImage?.extraLarge ??
+                    item.media.coverImage?.large ??
+                    null;
 
-                    return (
-                      <li className="flex flex-col gap-2" key={item.media.id}>
-                        <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
-                          {cover ? (
-                            <Image
-                              alt=""
-                              className="object-cover"
-                              fill
-                              sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
-                              src={cover}
-                            />
-                          ) : null}
-                          {ranked ? <RankNumeral rank={rank} /> : null}
-                        </div>
-                        <p className="min-w-0 truncate text-sm" title={title}>
-                          {ranked ? (
-                            <span className="sr-only">Numéro {rank}, </span>
-                          ) : null}
-                          {title}
-                        </p>
-                      </li>
-                    );
-                  })}
+                  return (
+                    <li className="flex flex-col gap-2" key={item.media.id}>
+                      <div className="relative aspect-2/3 overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset">
+                        {cover ? (
+                          <Image
+                            alt=""
+                            className="object-cover"
+                            fill
+                            sizes="(min-width: 1024px) 14vw, (min-width: 640px) 22vw, 30vw"
+                            src={cover}
+                          />
+                        ) : null}
+                        {ranked ? <RankNumeral rank={rank} /> : null}
+                      </div>
+                      <p className="min-w-0 truncate text-sm" title={title}>
+                        {ranked ? (
+                          <span className="sr-only">Numéro {rank}, </span>
+                        ) : null}
+                        {title}
+                      </p>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))}

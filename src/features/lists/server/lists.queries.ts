@@ -5,6 +5,7 @@ import { cache } from "react";
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
 import { listCountsLine } from "@/features/lists/lib/list-labels";
 import {
+  type ListSection,
   listSections,
   sectionCounts,
 } from "@/features/lists/lib/list-sections";
@@ -390,7 +391,12 @@ export type SharedList = {
   cutoff: number | null;
   /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
   ownerName: string;
+  /** Sans les œuvres 18+, qu'un lien ne montre jamais (D64). */
   items: ListDetailItem[];
+  /** Découpées sur la liste entière puis privées du 18+ : un classement garde ses rangs. */
+  sections: ListSection<ListDetailItem>[];
+  /** Les œuvres 18+ retirées, annoncées sous la grille. */
+  hiddenAdultCount: number;
 };
 
 /**
@@ -435,6 +441,34 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
 
   if (!list) return null;
 
+  const items: ListDetailItem[] = list.items.map(({ media }) => ({
+    media: compactFromMirror(media),
+    banner: media.bannerImage,
+    unit: media.type === "ANIME" ? "episode" : "chapitre",
+    total: media.type === "ANIME" ? media.episodes : media.chapters,
+  }));
+  const isShown = (item: ListDetailItem) => !item.media.isAdult;
+
+  /*
+    Sans suivi : le visiteur n'a pas celui du propriétaire, et le montrer dévoilerait sa
+    bibliothèque. `entryStatus: null` partout, donc « Déjà vues » ne paraît jamais ici.
+  */
+  const sections = listSections(
+    list.kind,
+    list.cutoff,
+    items.map((item) => ({
+      item,
+      mediaStatus: item.media.status,
+      entryStatus: null,
+    })),
+  )
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(({ item }) => isShown(item)),
+    }))
+    .filter((section) => section.items.length > 0);
+  const shown = items.filter(isShown);
+
   return {
     title: list.title,
     description: list.description,
@@ -442,12 +476,9 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
     cutoff: list.cutoff,
     // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
     ownerName: list.owner.name || list.owner.username || "un membre",
-    items: list.items.map(({ media }) => ({
-      media: compactFromMirror(media),
-      banner: media.bannerImage,
-      unit: media.type === "ANIME" ? "episode" : "chapitre",
-      total: media.type === "ANIME" ? media.episodes : media.chapters,
-    })),
+    items: shown,
+    sections,
+    hiddenAdultCount: items.length - shown.length,
   };
 }
 
