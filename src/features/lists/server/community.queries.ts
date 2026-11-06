@@ -1,5 +1,6 @@
 import "server-only";
 
+import { parseTiers, type Tier } from "@/features/lists/lib/tier-list";
 import type { ListKind } from "@/features/lists/schemas/lists.schema";
 import { visibleListsWhere } from "@/features/lists/server/list-visibility";
 import {
@@ -91,6 +92,8 @@ export type MediaListRef = {
   isMine: boolean;
   /** La place de l'œuvre dans un classement ; `null` hors classement. */
   rank: number | null;
+  /** Le palier de l'œuvre dans une tier list (« Sora · S ») ; `null` ailleurs ou en réserve. */
+  tier: Tier | null;
   /** Deux jaquettes au plus : la mini-carte n'en dessine pas davantage. */
   covers: ListCover[];
 };
@@ -114,11 +117,13 @@ export async function getListsWithMedia(
       id: true,
       title: true,
       kind: true,
+      tiers: true,
       ownerId: true,
       owner: { select: { name: true, username: true, image: true } },
       items: {
         orderBy: { rank: "asc" },
         select: {
+          tierIndex: true,
           media: {
             select: {
               id: true,
@@ -142,6 +147,7 @@ export async function getListsWithMedia(
       owner: row.owner,
       isMine: row.ownerId === viewerId,
       rank: row.kind === "RANKING" && position >= 0 ? position + 1 : null,
+      tier: tierOf(row, position),
       covers: row.items
         .map(({ media }) => media)
         .filter((media) => includeAdult || !media.isAdult)
@@ -159,4 +165,18 @@ export async function getListsWithMedia(
     ...refs.filter((ref) => ref.isMine),
     ...refs.filter((ref) => !ref.isMine),
   ];
+}
+
+/** Le palier où l'œuvre est rangée ; `null` hors tier list, en réserve, ou sur un palier disparu. */
+function tierOf(
+  row: {
+    kind: ListKind;
+    tiers: unknown;
+    items: { tierIndex: number | null }[];
+  },
+  position: number,
+): Tier | null {
+  const index = row.items[position]?.tierIndex;
+  if (row.kind !== "TIER" || index === null || index === undefined) return null;
+  return parseTiers(row.tiers)[index] ?? null;
 }

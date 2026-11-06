@@ -87,7 +87,9 @@ describe("getListsWithMedia", () => {
       kind: "SELECTION",
       ownerId: "sora",
       owner: { name: "Sora", username: "sora", image: null },
+      tiers: null,
       items: [10, 42, 7].map((id) => ({
+        tierIndex: id === 42 ? 1 : null,
         media: {
           id,
           isAdult: false,
@@ -122,5 +124,19 @@ describe("getListsWithMedia", () => {
       ["a", 2, false],
     ]);
     expect(refs[0]?.covers).toHaveLength(2);
+  });
+
+  it("donne le palier dans une tier list, à la place du rang", async () => {
+    db.list.findMany.mockResolvedValue([
+      row({ id: "t", kind: "TIER" }),
+      row({ id: "s" }),
+    ]);
+
+    const refs = await getListsWithMedia(42, { includeAdult: false });
+
+    expect(refs.map((r) => [r.id, r.rank, r.tier?.label ?? null])).toEqual([
+      ["t", null, "A"],
+      ["s", null, null],
+    ]);
   });
 });

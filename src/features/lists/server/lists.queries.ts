@@ -8,6 +8,11 @@ import {
   listSections,
   sectionCounts,
 } from "@/features/lists/lib/list-sections";
+import {
+  groupByTier,
+  parseTiers,
+  type Tier,
+} from "@/features/lists/lib/tier-list";
 import type {
   ListKind,
   ListMembership,
@@ -88,7 +93,12 @@ export type ListSummary = {
   likeCount: number;
   likedByMe: boolean;
   owner: { name: string; username: string; image: string | null };
+  /** Une tier list montre ses trois premiers paliers à la place de la mosaïque (maquette D). */
+  tierPreview: { tier: Tier; covers: ListCover[] }[] | null;
 };
+
+/** Trois paliers sur la carte, quatre jaquettes chacun : la hauteur de la mosaïque, à peu près. */
+const TIER_PREVIEW_ROWS = 3;
 
 /** Quatre jaquettes par carte : c'est la largeur d'une carte, et ce que la mosaïque dessine. */
 const COVERS_PER_CARD = 4;
@@ -156,6 +166,7 @@ export function summarySelect(viewerId: string) {
     description: true,
     kind: true,
     cutoff: true,
+    tiers: true,
     shareToken: true,
     visibility: true,
     owner: { select: { name: true, username: true, image: true } },
@@ -181,6 +192,7 @@ export async function summarizeLists(
     orderBy: { rank: "asc" },
     select: {
       listId: true,
+      tierIndex: true,
       media: {
         select: {
           id: true,
@@ -203,17 +215,33 @@ export async function summarizeLists(
   });
   const entryStatus = new Map(entries.map((e) => [e.mediaId, e.status]));
 
+  const toCover = (media: (typeof items)[number]["media"]): ListCover => ({
+    mediaId: media.id,
+    cover: media.coverImage,
+    title: media.titleRomaji ?? media.titleEnglish ?? "",
+  });
+  const shown = (media: (typeof items)[number]["media"]) =>
+    includeAdult || !media.isAdult;
+
   return rows.map((row) => {
+    const own = items.filter(({ listId }) => listId === row.id);
+    /*
+      Une tier list se lit palier par palier : sa carte prend ses premiers paliers, et ses
+      jaquettes suivent l'ordre S, A, B… puis la réserve, pas le rang brut.
+    */
+    const tiered =
+      row.kind === "TIER" ? groupByTier(parseTiers(row.tiers), own) : null;
+    const ordered = tiered
+      ? [...tiered.rows.flatMap((tierRow) => tierRow.items), ...tiered.reserve]
+      : own;
     const sections = listSections(
       row.kind,
       row.cutoff,
-      items
-        .filter(({ listId }) => listId === row.id)
-        .map(({ media }) => ({
-          item: media,
-          mediaStatus: media.status,
-          entryStatus: entryStatus.get(media.id) ?? null,
-        })),
+      ordered.map(({ media }) => ({
+        item: media,
+        mediaStatus: media.status,
+        entryStatus: entryStatus.get(media.id) ?? null,
+      })),
     );
 
     return {
@@ -232,7 +260,18 @@ export async function summarizeLists(
       countsLine: listCountsLine(row.kind, row.cutoff, {
         total: row._count.items,
         ...sectionCounts(sections),
+        placed: tiered ? own.length - tiered.reserve.length : undefined,
       }),
+      tierPreview: tiered
+        ? tiered.rows.slice(0, TIER_PREVIEW_ROWS).map((tierRow) => ({
+            tier: tierRow.tier,
+            covers: tierRow.items
+              .map(({ media }) => media)
+              .filter(shown)
+              .slice(0, COVERS_PER_CARD)
+              .map(toCover),
+          }))
+        : null,
       /*
         Le titre sert d'`alt` : le romaji d'abord, l'anglais en repli. Ce n'est pas `mediaTitle`,
         qui honore la préférence de langue — sans objet sur une vignette de 40 px qu'on ne lit pas.
@@ -240,13 +279,9 @@ export async function summarizeLists(
       covers: sections
         .flatMap(({ items: sectionItems }) => sectionItems)
         .map(({ item }) => item)
-        .filter((media) => includeAdult || !media.isAdult)
+        .filter(shown)
         .slice(0, COVERS_PER_CARD)
-        .map((media) => ({
-          mediaId: media.id,
-          cover: media.coverImage,
-          title: media.titleRomaji ?? media.titleEnglish ?? "",
-        })),
+        .map(toCover),
     };
   });
 }
@@ -254,6 +289,8 @@ export async function summarizeLists(
 /** Une œuvre d'une liste, dans la forme que `MediaCard` et la fenêtre d'édition rapide attendent. */
 export type ListDetailItem = {
   media: MediaCompact;
+  /** Le palier d'une tier list ; `null` = la réserve, et toujours `null` hors de ce genre. */
+  tierIndex: number | null;
   /** La bannière du miroir — l'en-tête de la fenêtre d'édition rapide. `null` sur la plupart des mangas. */
   banner: string | null;
   unit: EntryUnit;
@@ -289,8 +326,17 @@ export type ListDetail = {
   forkCount: number;
   /** L'original d'une copie, s'il existe encore et m'est visible ; sinon la mention disparaît. */
   forkedFrom: { id: string; title: string; ownerName: string } | null;
+  /** Les paliers d'une tier list ; `null` hors de ce genre. */
+  tiers: Tier[] | null;
+  /** « Ma version de *Titre* · Pseudo », tant que l'original existe et m'est visible. */
+  versionOf: { id: string; title: string; ownerName: string } | null;
+  /** Les versions visibles du lecteur : leur nombre, et trois auteurs pour les avatars. */
+  versions: { count: number; owners: { name: string; image: string | null }[] };
   items: ListDetailItem[];
 };
+
+/** Trois avatars au plus à côté de « N versions » : au-delà, le nombre dit le reste. */
+const VERSION_AVATARS = 3;
 
 /**
  * Une liste et son contenu, **dans son ordre**.
@@ -327,23 +373,32 @@ export const getList = cache(async function getList(
       description: true,
       kind: true,
       cutoff: true,
+      tiers: true,
       shareToken: true,
       visibility: true,
       ownerId: true,
       forkedFromId: true,
+      versionOfId: true,
       owner: { select: { name: true, username: true } },
       _count: {
         select: {
           items: true,
           likes: true,
           forks: { where: visibleListsWhere(viewerId) },
+          versions: { where: visibleListsWhere(viewerId) },
         },
+      },
+      versions: {
+        where: visibleListsWhere(viewerId),
+        orderBy: { createdAt: "desc" },
+        take: VERSION_AVATARS,
+        select: { owner: { select: { name: true, image: true } } },
       },
       likes: { where: { userId: viewerId }, select: { userId: true } },
       items: {
         orderBy: { rank: "asc" },
         ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
-        select: { media: { select: MIRRORED_MEDIA_SELECT } },
+        select: { tierIndex: true, media: { select: MIRRORED_MEDIA_SELECT } },
       },
     },
   });
@@ -352,12 +407,17 @@ export const getList = cache(async function getList(
 
   const isOwner = list.ownerId === viewerId;
   // Une seconde lecture plutôt qu'un filtre en mémoire : la règle de visibilité n'existe qu'ici (D64).
-  const original = list.forkedFromId
-    ? await prisma.list.findFirst({
-        where: { id: list.forkedFromId, ...visibleListsWhere(viewerId) },
-        select: { id: true, title: true, owner: { select: { name: true } } },
-      })
-    : null;
+  const related = (id: string | null) =>
+    id
+      ? prisma.list.findFirst({
+          where: { id, ...visibleListsWhere(viewerId) },
+          select: { id: true, title: true, owner: { select: { name: true } } },
+        })
+      : null;
+  const [original, versionOf] = await Promise.all([
+    related(list.forkedFromId),
+    related(list.versionOfId),
+  ]);
 
   return {
     id: list.id,
@@ -380,8 +440,21 @@ export const getList = cache(async function getList(
           ownerName: original.owner.name,
         }
       : null,
-    items: list.items.map(({ media }) => ({
+    tiers: list.kind === "TIER" ? parseTiers(list.tiers) : null,
+    versionOf: versionOf
+      ? {
+          id: versionOf.id,
+          title: versionOf.title,
+          ownerName: versionOf.owner.name,
+        }
+      : null,
+    versions: {
+      count: list._count.versions,
+      owners: list.versions.map(({ owner }) => owner),
+    },
+    items: list.items.map(({ tierIndex, media }) => ({
       media: compactFromMirror(media),
+      tierIndex: list.kind === "TIER" ? tierIndex : null,
       banner: media.bannerImage,
       /*
         L'unité suit le type de l'œuvre, comme partout ailleurs : un anime se compte en épisodes,
@@ -449,6 +522,8 @@ export type SharedList = {
   description: string | null;
   kind: ListKind;
   cutoff: number | null;
+  /** Les paliers d'une tier list ; `null` hors de ce genre. */
+  tiers: Tier[] | null;
   /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
   ownerName: string;
   /** Sans les œuvres 18+, qu'un lien ne montre jamais (D64). */
@@ -491,18 +566,20 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
       description: true,
       kind: true,
       cutoff: true,
+      tiers: true,
       owner: { select: { name: true, username: true } },
       items: {
         orderBy: { rank: "asc" },
-        select: { media: { select: MIRRORED_MEDIA_SELECT } },
+        select: { tierIndex: true, media: { select: MIRRORED_MEDIA_SELECT } },
       },
     },
   });
 
   if (!list) return null;
 
-  const items: ListDetailItem[] = list.items.map(({ media }) => ({
+  const items: ListDetailItem[] = list.items.map(({ tierIndex, media }) => ({
     media: compactFromMirror(media),
+    tierIndex: list.kind === "TIER" ? tierIndex : null,
     banner: media.bannerImage,
     unit: media.type === "ANIME" ? "episode" : "chapitre",
     total: media.type === "ANIME" ? media.episodes : media.chapters,
@@ -534,6 +611,7 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
     description: list.description,
     kind: list.kind,
     cutoff: list.cutoff,
+    tiers: list.kind === "TIER" ? parseTiers(list.tiers) : null,
     // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
     ownerName: list.owner.name || list.owner.username || "un membre",
     items: shown,
