@@ -15,8 +15,8 @@ import { signIn } from "@/lib/auth/client";
 
 /**
  * Les trois fournisseurs, **tous en contour** : aucun n'est l'action principale, c'est la personne
- * qui sait lequel est le sien. Celui de la dernière fois porte la pastille « Dernière », à cheval
- * sur le bord haut du bouton (D56, d'après Neon).
+ * qui sait lequel est le sien. Celui de la dernière fois porte la pastille « Dernière », posée
+ * sur le coin haut droit du bouton (D56).
  *
  * L'état de chargement ne revient pas à `false` en cas de succès : la page part chez le fournisseur.
  */
@@ -68,7 +68,7 @@ export function ProviderButtons({
             Continuer avec {PROVIDER_LABELS[provider]}
           </Button>
           {lastUsed === provider ? (
-            <Badge className="pointer-events-none absolute -top-2.5 right-1.5">
+            <Badge className="pointer-events-none absolute top-0 right-0 h-6 translate-x-2 -translate-y-1/2 px-2.5 text-[13px]">
               Dernière
             </Badge>
           ) : null}
