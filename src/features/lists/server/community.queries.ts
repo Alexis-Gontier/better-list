@@ -31,13 +31,16 @@ export async function getCommunityLists({
   includeAdult,
   sort,
   page,
+  pageSize = COMMUNITY_PAGE_SIZE,
 }: {
   includeAdult: boolean;
   sort: CommunitySort;
   page: number;
+  /** L'accueil n'en veut que huit (§5.1) ; la page en prend `COMMUNITY_PAGE_SIZE` par page. */
+  pageSize?: number;
 }): Promise<{ lists: ListSummary[]; hasMore: boolean }> {
   const viewerId = await currentUserId();
-  const take = page * COMMUNITY_PAGE_SIZE;
+  const take = page * pageSize;
 
   const rows = await prisma.list.findMany({
     where: communityWhere(viewerId),

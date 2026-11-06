@@ -96,7 +96,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | Route | Rôle | État |
 | --- | --- | --- |
 | `/` (anonyme) · `/welcome` | La landing, servie à `/` par réécriture du proxy (D58, D61) : bannière du moment, tendances, ce que l'outil permet, connexion | livré |
-| `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, saison, recommandations | livré |
+| `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, listes de la communauté (D66), saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |

@@ -66,6 +66,17 @@ describe("getCommunityLists", () => {
 
     expect(lastWhere().take).toBe(2 * COMMUNITY_PAGE_SIZE + 1);
   });
+
+  it("prend la taille de page demandée, celle de l'accueil", async () => {
+    await getCommunityLists({
+      includeAdult: false,
+      sort: "aimees",
+      page: 1,
+      pageSize: 8,
+    });
+
+    expect(lastWhere().take).toBe(9);
+  });
 });
 
 describe("getListsWithMedia", () => {

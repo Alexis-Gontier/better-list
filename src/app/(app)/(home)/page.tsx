@@ -11,6 +11,7 @@ import {
 import { HomeRail } from "@/app/(app)/(home)/_components/home-rail";
 import { SpotlightCarousel } from "@/app/(app)/(home)/_components/spotlight-carousel";
 import {
+  loadCommunityLists,
   loadRecommendations,
   loadSeason,
   loadSeasonEntries,
@@ -29,6 +30,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { CommunityListCard } from "@/features/lists/components/community-list-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import { serializeSearchFilters } from "@/features/media/lib/search-params";
 import { CatalogueMediaCard } from "@/features/tracking/components/catalogue-media-card";
@@ -47,7 +49,7 @@ export const metadata: Metadata = {
  *    que je suis déjà.
  * 2. En cours, **ce qui vient de sortir en tête**.
  * 3. — un trait —
- * 4. Tendances, puis Cette saison.
+ * 4. Tendances, les listes de la communauté, puis Cette saison.
  * 5. Recommandé pour vous, tiré de ce que je regarde en ce moment.
  *
  * **Toutes les jaquettes sont la `MediaCard` du catalogue**, aux paliers de `CatalogueGrid` : une
@@ -115,6 +117,10 @@ export default function HomePage() {
 
       <Suspense fallback={<RailSkeleton />}>
         <TrendingRail />
+      </Suspense>
+
+      <Suspense fallback={<CommunityRailSkeleton />}>
+        <CommunityListsRail />
       </Suspense>
 
       <Suspense fallback={<RailSkeleton />}>
@@ -265,6 +271,34 @@ async function TrendingRail() {
   );
 }
 
+/**
+ * « Listes de la communauté » (lot 4, §5.1) — **sous les tendances**, à la demande d'Alexis : la
+ * découverte du catalogue, puis celle du cercle. Les huit listes les plus aimées des autres, la
+ * carte de `/lists/community`, et le titre mène à la page entière. Cachée s'il n'y en a aucune :
+ * l'accueil n'invite pas à une Communauté vide, `/lists` le fait.
+ */
+async function CommunityListsRail() {
+  const lists = await loadCommunityLists();
+  if (lists.length === 0) return null;
+
+  return (
+    <HomeRail
+      href={routes.lists.community}
+      layout="wide"
+      title="Listes de la communauté"
+    >
+      {lists.map((list) => (
+        <CommunityListCard
+          headingLevel="h3"
+          key={list.id}
+          list={list}
+          stacked
+        />
+      ))}
+    </HomeRail>
+  );
+}
+
 async function SeasonRail() {
   const [{ seasonal, season, titleLanguage }, entries] = await Promise.all([
     loadSeason(),
@@ -326,6 +360,13 @@ async function RecommendationsRail() {
 // --- Squelettes --------------------------------------------------------------------
 
 const RAIL_SKELETON_KEYS = Array.from({ length: 7 }, (_, i) => `rail-${i}`);
+
+const COMMUNITY_SKELETON_KEYS = Array.from(
+  { length: 4 },
+  (_, i) => `liste-${i}`,
+);
+
+const MOSAIC_SKELETON_KEYS = Array.from({ length: 4 }, (_, i) => `case-${i}`);
 
 /** Les points de la une, moins celui de la diapositive courante, qui est plus large. */
 const DOT_SKELETON_KEYS = Array.from(
@@ -403,6 +444,47 @@ function RailSkeleton({ details = false }: { details?: boolean }) {
             <div className="flex flex-col gap-0.5">
               <Skeleton className="h-5 w-4/5" />
               {details ? <Skeleton className="h-4 w-3/5" /> : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Le double de « Listes de la communauté » : l'en-tête de `RailSkeleton`, puis les cartes debout de
+ * `CommunityListCard` à la largeur fixe du gabarit `wide` de `HomeRail` (300 px, 340 dès `sm`). Les
+ * quatre cases de la mosaïque gardent leur 2:3, puis le titre (24 px) et la ligne de l'auteur
+ * (`pt-2` + l'avatar de 20 px). Quatre cartes : la dernière dépasse, comme dans la rangée.
+ */
+function CommunityRailSkeleton() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-7 w-64" />
+        <div className="hidden shrink-0 items-center gap-1 sm:flex">
+          <Skeleton className="size-9" />
+          <Skeleton className="size-9" />
+        </div>
+      </div>
+
+      <div className="flex gap-4 overflow-hidden">
+        {COMMUNITY_SKELETON_KEYS.map((key) => (
+          <div
+            className="flex w-75 shrink-0 flex-col gap-3 rounded-lg border p-3 sm:w-85"
+            key={key}
+          >
+            <div className="flex gap-1.5">
+              {MOSAIC_SKELETON_KEYS.map((cell) => (
+                <Skeleton className="aspect-2/3 flex-1 rounded-sm" key={cell} />
+              ))}
+            </div>
+            <div className="flex flex-col gap-1">
+              <Skeleton className="h-6 w-2/3" />
+              <div className="pt-2">
+                <Skeleton className="h-5 w-3/5" />
+              </div>
             </div>
           </div>
         ))}

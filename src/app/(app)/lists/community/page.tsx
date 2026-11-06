@@ -8,10 +8,10 @@ import {
 } from "@/app/(app)/lists/_components/lists-grid";
 import { ListsHeader } from "@/app/(app)/lists/_components/lists-header";
 import { CommunityEmpty } from "@/app/(app)/lists/community/_components/community-empty";
-import { CommunityListCard } from "@/app/(app)/lists/community/_components/community-list-card";
 import { CommunitySort } from "@/app/(app)/lists/community/_components/community-sort";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
+import { CommunityListCard } from "@/features/lists/components/community-list-card";
 import { getCommunityLists } from "@/features/lists/server/community.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 
