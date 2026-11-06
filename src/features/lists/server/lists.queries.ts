@@ -330,13 +330,10 @@ export type ListDetail = {
   tiers: Tier[] | null;
   /** « Ma version de *Titre* · Pseudo », tant que l'original existe et m'est visible. */
   versionOf: { id: string; title: string; ownerName: string } | null;
-  /** Les versions visibles du lecteur : leur nombre, et trois auteurs pour les avatars. */
-  versions: { count: number; owners: { name: string; image: string | null }[] };
+  /** Les versions de la tier list visibles du lecteur (« 3 versions », maquette A). */
+  versions: number;
   items: ListDetailItem[];
 };
-
-/** Trois avatars au plus à côté de « N versions » : au-delà, le nombre dit le reste. */
-const VERSION_AVATARS = 3;
 
 /**
  * Une liste et son contenu, **dans son ordre**.
@@ -387,12 +384,6 @@ export const getList = cache(async function getList(
           forks: { where: visibleListsWhere(viewerId) },
           versions: { where: visibleListsWhere(viewerId) },
         },
-      },
-      versions: {
-        where: visibleListsWhere(viewerId),
-        orderBy: { createdAt: "desc" },
-        take: VERSION_AVATARS,
-        select: { owner: { select: { name: true, image: true } } },
       },
       likes: { where: { userId: viewerId }, select: { userId: true } },
       items: {
@@ -448,10 +439,7 @@ export const getList = cache(async function getList(
           ownerName: versionOf.owner.name,
         }
       : null,
-    versions: {
-      count: list._count.versions,
-      owners: list.versions.map(({ owner }) => owner),
-    },
+    versions: list._count.versions,
     items: list.items.map(({ tierIndex, media }) => ({
       media: compactFromMirror(media),
       tierIndex: list.kind === "TIER" ? tierIndex : null,
