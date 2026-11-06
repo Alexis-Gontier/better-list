@@ -58,6 +58,12 @@ export async function getCommunityLists({
   };
 }
 
+/** Le nombre que porte l'onglet « Mes listes ». */
+export async function countMyLists(): Promise<number> {
+  const viewerId = await currentUserId();
+  return prisma.list.count({ where: { ownerId: viewerId } });
+}
+
 /** Le nombre que porte l'onglet « Communauté ». */
 export async function countCommunityLists(): Promise<number> {
   const viewerId = await currentUserId();
