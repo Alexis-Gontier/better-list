@@ -6,7 +6,10 @@ import { routes } from "@/config/routes";
 import { forkData, readyNotifiedAtFor } from "@/features/lists/lib/list-fork";
 import { visibleListsWhere } from "@/features/lists/server/list-visibility";
 import { shouldNotify } from "@/features/social/lib/notification-rules";
-import { listTargetSchema } from "@/features/social/schemas/social.schema";
+import {
+  forkListSchema,
+  listTargetSchema,
+} from "@/features/social/schemas/social.schema";
 import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
@@ -75,10 +78,14 @@ export const toggleListLike = authActionClient
     return { status: "ok" as const, liked };
   });
 
+/**
+ * Copier la liste d'un autre, ou **faire sa version** d'une tier list (`mode: "version"`, §6) :
+ * mêmes œuvres et paliers, tout à classer, et la notification `LIST_VERSIONED` à l'auteur.
+ */
 export const forkList = authActionClient
   .metadata({ actionName: "forkList" })
-  .inputSchema(listTargetSchema)
-  .action(async ({ parsedInput: { listId }, ctx }) => {
+  .inputSchema(forkListSchema)
+  .action(async ({ parsedInput: { listId, mode }, ctx }) => {
     const source = await prisma.list.findFirst({
       where: othersVisibleList(listId, ctx.user.id),
       select: {
@@ -88,19 +95,24 @@ export const forkList = authActionClient
         description: true,
         kind: true,
         cutoff: true,
+        tiers: true,
         items: {
           orderBy: { rank: "asc" },
           select: {
             mediaId: true,
             rank: true,
+            tierIndex: true,
             media: { select: { status: true } },
           },
         },
       },
     });
-    if (!source) return UNAVAILABLE;
+    // Une version n'a de sens que pour une tier list : ailleurs, il n'y a rien à classer soi-même.
+    if (!source || (mode === "version" && source.kind !== "TIER")) {
+      return UNAVAILABLE;
+    }
 
-    const { list, items } = forkData(source, ctx.user.id);
+    const { list, items } = forkData(source, ctx.user.id, mode);
     const now = new Date();
     const status = new Map(
       source.items.map((i) => [i.mediaId, i.media.status]),
@@ -121,7 +133,7 @@ export const forkList = authActionClient
       });
       await tx.notification.create({
         data: {
-          type: "LIST_FORKED",
+          type: mode === "version" ? "LIST_VERSIONED" : "LIST_FORKED",
           actorId: ctx.user.id,
           recipientId: source.ownerId,
           listId,

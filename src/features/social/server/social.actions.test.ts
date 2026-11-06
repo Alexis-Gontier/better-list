@@ -136,6 +136,58 @@ describe("forkList", () => {
     });
   });
 
+  it("fait sa version d'une tier list : tout dans la réserve, et l'annonce comme telle", async () => {
+    db.list.findFirst.mockResolvedValue({
+      id: "tl",
+      ownerId: "sora",
+      title: "Isekai",
+      description: null,
+      kind: "TIER",
+      cutoff: null,
+      tiers: null,
+      items: [
+        {
+          mediaId: 7,
+          rank: "a0",
+          tierIndex: 0,
+          media: { status: "RELEASING" },
+        },
+      ],
+    });
+    db.list.create.mockResolvedValue({ id: "version" });
+
+    const result = await forkList({ listId: "tl", mode: "version" });
+
+    expect(result?.data).toEqual({ status: "ok", id: "version" });
+    expect(db.list.create.mock.calls[0]?.[0].data).toMatchObject({
+      versionOfId: "tl",
+      visibility: "PRIVATE",
+    });
+    expect(db.listItem.createMany.mock.calls[0]?.[0].data[0]).toMatchObject({
+      tierIndex: null,
+    });
+    expect(db.notification.create.mock.calls[0]?.[0].data.type).toBe(
+      "LIST_VERSIONED",
+    );
+  });
+
+  it("refuse de faire la version d'une liste qui n'est pas une tier list", async () => {
+    db.list.findFirst.mockResolvedValue({
+      id: "l1",
+      ownerId: "sora",
+      title: "Top",
+      description: null,
+      kind: "RANKING",
+      cutoff: 10,
+      items: [],
+    });
+
+    const result = await forkList({ listId: "l1", mode: "version" });
+
+    expect(result?.data).toEqual({ status: "unavailable" });
+    expect(db.list.create).not.toHaveBeenCalled();
+  });
+
   it("refuse une liste introuvable ou la sienne", async () => {
     db.list.findFirst.mockResolvedValue(null);
 
