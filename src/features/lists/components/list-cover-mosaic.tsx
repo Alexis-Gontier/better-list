@@ -27,8 +27,14 @@ const MOSAIC_SIZE = 4;
 export function ListCoverMosaic({
   covers,
   empty = false,
+  stacked = false,
 }: {
   covers: ListCover[];
+  /**
+   * La carte reste debout à toutes les tailles (rangée de l'accueil, D66) : les quatre jaquettes
+   * en ligne dès le téléphone, où la carte fait 300 px — 70 px par case, au-dessus du seuil.
+   */
+  stacked?: boolean;
   /**
    * La liste n'a aucune œuvre. Les cases gardent leur charpente (décision du 6 septembre 2026),
    * mais passent en pointillés : pleines et grises, on les prenait pour un chargement.
@@ -50,7 +56,13 @@ export function ListCoverMosaic({
       En 2×2 sur téléphone, où la carte se couche : quatre jaquettes en ligne tomberaient sous les
       40 px, le seuil où l'on reconnaît une illustration. En ligne dès `sm`, où la carte est debout.
     */
-    <div className="grid w-24 shrink-0 grid-cols-2 gap-1 sm:flex sm:w-auto sm:gap-1.5">
+    <div
+      className={
+        stacked
+          ? "flex gap-1.5"
+          : "grid w-24 shrink-0 grid-cols-2 gap-1 sm:flex sm:w-auto sm:gap-1.5"
+      }
+    >
       {cells.map(({ key, cover }) => (
         <div
           /*
@@ -77,7 +89,11 @@ export function ListCoverMosaic({
                 large. Sans ces tailles, `next/image` servirait une image pleine largeur de fenêtre
                 pour une vignette de 90 px.
               */
-              sizes="(min-width: 1024px) 8vw, (min-width: 640px) 12vw, 48px"
+              sizes={
+                stacked
+                  ? "80px"
+                  : "(min-width: 1024px) 8vw, (min-width: 640px) 12vw, 48px"
+              }
               src={cover.cover}
               title={cover.title || undefined}
             />

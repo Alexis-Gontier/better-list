@@ -22,11 +22,16 @@ import {
  * la même gouttière `gap-x-3` (d'où `-ml-3` / `pl-3` au lieu des `4` par défaut du carrousel). Une
  * `MediaCard` a ainsi exactement la même largeur sur l'accueil que sur `/search` et `/library`.
  *
- * **Il y avait un second gabarit, `wide`, pour des cartes en largeur** : il n'avait qu'un appelant,
- * la rangée « Mes listes », et il est parti avec elle le 17 septembre 2026. Une variante de mise en
- * page que plus rien ne rend est une branche qu'on garde à jour sans jamais la voir.
+ * **`wide` porte des cartes de liste** (« Listes de la communauté », D66), **à largeur fixe** comme
+ * sur la maquette : 300 px sur téléphone, 340 dès `sm`, gouttière `gap-4`. La carte suivante dépasse
+ * toujours du bord — c'est elle qui dit qu'on peut faire glisser.
  */
-const ITEM_CLASS = "basis-1/3 pl-3 lg:basis-1/7";
+const ITEM_CLASS = {
+  covers: "basis-1/3 pl-3 lg:basis-1/7",
+  wide: "basis-[316px] pl-4 sm:basis-[356px]",
+} as const;
+
+const CONTENT_CLASS = { covers: "-ml-3", wide: "-ml-4" } as const;
 
 /**
  * Les flèches d'une rangée, **au style d'un bouton icône `outline` ordinaire**.
@@ -45,10 +50,12 @@ const RAIL_ARROW_PROPS = {
 export function HomeRail({
   title,
   href,
+  layout = "covers",
   children,
 }: {
   title: string;
   href?: string;
+  layout?: keyof typeof ITEM_CLASS;
   children: React.ReactNode;
 }) {
   return (
@@ -66,9 +73,9 @@ export function HomeRail({
         </div>
       </div>
 
-      <CarouselContent className="-ml-3">
+      <CarouselContent className={CONTENT_CLASS[layout]}>
         {Children.map(children, (child) => (
-          <CarouselItem className={ITEM_CLASS}>{child}</CarouselItem>
+          <CarouselItem className={ITEM_CLASS[layout]}>{child}</CarouselItem>
         ))}
       </CarouselContent>
     </Carousel>

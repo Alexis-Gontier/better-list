@@ -218,3 +218,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   « Activité » marque tout lu, d'où l'absence de « Tout marquer comme lu ». Le fournisseur d'une
   demande se lit à l'affichage (le hook de création ne le connaît pas), et trancher une demande la
   marque lue chez tous les administrateurs.
+- **D66** — L'accueil reste celui d'avant la refonte, plus une rangée (lot 4). « Listes de la
+  communauté » se pose **sous les tendances** : les huit listes « Membres » les plus aimées des
+  autres, la carte de `/lists/community` (montée dans `features/lists/components/`), le titre menant
+  à la page entière. Cachée sans liste, lecture de base seule, sa propre frontière `<Suspense>`. La
+  rangée défile en carrousel de cartes **debout et de largeur fixe** (`HomeRail` `layout="wide"` :
+  300 px sur téléphone, 340 au-delà), la suivante dépassant toujours du bord. Les onglets Anime,
+  Manga, Manhwa, Light novel et un « Top 10 » ont été maquettés puis écartés le 2 novembre 2026 :
+  ils rouvraient le second catalogue retiré le 14 septembre 2026, que `/search` fait mieux.

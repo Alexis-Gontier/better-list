@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { drawRecommendations } from "@/app/(app)/(home)/_lib/home-recommendations";
+import { getCommunityLists } from "@/features/lists/server/community.queries";
 import { currentSeason } from "@/features/media/lib/media-season";
 import {
   getMediaRecommendations,
@@ -160,6 +161,26 @@ export const loadSeasonEntries = cache(async () => {
   const { seasonal } = await loadSeason();
 
   return getLibraryEntriesFor(seasonal.map((media) => media.id));
+});
+
+// --- Listes de la communauté ------------------------------------------------------
+
+/** Huit cartes (§5.1) : trois écrans de carrousel au palier large, de quoi donner envie d'y aller. */
+const COMMUNITY_RAIL_COUNT = 8;
+
+/**
+ * Les listes les plus aimées des autres : **une lecture de base**, aucune requête AniList — la
+ * rangée tient même quand AniList est muette.
+ */
+export const loadCommunityLists = cache(async () => {
+  const { includeAdult } = await getPreferences();
+  const { lists } = await getCommunityLists({
+    includeAdult,
+    sort: "aimees",
+    page: 1,
+    pageSize: COMMUNITY_RAIL_COUNT,
+  });
+  return lists;
 });
 
 // --- Recommandé pour vous ----------------------------------------------------------
