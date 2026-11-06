@@ -20,6 +20,11 @@ import {
   loadProfileFilters,
   serializeProfileFilters,
 } from "@/app/(app)/u/[username]/_lib/profile-params";
+import {
+  canViewProfileSection,
+  isProfileHiddenFrom,
+  profileAdultFilter,
+} from "@/app/(app)/u/[username]/_lib/profile-privacy";
 import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -44,10 +49,6 @@ import {
   getPrivacyOf,
 } from "@/features/preferences/server/preferences.queries";
 import { formatDayKey } from "@/features/profile/lib/profile-activity";
-import {
-  canViewProfileSection,
-  profileAdultFilter,
-} from "@/features/profile/lib/profile-privacy";
 import {
   getProfileActivity,
   getProfileIdentity,
@@ -208,7 +209,6 @@ async function resolveProfile(
   return profile;
 }
 
-/** L'identité et les quatre chiffres. */
 /**
  * Le profil visé, **ses** réglages de confidentialité et le filtre 18+ qui en découle (D64) : le
  * 18+ n'apparaît à un autre que si le propriétaire le montre et que le lecteur l'accepte.
@@ -234,6 +234,7 @@ async function resolveProfileAccess(
   };
 }
 
+/** L'identité et les quatre chiffres. */
 async function ProfileIdentityBlock({
   params,
 }: {
@@ -270,26 +271,24 @@ async function ProfileIdentityBlock({
         tiles={stats?.tiles ?? null}
         username={profile.username}
       />
-      {profile.isOwner || privacy.profileVisible ? null : (
+      {isProfileHiddenFrom(profile, privacy) ? (
         <ProfileHiddenNotice name={profile.name} />
-      )}
+      ) : null}
       <Separator />
     </div>
   );
 }
 
-/** Le calendrier d'activité, et la série de jours qui le commente. */
 /**
  * Les listes du membre, **toujours montrées** même quand le profil est caché (D64) : seules celles
- * qu'il ouvre aux membres, par `visibleListsWhere`. Le filtre 18+ est celui du lecteur.
+ * qu'il ouvre aux membres, par `visibleListsWhere`, et le 18+ par `profileAdultFilter`.
  */
 async function ProfileListsBlock({
   params,
 }: {
   params: PageProps<"/u/[username]">["params"];
 }) {
-  const profile = await resolveProfile(params);
-  const { includeAdult } = await getPreferences();
+  const { profile, includeAdult } = await resolveProfileAccess(params);
   const lists = await getLists({ includeAdult, ownerId: profile.id });
 
   if (lists.length === 0 && !profile.isOwner) return null;
@@ -324,6 +323,7 @@ async function ProfileListsBlock({
   );
 }
 
+/** Le calendrier d'activité, et la série de jours qui le commente. */
 async function ProfileActivityBlock({
   params,
 }: {

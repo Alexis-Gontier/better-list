@@ -19,9 +19,17 @@ export function canViewProfileSection(
   return privacy.profileVisible && privacy[SECTION_SETTING[section]];
 }
 
+/** L'encart « profil caché » : un autre membre, devant un profil que son propriétaire a fermé. */
+export function isProfileHiddenFrom(
+  viewer: { isOwner: boolean },
+  privacy: ProfilePrivacy,
+) {
+  return !viewer.isOwner && !privacy.profileVisible;
+}
+
 /**
  * L'`includeAdult` des lectures d'un profil. Pour un autre, le 18+ n'apparaît que si le
- * propriétaire le montre **et** si le lecteur l'accepte (D7) : compteurs compris.
+ * propriétaire le montre **et** si le lecteur l'accepte (D64) : compteurs compris.
  */
 export function profileAdultFilter({
   isOwner,

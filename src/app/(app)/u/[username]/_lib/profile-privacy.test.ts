@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-
-import { DEFAULT_PREFERENCES } from "@/features/preferences/schemas/preferences.schema";
 import {
   canViewProfileSection,
   profileAdultFilter,
-} from "@/features/profile/lib/profile-privacy";
+} from "@/app/(app)/u/[username]/_lib/profile-privacy";
+import { DEFAULT_PREFERENCES } from "@/features/preferences/schemas/preferences.schema";
 
 const open = { ...DEFAULT_PREFERENCES };
 const hidden = { ...DEFAULT_PREFERENCES, profileVisible: false };
