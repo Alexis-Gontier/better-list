@@ -47,6 +47,11 @@ export const routes = {
 
   lists: {
     root: "/lists",
+    /** Les listes « Membres » des autres comptes. Segment statique, prioritaire sur `[id]` (précise D6). */
+    community: "/lists/community",
+    /** La Communauté triée et paginée par l'URL : « Voir plus » est un lien, pas un état client. */
+    communityPage: (tri: "aimees" | "recentes", page = 1) =>
+      `/lists/community?tri=${tri}${page > 1 ? `&page=${page}` : ""}` as const,
     /**
      * Une liste s'adresse par son `id`, pas par un slug tiré du titre : renommer ne doit rien
      * casser, et l'identifiant est déjà ce que portent les mutations.
