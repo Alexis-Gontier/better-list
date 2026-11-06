@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as z from "zod";
-
 import { MediaCharacters } from "@/app/(app)/media/[id]/_components/media-characters";
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
+import {
+  MediaInLists,
+  MediaInListsSkeleton,
+} from "@/app/(app)/media/[id]/_components/media-in-lists";
 import { MediaOverview } from "@/app/(app)/media/[id]/_components/media-overview";
 import { MediaRecommendations } from "@/app/(app)/media/[id]/_components/media-recommendations";
 import { MediaRelations } from "@/app/(app)/media/[id]/_components/media-relations";
@@ -346,12 +349,18 @@ async function MediaTabPanel({
 }) {
   if (active === "apercu") {
     return (
-      <MediaOverview
-        includeAdult={includeAdult}
-        media={media}
-        tabHref={tabHref}
-        titleLanguage={titleLanguage}
-      />
+      <div className="flex flex-col gap-8">
+        <MediaOverview
+          includeAdult={includeAdult}
+          media={media}
+          tabHref={tabHref}
+          titleLanguage={titleLanguage}
+        />
+        {/* La base seule, jamais AniList : sa propre frontière, l'aperçu ne l'attend pas (D29). */}
+        <Suspense fallback={<MediaInListsSkeleton />}>
+          <MediaInLists includeAdult={includeAdult} mediaId={media.id} />
+        </Suspense>
+      </div>
     );
   }
 
