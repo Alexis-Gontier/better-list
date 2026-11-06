@@ -74,23 +74,32 @@ test("ranger une œuvre dans un palier au clavier", async ({ page }) => {
       [`e2e-tier-${Date.now()}`, listId, MEDIA_ID],
     ),
   );
-  await page.reload();
+  // L'adresse propre, pas un rechargement : celle de la création porte `?ajouter=1`, qui rouvrirait
+  // la fenêtre d'ajout si la fermeture n'a pas encore réécrit l'URL.
+  await page.goto(routes.lists.detail(listId ?? ""));
 
   const reserve = page.getByRole("region", { name: /Pas encore classées/ });
   const cover = reserve.getByRole("button", { name: TITLE });
   await expect(cover).toBeVisible();
 
-  // Espace saisit, la flèche monte d'une rangée (le dernier palier), Espace pose.
-  await cover.focus();
-  await page.keyboard.press("Space");
-  // La jaquette saisie se dit « pressée » : avant, la flèche ne déplacerait rien.
-  await expect(
-    page.getByRole("button", { name: TITLE, pressed: true }),
-  ).toBeVisible();
-  await page.keyboard.press("ArrowUp");
-  await expect(
-    page.getByRole("status").filter({ hasText: "palier D" }),
-  ).toBeAttached();
+  /*
+    Espace saisit, la flèche monte d'une rangée (le dernier palier), Espace pose. Deux attentes que
+    rien n'annonce : l'hydratation (avant elle, Espace ne saisit rien) et la mesure des rangées par
+    dnd-kit (avant elle, la flèche ne mène nulle part). D'où la boucle : Échap annule une saisie à
+    moitié faite, et chaque tentative repart de la réserve.
+  */
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await cover.focus();
+    await page.keyboard.press("Space");
+    await expect(
+      page.getByRole("button", { name: TITLE, pressed: true }),
+    ).toBeVisible({ timeout: 1_000 });
+    await page.keyboard.press("ArrowUp");
+    await expect(
+      page.getByRole("status").filter({ hasText: "palier D" }),
+    ).toBeAttached({ timeout: 1_000 });
+  }).toPass({ timeout: 20_000 });
   await page.keyboard.press("Space");
 
   const lastTier = page.getByRole("region", { name: "Palier D" });

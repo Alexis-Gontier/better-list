@@ -434,21 +434,26 @@ function CoverMenu({
   );
 }
 
-/** Ce qu'un lecteur d'écran annonce : le palier et la place, pas un identifiant. */
+/**
+ * Ce qu'un lecteur d'écran annonce : le palier visé, pas un identifiant.
+ *
+ * **On nomme la cible (`over`), pas la place de l'œuvre** : celle-ci est lue dans l'état du rendu,
+ * qui ne contient pas encore le déplacement en cours — l'annonce disait « réserve » d'une œuvre
+ * déjà passée en D. La cible est soit une rangée (son identifiant), soit une jaquette de la rangée.
+ */
 function announcementsFor(columns: Columns, tiers: Tier[]): Announcements {
-  const where = (id: UniqueIdentifier) => {
-    for (const [key, items] of Object.entries(columns)) {
-      const index = items.findIndex((i) => i.mediaId === id);
-      if (index !== -1) {
-        const tierIndex = tierIndexOf(key);
-        const name =
-          tierIndex === null
-            ? "la réserve"
-            : `le palier ${tiers[tierIndex]?.label ?? ""}`;
-        return `${name}, position ${index + 1}`;
-      }
-    }
-    return "hors des paliers";
+  const zoneOf = (key: string) => {
+    const tierIndex = tierIndexOf(key);
+    return tierIndex === null
+      ? "la réserve"
+      : `le palier ${tiers[tierIndex]?.label ?? ""}`;
+  };
+  const zone = (id: UniqueIdentifier) => {
+    if (typeof id === "string" && id in columns) return zoneOf(id);
+    const key = Object.keys(columns).find((k) =>
+      columns[k]?.some((i) => i.mediaId === id),
+    );
+    return key ? zoneOf(key) : "hors des paliers";
   };
   const title = (id: UniqueIdentifier) =>
     Object.values(columns)
@@ -457,10 +462,13 @@ function announcementsFor(columns: Columns, tiers: Tier[]): Announcements {
 
   return {
     onDragStart: ({ active }) =>
-      `${title(active.id)} saisie, dans ${where(active.id)}.`,
-    onDragOver: ({ active }) => `Vers ${where(active.id)}.`,
-    onDragEnd: ({ active }) =>
-      `${title(active.id)} posée dans ${where(active.id)}.`,
+      `${title(active.id)} saisie, dans ${zone(active.id)}.`,
+    onDragOver: ({ over }) =>
+      over ? `Vers ${zone(over.id)}.` : "Hors des paliers.",
+    onDragEnd: ({ active, over }) =>
+      over
+        ? `${title(active.id)} posée dans ${zone(over.id)}.`
+        : "Déplacement abandonné.",
     onDragCancel: ({ active }) =>
       `Déplacement annulé, ${title(active.id)} reprend sa place.`,
   };
