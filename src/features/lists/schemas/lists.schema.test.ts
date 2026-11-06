@@ -20,7 +20,7 @@ describe("createListSchema", () => {
 
   it("refuse un genre inconnu", () => {
     expect(
-      createListSchema.safeParse({ title: "Pile", kind: "TIER" }).success,
+      createListSchema.safeParse({ title: "Pile", kind: "BRACKET" }).success,
     ).toBe(false);
   });
 

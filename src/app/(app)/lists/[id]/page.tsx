@@ -13,6 +13,7 @@ import { ForkButton } from "@/app/(app)/lists/[id]/_components/fork-button";
 import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
 import { ListProgress } from "@/app/(app)/lists/[id]/_components/list-progress";
 import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
+import { TierBoard } from "@/app/(app)/lists/[id]/_components/tier-board";
 import {
   CatalogueGrid,
   CatalogueGridSkeleton,
@@ -29,6 +30,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { TierRows } from "@/features/lists/components/tier-rows";
 import {
   itemCountLabel,
   listCountsLine,
@@ -148,7 +150,9 @@ async function ListDetail({
   if (!list) notFound();
 
   // La liste d'un autre membre se lit, elle ne se modifie pas (D64) : ni mode, ni ajout, ni menu.
-  const reordering = requestedReorder && list.isOwner;
+  // Une tier list se range dans ses paliers : elle n'a pas de mode « Réorganiser ».
+  const tiers = list.kind === "TIER" ? list.tiers : null;
+  const reordering = requestedReorder && list.isOwner && tiers === null;
 
   /*
     Le suivi arrive en **une** requête pour toute la page, sur l'index `[userId, mediaId]` — la
@@ -186,6 +190,9 @@ async function ListDetail({
   const countsLine = listCountsLine(list.kind, list.cutoff, {
     total: list.itemCount,
     ...counts,
+    placed: tiers
+      ? list.items.filter((item) => item.tierIndex !== null).length
+      : undefined,
   });
   const hiddenCount = list.itemCount - list.items.length;
   const progress = listProgress(list.kind, {
@@ -262,7 +269,22 @@ async function ListDetail({
                   {` · ${list.forkedFrom.ownerName}`}
                 </>
               ) : null}
+              {list.versionOf ? (
+                <>
+                  {" · Ma version de "}
+                  <Link
+                    className="text-foreground underline-offset-4 hover:underline"
+                    href={routes.lists.detail(list.versionOf.id)}
+                  >
+                    {list.versionOf.title}
+                  </Link>
+                  {` · ${list.versionOf.ownerName}`}
+                </>
+              ) : null}
               {list.forkCount > 0 ? ` · copiée ${list.forkCount} fois` : null}
+              {list.versions > 0
+                ? ` · ${list.versions} version${list.versions > 1 ? "s" : ""}`
+                : null}
               {/* On ne s'aime pas soi-même : le propriétaire lit son compteur, il n'a pas de bouton. */}
               {list.isOwner && list.likeCount > 0
                 ? ` · aimée ${list.likeCount} fois`
@@ -293,7 +315,7 @@ async function ListDetail({
                 />
               )}
               {/* Dès une œuvre : le mode sert aussi à retirer, pas seulement à réordonner. */}
-              {list.items.length > 0 ? (
+              {list.items.length > 0 && tiers === null ? (
                 <Button
                   asChild
                   className="max-sm:h-10"
@@ -327,7 +349,18 @@ async function ListDetail({
                 listId={list.id}
                 liked={list.likedByMe}
               />
-              <ForkButton listId={list.id} />
+              <ForkButton
+                listId={list.id}
+                tierList={
+                  tiers === null
+                    ? null
+                    : {
+                        title: list.title,
+                        itemCount: list.itemCount,
+                        ownerName: list.owner.name,
+                      }
+                }
+              />
             </div>
           )}
         </div>
@@ -335,7 +368,33 @@ async function ListDetail({
         <Separator />
       </div>
 
-      {list.items.length === 0 ? (
+      {tiers !== null && (list.isOwner || list.items.length > 0) ? (
+        (() => {
+          const covers = list.items.map((item) => ({
+            mediaId: item.media.id,
+            cover: item.media.coverImage?.large ?? null,
+            title: mediaTitle(item.media.title, titleLanguage),
+            tierIndex: item.tierIndex,
+          }));
+          /*
+            Le propriétaire édite, les autres lisent. La `key` remonte l'éditeur quand le serveur
+            renvoie autre chose : c'est ce qui le resynchronise après chaque geste, sans effet.
+          */
+          return list.isOwner ? (
+            <TierBoard
+              items={covers}
+              key={JSON.stringify([
+                tiers,
+                covers.map((c) => [c.mediaId, c.tierIndex]),
+              ])}
+              listId={list.id}
+              tiers={tiers}
+            />
+          ) : (
+            <TierRows items={covers} mediaHref={routes.media} tiers={tiers} />
+          );
+        })()
+      ) : list.items.length === 0 ? (
         <ListContentEmpty hiddenByPreference={list.itemCount > 0} />
       ) : reordering ? (
         <>

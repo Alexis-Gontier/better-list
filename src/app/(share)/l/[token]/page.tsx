@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { RankNumeral } from "@/components/shared/rank-numeral";
 import { Separator } from "@/components/ui/separator";
+import { TierRows } from "@/features/lists/components/tier-rows";
 import {
   listCountsLine,
   listHeadline,
@@ -115,6 +116,9 @@ export default async function SharedListPage({
               listCountsLine(list.kind, list.cutoff, {
                 total: list.items.length,
                 ...sectionCounts(sections),
+                placed: list.tiers
+                  ? list.items.filter((item) => item.tierIndex !== null).length
+                  : undefined,
               }),
             )}
           </p>
@@ -122,7 +126,30 @@ export default async function SharedListPage({
         <Separator />
       </div>
 
-      {list.items.length === 0 && hiddenAdult === 0 ? (
+      {list.tiers !== null ? (
+        /*
+          Une tier list partagée : ses rangées, sans réserve ni lien vers la fiche — le visiteur n'a
+          pas de session. Les 18+ sont déjà retirées par `getSharedList` (D64), et comptées dessous.
+        */
+        <div className="flex flex-col gap-4">
+          <TierRows
+            items={list.items.map((item) => ({
+              mediaId: item.media.id,
+              cover: item.media.coverImage?.large ?? null,
+              title: mediaTitle(item.media.title, "ROMAJI"),
+              tierIndex: item.tierIndex,
+            }))}
+            mediaHref={null}
+            tiers={list.tiers}
+          />
+          {hiddenAdult > 0 ? (
+            <p className="text-muted-foreground text-sm">
+              + {hiddenAdult} œuvre{hiddenAdult > 1 ? "s" : ""} réservée
+              {hiddenAdult > 1 ? "s" : ""} aux membres
+            </p>
+          ) : null}
+        </div>
+      ) : list.items.length === 0 && hiddenAdult === 0 ? (
         <p className="text-muted-foreground text-sm">
           Cette liste est vide pour l'instant.
         </p>

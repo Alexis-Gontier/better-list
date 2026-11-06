@@ -89,6 +89,18 @@ function MediaListMiniCard({ list }: { list: MediaListRef }) {
           />
           {list.isMine ? "Vous" : list.owner.name}
           {list.rank === null ? null : ` · #${list.rank}`}
+          {/* Dans une tier list, le palier tient lieu de rang (« Sora · S »), à son pastel. */}
+          {list.tier ? (
+            <>
+              {" · "}
+              <span
+                className="rounded-xs px-1 font-semibold text-black"
+                style={{ backgroundColor: list.tier.color }}
+              >
+                {list.tier.label}
+              </span>
+            </>
+          ) : null}
         </span>
       </div>
     </Link>

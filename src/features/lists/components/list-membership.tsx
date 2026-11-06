@@ -2,6 +2,7 @@
 
 import {
   HourglassIcon,
+  LayersIcon,
   type LucideIcon,
   PlusIcon,
   SparklesIcon,
@@ -171,6 +172,7 @@ const LIST_KIND_ICONS: Record<ListKind, LucideIcon> = {
   RANKING: TrophyIcon,
   WATCHLIST: TelescopeIcon,
   WAIT_FOR_END: HourglassIcon,
+  TIER: LayersIcon,
 };
 
 /**

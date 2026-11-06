@@ -1,5 +1,7 @@
 import * as z from "zod";
 
+import { MAX_TIERS, tierOpSchema } from "@/features/lists/lib/tier-list";
+
 /**
  * Formes des listes (docs/conception.md §4.4).
  *
@@ -31,12 +33,13 @@ const listTitleSchema = z
   .max(120);
 const listDescriptionSchema = z.string().trim().max(1000).nullable().optional();
 
-/** Les quatre genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
+/** Les cinq genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
 export const listKindSchema = z.enum([
   "SELECTION",
   "RANKING",
   "WATCHLIST",
   "WAIT_FOR_END",
+  "TIER",
 ]);
 export type ListKind = z.infer<typeof listKindSchema>;
 
@@ -138,4 +141,27 @@ export const reorderListItemSchema = z.object({
   listId: listIdSchema,
   mediaId: mediaIdSchema,
   toIndex: z.number().int().min(0).max(10_000),
+});
+
+/**
+ * Ranger une œuvre d'une tier list (lot 5, §6) : le palier visé (`null` = la réserve) et la place
+ * dans ce palier, après le déplacement. Comme `reorderListItemSchema`, une position et jamais un
+ * rang : le serveur relit le palier et calcule.
+ */
+export const moveTierItemSchema = z.object({
+  listId: listIdSchema,
+  mediaId: mediaIdSchema,
+  tierIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_TIERS - 1)
+    .nullable(),
+  toIndex: z.number().int().min(0).max(10_000),
+});
+
+/** Un geste du menu d'un palier ; les paliers eux-mêmes sont relus en base, jamais reçus. */
+export const updateTiersSchema = z.object({
+  listId: listIdSchema,
+  op: tierOpSchema,
 });

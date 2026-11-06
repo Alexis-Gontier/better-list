@@ -8,10 +8,20 @@ export const listTargetSchema = z.object({
   listId: z.string().min(1).max(64),
 });
 
+/** Copier une liste, ou faire sa version d'une tier list (lot 5, §6). */
+export const forkListSchema = listTargetSchema.extend({
+  mode: z.enum(["copy", "version"]).default("copy"),
+});
+
 /** Une ligne de l'onglet « Activité » de la cloche (maquette E). */
 export const activityItemSchema = z.object({
   id: z.string(),
-  type: z.enum(["LIST_LIKED", "LIST_FORKED", "SIGNUP_PENDING"]),
+  type: z.enum([
+    "LIST_LIKED",
+    "LIST_FORKED",
+    "LIST_VERSIONED",
+    "SIGNUP_PENDING",
+  ]),
   actorName: z.string(),
   actorImage: z.string().nullable(),
   listId: z.string().nullable(),

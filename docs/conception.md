@@ -58,15 +58,14 @@ Une table append-only (D15) : `PROGRESS`, `STATUS_CHANGED`, `SCORED`, `NOTE`, `R
 C'est elle qui porte le journal du profil, le calendrier d'activité et, plus tard, le récap annuel.
 Elle n'est pas rétroactive : ce qui n'a pas été journalisé est perdu.
 
-### 4.4 `List`, `ListItem`, `ListView`
+### 4.4 `List`, `ListItem`
 
 `List` : propriétaire, titre, description, `shareToken` (D16). `ListItem` : `rank` en index
-fractionnaire (réordonner ne modifie qu'une ligne), unique par `(listId, mediaId)`. Une tier list
-serait une **vue** posée sur une liste (`ListView`, `ListViewItem`), pas une liste de plus. Les
-vues sont reportées (D17). `List` et `ListItem` n'ont pas de journal.
+fractionnaire (réordonner ne modifie qu'une ligne), unique par `(listId, mediaId)`. `List` et
+`ListItem` n'ont pas de journal.
 
 Une liste a un **genre** (`kind`, D47) : sélection, classement (avec une ligne de coupe facultative,
-`cutoff`), à voir, quand c'est fini. Il ne change que l'affichage ; l'ordre reste `rank`. « Prête »
+`cutoff`), à voir, quand c'est fini, tier list (D67). Il ne change que l'affichage ; l'ordre reste `rank`. « Prête »
 (parution terminée ou annulée, lue dans le miroir) et « vue » (suivi `COMPLETED`) se calculent, rien
 n'est stocké (`features/lists/lib/list-sections.ts`). Le cron Discord annonce une œuvre d'une liste « Quand c'est fini » quand elle devient prête (D50).
 
@@ -74,6 +73,12 @@ Une liste « Membres » d'un autre s'aime (`ListLike`, unique par `(userId, list
 `forkedFromId` pointe vers l'original (`SetNull` s'il disparaît), la copie naît privée (D65).
 `Notification` stocke les seules notifications sociales (like, copie, demande d'inscription), avec
 `readAt` ; le retard d'épisodes reste calculé (D31, D65).
+
+Une **tier list** est une liste de genre `TIER` (D67) : ses paliers vivent en JSON sur la liste
+(`List.tiers`, huit au plus, validés par `tiersSchema`), le placement sur l'item
+(`ListItem.tierIndex`, `null` = la réserve « Pas encore classées ») et `rank` ordonne dans le palier.
+Toute la logique des paliers est pure (`features/lists/lib/tier-list.ts`). « Faire ma version »
+copie œuvres et paliers, tout dans la réserve, et se lie à l'original par `versionOfId` (`SetNull`).
 
 ### 4.5 `Edition`, `OwnedVolume` — la collection physique
 
@@ -101,9 +106,8 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
-| `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture, qu'on aime ou copie (D64, D65) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture, qu'on aime ou copie (D64, D65) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) ; une tier list rangée par paliers, à la souris, au doigt ou au clavier, dont on fait sa version (D67) | livré |
 | `/lists/community` | Les listes « Membres » des autres, triées par likes ou par date (D65) | livré |
-| `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
 | `/l/[token]` | Une liste partagée, **sans session**, 18+ retirées et comptées (D64) | livré |
 | `/u/[username]` | Profil : listes, favoris, statistiques, calendrier d'activité, journal, chacun selon les réglages du membre (D64) | livré |
 | `/calendar` | Planning de diffusion, retard épisode par épisode | livré |
@@ -136,6 +140,8 @@ Sans ordre imposé :
    les membres ne le voient pas, et il est soumis à une limite de requêtes stricte pour épargner le
    quota AniList. À faire après le lot 2 de la refonte, dont les règles de visibilité portent
    l'isolation.
+9. **Les suites des tier lists** (D67) : l'export en image (proposé, non tranché), et le
+   classement moyen des versions d'une tier list, à la « Community Rank » de TierMaker.
 
 ## 7. Choix techniques
 

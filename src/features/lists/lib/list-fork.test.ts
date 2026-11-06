@@ -41,6 +41,47 @@ describe("forkData", () => {
   });
 });
 
+describe("forkData d'une tier list", () => {
+  const tierSource = {
+    id: "tl",
+    title: "Isekai, la tier list",
+    description: null,
+    kind: "TIER" as const,
+    cutoff: null,
+    tiers: [
+      { label: "S", color: "#FF7F7F" },
+      { label: "A", color: "#FFBF7F" },
+    ],
+    items: [
+      { mediaId: 1, rank: "a0", tierIndex: 0 },
+      { mediaId: 2, rank: "a1", tierIndex: null },
+    ],
+  };
+
+  it("copie avec son classement : paliers et placements compris", () => {
+    const { list, items } = forkData(tierSource, "moi", "copy");
+
+    expect(list).toMatchObject({ forkedFromId: "tl", tiers: tierSource.tiers });
+    expect(list).not.toHaveProperty("versionOfId");
+    expect(items.map((i) => i.tierIndex)).toEqual([0, null]);
+  });
+
+  it("fait ma version : mêmes œuvres et paliers, tout dans la réserve, liée à l'original", () => {
+    const { list, items } = forkData(tierSource, "moi", "version");
+
+    expect(list).toMatchObject({
+      versionOfId: "tl",
+      tiers: tierSource.tiers,
+      visibility: "PRIVATE",
+    });
+    expect(list).not.toHaveProperty("forkedFromId");
+    expect(items).toEqual([
+      { mediaId: 1, rank: "a0", tierIndex: null },
+      { mediaId: 2, rank: "a1", tierIndex: null },
+    ]);
+  });
+});
+
 describe("readyNotifiedAtFor", () => {
   const now = new Date("2026-11-06T10:00:00Z");
 

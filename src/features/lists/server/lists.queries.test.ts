@@ -7,16 +7,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * reviendrait en suggestion, ou une préférence 18+ ignorée —, pas PostgreSQL.
  */
 
-const { entryFindMany } = vi.hoisted(() => ({ entryFindMany: vi.fn() }));
+const { entryFindMany, listItemFindMany } = vi.hoisted(() => ({
+  entryFindMany: vi.fn(),
+  listItemFindMany: vi.fn(),
+}));
 
 vi.mock("@/lib/db/prisma", () => ({
-  prisma: { entry: { findMany: entryFindMany } },
+  prisma: {
+    entry: { findMany: entryFindMany },
+    listItem: { findMany: listItemFindMany },
+  },
 }));
 vi.mock("@/lib/auth/session", () => ({
   getSession: vi.fn(async () => ({ user: { id: "membre-1" } })),
 }));
 
-import { getListSuggestions } from "@/features/lists/server/lists.queries";
+import {
+  getListSuggestions,
+  summarizeLists,
+} from "@/features/lists/server/lists.queries";
 
 /** Une ligne du miroir, avec tout ce que `MIRRORED_MEDIA_SELECT` demande. */
 function mirrorRow(id: number, overrides: Record<string, unknown> = {}) {
@@ -124,5 +133,57 @@ describe("getListSuggestions", () => {
       cover:
         "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/7.jpg",
     });
+  });
+});
+
+describe("summarizeLists", () => {
+  const tierRow = {
+    id: "t",
+    ownerId: "membre-1",
+    title: "Isekai",
+    description: null,
+    kind: "TIER" as const,
+    cutoff: null,
+    tiers: null,
+    shareToken: null,
+    visibility: "MEMBERS" as const,
+    owner: { name: "Sora", username: "sora", image: null },
+    _count: { items: 3, likes: 0 },
+    likes: [],
+  };
+  const item = (id: number, tierIndex: number | null) => ({
+    listId: "t",
+    tierIndex,
+    media: {
+      id,
+      status: "FINISHED",
+      isAdult: false,
+      coverImage: `c${id}`,
+      titleRomaji: `t${id}`,
+      titleEnglish: null,
+    },
+  });
+
+  it("montre les premiers paliers d'une tier list, et ses jaquettes palier par palier", async () => {
+    // L'ordre des rangs : la réserve d'abord, puis B, puis S.
+    listItemFindMany.mockResolvedValue([item(1, null), item(2, 2), item(3, 0)]);
+
+    const [summary] = await summarizeLists([tierRow], {
+      viewerId: "membre-1",
+      includeAdult: true,
+    });
+
+    expect(summary?.covers.map((c) => c.mediaId)).toEqual([3, 2, 1]);
+    expect(
+      summary?.tierPreview?.map(({ tier, covers }) => [
+        tier.label,
+        covers.map((c) => c.mediaId),
+      ]),
+    ).toEqual([
+      ["S", [3]],
+      ["A", []],
+      ["B", [2]],
+    ]);
+    expect(summary?.countsLine).toBe("3 œuvres · 2 classées");
   });
 });

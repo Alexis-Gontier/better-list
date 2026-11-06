@@ -4,6 +4,7 @@ import {
   type RankedItem,
   rankAfterMove,
   rankForAppend,
+  rankInGroup,
 } from "@/features/lists/lib/list-reorder";
 
 /**
@@ -118,5 +119,29 @@ describe("rankForAppend", () => {
     const ordre = [...ITEMS.map((item) => item.rank), ajoute];
 
     expect([...ordre].sort()).toEqual(ordre);
+  });
+});
+
+describe("rankInGroup", () => {
+  /** L'ordre du palier une fois l'œuvre `x` posée à la place `toIndex`. */
+  function orderAfterDrop(group: RankedItem[], toIndex: number): string[] {
+    const rank = rankInGroup(group, toIndex);
+    return [...group, { id: "x", rank }]
+      .sort((left, right) => (left.rank < right.rank ? -1 : 1))
+      .map((item) => item.id);
+  }
+
+  it("pose en tête, au milieu et en queue d'un palier", () => {
+    expect(orderAfterDrop(ITEMS, 0)).toEqual(["x", "a", "b", "c", "d"]);
+    expect(orderAfterDrop(ITEMS, 2)).toEqual(["a", "b", "x", "c", "d"]);
+    expect(orderAfterDrop(ITEMS, 4)).toEqual(["a", "b", "c", "d", "x"]);
+  });
+
+  it("borne une place venue du navigateur plutôt que de la refuser", () => {
+    expect(orderAfterDrop(ITEMS, 99)).toEqual(["a", "b", "c", "d", "x"]);
+  });
+
+  it("pose dans un palier vide", () => {
+    expect(orderAfterDrop([], 0)).toEqual(["x"]);
   });
 });
