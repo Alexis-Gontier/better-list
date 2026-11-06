@@ -226,3 +226,17 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   300 px sur téléphone, 340 au-delà), la suivante dépassant toujours du bord. Les onglets Anime,
   Manga, Manhwa, Light novel et un « Top 10 » ont été maquettés puis écartés le 2 novembre 2026 :
   ils rouvraient le second catalogue retiré le 14 septembre 2026, que `/search` fait mieux.
+- **D67** — La tier list est un **genre de liste**, pas une vue (lot 5 ; révise D17, dont les
+  tables `ListView` et `ListViewItem`, vides, sont supprimées). Une tier list est donc une liste
+  comme les autres : likes, copie, Communauté, visibilité et lien de partage s'y appliquent sans
+  rien d'autre. Les paliers vivent en JSON sur la liste (S, A, B, C, D par défaut, huit au plus, au
+  nuancier de TierMaker), le placement sur l'item (`tierIndex`, `null` = la réserve, où arrive toute
+  œuvre ajoutée). **Exception à D33** : les étiquettes portent leur pastel, le nom en noir dessus,
+  seule couleur hors jaquettes. On range en glissant (souris, appui long, ou Espace puis flèches)
+  ou d'un clic, par le menu « Ranger dans… » ; le menu d'un palier renomme, recolore, ajoute,
+  déplace, vide et supprime, et ses œuvres reviennent à la réserve sans confirmation. Chaque geste
+  part aussitôt (D37). La carte montre les trois premiers paliers à la place de la mosaïque
+  (maquette, plus récente que la spec qui disait la mosaïque du palier le plus haut), la fiche le
+  palier au lieu du rang. « Copier » une tier list demande : **faire ma version** (défaut ; mêmes
+  œuvres et paliers, tout à classer, liée par `versionOfId`, notification `LIST_VERSIONED`) ou
+  copier avec son classement. L'original compte ses versions visibles, sans avatars (maquette).
