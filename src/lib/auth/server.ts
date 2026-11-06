@@ -2,41 +2,38 @@ import "server-only";
 
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
+import { admin, lastLoginMethod } from "better-auth/plugins";
+import { createAccessControl } from "better-auth/plugins/access";
+import { defaultStatements } from "better-auth/plugins/admin/access";
 
 import { env } from "@/config/env";
 import { site } from "@/config/site";
+import { ADMIN_ROLE } from "@/lib/auth/roles";
+import { MAX_USERNAME_LENGTH, normalizeUsername } from "@/lib/auth/username";
 import { prisma } from "@/lib/db/prisma";
 
 /**
  * Configuration Better Auth.
  *
- * **GitHub OAuth uniquement, pas de mot de passe** (docs/conception.md §7). Ce choix supprime d'un
- * coup la vérification d'email, le reset, l'envoi de mails et toute la surface brute-force —
- * pour un cercle privé de quatre comptes, c'est du périmètre en moins sans perte.
+ * **OAuth seulement, trois fournisseurs** (GitHub, Discord, Google ; D56). Ni mot de
+ * passe ni e-mail : pas de vérification, de reset, ni de surface brute-force.
  *
  * **L'inscription est ouverte, l'accès ne l'est pas.** On ne peut pas inviter quelqu'un à l'avance
  * en OAuth : son identité n'existe qu'au moment où il se connecte. Le contrôle se fait donc après
  * la création du compte — tout utilisateur naît `PENDING` et n'entre qu'une fois approuvé (§7.1).
  */
 
-/** Longueur maximale d'un `login` GitHub, donc du `username` qu'on en dérive. */
-const MAX_USERNAME_LENGTH = 39;
-
 /**
- * Dérive un `username` libre à partir du login GitHub.
+ * Dérive un `username` libre à partir du nom proposé par le fournisseur.
  *
  * Les logins GitHub sont uniques, donc la collision suppose qu'un compte ait changé de login et
  * qu'un autre l'ait repris. C'est rare — mais sans ce garde-fou, ce cas rare devient une erreur
  * 500 à l'inscription, au pire moment possible.
  */
 async function resolveUsername(candidate: string) {
-  const base =
-    candidate
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, MAX_USERNAME_LENGTH) || "membre";
+  const base = normalizeUsername(candidate);
 
   for (let suffix = 0; suffix < 20; suffix++) {
     const username = suffix === 0 ? base : `${base}-${suffix}`;
@@ -51,6 +48,19 @@ async function resolveUsername(candidate: string) {
   // Filet de sécurité : on préfère un identifiant laid à un échec d'inscription.
   return `${base}-${Date.now().toString(36)}`.slice(0, MAX_USERNAME_LENGTH);
 }
+
+/**
+ * Les droits du plugin `admin`, **sans l'usurpation**. Elle permettrait de se connecter en tant
+ * qu'un autre membre, donc de lire son compte : entre amis, rien ne la justifie (D57).
+ */
+const accessControl = createAccessControl(defaultStatements);
+const roles = {
+  [ADMIN_ROLE]: accessControl.newRole({
+    user: ["list", "get", "set-role", "ban", "delete"],
+    session: ["list", "revoke", "delete"],
+  }),
+  user: accessControl.newRole({ user: [], session: [] }),
+};
 
 export const auth = betterAuth({
   appName: site.name,
@@ -74,6 +84,43 @@ export const auth = betterAuth({
        */
       mapProfileToUser: (profile) => ({ username: profile.login }),
     },
+    // Facultatifs (D62) : sans identifiants, le fournisseur n'est pas déclaré du tout.
+    ...(env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
+      ? {
+          discord: {
+            clientId: env.DISCORD_CLIENT_ID,
+            clientSecret: env.DISCORD_CLIENT_SECRET,
+            /** `username` est le nom Discord moderne, sans le `#1234` d'autrefois. */
+            mapProfileToUser: (profile: { username: string }) => ({
+              username: profile.username,
+            }),
+          },
+        }
+      : {}),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            /** Google n'a pas de pseudo : la partie locale de l'adresse en tient lieu. */
+            mapProfileToUser: (profile: { email: string }) => ({
+              username: profile.email.split("@")[0],
+            }),
+          },
+        }
+      : {}),
+  },
+
+  /**
+   * **Un compte par personne**, quel que soit le fournisseur : quelqu'un qui revient par Google après
+   * être entré par GitHub, avec la même adresse vérifiée, retrouve son compte au lieu d'en créer un
+   * second qui repasserait par la liste d'attente. Seuls ces trois fournisseurs vérifient l'adresse.
+   */
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["github", "discord", "google"],
+    },
   },
 
   user: {
@@ -90,6 +137,28 @@ export const auth = betterAuth({
       username: { type: "string", required: false, input: true },
       /** Liste d'attente. `input: false` : personne ne s'auto-approuve via l'API. */
       status: { type: "string", required: false, input: false },
+    },
+    /**
+     * Supprimer son compte, depuis `/settings`. Le schéma fait le reste en cascade. Le dernier
+     * administrateur ne peut pas partir : personne ne pourrait plus approuver les demandes.
+     */
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        const self = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        if (self?.role !== ADMIN_ROLE) return;
+
+        const admins = await prisma.user.count({ where: { role: ADMIN_ROLE } });
+        if (admins <= 1) {
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "Vous êtes le dernier administrateur : nommez-en un autre avant de partir.",
+          });
+        }
+      },
     },
   },
 
@@ -129,15 +198,24 @@ export const auth = betterAuth({
 
       update: {
         /**
-         * Contrepartie du `input: true` sur `username` : ce champ et `status` sont retirés de
-         * toute mise à jour passant par Better Auth.
+         * Contrepartie du `input: true` sur `username` : ce champ, `status`, le rôle et le
+         * bannissement sont retirés de toute mise à jour passant par `update-user` (rôle et
+         * bannissement ne bougent que par le plugin `admin`).
          *
          * Sans ce filtre, l'endpoint `update-user` permettrait à n'importe qui de se renommer —
          * donc de changer l'URL de son profil, voire de heurter la contrainte d'unicité. Le
          * statut, lui, ne se change que hors application (Prisma Studio), et c'est voulu.
          */
         before: async (user) => {
-          const { username: _username, status: _status, ...allowed } = user;
+          const {
+            username: _username,
+            status: _status,
+            role: _role,
+            banned: _banned,
+            banReason: _banReason,
+            banExpires: _banExpires,
+            ...allowed
+          } = user;
 
           return { data: allowed };
         },
@@ -159,7 +237,21 @@ export const auth = betterAuth({
   rateLimit: { enabled: true, storage: "database", window: 60, max: 10 },
 
   /** `nextCookies` doit rester le dernier plugin du tableau. */
-  plugins: [nextCookies()],
+  plugins: [
+    admin({
+      ac: accessControl,
+      roles,
+      adminRoles: [ADMIN_ROLE],
+      defaultRole: "user",
+      bannedUserMessage: "Votre compte a été suspendu.",
+    }),
+    /**
+     * Retient le dernier fournisseur dans un cookie (`better-auth.last_used_login_method`), lu par
+     * `/login` pour la pastille « Dernière ». Rien en base : c'est une aide, pas une donnée.
+     */
+    lastLoginMethod({ storeInDatabase: false }),
+    nextCookies(),
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

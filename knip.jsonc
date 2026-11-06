@@ -11,9 +11,13 @@
   },
 
   // `src/components/ui/` est généré par shadcn et exporte volontairement plus qu'on ne consomme.
-  // `scripts/legacy-import.ts` est un script lancé à la main (reprise des données de l'ancienne
-  // app) : rien ne l'importe, c'est normal.
-  "ignore": ["src/components/ui/**", "scripts/legacy-import.ts"],
+  // `scripts/` contient des scripts lancés à la main (reprise des données de l'ancienne app, premier
+  // administrateur) : rien ne les importe, c'est normal.
+  "ignore": [
+    "src/components/ui/**",
+    "scripts/legacy-import.ts",
+    "scripts/set-admin.ts"
+  ],
 
   // Un export utilisé uniquement dans son propre fichier n'est pas du code mort.
   "ignoreExportsUsedInFile": true,

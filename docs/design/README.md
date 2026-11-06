@@ -1,7 +1,11 @@
-# Les maquettes — `better-list.fig`
+# Les maquettes — `better-list.fig` et `refonte.fig`
 
-Un fichier OpenPencil (format `.fig`) qui redessine l'application à partir du code. Il **suit** le
-code (D54) : quand un écran change, on met la maquette à jour après, pas l'inverse.
+Deux fichiers OpenPencil (format `.fig`) qui redessinent l'application. Pour un écran nouveau ou
+modifié, la maquette **précède** le code et Alexis la valide ; une fois l'écran livré, elle se
+réaligne sur lui (D59, qui révise D54). `better-list.fig` a atteint la limite de nœuds
+d'OpenPencil : la refonte continue dans `refonte.fig`, une page par lot (le lot 1 est resté dans
+`better-list.fig`). La landing et `/login` ont changé de direction après la maquette du lot 1
+(D61) : sa page est à réaligner.
 
 ## Les pages
 

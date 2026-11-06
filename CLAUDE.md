@@ -1,8 +1,8 @@
 # Better-List
 
 Catalogue d'œuvres (anime, manga, webtoon, light novel) adossé à l'API AniList : suivi, journal
-daté, collection physique, listes. **Cercle privé d'environ quatre comptes**, connexion GitHub
-seule. **Tout est en français** : interface, commentaires, commits, docs, réponses.
+daté, collection physique, listes. **Cercle privé d'une dizaine de comptes**, connexion GitHub,
+Discord ou Google. **Tout est en français** : interface, commentaires, commits, docs, réponses.
 
 - Conception et état présent : `docs/conception.md`. Le code cite ses sections (« conception.md
   §4.1 ») : garder la numérotation.
@@ -23,7 +23,7 @@ pnpm test           # vitest run ; un seul fichier : pnpm test src/chemin/fichie
 pnpm test:e2e       # playwright test (réutilise le pnpm dev ouvert)
 pnpm knip           # code et dépendances morts
 pnpm db:migrate     # prisma migrate dev
-pnpm db:studio      # approuver un compte : status → APPROVED
+pnpm db:studio      # explorer la base (approuver un compte : /admin/users)
 pnpm db:seed        # refuse d'écraser des données ; --reset pour repartir de zéro
 ```
 

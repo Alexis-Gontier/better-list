@@ -1,14 +1,21 @@
 import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
+import { getLinkedProviders } from "@/app/(app)/settings/_lib/linked-providers";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LOCALE } from "@/config/locale";
+import {
+  PROVIDER_LABELS,
+  ProviderLogo,
+} from "@/features/auth/components/provider-logos";
+import { isAdmin } from "@/lib/auth/roles";
 import { getSession } from "@/lib/auth/session";
 
 /**
  * Le bloc « Compte » — **en lecture seule, et c'est le sujet.**
  *
  * Rien n'y est éditable parce que rien n'y nous appartient : le nom, la photo et l'email viennent
- * de GitHub, et le `username` est verrouillé après l'inscription par le hook `user.update.before`
+ * du fournisseur, et le `username` est verrouillé après l'inscription par le hook `user.update.before`
  * (`src/lib/auth/server.ts`) — il porte l'URL `/u/[username]`, la changer casserait les liens
  * partagés. Offrir un champ pour ces valeurs promettrait une écriture que l'auth refuse.
  *
@@ -26,10 +33,14 @@ export async function AccountSection() {
   if (!session) return null;
 
   const { name, email, username, image } = session.user;
+  const providers = await getLinkedProviders(session.user.id);
+  const linked = new Intl.ListFormat(LOCALE, { type: "conjunction" }).format(
+    providers.map((provider) => PROVIDER_LABELS[provider]),
+  );
 
   return (
     <SettingsSection
-      description="Ce que GitHub nous dit de vous. Rien ne s'édite ici — tout vient de là-bas."
+      description="Ce que vos fournisseurs nous disent de vous. Rien ne s'édite ici."
       title="Compte"
     >
       {/*
@@ -48,12 +59,12 @@ export async function AccountSection() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate font-medium">{name}</span>
             {/*
-              Le badge dit toujours la même chose, et ce n'est pas un oubli de câblage : le layout
-              du groupe `(app)` redirige `PENDING` vers la liste d'attente et `REJECTED` vers la
-              connexion (docs/conception.md §7.1). Personne d'autre qu'un membre approuvé n'atteint
-              cet écran — une table de correspondance à trois entrées aurait deux branches mortes.
+              Membre ou administrateur, rien d'autre : le layout de `(app)` écarte déjà les
+              comptes en attente et refusés (docs/conception.md §7.1).
             */}
-            <Badge variant="secondary">Membre</Badge>
+            <Badge variant="secondary">
+              {isAdmin(session.user) ? "Admin" : "Membre"}
+            </Badge>
           </div>
 
           {/*
@@ -69,9 +80,15 @@ export async function AccountSection() {
           <span className="truncate text-muted-foreground text-sm">
             {email}
           </span>
-          <span className="mt-1 text-muted-foreground text-xs">
-            Connecté avec GitHub
-          </span>
+          {providers.length > 0 ? (
+            <span className="mt-1 flex items-center gap-1.5 text-muted-foreground text-xs [&_svg]:size-3.5">
+              Comptes liés :
+              {providers.map((provider) => (
+                <ProviderLogo key={provider} provider={provider} />
+              ))}
+              {linked}
+            </span>
+          ) : null}
         </div>
       </div>
     </SettingsSection>

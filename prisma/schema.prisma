@@ -143,6 +143,15 @@ model User {
   /// Liste d'attente : la garde du layout `(app)` refuse tout ce qui n'est pas APPROVED.
   status UserStatus @default(PENDING)
 
+  /// Rôle Better Auth (plugin `admin`) : `"admin"` ou `null`. Distinct de `status` : le statut dit
+  /// si l'on est entré, le rôle si l'on peut faire entrer les autres (D57).
+  role       String?
+  /// Bannissement d'un membre déjà approuvé. C'est Better Auth qui refuse la connexion.
+  banned     Boolean?  @default(false)
+  banReason  String?
+  /// `null` : définitif.
+  banExpires DateTime?
+
   sessions       Session[]
   accounts       Account[]
   preferences    UserPreferences?
@@ -162,13 +171,15 @@ model User {
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
+  id             String   @id
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  /// Exigé par le plugin `admin` ; l'usurpation est désactivée, la colonne reste vide.
+  impersonatedBy String?
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

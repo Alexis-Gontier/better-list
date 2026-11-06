@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { type ReactNode, Suspense } from "react";
+import { BannerBackdrop } from "@/app/(auth)/_components/banner-backdrop";
 
-import { CoverWall } from "@/app/(auth)/_components/cover-wall";
 import { Logo } from "@/components/layout/logo";
+import { routes } from "@/config/routes";
 import { site } from "@/config/site";
 
 /**
- * **Hors index, pour les trois pages d'un coup.**
+ * **Hors index, pour les deux pages d'un coup.**
  *
- * Posé sur le layout et non page par page : `/login`, `/signup` et `/waitlist` sont les seules
- * pages du produit qui répondent vraiment à un visiteur sans session — tout le reste de `(app)`
- * redirige avant de rendre quoi que ce soit —, et une garde répétée trois fois est une garde qu'on
- * oubliera sur la quatrième.
+ * Posé sur le layout et non page par page : une garde répétée page par page est une garde qu'on
+ * oubliera sur la suivante. La landing, elle, est indexable et vit hors de ce groupe.
  *
  * **Ce n'est pas un doublon de `robots.ts`, ce sont deux mécanismes distincts.** `robots.txt`
  * demande de **ne pas parcourir** ; cette balise demande de **ne pas indexer**. Certains robots
@@ -28,48 +28,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * Chrome minimal des pages d'authentification : pas de header, pas de navigation — il n'y a rien
- * à naviguer tant qu'on n'est pas entré.
+ * Chrome minimal des pages d'authentification : pas de navigation — il n'y a rien à naviguer tant
+ * qu'on n'est pas entré.
  *
- * **Le texte à gauche, le mur de jaquettes à droite** (refonte du 2 octobre 2026 : la mise en page
- * vient de la page premium d'Ortega Scans, la voix reste celle du site). Chaque page porte son propre titre : la connexion se présente,
- * l'attente explique où en est le compte — un titre commun ne dirait ni l'un ni l'autre.
- *
- * Le mur est dans sa propre frontière : il attend AniList, la page n'a pas à l'attendre. Sous
- * `lg`, il passe derrière le texte, atténué, plutôt que de disparaître.
+ * **Une colonne centrée, d'après Linear et Vercel** : le logo, le titre, les fournisseurs. En fond,
+ * la bannière du moment, floue, dans sa propre frontière : la page n'attend pas AniList.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative isolate flex min-h-svh flex-col overflow-hidden">
+    <div className="relative isolate flex min-h-svh flex-col items-center justify-center px-4 py-12">
       <Suspense fallback={null}>
-        <CoverWall />
+        <BannerBackdrop />
       </Suspense>
-
-      <header className="mx-auto flex w-full max-w-6xl items-center gap-2.5 px-6 py-6 sm:px-10">
-        <Logo className="size-7" />
-        <span className="font-heading font-semibold text-lg tracking-tight">
-          {site.name}
-        </span>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-6 py-10 sm:px-10">
-        <div className="w-full max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700 motion-reduce:animate-none">
-          {children}
-        </div>
+      <main className="flex w-full max-w-[360px] flex-col items-center gap-8">
+        <Link aria-label={site.name} href={routes.home}>
+          <Logo className="size-10" />
+        </Link>
+        <div className="w-full">{children}</div>
       </main>
-
-      {/* Les jaquettes viennent d'AniList, et ses CGU demandent qu'on le dise là où on les montre. */}
-      <footer className="mx-auto w-full max-w-6xl px-6 py-6 text-muted-foreground text-xs sm:px-10">
-        Jaquettes :{" "}
-        <a
-          className="underline-offset-4 hover:text-foreground hover:underline"
-          href={site.attribution.url}
-          rel="noreferrer"
-          target="_blank"
-        >
-          {site.attribution.name}
-        </a>
-      </footer>
     </div>
   );
 }

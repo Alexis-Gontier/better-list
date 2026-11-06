@@ -1,6 +1,6 @@
 /**
- * Les deux seuls comptes que la suite E2E touche. Ids et emails sont namespacés pour qu'aucune
- * requête de nettoyage ne puisse atteindre un vrai membre : `.invalid` est réservé (RFC 2606).
+ * Les seuls comptes que la suite E2E touche. Ids et emails sont namespacés pour qu'aucune requête
+ * de nettoyage ne puisse atteindre un vrai membre : `.invalid` est réservé (RFC 2606).
  */
 export const accounts = {
   member: {
@@ -8,6 +8,7 @@ export const accounts = {
     username: "e2e-member",
     email: "e2e-member@example.invalid",
     status: "APPROVED",
+    role: null,
     storageState: "e2e/.auth/member.json",
   },
   pending: {
@@ -15,7 +16,37 @@ export const accounts = {
     username: "e2e-pending",
     email: "e2e-pending@example.invalid",
     status: "PENDING",
+    role: null,
     storageState: "e2e/.auth/pending.json",
+  },
+  admin: {
+    id: "e2e-admin",
+    username: "e2e-admin",
+    email: "e2e-admin@example.invalid",
+    status: "APPROVED",
+    role: "admin",
+    storageState: "e2e/.auth/admin.json",
+  },
+  /**
+   * La demande que l'administrateur approuve puis annule. **Distincte de `pending`** : les specs
+   * tournent en parallèle, et basculer `pending` ferait vaciller `access.spec.ts`.
+   */
+  request: {
+    id: "e2e-request",
+    username: "e2e-request",
+    email: "e2e-request@example.invalid",
+    status: "PENDING",
+    role: null,
+    storageState: "e2e/.auth/request.json",
+  },
+  /** Le membre qui supprime son compte : il n'existe plus après son test. */
+  leaver: {
+    id: "e2e-leaver",
+    username: "e2e-leaver",
+    email: "e2e-leaver@example.invalid",
+    status: "APPROVED",
+    role: null,
+    storageState: "e2e/.auth/leaver.json",
   },
 } as const;
 

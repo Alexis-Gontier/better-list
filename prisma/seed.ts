@@ -754,8 +754,12 @@ async function main() {
    * Le seed ne crée **aucun** utilisateur : un compte sans `Account` GitHub ne peut pas se
    * connecter, il encombrerait la liste des membres sans rien pouvoir montrer.
    */
+  // `--user=demo` vise un autre compte, celui des captures d'écran par exemple (D63).
+  const target = process.argv
+    .find((arg) => arg.startsWith("--user="))
+    ?.slice("--user=".length);
   const user = await prisma.user.findFirst({
-    where: { status: "APPROVED" },
+    where: { status: "APPROVED", ...(target ? { username: target } : {}) },
     orderBy: { createdAt: "asc" },
     select: { id: true, username: true },
   });

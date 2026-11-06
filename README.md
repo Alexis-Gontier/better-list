@@ -5,11 +5,16 @@ l'[API AniList](https://docs.anilist.co/), sur lequel se greffent le **suivi du 
 **journal daté** de ce qu'on a vu et quand, le **recensement de la collection physique**, et des
 **listes** réarrangeables en classements ou en tier lists.
 
-> **Cercle privé, ~4 comptes.** Inscription sur invitation, pas d'ouverture publique. Ce n'est pas
-> un détail de dimensionnement : ça retire du périmètre la découverte sociale, la modération, les
-> commentaires et l'administration des comptes. Le partage d'une liste passe par un **lien non
-> listé**, pas par un graphe social. Le raisonnement complet est dans
-> [docs/conception.md](docs/conception.md).
+![L'accueil : une œuvre à la une, puis les séries en cours et leur épisode](public/screenshots/accueil.jpg)
+
+| La fiche d'une œuvre | La bibliothèque | Le profil |
+| --- | --- | --- |
+| ![La fiche de Frieren](public/screenshots/fiche.jpg) | ![Ma bibliothèque](public/screenshots/bibliotheque.jpg) | ![Un profil, ses chiffres et son année](public/screenshots/profil.jpg) |
+
+> **Cercle privé, une dizaine de comptes.** Connexion par GitHub, Discord ou Google, puis un
+> administrateur valide le compte depuis `/admin/users`. Rien n'est public hormis la landing et le
+> **lien non listé** d'une liste partagée. Le raisonnement complet est dans
+> [docs/conception.md](docs/conception.md), les décisions dans [docs/decisions.md](docs/decisions.md).
 
 ## Stack
 
@@ -17,7 +22,7 @@ l'[API AniList](https://docs.anilist.co/), sur lequel se greffent le **suivi du 
 | --- | --- |
 | Framework | Next.js 16 (App Router, React Compiler) · React 19 |
 | Base de données | PostgreSQL (Neon) via Prisma 7 + `@prisma/adapter-pg` |
-| Authentification | Better Auth — OAuth GitHub uniquement |
+| Authentification | Better Auth — OAuth GitHub, Discord ou Google, plugins `admin` et `lastLoginMethod` |
 | Données externes | API GraphQL AniList, lue via `up-fetch` et miroitée en base |
 | UI | Tailwind CSS 4 · shadcn/ui (Radix) · `next-themes` |
 | Validation | Zod 4 — les types se dérivent, il n'y a pas de `src/types/` |

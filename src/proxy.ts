@@ -47,6 +47,13 @@ export function proxy(request: NextRequest) {
     publicRoutes.includes(pathname) ||
     publicRoutePrefixes.some((prefix) => pathname.startsWith(prefix));
 
+  // `/` : la landing pour qui n'a pas de cookie, l'accueil pour les autres. Une réécriture garde
+  // l'adresse ; la garde du layout `(app)` n'est pas contournée, puisque `/welcome` n'en fait pas
+  // partie. Un cookie expiré mène toujours à `/login` par cette garde — c'est voulu.
+  if (!isAuthenticated && pathname === routes.home) {
+    return NextResponse.rewrite(new URL(routes.welcome, request.url));
+  }
+
   if (isAuthenticated || isPublic) {
     return NextResponse.next();
   }

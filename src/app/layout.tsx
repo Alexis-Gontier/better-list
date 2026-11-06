@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     d'une œuvre, et l'auteur du décompte sur une liste partagée.
 
     `default` et `template` ne servent pas au même moment. Le gabarit habille les pages qui **se
-    nomment** ; le défaut couvre celles qui ne déclarent rien — `/signup`, qui ne fait que rediriger,
+    nomment** ; le défaut couvre celles qui ne déclarent rien — l'ancien `/signup`, qui ne faisait que rediriger,
     sortait avec un `<title>` **vide** avant le 7 septembre 2026.
   */
   title: { default: site.name, template: `%s · ${site.name}` },
