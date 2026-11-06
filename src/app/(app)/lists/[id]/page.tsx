@@ -9,6 +9,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AddMediaDialog } from "@/app/(app)/lists/[id]/_components/add-media-dialog";
+import { ForkButton } from "@/app/(app)/lists/[id]/_components/fork-button";
 import { ListActionsMenu } from "@/app/(app)/lists/[id]/_components/list-actions-menu";
 import { ListProgress } from "@/app/(app)/lists/[id]/_components/list-progress";
 import { ListReorderGrid } from "@/app/(app)/lists/[id]/_components/list-reorder-grid";
@@ -46,6 +47,7 @@ import {
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaTitle } from "@/features/media/lib/media-format";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { LikeButton } from "@/features/social/components/like-button";
 import { EntryQuickEdit } from "@/features/tracking/components/entry-quick-edit";
 import { EntryStatusDot } from "@/features/tracking/components/entry-status-dot";
 import { getLibraryEntriesFor } from "@/features/tracking/server/library.queries";
@@ -201,14 +203,10 @@ async function ListDetail({
         */}
         <Button asChild className="-ml-2 w-fit" size="sm" variant="ghost">
           <Link
-            href={
-              list.isOwner
-                ? routes.lists.root
-                : routes.profile(list.owner.username)
-            }
+            href={list.isOwner ? routes.lists.root : routes.lists.community}
           >
             <ArrowLeftIcon data-icon="inline-start" />
-            {list.isOwner ? "Mes listes" : list.owner.name}
+            {list.isOwner ? "Mes listes" : "Communauté"}
           </Link>
         </Button>
 
@@ -226,6 +224,18 @@ async function ListDetail({
               </p>
             ) : null}
             <p className="text-muted-foreground text-xs">
+              {/* L'auteur d'abord sur la liste d'un autre : « Sora · Top 10 · copiée 2 fois » (maquette B). */}
+              {list.isOwner ? null : (
+                <>
+                  <Link
+                    className="underline-offset-4 hover:text-foreground hover:underline"
+                    href={routes.profile(list.owner.username)}
+                  >
+                    {list.owner.name}
+                  </Link>
+                  {" · "}
+                </>
+              )}
               {reordering
                 ? itemCountLabel(list.itemCount)
                 : listHeadline(list.kind, list.cutoff, countsLine)}
@@ -240,17 +250,23 @@ async function ListDetail({
               {list.isOwner && list.visibility === "PRIVATE"
                 ? " · Privée, visible de vous seul"
                 : null}
-              {list.isOwner ? null : (
+              {list.forkedFrom ? (
                 <>
-                  {" · Une liste de "}
+                  {" · Copiée de "}
                   <Link
-                    className="underline-offset-4 hover:text-foreground hover:underline"
-                    href={routes.profile(list.owner.username)}
+                    className="text-foreground underline-offset-4 hover:underline"
+                    href={routes.lists.detail(list.forkedFrom.id)}
                   >
-                    @{list.owner.username}
+                    {list.forkedFrom.title}
                   </Link>
+                  {` · ${list.forkedFrom.ownerName}`}
                 </>
-              )}
+              ) : null}
+              {list.forkCount > 0 ? ` · copiée ${list.forkCount} fois` : null}
+              {/* On ne s'aime pas soi-même : le propriétaire lit son compteur, il n'a pas de bouton. */}
+              {list.isOwner && list.likeCount > 0
+                ? ` · aimée ${list.likeCount} fois`
+                : null}
             </p>
             {!reordering && progress !== null ? (
               <ListProgress label={progress.label} ratio={progress.ratio} />
@@ -304,7 +320,16 @@ async function ListDetail({
 
               <ListActionsMenu list={list} />
             </div>
-          ) : null}
+          ) : (
+            <div className="flex shrink-0 items-center gap-2">
+              <LikeButton
+                count={list.likeCount}
+                listId={list.id}
+                liked={list.likedByMe}
+              />
+              <ForkButton listId={list.id} />
+            </div>
+          )}
         </div>
 
         <Separator />
