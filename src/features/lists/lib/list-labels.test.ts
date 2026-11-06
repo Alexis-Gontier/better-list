@@ -18,6 +18,16 @@ describe("itemCountLabel", () => {
 describe("listCountsLine", () => {
   const counts = { total: 17, ready: 8, seen: 0 };
 
+  it("compte les classées d'une tier list, la réserve étant le reste", () => {
+    expect(listCountsLine("TIER", null, { ...counts, placed: 10 })).toBe(
+      "17 œuvres · 10 classées",
+    );
+    expect(listCountsLine("TIER", null, { ...counts, placed: 1 })).toBe(
+      "17 œuvres · 1 classée",
+    );
+    expect(listCountsLine("TIER", null, counts)).toBe("17 œuvres");
+  });
+
   it("dit « Aucune œuvre » pour toute liste vide", () => {
     expect(
       listCountsLine("WAIT_FOR_END", null, { total: 0, ready: 0, seen: 0 }),

@@ -7,7 +7,7 @@
 //   - le miroir AniList (Media) et les données utilisateur, parce que le quota AniList interdit
 //     de lire l'API à chaque affichage (§4.1) ;
 //   - l'état (Entry, écrasé) et la mémoire (EntryEvent, append-only) (§4.2, §4.3) ;
-//   - la collection d'une liste (List/ListItem) et son arrangement (ListView) (§4.4).
+//   - une liste (List/ListItem) et son genre, qui décide de son affichage (§4.4, D47).
 
 generator client {
   provider = "prisma-client"
@@ -102,12 +102,6 @@ enum EntryEventType {
 // =============================================================================
 // Énumérations — listes et collection
 // =============================================================================
-
-enum ListViewType {
-  RANKED
-  TIERS
-  GRID
-}
 
 enum VolumeCondition {
   NEW
@@ -517,6 +511,8 @@ enum ListKind {
   RANKING
   WATCHLIST
   WAIT_FOR_END
+  /// Des paliers S, A, B… (`List.tiers`) et une réserve (`ListItem.tierIndex` nul). Révise D17.
+  TIER
 }
 
 enum ListVisibility {
@@ -524,7 +520,7 @@ enum ListVisibility {
   MEMBERS
 }
 
-/// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
+/// La collection : ce que la liste contient. Son genre décide de son affichage (D47).
 ///
 /// Pas de `slug` : une liste s'adresse par son `id` (`/lists/[id]`). Un slug tiré du titre devait
 /// être rendu unique par propriétaire, se périmait au premier renommage, et n'aurait de toute façon
@@ -564,11 +560,21 @@ model List {
   forkedFrom   List?   @relation("ListFork", fields: [forkedFromId], references: [id], onDelete: SetNull)
   forks        List[]  @relation("ListFork")
 
+  /// Les paliers d'une tier list : `[{ label: "S", color: "#FF7F7F" }, …]`, validés par
+  /// `tiersSchema`. Lus seulement pour `TIER`, conservés si la liste change de genre (comme
+  /// `cutoff`). En JSON : une suite courte, lue et écrite d'un bloc, jamais requêtée par palier.
+  tiers Json?
+
+  /// « Faire ma version » d'une tier list : mêmes œuvres, tout à classer. Distinct de la copie
+  /// (`forkedFromId`) parce que l'original compte et montre ses versions à part.
+  versionOfId String?
+  versionOf   List?   @relation("ListVersion", fields: [versionOfId], references: [id], onDelete: SetNull)
+  versions    List[]  @relation("ListVersion")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   items ListItem[]
-  views ListView[]
   likes ListLike[]
 
   notifications Notification[]
@@ -598,57 +604,15 @@ model ListItem {
   /// nouvelle. Une annonce, une fois, et seulement si l'envoi a réussi.
   readyNotifiedAt DateTime?
 
-  viewItems ListViewItem[]
+  /// Le palier d'une tier list, index dans `List.tiers` ; `null` = la réserve « Pas encore
+  /// classées », où arrive toute œuvre ajoutée. `rank` ordonne alors dans le palier.
+  tierIndex Int?
 
   /// Une œuvre n'apparaît qu'une fois dans une liste.
   @@unique([listId, mediaId])
   @@index([listId, rank])
+  @@index([listId, tierIndex, rank])
   @@map("list_items")
-}
-
-/// L'arrangement : une manière de regarder une liste.
-///
-/// Une tier list n'est pas une liste concurrente, c'est une vue posée sur une liste existante.
-/// C'est ce qui permet d'ajouter un format plus tard (bracket, tournoi) sans recopier le contenu
-/// ni migrer quoi que ce soit.
-model ListView {
-  id String @id @default(cuid())
-
-  listId String
-  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
-
-  name String
-  type ListViewType @default(RANKED)
-
-  /// Les paliers d'une tier list : `[{ label: "S", color: "#ff7f7f" }, …]`. En JSON parce que
-  /// c'est une liste ordonnée courte, lue et écrite d'un bloc, jamais requêtée par palier.
-  tiers Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  items ListViewItem[]
-
-  @@index([listId])
-  @@map("list_views")
-}
-
-model ListViewItem {
-  id String @id @default(cuid())
-
-  viewId String
-  view   ListView @relation(fields: [viewId], references: [id], onDelete: Cascade)
-
-  listItemId String
-  listItem   ListItem @relation(fields: [listItemId], references: [id], onDelete: Cascade)
-
-  /// Index dans `ListView.tiers`. `null` = pas encore classé.
-  tierIndex Int?
-  rank      String
-
-  @@unique([viewId, listItemId])
-  @@index([viewId, tierIndex, rank])
-  @@map("list_view_items")
 }
 
 // =============================================================================
@@ -729,6 +693,7 @@ enum NotificationType {
   LIST_LIKED
   LIST_FORKED
   SIGNUP_PENDING
+  LIST_VERSIONED
 }
 
 /// Un « j'aime » sur la liste d'un autre membre (spec du lot 3, §3). Pas de compteur dénormalisé :

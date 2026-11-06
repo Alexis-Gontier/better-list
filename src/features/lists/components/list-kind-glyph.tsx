@@ -59,6 +59,29 @@ function Cover({
   );
 }
 
+/** Une case de tier list : l'étiquette du palier (pleine), ou une jaquette rangée dedans (estompée). */
+function Tier({
+  x,
+  y,
+  muted = false,
+}: {
+  x: number;
+  y: number;
+  muted?: boolean;
+}) {
+  return (
+    <rect
+      fill="currentColor"
+      fillOpacity={muted ? 0.25 : 0.55}
+      height={10}
+      rx={1.5}
+      width={muted ? 7 : 10}
+      x={x}
+      y={y}
+    />
+  );
+}
+
 const GLYPHS: Record<ListKind, ReactNode> = {
   // Quatre jaquettes côte à côte, sans rien d'autre : l'ordre n'y dit rien.
   SELECTION: (
@@ -119,6 +142,20 @@ const GLYPHS: Record<ListKind, ReactNode> = {
         strokeLinejoin="round"
         strokeWidth={1.6}
       />
+    </>
+  ),
+  // Trois paliers, chacun son étiquette et des jaquettes qui décroissent : S, puis A, puis B.
+  TIER: (
+    <>
+      <Tier x={2} y={2.0} />
+      <Tier muted x={15} y={2.0} />
+      <Tier muted x={24} y={2.0} />
+      <Tier muted x={33} y={2.0} />
+      <Tier x={2} y={14.5} />
+      <Tier muted x={15} y={14.5} />
+      <Tier muted x={24} y={14.5} />
+      <Tier x={2} y={27.0} />
+      <Tier muted x={15} y={27.0} />
     </>
   ),
 };

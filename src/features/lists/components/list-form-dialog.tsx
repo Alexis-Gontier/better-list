@@ -109,6 +109,7 @@ const TITLE_PLACEHOLDERS: Record<ListKind, string> = {
   RANKING: "Top 10 anime",
   WATCHLIST: "À voir cet hiver",
   WAIT_FOR_END: "À lire quand c'est fini",
+  TIER: "Isekai, la tier list",
 };
 
 /** Le Top proposé en passant au classement : c'est celui qu'on écrit le plus souvent. */

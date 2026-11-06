@@ -6,6 +6,7 @@ export const LIST_KIND_LABELS: Record<ListKind, string> = {
   RANKING: "Classement",
   WATCHLIST: "À voir",
   WAIT_FOR_END: "Quand c'est fini",
+  TIER: "Tier list",
 };
 
 /** Ce que le formulaire dit de chaque genre, sous son nom. */
@@ -14,6 +15,7 @@ export const LIST_KIND_HINTS: Record<ListKind, string> = {
   RANKING: "L'ordre compte.",
   WATCHLIST: "Une file à vider.",
   WAIT_FOR_END: "J'attends la fin de parution.",
+  TIER: "Des paliers S, A, B… à remplir.",
 };
 
 /** « Aucune œuvre » plutôt que « 0 œuvre » : un zéro se lit comme une panne de chargement. */
@@ -50,7 +52,18 @@ export function sectionHeading(
 export function listCountsLine(
   kind: ListKind,
   cutoff: number | null,
-  { total, ready, seen }: { total: number; ready: number; seen: number },
+  {
+    total,
+    ready,
+    seen,
+    placed,
+  }: {
+    total: number;
+    ready: number;
+    seen: number;
+    /** Les œuvres rangées dans un palier (tier list) ; la réserve est le reste. */
+    placed?: number;
+  },
 ): string {
   if (total === 0) return itemCountLabel(0);
 
@@ -67,6 +80,10 @@ export function listCountsLine(
     case "WAIT_FOR_END":
       if (ready === 0) return `Aucune prête sur ${total}`;
       return `${ready} prête${ready > 1 ? "s" : ""} sur ${total}`;
+    case "TIER":
+      return placed === undefined
+        ? itemCountLabel(total)
+        : `${itemCountLabel(total)} · ${placed} classée${placed > 1 ? "s" : ""}`;
     default:
       return itemCountLabel(total);
   }

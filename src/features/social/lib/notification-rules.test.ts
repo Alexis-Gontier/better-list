@@ -35,6 +35,20 @@ describe("notificationLabel", () => {
     ).toEqual({ lead: "Léo a copié", subject: "Top 10" });
   });
 
+  it("dit qui a fait sa version d'une tier list", () => {
+    expect(
+      notificationLabel({
+        type: "LIST_VERSIONED",
+        actorName: "Léo",
+        listTitle: "Isekai, la tier list",
+        provider: null,
+      }),
+    ).toEqual({
+      lead: "Léo a fait sa version de",
+      subject: "Isekai, la tier list",
+    });
+  });
+
   it("nomme le fournisseur d'une demande", () => {
     expect(
       notificationLabel({

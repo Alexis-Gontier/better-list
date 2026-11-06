@@ -11,7 +11,12 @@ export const listTargetSchema = z.object({
 /** Une ligne de l'onglet « Activité » de la cloche (maquette E). */
 export const activityItemSchema = z.object({
   id: z.string(),
-  type: z.enum(["LIST_LIKED", "LIST_FORKED", "SIGNUP_PENDING"]),
+  type: z.enum([
+    "LIST_LIKED",
+    "LIST_FORKED",
+    "LIST_VERSIONED",
+    "SIGNUP_PENDING",
+  ]),
   actorName: z.string(),
   actorImage: z.string().nullable(),
   listId: z.string().nullable(),

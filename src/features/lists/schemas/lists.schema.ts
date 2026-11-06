@@ -31,12 +31,13 @@ const listTitleSchema = z
   .max(120);
 const listDescriptionSchema = z.string().trim().max(1000).nullable().optional();
 
-/** Les quatre genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
+/** Les cinq genres d'une liste (D47) — le miroir de l'énumération `ListKind` de Prisma. */
 export const listKindSchema = z.enum([
   "SELECTION",
   "RANKING",
   "WATCHLIST",
   "WAIT_FOR_END",
+  "TIER",
 ]);
 export type ListKind = z.infer<typeof listKindSchema>;
 

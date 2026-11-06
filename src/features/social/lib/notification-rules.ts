@@ -3,13 +3,23 @@
   `notificationLabel`.
 */
 
-type NotificationType = "LIST_LIKED" | "LIST_FORKED" | "SIGNUP_PENDING";
+type NotificationType =
+  | "LIST_LIKED"
+  | "LIST_FORKED"
+  | "LIST_VERSIONED"
+  | "SIGNUP_PENDING";
 
 const PROVIDER_LABELS: Record<string, string> = {
   github: "GitHub",
   discord: "Discord",
   google: "Google",
 };
+
+const VERBS = {
+  LIST_LIKED: "a aimé",
+  LIST_FORKED: "a copié",
+  LIST_VERSIONED: "a fait sa version de",
+} as const;
 
 /** On ne s'annonce pas à soi-même son propre geste. */
 export function shouldNotify({
@@ -36,6 +46,6 @@ export function notificationLabel(notification: {
     return { lead: "Nouvelle demande :", subject: `${actorName}${via}` };
   }
 
-  const verb = type === "LIST_LIKED" ? "a aimé" : "a copié";
+  const verb = VERBS[type];
   return { lead: `${actorName} ${verb}`, subject: listTitle ?? "" };
 }

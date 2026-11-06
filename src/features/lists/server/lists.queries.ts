@@ -552,6 +552,7 @@ const SUGGESTION_FILTERS: Record<
 > = {
   SELECTION: {},
   RANKING: {},
+  TIER: {},
   WATCHLIST: { entry: ["PLANNING"] },
   WAIT_FOR_END: {
     entry: ["PAUSED", "DROPPED", "PLANNING"],
