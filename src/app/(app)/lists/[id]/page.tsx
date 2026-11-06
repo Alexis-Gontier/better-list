@@ -132,7 +132,7 @@ async function ListDetail({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const reordering = query.mode === REORDER_MODE;
+  const requestedReorder = query.mode === REORDER_MODE;
   // Posé par la création (`routes.lists.fill`) : la liste neuve s'ouvre sur sa fenêtre d'ajout.
   const filling = query.ajouter === "1";
   const { includeAdult, titleLanguage } = await getPreferences();
@@ -145,6 +145,9 @@ async function ListDetail({
   */
   if (!list) notFound();
 
+  // La liste d'un autre membre se lit, elle ne se modifie pas (D64) : ni mode, ni ajout, ni menu.
+  const reordering = requestedReorder && list.isOwner;
+
   /*
     Le suivi arrive en **une** requête pour toute la page, sur l'index `[userId, mediaId]` — la
     lecture que `/search` emploie déjà, et dont le docstring prévoyait de servir les listes. Une
@@ -156,10 +159,12 @@ async function ListDetail({
     : await Promise.all([
         getLibraryEntriesFor(list.items.map((i) => i.media.id)),
         // Ce que la fenêtre d'ajout propose avant qu'on tape ; indépendant du suivi, donc en parallèle.
-        getListSuggestions(list.id, list.kind, {
-          includeAdult,
-          titleLanguage,
-        }),
+        list.isOwner
+          ? getListSuggestions(list.id, list.kind, {
+              includeAdult,
+              titleLanguage,
+            })
+          : [],
       ]);
 
   /*
@@ -195,9 +200,15 @@ async function ListDetail({
           pire que pas de bouton.
         */}
         <Button asChild className="-ml-2 w-fit" size="sm" variant="ghost">
-          <Link href={routes.lists.root}>
+          <Link
+            href={
+              list.isOwner
+                ? routes.lists.root
+                : routes.profile(list.owner.username)
+            }
+          >
             <ArrowLeftIcon data-icon="inline-start" />
-            Mes listes
+            {list.isOwner ? "Mes listes" : list.owner.name}
           </Link>
         </Button>
 
@@ -226,6 +237,20 @@ async function ListDetail({
               {hiddenCount > 0
                 ? ` · ${hiddenCount} masquée${hiddenCount > 1 ? "s" : ""} par vos préférences`
                 : null}
+              {list.isOwner && list.visibility === "PRIVATE"
+                ? " · Privée, visible de vous seul"
+                : null}
+              {list.isOwner ? null : (
+                <>
+                  {" · Une liste de "}
+                  <Link
+                    className="underline-offset-4 hover:text-foreground hover:underline"
+                    href={routes.profile(list.owner.username)}
+                  >
+                    @{list.owner.username}
+                  </Link>
+                </>
+              )}
             </p>
             {!reordering && progress !== null ? (
               <ListProgress label={progress.label} ratio={progress.ratio} />
@@ -240,44 +265,46 @@ async function ListDetail({
             sans une ligne d'état client. `replace` sur le lien de sortie pour ne pas empiler dix
             entrées d'historique à force d'entrer et de sortir du mode.
           */}
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Ajouter est l'action principale de l'écran (D33), sauf pendant qu'on réordonne. */}
-            {reordering ? null : (
-              <AddMediaDialog
-                initialOpen={filling}
-                listId={list.id}
-                memberIds={list.items.map((item) => item.media.id)}
-                suggestions={suggestions}
-              />
-            )}
-            {/* Dès une œuvre : le mode sert aussi à retirer, pas seulement à réordonner. */}
-            {list.items.length > 0 ? (
-              <Button
-                asChild
-                className="max-sm:h-10"
-                size="sm"
-                variant={reordering ? "default" : "outline"}
-              >
-                <Link
-                  href={
-                    reordering
-                      ? routes.lists.detail(list.id)
-                      : `${routes.lists.detail(list.id)}?mode=${REORDER_MODE}`
-                  }
-                  replace={reordering}
+          {list.isOwner ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Ajouter est l'action principale de l'écran (D33), sauf pendant qu'on réordonne. */}
+              {reordering ? null : (
+                <AddMediaDialog
+                  initialOpen={filling}
+                  listId={list.id}
+                  memberIds={list.items.map((item) => item.media.id)}
+                  suggestions={suggestions}
+                />
+              )}
+              {/* Dès une œuvre : le mode sert aussi à retirer, pas seulement à réordonner. */}
+              {list.items.length > 0 ? (
+                <Button
+                  asChild
+                  className="max-sm:h-10"
+                  size="sm"
+                  variant={reordering ? "default" : "outline"}
                 >
-                  {reordering ? (
-                    <CheckIcon data-icon="inline-start" />
-                  ) : (
-                    <ArrowUpDownIcon data-icon="inline-start" />
-                  )}
-                  {reordering ? "Terminé" : "Réorganiser"}
-                </Link>
-              </Button>
-            ) : null}
+                  <Link
+                    href={
+                      reordering
+                        ? routes.lists.detail(list.id)
+                        : `${routes.lists.detail(list.id)}?mode=${REORDER_MODE}`
+                    }
+                    replace={reordering}
+                  >
+                    {reordering ? (
+                      <CheckIcon data-icon="inline-start" />
+                    ) : (
+                      <ArrowUpDownIcon data-icon="inline-start" />
+                    )}
+                    {reordering ? "Terminé" : "Réorganiser"}
+                  </Link>
+                </Button>
+              ) : null}
 
-            <ListActionsMenu list={list} />
-          </div>
+              <ListActionsMenu list={list} />
+            </div>
+          ) : null}
         </div>
 
         <Separator />

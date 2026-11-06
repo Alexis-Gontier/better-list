@@ -12,6 +12,12 @@ describe("createListSchema", () => {
     });
   });
 
+  it("ouvre une liste aux membres quand la visibilité n'est pas donnée", () => {
+    expect(createListSchema.parse({ title: "Pile" })).toMatchObject({
+      visibility: "MEMBERS",
+    });
+  });
+
   it("refuse un genre inconnu", () => {
     expect(
       createListSchema.safeParse({ title: "Pile", kind: "TIER" }).success,

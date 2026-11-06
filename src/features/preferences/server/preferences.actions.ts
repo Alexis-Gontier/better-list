@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { routes } from "@/config/routes";
 import {
   DEFAULT_PREFERENCES,
+  PREFERENCES_SELECT,
   updatePreferencesSchema,
 } from "@/features/preferences/schemas/preferences.schema";
 import { prisma } from "@/lib/db/prisma";
@@ -66,7 +67,7 @@ export const updatePreferences = authActionClient
       where: { userId: ctx.user.id },
       create: { userId: ctx.user.id, ...DEFAULT_PREFERENCES, ...parsedInput },
       update: parsedInput,
-      select: { titleLanguage: true, includeAdult: true },
+      select: PREFERENCES_SELECT,
     });
 
     revalidateEverySurface();

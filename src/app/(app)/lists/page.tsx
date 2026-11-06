@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { CreateListDialog } from "@/app/(app)/lists/_components/create-list-dialog";
-import { ListCard } from "@/app/(app)/lists/_components/list-card";
 import { ListsEmpty } from "@/app/(app)/lists/_components/lists-empty";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListCard } from "@/features/lists/components/list-card";
 import { getLists } from "@/features/lists/server/lists.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 

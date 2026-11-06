@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  LockIcon,
   MoreHorizontalIcon,
   PencilIcon,
   Share2Icon,
   Trash2Icon,
+  UsersIcon,
 } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
@@ -92,6 +94,25 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
               <Share2Icon />
               {list.shareToken ? "Lien de partage" : "Partager"}
             </DropdownMenuItem>
+            {/* Le libellé dit le geste à venir, l'icône l'état où il mène. */}
+            <DropdownMenuItem
+              onSelect={() =>
+                edit.execute({
+                  listId: list.id,
+                  title: list.title,
+                  description: list.description,
+                  kind: list.kind,
+                  cutoff: list.cutoff,
+                  visibility:
+                    list.visibility === "PRIVATE" ? "MEMBERS" : "PRIVATE",
+                })
+              }
+            >
+              {list.visibility === "PRIVATE" ? <UsersIcon /> : <LockIcon />}
+              {list.visibility === "PRIVATE"
+                ? "Montrer aux membres"
+                : "Rendre privée"}
+            </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => setDeleting(true)}
               variant="destructive"
@@ -119,15 +140,17 @@ export function ListActionsMenu({ list }: { list: ListDetail }) {
           description: list.description ?? "",
           kind: list.kind,
           cutoff: list.cutoff === null ? "" : String(list.cutoff),
+          visibility: list.visibility,
         }}
         onOpenChange={setEditing}
-        onSubmit={({ title, description, kind, cutoff }) =>
+        onSubmit={({ title, description, kind, cutoff, visibility }) =>
           edit.execute({
             listId: list.id,
             title,
             description: description.trim() || null,
             kind,
             cutoff: parseCutoff(cutoff),
+            visibility,
           })
         }
         open={editing}

@@ -66,7 +66,7 @@ export function CreateListDialog() {
         fieldErrors={result.validationErrors?.fieldErrors}
         heading="Nouvelle liste"
         onOpenChange={setOpen}
-        onSubmit={({ title, description, kind, cutoff }) =>
+        onSubmit={({ title, description, kind, cutoff, visibility }) =>
           /*
             La description part `undefined` quand elle est vide, et pas chaîne vide : le schéma la
             veut nullable et facultative, et « je n'ai rien écrit » n'est pas « j'ai écrit rien ».
@@ -76,6 +76,7 @@ export function CreateListDialog() {
             description: description.trim() || undefined,
             kind,
             cutoff: parseCutoff(cutoff),
+            visibility,
           })
         }
         open={open}

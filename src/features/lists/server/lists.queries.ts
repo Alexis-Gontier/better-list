@@ -5,13 +5,16 @@ import { cache } from "react";
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
 import { listCountsLine } from "@/features/lists/lib/list-labels";
 import {
+  type ListSection,
   listSections,
   sectionCounts,
 } from "@/features/lists/lib/list-sections";
 import type {
   ListKind,
   ListMembership,
+  ListVisibility,
 } from "@/features/lists/schemas/lists.schema";
+import { visibleListsWhere } from "@/features/lists/server/list-visibility";
 import {
   compactFromMirror,
   formatMediaFormat,
@@ -76,6 +79,7 @@ export type ListSummary = {
   cutoff: number | null;
   /** La liste porte un lien de partage : la carte le signale, sans exposer le jeton. */
   shared: boolean;
+  visibility: ListVisibility;
   itemCount: number;
   /** La ligne de décompte propre au genre : « Top 10 · 18 œuvres », « 8 prêtes sur 17 ». */
   countsLine: string;
@@ -116,13 +120,23 @@ const COVERS_PER_CARD = 4;
  */
 export async function getLists({
   includeAdult,
+  ownerId,
 }: {
   includeAdult: boolean;
+  /**
+   * Les listes d'un autre membre, sur son profil (D64) : seulement celles qu'il montre, par
+   * `visibleListsWhere`. Absent : mes listes, toutes.
+   */
+  ownerId?: string;
 }): Promise<ListSummary[]> {
-  const ownerId = await currentUserId();
+  const viewerId = await currentUserId();
+  const isOwn = ownerId === undefined || ownerId === viewerId;
+  const where = isOwn
+    ? { ownerId: viewerId }
+    : { ownerId, ...visibleListsWhere(viewerId) };
 
   const rows = await prisma.list.findMany({
-    where: { ownerId },
+    where,
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
@@ -131,12 +145,13 @@ export async function getLists({
       kind: true,
       cutoff: true,
       shareToken: true,
+      visibility: true,
       _count: { select: { items: true } },
     },
   });
 
   const items = await prisma.listItem.findMany({
-    where: { list: { ownerId } },
+    where: { list: where },
     orderBy: { rank: "asc" },
     select: {
       listId: true,
@@ -152,9 +167,10 @@ export async function getLists({
       },
     },
   });
+  // Mon suivi, même sur les listes d'un autre : les sections « à voir » parlent de moi.
   const entries = await prisma.entry.findMany({
     where: {
-      userId: ownerId,
+      userId: viewerId,
       mediaId: { in: [...new Set(items.map(({ media }) => media.id))] },
     },
     select: { mediaId: true, status: true },
@@ -180,7 +196,9 @@ export async function getLists({
       description: row.description,
       kind: row.kind,
       cutoff: row.cutoff,
-      shared: row.shareToken !== null,
+      // Le partage d'un autre ne me regarde pas : la carte ne le signale qu'à son propriétaire.
+      shared: isOwn && row.shareToken !== null,
+      visibility: row.visibility,
       itemCount: row._count.items,
       countsLine: listCountsLine(row.kind, row.cutoff, {
         total: row._count.items,
@@ -219,6 +237,7 @@ export type ListDetail = {
   title: string;
   description: string | null;
   kind: ListKind;
+  visibility: ListVisibility;
   /** La ligne de coupe d'un classement ; conservée hors classement, et ignorée. */
   cutoff: number | null;
   /** Le nombre d'œuvres **réel**, avant le filtre 18+ : c'est ce que la suppression emporterait. */
@@ -228,17 +247,20 @@ export type ListDetail = {
    * partage** (§4.4).
    *
    * Il descend jusqu'au navigateur, et c'est nécessaire : le propriétaire doit pouvoir **copier son
-   * propre lien**. Ce n'est pas une fuite — cette lecture est gardée par `ownerId`, donc le jeton
-   * n'atteint que celui qui l'a fait fabriquer.
+   * propre lien**. Ce n'est pas une fuite : `getList` ne le rend qu'au propriétaire, `null` à un
+   * autre membre qui lit la liste (D64).
    */
   shareToken: string | null;
+  /** Faux : la liste d'un autre membre, ouverte en lecture seule (D64). */
+  isOwner: boolean;
+  owner: { name: string; username: string };
   items: ListDetailItem[];
 };
 
 /**
  * Une liste et son contenu, **dans son ordre**.
  *
- * `null` quand la liste n'existe pas **ou n'est pas la mienne**, et les deux cas se confondent
+ * `null` quand la liste n'existe pas **ou ne m'est pas visible** (D64), et les deux cas se confondent
  * volontairement : distinguer « elle n'existe pas » de « elle ne t'appartient pas » dirait à qui
  * essaie des identifiants au hasard lesquels ont trouvé quelque chose. L'appelant rend un 404 dans
  * les deux cas.
@@ -260,10 +282,10 @@ export const getList = cache(async function getList(
   listId: string,
   { includeAdult }: { includeAdult: boolean },
 ): Promise<ListDetail | null> {
-  const ownerId = await currentUserId();
+  const viewerId = await currentUserId();
 
   const list = await prisma.list.findFirst({
-    where: { id: listId, ownerId },
+    where: { id: listId, ...visibleListsWhere(viewerId) },
     select: {
       id: true,
       title: true,
@@ -271,6 +293,9 @@ export const getList = cache(async function getList(
       kind: true,
       cutoff: true,
       shareToken: true,
+      visibility: true,
+      ownerId: true,
+      owner: { select: { name: true, username: true } },
       _count: { select: { items: true } },
       items: {
         orderBy: { rank: "asc" },
@@ -282,14 +307,19 @@ export const getList = cache(async function getList(
 
   if (!list) return null;
 
+  const isOwner = list.ownerId === viewerId;
+
   return {
     id: list.id,
     title: list.title,
     description: list.description,
     kind: list.kind,
     cutoff: list.cutoff,
+    visibility: list.visibility,
     itemCount: list._count.items,
-    shareToken: list.shareToken,
+    shareToken: isOwner ? list.shareToken : null,
+    isOwner,
+    owner: list.owner,
     items: list.items.map(({ media }) => ({
       media: compactFromMirror(media),
       banner: media.bannerImage,
@@ -361,7 +391,12 @@ export type SharedList = {
   cutoff: number | null;
   /** Le nom du membre qui partage. Décision d'Alexis du 6 septembre 2026 : la page dit d'où elle vient. */
   ownerName: string;
+  /** Sans les œuvres 18+, qu'un lien ne montre jamais (D64). */
   items: ListDetailItem[];
+  /** Découpées sur la liste entière puis privées du 18+ : un classement garde ses rangs. */
+  sections: ListSection<ListDetailItem>[];
+  /** Les œuvres 18+ retirées, annoncées sous la grille. */
+  hiddenAdultCount: number;
 };
 
 /**
@@ -406,6 +441,34 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
 
   if (!list) return null;
 
+  const items: ListDetailItem[] = list.items.map(({ media }) => ({
+    media: compactFromMirror(media),
+    banner: media.bannerImage,
+    unit: media.type === "ANIME" ? "episode" : "chapitre",
+    total: media.type === "ANIME" ? media.episodes : media.chapters,
+  }));
+  const isShown = (item: ListDetailItem) => !item.media.isAdult;
+
+  /*
+    Sans suivi : le visiteur n'a pas celui du propriétaire, et le montrer dévoilerait sa
+    bibliothèque. `entryStatus: null` partout, donc « Déjà vues » ne paraît jamais ici.
+  */
+  const sections = listSections(
+    list.kind,
+    list.cutoff,
+    items.map((item) => ({
+      item,
+      mediaStatus: item.media.status,
+      entryStatus: null,
+    })),
+  )
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(({ item }) => isShown(item)),
+    }))
+    .filter((section) => section.items.length > 0);
+  const shown = items.filter(isShown);
+
   return {
     title: list.title,
     description: list.description,
@@ -413,12 +476,9 @@ export async function getSharedList(token: string): Promise<SharedList | null> {
     cutoff: list.cutoff,
     // Le nom d'affichage d'abord, l'identifiant en repli : un compte sans nom reste nommable.
     ownerName: list.owner.name || list.owner.username || "un membre",
-    items: list.items.map(({ media }) => ({
-      media: compactFromMirror(media),
-      banner: media.bannerImage,
-      unit: media.type === "ANIME" ? "episode" : "chapitre",
-      total: media.type === "ANIME" ? media.episodes : media.chapters,
-    })),
+    items: shown,
+    sections,
+    hiddenAdultCount: items.length - shown.length,
   };
 }
 

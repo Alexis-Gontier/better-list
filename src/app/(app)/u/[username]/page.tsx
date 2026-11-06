@@ -7,6 +7,7 @@ import { ActivityCalendar } from "@/app/(app)/u/[username]/_components/activity-
 import { GenreChart } from "@/app/(app)/u/[username]/_components/genre-chart";
 import { ProfileFavorites } from "@/app/(app)/u/[username]/_components/profile-favorites";
 import { ProfileHeader } from "@/app/(app)/u/[username]/_components/profile-header";
+import { ProfileHiddenNotice } from "@/app/(app)/u/[username]/_components/profile-hidden-notice";
 import {
   ProfileSection,
   ProfileSectionAside,
@@ -19,6 +20,11 @@ import {
   loadProfileFilters,
   serializeProfileFilters,
 } from "@/app/(app)/u/[username]/_lib/profile-params";
+import {
+  canViewProfileSection,
+  isProfileHiddenFrom,
+  profileAdultFilter,
+} from "@/app/(app)/u/[username]/_lib/profile-privacy";
 import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,7 +42,12 @@ import {
   getLatestFavoriteCover,
   getProfileFavorites,
 } from "@/features/favorites/server/favorites.queries";
-import { getPreferences } from "@/features/preferences/server/preferences.queries";
+import { ListCard } from "@/features/lists/components/list-card";
+import { getLists } from "@/features/lists/server/lists.queries";
+import {
+  getPreferences,
+  getPrivacyOf,
+} from "@/features/preferences/server/preferences.queries";
 import { formatDayKey } from "@/features/profile/lib/profile-activity";
 import {
   getProfileActivity,
@@ -140,8 +151,12 @@ export default function ProfilePage({
         <ProfileIdentityBlock params={params} />
       </Suspense>
 
-      <div className="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
-        <aside className="flex flex-col gap-4">
+      {/*
+        Profil caché ou favoris et statistiques coupés (D64) : la colonne latérale reste vide, et la
+        grille repasse sur une colonne plutôt que de laisser 22 rem de rien à gauche.
+      */}
+      <div className="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start lg:has-[>aside:empty]:grid-cols-1">
+        <aside className="flex flex-col gap-4 empty:hidden">
           <Suspense fallback={<SectionSkeleton contentClassName="h-40" />}>
             <ProfileFavoritesBlock params={params} />
           </Suspense>
@@ -152,6 +167,10 @@ export default function ProfilePage({
         </aside>
 
         <div className="flex min-w-0 flex-col gap-4">
+          <Suspense fallback={<SectionSkeleton contentClassName="h-40" />}>
+            <ProfileListsBlock params={params} />
+          </Suspense>
+
           <Suspense fallback={<SectionSkeleton contentClassName="h-36" />}>
             <ProfileActivityBlock params={params} />
           </Suspense>
@@ -190,22 +209,52 @@ async function resolveProfile(
   return profile;
 }
 
+/**
+ * Le profil visé, **ses** réglages de confidentialité et le filtre 18+ qui en découle (D64) : le
+ * 18+ n'apparaît à un autre que si le propriétaire le montre et que le lecteur l'accepte.
+ */
+async function resolveProfileAccess(
+  params: PageProps<"/u/[username]">["params"],
+) {
+  const profile = await resolveProfile(params);
+  const [preferences, privacy] = await Promise.all([
+    getPreferences(),
+    getPrivacyOf(profile.id),
+  ]);
+
+  return {
+    profile,
+    privacy,
+    titleLanguage: preferences.titleLanguage,
+    includeAdult: profileAdultFilter({
+      isOwner: profile.isOwner,
+      viewerIncludeAdult: preferences.includeAdult,
+      privacy,
+    }),
+  };
+}
+
 /** L'identité et les quatre chiffres. */
 async function ProfileIdentityBlock({
   params,
 }: {
   params: PageProps<"/u/[username]">["params"];
 }) {
-  const profile = await resolveProfile(params);
-  const { includeAdult } = await getPreferences();
+  const { profile, privacy, includeAdult } = await resolveProfileAccess(params);
+  const showStats = canViewProfileSection(profile, privacy, "stats");
+  const showFavorites = canViewProfileSection(profile, privacy, "favorites");
 
-  const [{ tiles }, banner] = await Promise.all([
-    getProfileStats({
-      userId: profile.id,
-      isOwner: profile.isOwner,
-      includeAdult,
-    }),
-    getLatestFavoriteCover({ userId: profile.id, includeAdult }),
+  const [stats, banner] = await Promise.all([
+    showStats
+      ? getProfileStats({
+          userId: profile.id,
+          isOwner: profile.isOwner,
+          includeAdult,
+        })
+      : null,
+    showFavorites
+      ? getLatestFavoriteCover({ userId: profile.id, includeAdult })
+      : null,
   ]);
 
   return (
@@ -219,11 +268,58 @@ async function ProfileIdentityBlock({
         image={profile.image}
         memberSince={profile.memberSince}
         name={profile.name}
-        tiles={tiles}
+        tiles={stats?.tiles ?? null}
         username={profile.username}
       />
+      {isProfileHiddenFrom(profile, privacy) ? (
+        <ProfileHiddenNotice name={profile.name} />
+      ) : null}
       <Separator />
     </div>
+  );
+}
+
+/**
+ * Les listes du membre, **toujours montrées** même quand le profil est caché (D64) : seules celles
+ * qu'il ouvre aux membres, par `visibleListsWhere`, et le 18+ par `profileAdultFilter`.
+ */
+async function ProfileListsBlock({
+  params,
+}: {
+  params: PageProps<"/u/[username]">["params"];
+}) {
+  const { profile, includeAdult } = await resolveProfileAccess(params);
+  const lists = await getLists({ includeAdult, ownerId: profile.id });
+
+  if (lists.length === 0 && !profile.isOwner) return null;
+
+  return (
+    <ProfileSection
+      aside={
+        <ProfileSectionAside
+          label={lists.length > 1 ? "listes" : "liste"}
+          value={String(lists.length)}
+        />
+      }
+      description={
+        profile.isOwner
+          ? "Les privées n'apparaissent qu'à vous."
+          : "Celles qu'il ouvre aux membres du cercle."
+      }
+      title={profile.isOwner ? "Mes listes" : "Ses listes"}
+    >
+      {lists.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          Aucune liste pour l'instant.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {lists.map((list) => (
+            <ListCard key={list.id} list={list} />
+          ))}
+        </div>
+      )}
+    </ProfileSection>
   );
 }
 
@@ -233,8 +329,8 @@ async function ProfileActivityBlock({
 }: {
   params: PageProps<"/u/[username]">["params"];
 }) {
-  const profile = await resolveProfile(params);
-  const { includeAdult } = await getPreferences();
+  const { profile, privacy, includeAdult } = await resolveProfileAccess(params);
+  if (!canViewProfileSection(profile, privacy, "activity")) return null;
 
   const { days, total, streak } = await getProfileActivity({
     userId: profile.id,
@@ -272,8 +368,8 @@ async function ProfileStatsBlock({
 }: {
   params: PageProps<"/u/[username]">["params"];
 }) {
-  const profile = await resolveProfile(params);
-  const { includeAdult } = await getPreferences();
+  const { profile, privacy, includeAdult } = await resolveProfileAccess(params);
+  if (!canViewProfileSection(profile, privacy, "stats")) return null;
 
   const { tiles, statuses, scores, genres } = await getProfileStats({
     userId: profile.id,
@@ -344,8 +440,9 @@ async function ProfileFavoritesBlock({
 }: {
   params: PageProps<"/u/[username]">["params"];
 }) {
-  const profile = await resolveProfile(params);
-  const { includeAdult, titleLanguage } = await getPreferences();
+  const { profile, privacy, includeAdult, titleLanguage } =
+    await resolveProfileAccess(params);
+  if (!canViewProfileSection(profile, privacy, "favorites")) return null;
 
   const groups = await getProfileFavorites({
     userId: profile.id,
@@ -385,9 +482,10 @@ async function ProfileJournalBlock({
   params: PageProps<"/u/[username]">["params"];
   searchParams: PageProps<"/u/[username]">["searchParams"];
 }) {
-  const profile = await resolveProfile(params);
+  const { profile, privacy, includeAdult, titleLanguage } =
+    await resolveProfileAccess(params);
+  if (!canViewProfileSection(profile, privacy, "journal")) return null;
   const { page, jour } = await loadProfileFilters(searchParams);
-  const { includeAdult, titleLanguage } = await getPreferences();
 
   const pages = Math.min(Math.max(page, 1), TIMELINE_MAX_PAGES);
 

@@ -45,9 +45,8 @@ export default async function Image({
   const paper = "#f7f8fa";
   const muted = "#8b91a1";
 
-  // Jamais une jaquette 18+ dans l'aperçu : il s'affiche en clair, dans n'importe quelle conversation.
+  // Jamais une jaquette 18+ dans l'aperçu : `getSharedList` les a déjà retirées (D64).
   const covers = (list?.items ?? [])
-    .filter((item) => !item.media.isAdult)
     .slice(0, COVER_COUNT)
     .map((item) => item.media.coverImage?.extraLarge ?? null)
     .filter((url): url is string => url !== null);

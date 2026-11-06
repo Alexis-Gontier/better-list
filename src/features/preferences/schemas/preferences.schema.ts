@@ -22,6 +22,13 @@ export const preferencesSchema = z.object({
   titleLanguage: titleLanguageSchema,
   /** Filtre 18+. Appliqué dans la requête, jamais par un masque d'affichage. */
   includeAdult: z.boolean(),
+  /** Confidentialité du profil (D64) : ce que les **autres** membres en voient. */
+  profileVisible: z.boolean(),
+  showJournal: z.boolean(),
+  showStats: z.boolean(),
+  showActivityCalendar: z.boolean(),
+  showFavorites: z.boolean(),
+  showAdult: z.boolean(),
 });
 export type Preferences = z.infer<typeof preferencesSchema>;
 
@@ -44,4 +51,35 @@ export const updatePreferencesSchema = preferencesSchema.partial();
 export const DEFAULT_PREFERENCES: Preferences = {
   titleLanguage: "ROMAJI",
   includeAdult: false,
+  profileVisible: true,
+  showJournal: true,
+  showStats: true,
+  showActivityCalendar: true,
+  showFavorites: true,
+  showAdult: false,
 };
+
+export const PRIVACY_KEYS = [
+  "profileVisible",
+  "showJournal",
+  "showStats",
+  "showActivityCalendar",
+  "showFavorites",
+  "showAdult",
+] as const;
+export type ProfilePrivacy = Pick<Preferences, (typeof PRIVACY_KEYS)[number]>;
+
+/**
+ * Les colonnes lues et renvoyées, **une seule liste** pour la lecture et l'action : une clé ajoutée
+ * au schéma et oubliée dans un `select` reviendrait `undefined` sans que le type ne proteste.
+ */
+export const PREFERENCES_SELECT = {
+  titleLanguage: true,
+  includeAdult: true,
+  profileVisible: true,
+  showJournal: true,
+  showStats: true,
+  showActivityCalendar: true,
+  showFavorites: true,
+  showAdult: true,
+} as const satisfies Record<keyof Preferences, true>;

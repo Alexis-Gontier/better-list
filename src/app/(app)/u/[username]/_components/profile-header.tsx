@@ -46,12 +46,13 @@ export function ProfileHeader({
   /** La jaquette du dernier favori, floutée en bande. `null` : une surface neutre à la place. */
   banner: string | null;
   memberSince: Date;
+  /** `null` : le membre ne montre pas ses statistiques (D64), la rangée disparaît. */
   tiles: {
     entries: number;
     episodes: number;
     chapters: number;
     hoursWatched: number;
-  };
+  } | null;
 }) {
   return (
     <header className="flex flex-col gap-6">
@@ -84,12 +85,14 @@ export function ProfileHeader({
         Une rangée qui s'enroule plutôt qu'une grille : sans cadre, rien n'impose que les quatre
         chiffres tombent en colonnes, et ils se lisent comme une phrase — « 29 œuvres, 583 épisodes ».
       */}
-      <dl className="flex flex-wrap gap-x-10 gap-y-4">
-        <Stat label="Œuvres suivies" value={tiles.entries} />
-        <Stat label="Épisodes vus" value={tiles.episodes} />
-        <Stat label="Chapitres lus" value={tiles.chapters} />
-        <Stat label="Heures de visionnage" value={tiles.hoursWatched} />
-      </dl>
+      {tiles ? (
+        <dl className="flex flex-wrap gap-x-10 gap-y-4">
+          <Stat label="Œuvres suivies" value={tiles.entries} />
+          <Stat label="Épisodes vus" value={tiles.episodes} />
+          <Stat label="Chapitres lus" value={tiles.chapters} />
+          <Stat label="Heures de visionnage" value={tiles.hoursWatched} />
+        </dl>
+      ) : null}
     </header>
   );
 }
