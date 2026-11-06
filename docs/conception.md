@@ -70,6 +70,11 @@ Une liste a un **genre** (`kind`, D47) : sélection, classement (avec une ligne 
 (parution terminée ou annulée, lue dans le miroir) et « vue » (suivi `COMPLETED`) se calculent, rien
 n'est stocké (`features/lists/lib/list-sections.ts`). Le cron Discord annonce une œuvre d'une liste « Quand c'est fini » quand elle devient prête (D50).
 
+Une liste « Membres » d'un autre s'aime (`ListLike`, unique par `(userId, listId)`) et se copie :
+`forkedFromId` pointe vers l'original (`SetNull` s'il disparaît), la copie naît privée (D65).
+`Notification` stocke les seules notifications sociales (like, copie, demande d'inscription), avec
+`readAt` ; le retard d'épisodes reste calculé (D31, D65).
+
 ### 4.5 `Edition`, `OwnedVolume` — la collection physique
 
 Posséder et avoir lu sont deux axes indépendants. `Edition` (série, libellé, éditeur, total de
@@ -94,9 +99,10 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
-| `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
+| `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
-| `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture (D64) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
+| `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture, qu'on aime ou copie (D64, D65) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) | livré |
+| `/lists/community` | Les listes « Membres » des autres, triées par likes ou par date (D65) | livré |
 | `/lists/[id]/[viewId]` | Une vue posée sur une liste | **déclaré, non construit** (D17) |
 | `/l/[token]` | Une liste partagée, **sans session**, 18+ retirées et comptées (D64) | livré |
 | `/u/[username]` | Profil : listes, favoris, statistiques, calendrier d'activité, journal, chacun selon les réglages du membre (D64) | livré |
@@ -107,7 +113,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/admin/users` | Demandes, membres, bannis : approuver, refuser, bannir, nommer (D57) | livré, réservé aux administrateurs |
 
 Route handlers (chacun porte sa propre garde) : `api/auth/[...all]`, `api/search` et
-`api/notifications` (session approuvée), `api/cron/refresh-media` et `api/cron/discord`
+`api/notifications` (session approuvée ; épisodes et activité, D65), `api/cron/refresh-media` et `api/cron/discord`
 (`Bearer $CRON_SECRET`), `api/og/episode/[mediaId]/[episode]` (signature HMAC).
 
 ## 6. La suite

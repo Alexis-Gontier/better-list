@@ -194,6 +194,24 @@ export const auth = betterAuth({
             },
           };
         },
+
+        /**
+         * Chaque administrateur apprend la demande dans sa cloche (lot 3, §4). Le fournisseur se lit
+         * à l'affichage : à ce stade, le compte `Account` n'est pas encore écrit.
+         */
+        after: async (user) => {
+          const admins = await prisma.user.findMany({
+            where: { role: ADMIN_ROLE },
+            select: { id: true },
+          });
+          await prisma.notification.createMany({
+            data: admins.map(({ id }) => ({
+              type: "SIGNUP_PENDING" as const,
+              actorId: user.id,
+              recipientId: id,
+            })),
+          });
+        },
       },
 
       update: {

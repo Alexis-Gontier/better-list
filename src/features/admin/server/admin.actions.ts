@@ -27,6 +27,17 @@ export const setUsersStatus = adminActionClient
       where: { id: { in: userIds.filter((id) => id !== ctx.user.id) } },
       data: { status },
     });
+    // Une demande tranchée n'attend plus personne : lue chez tous les administrateurs (lot 3, §4).
+    if (status !== "PENDING") {
+      await prisma.notification.updateMany({
+        where: {
+          type: "SIGNUP_PENDING",
+          actorId: { in: userIds },
+          readAt: null,
+        },
+        data: { readAt: new Date() },
+      });
+    }
     revalidatePath(routes.admin.users);
   });
 

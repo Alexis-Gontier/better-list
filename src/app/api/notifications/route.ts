@@ -1,8 +1,9 @@
+import { getActivity } from "@/features/social/server/notifications.queries";
 import { getEpisodeNotifications } from "@/features/tracking/server/notifications.queries";
 import { getSession } from "@/lib/auth/session";
 
 /**
- * Ce que la cloche de l'en-tête va chercher au montage.
+ * Ce que la cloche de l'en-tête va chercher au montage : les épisodes en retard et l'activité.
  *
  * **Un route handler et pas une Server Action**, comme `api/search` d'à côté : c'est une lecture
  * demandée par un composant client, et la règle du dépôt ne laisse pas le choix (CLAUDE.md). Elle a
@@ -28,5 +29,11 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return Response.json(await getEpisodeNotifications());
+  // Les deux onglets en une réponse : la cloche fait une requête par chargement, pas deux.
+  const [episodes, activity] = await Promise.all([
+    getEpisodeNotifications(),
+    getActivity(session.user.id),
+  ]);
+
+  return Response.json({ episodes, activity });
 }

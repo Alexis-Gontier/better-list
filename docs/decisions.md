@@ -202,3 +202,19 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   lui-même. Sur `/l/[token]`, les œuvres 18+ sont **retirées pour tout visiteur** et comptées sous
   la grille, « + N œuvres réservées aux membres » (révise D49) : la page reste publique et ne lit
   aucune session, un membre retrouve la liste entière dans l'app. Un classement garde ses rangs.
+- **D65** — Les listes deviennent sociales (lot 3 de la refonte). On aime la liste « Membres »
+  d'un autre (`ListLike`, pas de compteur dénormalisé) et on la copie : la copie reprend titre,
+  description, genre, coupe et rangs, jamais le jeton de partage, les likes ni les notes, et naît
+  **privée**. Copier ne redirige pas : un toast « Copiée dans vos listes, en privé » propose
+  « Ouvrir », on reste sur la liste qu'on lisait. La copie dit « Copiée de *Titre* · Pseudo » tant
+  que l'original existe et m'est visible ; l'original compte ses copies **visibles du lecteur**.
+  `/lists/community` (segment statique, précise D6) montre les listes « Membres » non vides des
+  autres, triées par likes ou par date, « Voir plus » étant un lien ; le genre s'y écrit en toutes
+  lettres. La carte reste un lien entier, le ♥ passe par-dessus. La fiche montre « Dans les listes »
+  (quatre mini-cartes, « Tout voir » au-delà). Les notifications sociales sont **stockées**
+  (`Notification` : like, copie, demande d'inscription ; précise D31, le retard d'épisodes reste
+  calculé), écrites dans la transaction du geste, sans doublon non lu, et effacées non lues au
+  retrait d'un like. La cloche prend deux onglets, « Épisodes » et « Activité » ; ouvrir
+  « Activité » marque tout lu, d'où l'absence de « Tout marquer comme lu ». Le fournisseur d'une
+  demande se lit à l'affichage (le hook de création ne le connaît pas), et trancher une demande la
+  marque lue chez tous les administrateurs.

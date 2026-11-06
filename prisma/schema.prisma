@@ -165,6 +165,10 @@ model User {
   /// Tomes qu'on m'a prêtés — l'inverse de `OwnedVolume.lentTo`.
   borrowed     OwnedVolume[] @relation("VolumeBorrower")
   favorites    Favorite[]
+  listLikes    ListLike[]
+
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent     Notification[] @relation("NotificationActor")
 
   @@index([status])
   @@map("user")
@@ -565,6 +569,9 @@ model List {
 
   items ListItem[]
   views ListView[]
+  likes ListLike[]
+
+  notifications Notification[]
 
   @@index([ownerId, updatedAt])
   @@index([visibility])
@@ -716,4 +723,45 @@ model OwnedVolume {
   @@index([editionId])
   @@index([lentToId])
   @@map("owned_volumes")
+}
+
+enum NotificationType {
+  LIST_LIKED
+  LIST_FORKED
+  SIGNUP_PENDING
+}
+
+/// Un « j'aime » sur la liste d'un autre membre (spec du lot 3, §3). Pas de compteur dénormalisé :
+/// à dix comptes, `_count` suffit.
+model ListLike {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listId String
+  list   List   @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listId])
+  @@index([listId])
+  @@map("list_likes")
+}
+
+/// Les seules notifications **stockées** : le retard d'épisodes reste calculé (précise D31).
+model Notification {
+  id String @id @default(cuid())
+
+  recipientId String
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  type   NotificationType
+  listId String?
+  list   List?            @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([recipientId, readAt, createdAt])
+  @@map("notifications")
 }
