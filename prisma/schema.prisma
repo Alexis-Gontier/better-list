@@ -515,16 +515,16 @@ enum ListKind {
   WAIT_FOR_END
 }
 
-/// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
-///
-/// Pas de `slug` : une liste s'adresse par son `id` (`/lists/[id]`). Un slug tiré du titre devait
-/// être rendu unique par propriétaire, se périmait au premier renommage, et n'aurait de toute façon
-/// pas suffi à désigner la liste d'un autre membre le jour du partage par lien (§4.4).
 enum ListVisibility {
   PRIVATE
   MEMBERS
 }
 
+/// La collection : ce que la liste contient. Son arrangement vit dans `ListView`.
+///
+/// Pas de `slug` : une liste s'adresse par son `id` (`/lists/[id]`). Un slug tiré du titre devait
+/// être rendu unique par propriétaire, se périmait au premier renommage, et n'aurait de toute façon
+/// pas suffi à désigner la liste d'un autre membre le jour du partage par lien (§4.4).
 model List {
   id String @id @default(cuid())
 

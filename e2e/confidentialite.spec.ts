@@ -66,7 +66,9 @@ test.describe("confidentialité entre membres", () => {
     await memberPage.getByLabel("Nom").fill("Brouillon secret");
     await memberPage.getByRole("radio", { name: "Privée" }).click();
     await memberPage.getByRole("button", { name: "Créer et remplir" }).click();
-    await expect(memberPage).toHaveURL(/\/lists\/[^/?]+/);
+    await expect(memberPage).toHaveURL(
+      new RegExp(`${routes.lists.root}/[^/?]+`),
+    );
     const listPath = new URL(memberPage.url()).pathname;
 
     await adminPage.goto(listPath);
