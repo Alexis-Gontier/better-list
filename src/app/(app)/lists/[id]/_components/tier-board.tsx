@@ -10,6 +10,7 @@ import {
   KeyboardSensor,
   MouseSensor,
   pointerWithin,
+  rectIntersection,
   type ScreenReaderInstructions,
   TouchSensor,
   type UniqueIdentifier,
@@ -50,13 +51,16 @@ const RESERVE = "reserve";
 type Columns = Record<string, TierCover[]>;
 
 /**
- * **Le pointeur d'abord, les coins ensuite.** `closestCorners` seul fait gagner les jaquettes du
- * palier voisin sur un palier vide qu'on survole pourtant : ses coins sont loin du pointeur. Au
- * clavier il n'y a pas de pointeur, et `closestCorners` reprend la main.
+ * **Le pointeur d'abord, puis le recouvrement, puis les coins.** `closestCorners` seul fait gagner
+ * les jaquettes du palier voisin — ou la jaquette elle-même, encore à sa place d'origine — sur un
+ * palier vide qu'on vise pourtant : ses coins sont loin, il est large. Au clavier il n'y a pas de
+ * pointeur, mais la jaquette déplacée recouvre la rangée visée.
  */
 const collision: CollisionDetection = (args) => {
   const within = pointerWithin(args);
-  return within.length > 0 ? within : closestCorners(args);
+  if (within.length > 0) return within;
+  const overlapping = rectIntersection(args);
+  return overlapping.length > 0 ? overlapping : closestCorners(args);
 };
 
 const tierKey = (index: number) => `tier-${index}`;

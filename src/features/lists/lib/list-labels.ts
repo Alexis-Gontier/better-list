@@ -83,8 +83,14 @@ export function listCountsLine(
     case "TIER":
       return placed === undefined
         ? itemCountLabel(total)
-        : `${itemCountLabel(total)} · ${placed} classée${placed > 1 ? "s" : ""}`;
+        : `${itemCountLabel(total)} · ${placedLabel(placed)}`;
     default:
       return itemCountLabel(total);
   }
+}
+
+/** « aucune classée » plutôt que « 0 classée », pour la même raison que `itemCountLabel`. */
+function placedLabel(placed: number): string {
+  if (placed === 0) return "aucune classée";
+  return placed === 1 ? "1 classée" : `${placed} classées`;
 }
