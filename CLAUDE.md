@@ -97,6 +97,8 @@ la spec et le plan. Mettre à jour `conception.md` §5 et §6 dans la PR qui liv
 - **AniList répond 403 sans en-tête `Referer`**, avec un message qui fait croire à une panne.
 - **Une migration non appliquée fait tomber toutes les fiches** : le déploiement l'applique, mais
   une base de développement doit passer `pnpm db:migrate`.
+- **Prisma 7 : `pnpm db:migrate` ne régénère plus le client.** Après une migration, `pnpm prisma
+  generate`, sinon le typecheck ne voit pas les nouveaux modèles, puis redémarrer `pnpm dev`.
 - **Vitest aliase `server-only`** vers un module vide : sans cet alias, le test d'un helper
   `server-only` échoue avant sa première assertion.
 
