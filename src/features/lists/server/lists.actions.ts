@@ -6,19 +6,28 @@ import { routes } from "@/config/routes";
 import {
   rankAfterMove,
   rankForAppend,
+  rankInGroup,
 } from "@/features/lists/lib/list-reorder";
 import { READY_MEDIA_STATUSES } from "@/features/lists/lib/list-sections";
 import { generateShareToken } from "@/features/lists/lib/share-token";
 import {
+  applyTierOp,
+  DEFAULT_TIERS,
+  parseTiers,
+} from "@/features/lists/lib/tier-list";
+import {
   addToListSchema,
   createListSchema,
   deleteListSchema,
+  moveTierItemSchema,
   removeFromListSchema,
   reorderListItemSchema,
   shareListSchema,
   updateListSchema,
+  updateTiersSchema,
 } from "@/features/lists/schemas/lists.schema";
 import { ensureMediaMirror } from "@/features/media/server/media.mirror";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { authActionClient } from "@/lib/safe-action";
 
@@ -114,6 +123,8 @@ export const createList = authActionClient
         kind: parsedInput.kind,
         cutoff: parsedInput.cutoff ?? null,
         visibility: parsedInput.visibility,
+        // Une tier list naît avec S, A, B, C, D : sans paliers, il n'y aurait rien où ranger.
+        ...(parsedInput.kind === "TIER" ? { tiers: DEFAULT_TIERS } : {}),
         ...(mediaId !== undefined
           ? {
               items: {
@@ -167,6 +178,21 @@ export const updateList = authActionClient
           media: { status: { in: [...READY_MEDIA_STATUSES] } },
         },
         data: { readyNotifiedAt: new Date() },
+      });
+    }
+
+    /*
+      Passer en tier list pose les paliers par défaut **seulement s'il n'y en a pas** : une liste
+      qui revient au genre retrouve les siens, et ses `tierIndex`, que rien n'efface (comme `cutoff`).
+    */
+    if (kind === "TIER") {
+      await prisma.list.updateMany({
+        where: {
+          id: listId,
+          ownerId: ctx.user.id,
+          tiers: { equals: Prisma.DbNull },
+        },
+        data: { tiers: DEFAULT_TIERS },
       });
     }
 
@@ -264,6 +290,100 @@ export const reorderListItem = authActionClient
     revalidatePath(routes.lists.root);
 
     return { moved: true };
+  });
+
+/**
+ * Ranger une œuvre d'une tier list : dans un palier, ou dans la réserve (`tierIndex: null`).
+ *
+ * Même principe que `reorderListItem` : la propriété d'abord, puis le palier **cible** relu en base
+ * et `rankInGroup` qui calcule le rang. **Une ligne écrite**, `tierIndex` et `rank` ensemble. Un
+ * palier qui n'existe plus (supprimé dans un autre onglet) est refusé plutôt que créé.
+ */
+export const moveTierItem = authActionClient
+  .metadata({ actionName: "moveTierItem" })
+  .inputSchema(moveTierItemSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { listId, mediaId, tierIndex, toIndex } = parsedInput;
+
+    const list = await prisma.list.findFirst({
+      where: { id: listId, ownerId: ctx.user.id, kind: "TIER" },
+      select: { tiers: true },
+    });
+    if (!list) throw new Error("Liste introuvable.");
+    if (tierIndex !== null && tierIndex >= parseTiers(list.tiers).length) {
+      throw new Error("Ce palier n'existe plus.");
+    }
+
+    const group = await prisma.listItem.findMany({
+      where: { listId, tierIndex, mediaId: { not: mediaId } },
+      orderBy: { rank: "asc" },
+      select: { id: true, rank: true },
+    });
+
+    const { count } = await prisma.listItem.updateMany({
+      where: { listId, mediaId },
+      data: { tierIndex, rank: rankInGroup(group, toIndex) },
+    });
+    if (count === 0) throw new Error("Cette œuvre n'est pas dans la liste.");
+
+    // La carte de `/lists` montre les premiers paliers : elle change avec eux.
+    revalidatePath(routes.lists.detail(listId));
+    revalidatePath(routes.lists.root);
+
+    return { moved: true };
+  });
+
+/**
+ * Un geste du menu d'un palier : renommer, recolorer, ajouter, monter, vider, supprimer.
+ *
+ * `applyTierOp` rend les paliers et la renumérotation des `tierIndex` ; **une transaction** écrit
+ * les deux, sinon une œuvre pourrait pointer un palier qui a changé de sens. La renumérotation passe
+ * par des valeurs négatives provisoires : sans elles, échanger A et B (« Monter ») verserait A dans
+ * B avant de verser B dans A, et les deux paliers finiraient confondus.
+ */
+export const updateTiers = authActionClient
+  .metadata({ actionName: "updateTiers" })
+  .inputSchema(updateTiersSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { listId, op } = parsedInput;
+
+    const list = await prisma.list.findFirst({
+      where: { id: listId, ownerId: ctx.user.id, kind: "TIER" },
+      select: { tiers: true },
+    });
+    if (!list) throw new Error("Liste introuvable.");
+
+    const current = parseTiers(list.tiers);
+    const result = applyTierOp(current, op);
+    if (result === null) return { updated: false };
+
+    const changed = current
+      .map((_, from) => ({ from, to: result.remap(from) }))
+      .filter(({ from, to }) => from !== to);
+
+    await prisma.$transaction([
+      prisma.list.update({
+        where: { id: listId },
+        data: { tiers: result.tiers },
+      }),
+      ...changed.map(({ from }) =>
+        prisma.listItem.updateMany({
+          where: { listId, tierIndex: from },
+          data: { tierIndex: -1 - from },
+        }),
+      ),
+      ...changed.map(({ from, to }) =>
+        prisma.listItem.updateMany({
+          where: { listId, tierIndex: -1 - from },
+          data: { tierIndex: to },
+        }),
+      ),
+    ]);
+
+    revalidatePath(routes.lists.detail(listId));
+    revalidatePath(routes.lists.root);
+
+    return { updated: true };
   });
 
 /**

@@ -1,5 +1,7 @@
 import * as z from "zod";
 
+import { MAX_TIERS, tierOpSchema } from "@/features/lists/lib/tier-list";
+
 /**
  * Formes des listes (docs/conception.md §4.4).
  *
@@ -139,4 +141,27 @@ export const reorderListItemSchema = z.object({
   listId: listIdSchema,
   mediaId: mediaIdSchema,
   toIndex: z.number().int().min(0).max(10_000),
+});
+
+/**
+ * Ranger une œuvre d'une tier list (lot 5, §6) : le palier visé (`null` = la réserve) et la place
+ * dans ce palier, après le déplacement. Comme `reorderListItemSchema`, une position et jamais un
+ * rang : le serveur relit le palier et calcule.
+ */
+export const moveTierItemSchema = z.object({
+  listId: listIdSchema,
+  mediaId: mediaIdSchema,
+  tierIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_TIERS - 1)
+    .nullable(),
+  toIndex: z.number().int().min(0).max(10_000),
+});
+
+/** Un geste du menu d'un palier ; les paliers eux-mêmes sont relus en base, jamais reçus. */
+export const updateTiersSchema = z.object({
+  listId: listIdSchema,
+  op: tierOpSchema,
 });

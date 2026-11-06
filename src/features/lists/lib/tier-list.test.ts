@@ -54,7 +54,7 @@ describe("applyTierOp", () => {
 
   it("refuse de supprimer le dernier palier", () => {
     expect(
-      applyTierOp([DEFAULT_TIERS[0]], { type: "delete", index: 0 }),
+      applyTierOp(DEFAULT_TIERS.slice(0, 1), { type: "delete", index: 0 }),
     ).toBeNull();
   });
 
@@ -90,7 +90,7 @@ describe("applyTierOp", () => {
       where: "above",
     });
     expect(labels(r?.tiers)).toEqual(["E", "S", "A", "B", "C", "D"]);
-    expect(r?.tiers[0].color).toBe(TIER_PALETTE[5]);
+    expect(r?.tiers[0]?.color).toBe(TIER_PALETTE[5]);
     expect([0, 4].map((i) => r?.remap(i))).toEqual([1, 5]);
   });
 
@@ -128,7 +128,7 @@ describe("applyTierOp", () => {
       index: 0,
       color: TIER_PALETTE[14],
     });
-    expect(recolored?.tiers[0].color).toBe(TIER_PALETTE[14]);
+    expect(recolored?.tiers[0]?.color).toBe(TIER_PALETTE[14]);
   });
 
   it("refuse un index hors bornes", () => {

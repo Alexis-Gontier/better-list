@@ -75,3 +75,16 @@ export function rankAfterMove(
 export function rankForAppend(lastRank: string | null): string {
   return generateKeyBetween(lastRank, null);
 }
+
+/**
+ * Le rang d'une œuvre posée à la place `toIndex` d'un palier de tier list. `group` est le palier
+ * **cible**, trié par rang et **sans** l'œuvre déplacée : elle vient peut-être d'un autre palier,
+ * donc rien à retirer ici, à la différence de `rankAfterMove`.
+ */
+export function rankInGroup(group: RankedItem[], toIndex: number): string {
+  const target = Math.min(Math.max(toIndex, 0), group.length);
+  return generateKeyBetween(
+    group[target - 1]?.rank ?? null,
+    group[target]?.rank ?? null,
+  );
+}

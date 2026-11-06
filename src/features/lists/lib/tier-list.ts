@@ -38,9 +38,13 @@ export type Tier = z.infer<typeof tierSchema>;
 
 export const tiersSchema = z.array(tierSchema).min(1).max(MAX_TIERS);
 
-export const DEFAULT_TIERS: Tier[] = ["S", "A", "B", "C", "D"].map(
-  (label, index) => ({ label, color: TIER_PALETTE[index] }),
-);
+export const DEFAULT_TIERS: Tier[] = [
+  { label: "S", color: "#FF7F7F" },
+  { label: "A", color: "#FFBF7F" },
+  { label: "B", color: "#FFDF7F" },
+  { label: "C", color: "#FFFF7F" },
+  { label: "D", color: "#BFFF7F" },
+];
 
 /** Les noms proposés à l'ajout d'un palier, dans l'ordre : le premier qui n'est pas déjà pris. */
 const LABEL_SEQUENCE = ["S", "A", "B", "C", "D", "E", "F", "G", "H"];
@@ -126,8 +130,12 @@ export function applyTierOp(
     case "move": {
       const other = op.direction === "up" ? index - 1 : index + 1;
       if (other < 0 || other >= tiers.length) return null;
+      const a = tiers[index];
+      const b = tiers[other];
+      if (!a || !b) return null;
       const next = [...tiers];
-      [next[index], next[other]] = [next[other], next[index]];
+      next[index] = b;
+      next[other] = a;
       return {
         tiers: next,
         remap: (i) => (i === index ? other : i === other ? index : i),
