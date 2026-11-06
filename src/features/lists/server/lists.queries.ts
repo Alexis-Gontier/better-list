@@ -1,7 +1,6 @@
 import "server-only";
 
 import { cache } from "react";
-
 import type { CommandSearchItem } from "@/features/command/schemas/command-search.schema";
 import { listCountsLine } from "@/features/lists/lib/list-labels";
 import {
@@ -28,6 +27,7 @@ import type {
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
 import type { EntryUnit } from "@/features/tracking/lib/entry-format";
 import type { EntryStatus } from "@/features/tracking/schemas/tracking.schema";
+import type { Prisma } from "@/generated/prisma/client";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 
@@ -52,7 +52,7 @@ import { prisma } from "@/lib/db/prisma";
  * groupe `(app)` —, pas un cas d'usage à traiter en silence. Renvoyer une page sans liste le
  * masquerait précisément le jour où il compte.
  */
-async function currentUserId(): Promise<string> {
+export async function currentUserId(): Promise<string> {
   const session = await getSession();
 
   if (!session) {
@@ -85,6 +85,9 @@ export type ListSummary = {
   countsLine: string;
   /** Au plus quatre, dans l'ordre des sections du genre. Vide quand la liste n'a rien. */
   covers: ListCover[];
+  likeCount: number;
+  likedByMe: boolean;
+  owner: { name: string; username: string; image: string | null };
 };
 
 /** Quatre jaquettes par carte : c'est la largeur d'une carte, et ce que la mosaïque dessine. */
@@ -138,20 +141,43 @@ export async function getLists({
   const rows = await prisma.list.findMany({
     where,
     orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      kind: true,
-      cutoff: true,
-      shareToken: true,
-      visibility: true,
-      _count: { select: { items: true } },
-    },
+    select: summarySelect(viewerId),
   });
 
+  return summarizeLists(rows, { viewerId, includeAdult });
+}
+
+/** Ce qu'une carte de liste lit d'une ligne `List`, likes du lecteur compris (lot 3). */
+export function summarySelect(viewerId: string) {
+  return {
+    id: true,
+    ownerId: true,
+    title: true,
+    description: true,
+    kind: true,
+    cutoff: true,
+    shareToken: true,
+    visibility: true,
+    owner: { select: { name: true, username: true, image: true } },
+    _count: { select: { items: true, likes: true } },
+    likes: { where: { userId: viewerId }, select: { userId: true } },
+  } satisfies Prisma.ListSelect;
+}
+
+type SummaryRow = Prisma.ListGetPayload<{
+  select: ReturnType<typeof summarySelect>;
+}>;
+
+/**
+ * Les cartes de `rows`, dans leur ordre : les requêtes 2 et 3 de `getLists`, partagées avec la
+ * Communauté. Les items se lisent par `listId`, ce qui suit aussi bien une page qu'une liste entière.
+ */
+export async function summarizeLists(
+  rows: SummaryRow[],
+  { viewerId, includeAdult }: { viewerId: string; includeAdult: boolean },
+): Promise<ListSummary[]> {
   const items = await prisma.listItem.findMany({
-    where: { list: where },
+    where: { listId: { in: rows.map((row) => row.id) } },
     orderBy: { rank: "asc" },
     select: {
       listId: true,
@@ -197,9 +223,12 @@ export async function getLists({
       kind: row.kind,
       cutoff: row.cutoff,
       // Le partage d'un autre ne me regarde pas : la carte ne le signale qu'à son propriétaire.
-      shared: isOwn && row.shareToken !== null,
+      shared: row.ownerId === viewerId && row.shareToken !== null,
       visibility: row.visibility,
       itemCount: row._count.items,
+      likeCount: row._count.likes,
+      likedByMe: row.likes.length > 0,
+      owner: row.owner,
       countsLine: listCountsLine(row.kind, row.cutoff, {
         total: row._count.items,
         ...sectionCounts(sections),
@@ -254,6 +283,12 @@ export type ListDetail = {
   /** Faux : la liste d'un autre membre, ouverte en lecture seule (D64). */
   isOwner: boolean;
   owner: { name: string; username: string };
+  likeCount: number;
+  likedByMe: boolean;
+  /** Les copies **que je peux voir** : une copie privée d'un autre ne se compte pas chez moi. */
+  forkCount: number;
+  /** L'original d'une copie, s'il existe encore et m'est visible ; sinon la mention disparaît. */
+  forkedFrom: { id: string; title: string; ownerName: string } | null;
   items: ListDetailItem[];
 };
 
@@ -295,8 +330,16 @@ export const getList = cache(async function getList(
       shareToken: true,
       visibility: true,
       ownerId: true,
+      forkedFromId: true,
       owner: { select: { name: true, username: true } },
-      _count: { select: { items: true } },
+      _count: {
+        select: {
+          items: true,
+          likes: true,
+          forks: { where: visibleListsWhere(viewerId) },
+        },
+      },
+      likes: { where: { userId: viewerId }, select: { userId: true } },
       items: {
         orderBy: { rank: "asc" },
         ...(includeAdult ? {} : { where: { media: { isAdult: false } } }),
@@ -308,6 +351,13 @@ export const getList = cache(async function getList(
   if (!list) return null;
 
   const isOwner = list.ownerId === viewerId;
+  // Une seconde lecture plutôt qu'un filtre en mémoire : la règle de visibilité n'existe qu'ici (D64).
+  const original = list.forkedFromId
+    ? await prisma.list.findFirst({
+        where: { id: list.forkedFromId, ...visibleListsWhere(viewerId) },
+        select: { id: true, title: true, owner: { select: { name: true } } },
+      })
+    : null;
 
   return {
     id: list.id,
@@ -320,6 +370,16 @@ export const getList = cache(async function getList(
     shareToken: isOwner ? list.shareToken : null,
     isOwner,
     owner: list.owner,
+    likeCount: list._count.likes,
+    likedByMe: list.likes.length > 0,
+    forkCount: list._count.forks,
+    forkedFrom: original
+      ? {
+          id: original.id,
+          title: original.title,
+          ownerName: original.owner.name,
+        }
+      : null,
     items: list.items.map(({ media }) => ({
       media: compactFromMirror(media),
       banner: media.bannerImage,
