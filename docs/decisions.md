@@ -250,3 +250,8 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   seul (des semaines), si bien qu'un parcours coupé par une panne n'est jamais mis en cache. La
   grille reprend la carte d'« Œuvres liées », l'étape à la place du type de lien. L'ordre est celui
   d'AniList : une préquelle d'histoire (un OAV sorti après) passe avant la saison 1.
+- **D69** — Sur `/search`, chaque carte porte une ligne sous le titre : « En cours · ép. 14 / 24 »
+  (le statut seul tant que rien n'est commencé) sur une œuvre suivie, son format et son année
+  (« Série TV · 2017 ») sinon. Annoter plutôt que filtrer, pour ne pas trouer la pagination
+  d'AniList. La ligne est **toujours** là, une espace insécable au besoin : `MediaCard` exige le
+  même nombre de lignes sur toute la grille.
