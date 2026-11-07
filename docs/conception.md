@@ -102,7 +102,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | --- | --- | --- |
 | `/` (anonyme) · `/welcome` | La landing, servie à `/` par réécriture du proxy (D58, D61) : bannière du moment, tendances, ce que l'outil permet, connexion | livré |
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, listes de la communauté (D66), saison, recommandations | livré |
-| `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
+| `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir ; chaque carte dit où j'en suis, ou son format et son année (D69) | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
 | `/media/[id]` | La fiche : hero, suivi, six onglets (Aperçu, Ordre (D68), Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65), puis mon journal, ma collection et les chiffres de la communauté (D70) | livré |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
@@ -126,18 +126,17 @@ Sans ordre imposé :
 
 1. **Les facettes genres et tags de `/search`**, avec l'exclusion (`genre_not_in`, `tag_not_in`).
    Elles libèrent `FILTER_VOCABULARY_QUERY` et `MediaTagOption` du gel de `knip.jsonc`.
-3. **Annoter les cartes de `/search`** par ce qu'on suit déjà (« déjà suivi · ép. 14 »).
-4. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
-5. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
-6. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
+2. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
+3. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
+4. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
    recommandation, pourquoi tel rang.
-7. **Un compte de démonstration ouvert à tous**, en **lecture seule** : un bouton « Essayer sans
+5. **Un compte de démonstration ouvert à tous**, en **lecture seule** : un bouton « Essayer sans
    compte » sur la landing ouvre une session `@demo` (« Membre démo », celui des captures, D63)
    pour naviguer dans le site, sans **aucune** action possible. Il ne voit que son propre contenu,
    les membres ne le voient pas, et il est soumis à une limite de requêtes stricte pour épargner le
    quota AniList. À faire après le lot 2 de la refonte, dont les règles de visibilité portent
    l'isolation.
-8. **Les suites des tier lists** (D67) : l'export en image (proposé, non tranché), et le
+6. **Les suites des tier lists** (D67) : l'export en image (proposé, non tranché), et le
    classement moyen des versions d'une tier list, à la « Community Rank » de TierMaker.
 
 ## 7. Choix techniques

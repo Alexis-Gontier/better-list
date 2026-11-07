@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { SearchFilterBar } from "@/app/(app)/search/_components/search-filter-bar";
+import { searchCardDetail } from "@/app/(app)/search/_lib/search-card-detail";
 import { getYearBounds } from "@/app/(app)/search/_lib/year-bounds";
 import { ReportAniListStatus } from "@/components/layout/anilist-outage-notice";
 import {
@@ -311,6 +312,7 @@ async function SearchResults({
               marker={
                 entry ? <EntryStatusDot status={entry.status} /> : undefined
               }
+              details={[searchCardDetail(item, entry)]}
               media={item}
               priority={index < WIDEST_COLUMN_COUNT}
               titleLanguage={titleLanguage}
