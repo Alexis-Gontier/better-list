@@ -240,7 +240,6 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   palier au lieu du rang. « Copier » une tier list demande : **faire ma version** (défaut ; mêmes
   œuvres et paliers, tout à classer, liée par `versionOfId`, notification `LIST_VERSIONED`) ou
   copier avec son classement. L'original compte ses versions visibles, sans avatars (maquette).
-
 - **D68** — L'ordre de visionnage d'une franchise est un onglet « Ordre » de la fiche, ouvert
   seulement s'il y a une préquelle ou une suite visible, sans requête de plus pour le savoir. Il
   suit `PREQUEL`/`SEQUEL` de proche en proche et place les `SIDE_STORY` en « Facultatif », sans
