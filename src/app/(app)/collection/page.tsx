@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-
-import { ShelfRows } from "@/app/(app)/collection/_components/shelf-rows";
 import { ShelfStateRow } from "@/app/(app)/collection/_components/shelf-state-row";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/config/routes";
+import { ShelfRows } from "@/features/collection/components/shelf-rows";
 import { loadCollectionFilters } from "@/features/collection/lib/collection-params";
 import {
   getShelf,

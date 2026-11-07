@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 
 import { mediaTitle } from "@/features/media/lib/media-format";
+import type { Media } from "@/features/media/schemas/media.schema";
 import {
   getMediaById,
   searchMedia,
@@ -13,6 +14,8 @@ import { tryAniList } from "@/lib/http/anilist";
 export type Showcase = {
   banner: { src: string; title: string } | null;
   covers: { id: number; src: string; title: string }[];
+  /** Les mêmes tendances, entières : la landing en tire ses fragments d'interface (D71). */
+  media: Media[];
 };
 
 /**
@@ -39,25 +42,29 @@ export const getShowcase = cache(async (): Promise<Showcase> => {
     sortField: "TRENDING",
   });
 
-  const covers = (trending?.items ?? []).flatMap((media) => {
-    const src = media.coverImage?.extraLarge ?? media.coverImage?.large;
-    return src ? [{ id: media.id, src, title: mediaTitle(media.title) }] : [];
+  const media = (trending?.items ?? []).filter(
+    (item) => item.coverImage?.extraLarge ?? item.coverImage?.large,
+  );
+  const covers = media.flatMap((item) => {
+    const src = item.coverImage?.extraLarge ?? item.coverImage?.large;
+    return src ? [{ id: item.id, src, title: mediaTitle(item.title) }] : [];
   });
 
   // La première tendance qui a une bannière : toutes n'en ont pas.
   for (const cover of covers.slice(0, 3)) {
-    const media = await tryAniList(() =>
+    const detail = await tryAniList(() =>
       getMediaById(cover.id, { includeAdult: false }),
     );
     // `null` : AniList est en panne, inutile d'essayer la suivante.
-    if (media === null) break;
-    if (media?.bannerImage) {
+    if (detail === null) break;
+    if (detail?.bannerImage) {
       return {
-        banner: { src: media.bannerImage, title: cover.title },
+        banner: { src: detail.bannerImage, title: cover.title },
         covers,
+        media,
       };
     }
   }
 
-  return { banner: null, covers };
+  return { banner: null, covers, media };
 });

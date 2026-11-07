@@ -5,7 +5,9 @@ modifié, la maquette **précède** le code et Alexis la valide ; une fois l'éc
 réaligne sur lui (D59, qui révise D54). `better-list.fig` a atteint la limite de nœuds
 d'OpenPencil : la refonte continue dans `refonte.fig`, une page par lot (le lot 1 est resté dans
 `better-list.fig`). La landing et `/login` ont changé de direction après la maquette du lot 1
-(D61) : sa page est à réaligner.
+(D61) : sa page est à réaligner. La landing actuelle (D71) est dans `refonte.fig`, page
+« Refonte — Landing · SaaS ». Ce fichier est à environ 9 100 nœuds : le prochain lot ouvre un
+nouveau fichier.
 
 ## Les pages
 

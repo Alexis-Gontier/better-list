@@ -13,7 +13,7 @@ test.describe("visiteur sans compte", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: /Suivez ce que vous regardez/,
+        name: /Suivez vos animes et mangas/,
       }),
     ).toBeVisible();
   });
@@ -62,7 +62,7 @@ test.describe("membre qui s'en va", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: /Suivez ce que vous regardez/,
+        name: /Suivez vos animes et mangas/,
       }),
     ).toBeVisible();
   });

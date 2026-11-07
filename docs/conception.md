@@ -100,7 +100,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 
 | Route | Rôle | État |
 | --- | --- | --- |
-| `/` (anonyme) · `/welcome` | La landing, servie à `/` par réécriture du proxy (D58, D61) : bannière du moment, tendances, ce que l'outil permet, connexion | livré |
+| `/` (anonyme) · `/welcome` | La landing, servie à `/` par réécriture du proxy (D58, D71) : hero et capture de l'app, bandeau des tendances, six tuiles de fragments, recherche, entrée, FAQ, connexion sur la bannière du jour | livré |
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, listes de la communauté (D66), saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir ; chaque carte dit où j'en suis, ou son format et son année (D69) | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |

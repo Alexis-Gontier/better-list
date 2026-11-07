@@ -126,7 +126,7 @@
 
        **Une exception, décidée par Alexis le 12 septembre 2026 : les marques d'un graphe, sur un
        écran qui n'affiche aucune jaquette à côté.** C'est la barre de répartition du profil
-       (`u/[username]/_components/status-breakdown.tsx`). Le motif du garde-fou est que ces teintes
+       (`features/profile/components/status-breakdown.tsx`). Le motif du garde-fou est que ces teintes
        doivent perdre *face à une jaquette* ; là où il n'y en a pas, il ne protège plus rien, et il
        coûtait cher — la barre affichait les six mêmes statuts que `/library` avec des carrés gris,
        donc un second code couleur à retenir pour la même notion. La rampe `--activity-*` ci-dessous
@@ -284,5 +284,47 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+  Les mouvements de la landing (D71), liés au défilement et sans JavaScript. Sous
+  `prefers-reduced-motion`, ou dans un navigateur sans `animation-timeline`, rien ne bouge et tout
+  est visible : une animation n'est jamais la condition pour voir un contenu.
+  `--reveal-start` décale une tuile de sa voisine de rangée, qui entre dans l'écran au même instant.
+*/
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+@keyframes settle {
+  from {
+    opacity: 0.7;
+    transform: perspective(1200px) rotateX(8deg) scale(0.95);
+  }
+}
+
+@utility reveal {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: reveal-up cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      animation-timeline: view();
+      animation-range: entry var(--reveal-start, 0%) entry
+        calc(var(--reveal-start, 0%) + 55%);
+    }
+  }
+}
+
+@utility settle {
+  transform-origin: top center;
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: settle ease-out both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
   }
 }

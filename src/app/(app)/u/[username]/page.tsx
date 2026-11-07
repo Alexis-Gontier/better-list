@@ -12,8 +12,6 @@ import {
   ProfileSection,
   ProfileSectionAside,
 } from "@/app/(app)/u/[username]/_components/profile-section";
-import { ProfileTimeline } from "@/app/(app)/u/[username]/_components/profile-timeline";
-import { StatusBreakdown } from "@/app/(app)/u/[username]/_components/status-breakdown";
 import {
   JOURNAL_ANCHOR,
   loadProfileFilters,
@@ -48,6 +46,8 @@ import {
   getPreferences,
   getPrivacyOf,
 } from "@/features/preferences/server/preferences.queries";
+import { ProfileTimeline } from "@/features/profile/components/profile-timeline";
+import { StatusBreakdown } from "@/features/profile/components/status-breakdown";
 import { formatDayKey } from "@/features/profile/lib/profile-activity";
 import {
   getProfileActivity,
