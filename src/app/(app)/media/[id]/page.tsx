@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import * as z from "zod";
 import { MediaCharacters } from "@/app/(app)/media/[id]/_components/media-characters";
+import { MediaCommunity } from "@/app/(app)/media/[id]/_components/media-community";
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
 import { MediaFranchise } from "@/app/(app)/media/[id]/_components/media-franchise";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
@@ -10,15 +11,24 @@ import {
   MediaInLists,
   MediaInListsSkeleton,
 } from "@/app/(app)/media/[id]/_components/media-in-lists";
+import {
+  MediaJournal,
+  MediaJournalSkeleton,
+} from "@/app/(app)/media/[id]/_components/media-journal";
 import { MediaOverview } from "@/app/(app)/media/[id]/_components/media-overview";
 import { MediaRecommendations } from "@/app/(app)/media/[id]/_components/media-recommendations";
 import { MediaRelations } from "@/app/(app)/media/[id]/_components/media-relations";
+import {
+  MediaShelfSummary,
+  MediaShelfSummarySkeleton,
+} from "@/app/(app)/media/[id]/_components/media-shelf-summary";
 import { MediaStaff } from "@/app/(app)/media/[id]/_components/media-staff";
 import {
   type MediaTabLink,
   MediaTabs,
 } from "@/app/(app)/media/[id]/_components/media-tabs";
 import { MediaTags } from "@/app/(app)/media/[id]/_components/media-tags";
+import { communityStats } from "@/app/(app)/media/[id]/_lib/media-community";
 import {
   hasFranchise,
   sampleRecommendations,
@@ -352,6 +362,7 @@ async function MediaTabPanel({
   tabHref: (tab: MediaTab) => string;
 }) {
   if (active === "apercu") {
+    const community = communityStats(media);
     return (
       <div className="flex flex-col gap-8">
         <MediaOverview
@@ -364,6 +375,20 @@ async function MediaTabPanel({
         <Suspense fallback={<MediaInListsSkeleton />}>
           <MediaInLists includeAdult={includeAdult} mediaId={media.id} />
         </Suspense>
+        {/* Le bas de la fiche (D70) : la base pour les deux premiers, la fiche déjà lue pour le
+            dernier. Chaque lecture en base a sa frontière, l'aperçu n'en attend aucune. */}
+        <Suspense fallback={<MediaJournalSkeleton />}>
+          <MediaJournal
+            mediaId={media.id}
+            unit={media.type === "ANIME" ? "episode" : "chapitre"}
+          />
+        </Suspense>
+        {media.type === "MANGA" ? (
+          <Suspense fallback={<MediaShelfSummarySkeleton />}>
+            <MediaShelfSummary mediaId={media.id} />
+          </Suspense>
+        ) : null}
+        {community ? <MediaCommunity stats={community} /> : null}
       </div>
     );
   }

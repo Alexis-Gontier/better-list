@@ -26,11 +26,9 @@
   // chemin, jamais en `exclude` global, pour que knip signale le code mort partout ailleurs.
   // Chaque entrée dit ce qui la lèvera ; une entrée dont la condition a expiré se supprime.
   "ignoreIssues": {
-    // `formatListStatus`, `formatRanking` → les chiffres de la communauté sur la fiche.
-    "src/features/media/lib/media-format.ts": ["exports"],
     // `FILTER_VOCABULARY_QUERY` → les facettes genres et tags de `/search`.
     "src/features/media/server/media.documents.ts": ["exports"],
-    // `MediaTagOption` → les facettes ; `ScoreDistribution` → les chiffres de la communauté.
+    // `MediaTagOption` → les facettes genres et tags de `/search`.
     "src/features/media/schemas/media.schema.ts": ["types"]
   }
 

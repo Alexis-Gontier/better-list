@@ -250,3 +250,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   seul (des semaines), si bien qu'un parcours coupé par une panne n'est jamais mis en cache. La
   grille reprend la carte d'« Œuvres liées », l'étape à la place du type de lien. L'ordre est celui
   d'AniList : une préquelle d'histoire (un OAV sorti après) passe avant la saison 1.
+- **D70** — Le bas de l'Aperçu, sous « Dans les listes », porte trois blocs masqués quand ils
+  n'ont rien à dire. **Mon journal** : mes seuls événements sur l'œuvre (pas ceux du cercle), les
+  dix derniers groupés par jour, sans jaquette. **Ma collection**, pour un manga ou un light novel :
+  « 12 tomes sur 30 · il manque … » et le lien vers `/collection/[id]`, ou le seul lien
+  « Ajouter à ma collection ». **Communauté** : les trois meilleurs classements, la répartition des
+  notes (le graphe du profil, monté dans `components/shared/`) et celle des statuts, lus dans la
+  requête de fiche, donc sans requête AniList de plus et absents quand la fiche vient du miroir.
+  Les deux lectures en base ont chacune leur frontière `<Suspense>` (D29).

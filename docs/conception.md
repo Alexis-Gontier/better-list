@@ -104,7 +104,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, listes de la communauté (D66), saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
-| `/media/[id]` | La fiche : hero, suivi, six onglets (Aperçu, Ordre (D68), Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
+| `/media/[id]` | La fiche : hero, suivi, six onglets (Aperçu, Ordre (D68), Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65), puis mon journal, ma collection et les chiffres de la communauté (D70) | livré |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
 | `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture, qu'on aime ou copie (D64, D65) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) ; une tier list rangée par paliers, à la souris, au doigt ou au clavier, dont on fait sa version (D67) | livré |
 | `/lists/community` | Les listes « Membres » des autres, triées par likes ou par date (D65) | livré |
@@ -126,8 +126,6 @@ Sans ordre imposé :
 
 1. **Les facettes genres et tags de `/search`**, avec l'exclusion (`genre_not_in`, `tag_not_in`).
    Elles libèrent `FILTER_VOCABULARY_QUERY` et `MediaTagOption` du gel de `knip.jsonc`.
-2. **Le bas de la fiche** : le journal de l'œuvre, les chiffres de la communauté (ils libèrent
-   `formatListStatus`, `formatRanking`, `ScoreDistribution`) et le bloc des tomes possédés.
 3. **Annoter les cartes de `/search`** par ce qu'on suit déjà (« déjà suivi · ép. 14 »).
 4. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
 5. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).

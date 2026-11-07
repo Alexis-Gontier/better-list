@@ -13,7 +13,6 @@ import {
   ProfileSectionAside,
 } from "@/app/(app)/u/[username]/_components/profile-section";
 import { ProfileTimeline } from "@/app/(app)/u/[username]/_components/profile-timeline";
-import { ScoreDistributionChart } from "@/app/(app)/u/[username]/_components/score-distribution-chart";
 import { StatusBreakdown } from "@/app/(app)/u/[username]/_components/status-breakdown";
 import {
   JOURNAL_ANCHOR,
@@ -26,6 +25,7 @@ import {
   profileAdultFilter,
 } from "@/app/(app)/u/[username]/_lib/profile-privacy";
 import { BlurredBackdrop } from "@/components/shared/blurred-backdrop";
+import { ScoreDistributionChart } from "@/components/shared/score-distribution-chart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -420,7 +420,7 @@ async function ProfileStatsBlock({
           description="Une barre par demi-étoile."
           title="Notes"
         >
-          <ScoreDistributionChart data={scores} />
+          <ScoreDistributionChart data={scores} label="Œuvres notées" />
         </ProfileSection>
 
         <ProfileSection

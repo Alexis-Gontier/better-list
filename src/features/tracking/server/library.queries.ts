@@ -7,7 +7,10 @@ import {
 } from "@/features/media/lib/media-format";
 import type { MediaCompact } from "@/features/media/schemas/media.schema";
 import type { TitleLanguage } from "@/features/preferences/schemas/preferences.schema";
-import type { EntryUnit } from "@/features/tracking/lib/entry-format";
+import type {
+  EntryEventView,
+  EntryUnit,
+} from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 import {
   LIBRARY_STATUS_ORDER,
@@ -522,4 +525,41 @@ export async function getAiringWatchlist({
     // Toujours des épisodes ici : la requête ne ramène que des animes.
     total: media.episodes,
   }));
+}
+
+/** Le journal d'une œuvre sur la fiche : les dix derniers, le total pour dire ce qui manque. */
+const MEDIA_JOURNAL_SIZE = 10;
+
+export type MediaJournal = { events: EntryEventView[]; total: number };
+
+/**
+ * Mon journal sur une œuvre, pour le bas de la fiche (D70). **Le mien seulement** : la fiche est
+ * celle du membre connecté, et aucune règle de visibilité n'a donc à s'appliquer. Base seule, sur
+ * l'index `[userId, mediaId]` de l'entrée.
+ */
+export async function getMediaJournal(mediaId: number): Promise<MediaJournal> {
+  const userId = await currentUserId();
+  const where = { userId, entry: { mediaId } };
+
+  const [events, total] = await Promise.all([
+    prisma.entryEvent.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: MEDIA_JOURNAL_SIZE,
+      select: {
+        id: true,
+        type: true,
+        progressFrom: true,
+        progressTo: true,
+        statusFrom: true,
+        statusTo: true,
+        score: true,
+        note: true,
+        createdAt: true,
+      },
+    }),
+    prisma.entryEvent.count({ where }),
+  ]);
+
+  return { events, total };
 }

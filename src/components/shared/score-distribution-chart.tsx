@@ -8,10 +8,13 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { LOCALE } from "@/config/locale";
-import type { ScoreBar } from "@/features/profile/lib/profile-stats";
+
+/** Une demi-étoile et son effectif. Structurel, pour rester sans métier (`components/shared/`). */
+type ScoreBar = { stars: number; count: number };
 
 /**
- * Les notes données, une barre par demi-étoile.
+ * Les notes données, une barre par demi-étoile. Deux appelants : le profil (mes notes) et la fiche
+ * (celles de la communauté AniList, D70) ; seul le libellé de la série change.
  *
  * **Dix barres et non cinq** : la note se pose par demies (`SCORE_STAR_STEP`), et regrouper les
  * demies avec les entières effacerait exactement l'information que ce graphe cherche — est-ce qu'on
@@ -30,20 +33,27 @@ import type { ScoreBar } from "@/features/profile/lib/profile-stats";
  * total comme la moyenne sont dans l'en-tête du bloc.
  */
 
-const CHART_CONFIG = {
-  count: {
-    label: "Œuvres notées",
-    color: "color-mix(in oklch, var(--muted-foreground) 45%, transparent)",
-  },
-} satisfies ChartConfig;
-
 /** « 3,5 » et non « 3.5 » : le séparateur décimal français, comme partout ailleurs dans l'app. */
 const STARS_FORMAT = new Intl.NumberFormat(LOCALE, {
   minimumFractionDigits: 0,
   maximumFractionDigits: 1,
 });
 
-export function ScoreDistributionChart({ data }: { data: ScoreBar[] }) {
+export function ScoreDistributionChart({
+  data,
+  label,
+}: {
+  data: ScoreBar[];
+  /** Ce que compte une barre, au survol : « Œuvres notées », « Membres AniList ». */
+  label: string;
+}) {
+  const config = {
+    count: {
+      label,
+      color: "color-mix(in oklch, var(--muted-foreground) 45%, transparent)",
+    },
+  } satisfies ChartConfig;
+
   /*
     Le sommet, calculé plutôt que passé : c'est une propriété de la série, pas une décision. Le
     déduire ici évite que le serveur et le graphe puissent un jour désigner deux barres différentes.
@@ -59,7 +69,7 @@ export function ScoreDistributionChart({ data }: { data: ScoreBar[] }) {
   }));
 
   return (
-    <ChartContainer className="h-56 w-full" config={CHART_CONFIG}>
+    <ChartContainer className="h-56 w-full" config={config}>
       <BarChart accessibilityLayer data={rows} margin={{ top: 4 }}>
         <XAxis
           axisLine={false}
