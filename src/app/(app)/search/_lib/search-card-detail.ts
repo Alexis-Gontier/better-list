@@ -7,10 +7,12 @@ import {
 } from "@/features/tracking/lib/entry-format";
 import type { EntryState } from "@/features/tracking/lib/entry-transition";
 
+// `startDate` facultatif : les résultats servis par le miroir local n'en ont pas, seulement
+// `seasonYear`.
 type SearchCardMedia = Pick<
   Media,
-  "type" | "format" | "episodes" | "chapters" | "seasonYear" | "startDate"
->;
+  "type" | "format" | "episodes" | "chapters" | "seasonYear"
+> & { startDate?: Media["startDate"] };
 
 /**
  * La ligne sous le titre d'un résultat (D69) : où j'en suis sur une œuvre suivie, son format et son
