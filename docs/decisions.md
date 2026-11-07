@@ -240,7 +240,6 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   palier au lieu du rang. « Copier » une tier list demande : **faire ma version** (défaut ; mêmes
   œuvres et paliers, tout à classer, liée par `versionOfId`, notification `LIST_VERSIONED`) ou
   copier avec son classement. L'original compte ses versions visibles, sans avatars (maquette).
-
 - **D68** — L'ordre de visionnage d'une franchise est un onglet « Ordre » de la fiche, ouvert
   seulement s'il y a une préquelle ou une suite visible, sans requête de plus pour le savoir. Il
   suit `PREQUEL`/`SEQUEL` de proche en proche et place les `SIDE_STORY` en « Facultatif », sans
@@ -255,3 +254,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   (« Série TV · 2017 ») sinon. Annoter plutôt que filtrer, pour ne pas trouer la pagination
   d'AniList. La ligne est **toujours** là, une espace insécable au besoin : `MediaCard` exige le
   même nombre de lignes sur toute la grille.
+- **D70** — Le bas de l'Aperçu, sous « Dans les listes », porte trois blocs masqués quand ils
+  n'ont rien à dire. **Mon journal** : mes seuls événements sur l'œuvre (pas ceux du cercle), les
+  dix derniers groupés par jour, sans jaquette. **Ma collection**, pour un manga ou un light novel :
+  « 12 tomes sur 30 · il manque … » et le lien vers `/collection/[id]`, ou le seul lien
+  « Ajouter à ma collection ». **Communauté** : les trois meilleurs classements, la répartition des
+  notes (le graphe du profil, monté dans `components/shared/`) et celle des statuts, lus dans la
+  requête de fiche, donc sans requête AniList de plus et absents quand la fiche vient du miroir.
+  Les deux lectures en base ont chacune leur frontière `<Suspense>` (D29).
