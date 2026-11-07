@@ -130,3 +130,16 @@ export function sampleRecommendations(
     return [recommended];
   });
 }
+
+/**
+ * Y a-t-il une chaîne à ordonner ? Lu sur la requête de fiche, **sans requête de plus** : sans
+ * préquelle ni suite visible, l'onglet « Ordre » ne montrerait que l'œuvre elle-même.
+ */
+export function hasFranchise(
+  media: MediaDetail,
+  includeAdult: boolean,
+): boolean {
+  return visibleRelations(media, includeAdult).some(
+    (edge) => edge.relationType === "PREQUEL" || edge.relationType === "SEQUEL",
+  );
+}

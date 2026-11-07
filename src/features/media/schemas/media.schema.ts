@@ -483,6 +483,20 @@ export const mediaRecommendationsDataSchema = z.object({
     .nullable(),
 });
 
+/** Un niveau du parcours de franchise (`FRANCHISE_LEVEL_QUERY`). */
+export const franchiseLevelDataSchema = z.object({
+  Page: z.object({
+    media: z.array(
+      z.object({
+        id: z.number().int(),
+        relations: z
+          .object({ edges: z.array(relationEdgeSchema).default([]) })
+          .default({ edges: [] }),
+      }),
+    ),
+  }),
+});
+
 /**
  * Réponse du rafraîchissement par lot. Pas de `pageInfo` : l'appelant sait ce qu'il a demandé, et
  * l'écart entre les ids envoyés et ceux qui reviennent est l'information utile (une œuvre supprimée

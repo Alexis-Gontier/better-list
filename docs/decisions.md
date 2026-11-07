@@ -240,3 +240,13 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   palier au lieu du rang. « Copier » une tier list demande : **faire ma version** (défaut ; mêmes
   œuvres et paliers, tout à classer, liée par `versionOfId`, notification `LIST_VERSIONED`) ou
   copier avec son classement. L'original compte ses versions visibles, sans avatars (maquette).
+
+- **D68** — L'ordre de visionnage d'une franchise est un onglet « Ordre » de la fiche, ouvert
+  seulement s'il y a une préquelle ou une suite visible, sans requête de plus pour le savoir. Il
+  suit `PREQUEL`/`SEQUEL` de proche en proche et place les `SIDE_STORY` en « Facultatif », sans
+  les explorer ; spin-offs, adaptations et « alternative » restent dans « Œuvres liées ». Ordre par
+  tri topologique des suites, une bifurcation départagée par l'année puis l'id. Parcours par
+  niveaux, un lot de 50 par requête, plafonné à 6 requêtes et 80 œuvres ; chaque niveau est caché
+  seul (des semaines), si bien qu'un parcours coupé par une panne n'est jamais mis en cache. La
+  grille reprend la carte d'« Œuvres liées », l'étape à la place du type de lien. L'ordre est celui
+  d'AniList : une préquelle d'histoire (un OAV sorti après) passe avant la saison 1.

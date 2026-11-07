@@ -588,3 +588,26 @@ export const MEDIA_RECOMMENDATIONS_QUERY = /* GraphQL */ `
   }
   ${MEDIA_COMPACT_FIELDS}
 `;
+
+/**
+ * Un niveau du parcours de franchise : les relations d'un lot d'œuvres, en **une** requête.
+ * Rien d'autre que les relations : les œuvres elles-mêmes sont déjà connues par l'arête qui y mène.
+ */
+export const FRANCHISE_LEVEL_QUERY = /* GraphQL */ `
+  query FranchiseLevel($ids: [Int], $perPage: Int) {
+    Page(perPage: $perPage) {
+      media(id_in: $ids) {
+        id
+        relations {
+          edges {
+            relationType
+            node {
+              ...MediaCompactFields
+            }
+          }
+        }
+      }
+    }
+  }
+  ${MEDIA_COMPACT_FIELDS}
+`;
