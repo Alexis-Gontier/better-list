@@ -104,7 +104,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/` | Carrousel des tendances, « En cours » (épisodes sortis en tête), tendances, listes de la communauté (D66), saison, recommandations | livré |
 | `/search` | Le catalogue AniList, filtres dans l'URL, repli sur le miroir | livré, sans les facettes genres/tags |
 | `/library` | Ma bibliothèque : statuts, 7 tris et leur sens, filtre 18+, synonymes | livré |
-| `/media/[id]` | La fiche : hero, suivi, cinq onglets (Aperçu, Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
+| `/media/[id]` | La fiche : hero, suivi, six onglets (Aperçu, Ordre (D68), Personnages, Équipe, Œuvres liées, Tags), « Dans les listes » (D65) | livré, sans le journal de l'œuvre ni les chiffres de la communauté |
 | `/character/[id]` · `/staff/[id]` | Une personne : faits, biographie, apparitions | livré |
 | `/lists` · `/lists/[id]` | Mes listes, « Membres » ou « Privée » ; la liste d'un autre membre en lecture, qu'on aime ou copie (D64, D65) ; une liste réordonnable (glisser et clavier), remplie depuis elle-même (D46), affichée selon son genre (D47) ; une tier list rangée par paliers, à la souris, au doigt ou au clavier, dont on fait sa version (D67) | livré |
 | `/lists/community` | Les listes « Membres » des autres, triées par likes ou par date (D65) | livré |
@@ -130,17 +130,16 @@ Sans ordre imposé :
    `formatListStatus`, `formatRanking`, `ScoreDistribution`) et le bloc des tomes possédés.
 3. **Annoter les cartes de `/search`** par ce qu'on suit déjà (« déjà suivi · ép. 14 »).
 4. **Plusieurs éditions par série** sur `/collection` : le modèle les gère, il manque l'écran.
-5. **L'ordre de visionnage d'une franchise** (§8) : le meilleur rapport valeur/effort.
-6. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
-7. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
+5. **Étendre Playwright** aux écrans qui ne lisent que la base (collection, réglages).
+6. **La note par œuvre d'une liste** (`ListItem.note`, en base et inutilisée) : d'où vient une
    recommandation, pourquoi tel rang.
-8. **Un compte de démonstration ouvert à tous**, en **lecture seule** : un bouton « Essayer sans
+7. **Un compte de démonstration ouvert à tous**, en **lecture seule** : un bouton « Essayer sans
    compte » sur la landing ouvre une session `@demo` (« Membre démo », celui des captures, D63)
    pour naviguer dans le site, sans **aucune** action possible. Il ne voit que son propre contenu,
    les membres ne le voient pas, et il est soumis à une limite de requêtes stricte pour épargner le
    quota AniList. À faire après le lot 2 de la refonte, dont les règles de visibilité portent
    l'isolation.
-9. **Les suites des tier lists** (D67) : l'export en image (proposé, non tranché), et le
+8. **Les suites des tier lists** (D67) : l'export en image (proposé, non tranché), et le
    classement moyen des versions d'une tier list, à la « Community Rank » de TierMaker.
 
 ## 7. Choix techniques
@@ -162,10 +161,9 @@ refuse lui-même la connexion d'un banni (D57).
 
 Livré : la mémoire et le journal (§4.3) ; l'écran « il me manque » avec la saisie par plage (§4.5) ;
 les statistiques d'étagère ; le retard épisode par épisode (`/calendar`, l'accueil, la cloche) ;
-les notifications Discord ; les favoris.
+les notifications Discord ; les favoris ; l'ordre de visionnage d'une franchise (D68).
 
 En attente :
-- **l'ordre de visionnage d'une franchise**, à partir des `relations` AniList ;
 - **le récap annuel**, tiré du journal ;
 - **un tirage au sort filtré** dans ce qu'on a prévu de voir ;
 - **où le regarder**, à partir des `externalLinks` ;
