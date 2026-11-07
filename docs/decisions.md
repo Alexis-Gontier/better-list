@@ -180,7 +180,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   colonne centrée sur cette bannière floutée. La vitrine (`getShowcase`) réutilise la requête des
   tendances de l'accueil, déjà en cache, et coûte une fiche par jour pour la bannière. Le mur de
   jaquettes incliné disparaît (révise D52 pour ce qui le concerne ; la règle « rien au build »
-  tient toujours).
+  tient toujours). *(Révisée par D71 pour la landing ; `/login` ne change pas.)*
 - **D62** — Discord et Google sont facultatifs : sans leur paire d'identifiants, le fournisseur
   n'est pas déclaré à Better Auth, son bouton disparaît de `/login` et de la landing, et la phrase
   « Avec GitHub, Discord ou Google » se raccourcit (`ENABLED_PROVIDERS`). GitHub reste obligatoire.
@@ -262,3 +262,16 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   notes (le graphe du profil, monté dans `components/shared/`) et celle des statuts, lus dans la
   requête de fiche, donc sans requête AniList de plus et absents quand la fiche vient du miroir.
   Les deux lectures en base ont chacune leur frontière `<Suspense>` (D29).
+- **D71** — La landing suit les landings SaaS (Linear, Raycast, Vercel) et révise D61 pour elle
+  seule : barre à trois ancres, hero centré (annonce, titre, deux actions) et la capture de
+  l'accueil en grand, recadrée en 4:5 en 390 plutôt que réduite. Suivent le bandeau de douze
+  tendances, six tuiles dont chacune montre **le vrai composant de l'app** (le journal du profil,
+  les cartes « En cours », l'étagère, `TierRows`, la répartition par statut, les interrupteurs de
+  `/settings`), promu dans `features/` à ce deuxième appelant, la palette Ctrl K, les trois temps de
+  l'entrée, une FAQ en `<details>` natifs et l'appel final sur la bannière du jour. La leçon de
+  D61 tient : les jaquettes sont partout, et toutes viennent de la vitrine (`getShowcase`), sans
+  requête AniList de plus (`getShowcase` rend aussi les œuvres entières). Les fragments sont des
+  illustrations `inert`, nourries d'exemples : leurs dates, épisodes et chiffres ne sont le suivi
+  d'aucun membre. Le mouvement est en CSS lié au défilement (`reveal`, `settle`), sans JavaScript,
+  et s'efface sous `prefers-reduced-motion`. Maquette :
+  `refonte.fig`, page « Refonte — Landing · SaaS » (D59).

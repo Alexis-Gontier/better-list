@@ -1,65 +1,60 @@
 import { ArrowRightIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 
-import { LandingBanner } from "@/app/(welcome)/welcome/_components/landing-banner";
-import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
-import { site } from "@/config/site";
 import { ENABLED_PROVIDERS_LABEL } from "@/lib/auth/providers";
 
 /**
- * Le hero, d'après Letterboxd : une œuvre en plein écran, trois phrases courtes qui disent tout le
- * produit, **un seul bouton** (D33). Le texte ne dépend pas d'AniList : il s'affiche tout de suite,
- * la bannière arrive derrière lui.
+ * Le hero, d'après les landings SaaS (D71) : une annonce, le titre, deux actions, puis **le produit
+ * en grand**. Rien n'y dépend d'AniList : il s'affiche tout de suite, et la capture (D63) porte
+ * déjà les jaquettes.
  */
 export function LandingHero() {
   return (
-    <section className="relative isolate flex min-h-[86svh] flex-col overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-card">
-        <Suspense fallback={null}>
-          <LandingBanner />
-        </Suspense>
-      </div>
-
-      <header className="flex items-center justify-between px-4 py-5 sm:px-8">
-        <span className="flex items-center gap-2.5">
-          <Logo className="size-7" />
-          <span className="font-heading font-semibold text-lg tracking-tight">
-            {site.name}
-          </span>
-        </span>
+    <section className="flex flex-col items-center px-4 pt-12 sm:px-8 sm:pt-24">
+      <div className="flex flex-col items-center gap-6 text-center sm:gap-7">
         <Link
-          className="font-medium text-sm transition-colors hover:text-muted-foreground"
-          href={routes.auth.login}
+          className="flex animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700 motion-reduce:animate-none items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-sm transition-colors hover:bg-accent"
+          href="#tier-lists"
         >
-          Se connecter
+          Nouveau : les tier lists partagées
+          <ArrowRightIcon aria-hidden="true" className="size-3.5" />
         </Link>
-      </header>
-
-      <div className="mx-auto mt-auto flex max-w-3xl flex-col items-center gap-6 px-4 pb-16 text-center sm:pb-20">
-        <h1 className="font-heading font-semibold text-[clamp(30px,4.4vw,52px)] leading-[1.1] tracking-tight">
-          Suivez ce que vous regardez.
-          <br />
-          Gardez ce que vous lisez.
-          <br />
-          Partagez-le entre amis.
+        <h1 className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700 motion-reduce:animate-none max-w-[20ch] [animation-delay:80ms] text-balance font-heading font-semibold text-[clamp(38px,5vw,72px)] leading-[1.08] tracking-tight">
+          Suivez vos animes et mangas, entre amis.
         </h1>
-        <p className="max-w-[48ch] text-pretty text-lg">
-          Better-List est le carnet privé d'une dizaine d'amis : animes, mangas,
-          webtoons et light novels, épisode par épisode.
+        <p className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700 motion-reduce:animate-none max-w-[52ch] [animation-delay:160ms] text-pretty text-lg text-muted-foreground sm:text-xl">
+          Épisodes, journal daté, collection de tomes et tier lists : tout votre
+          suivi au même endroit, sur le catalogue d'AniList.
         </p>
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex w-full animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700 motion-reduce:animate-none flex-col gap-3 [animation-delay:240ms] sm:w-auto sm:flex-row">
           <Button asChild size="lg">
             <Link href={routes.auth.login}>
               Rejoindre le cercle
               <ArrowRightIcon data-icon="inline-end" />
             </Link>
           </Button>
-          <span className="text-muted-foreground text-sm">
-            Avec {ENABLED_PROVIDERS_LABEL}
-          </span>
+          <Button asChild size="lg" variant="outline">
+            <a href="#fonctionnalites">Voir les fonctionnalités</a>
+          </Button>
+        </div>
+        <p className="animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700 motion-reduce:animate-none text-muted-foreground text-sm [animation-delay:300ms]">
+          Sur invitation · avec {ENABLED_PROVIDERS_LABEL}
+        </p>
+      </div>
+      {/* En 390, un cadre 4:5 recadre la capture de bureau : réduite, elle serait illisible. */}
+      <div className="settle mt-12 w-full max-w-304 rounded-2xl border bg-card p-1 sm:mt-18 sm:p-2">
+        <div className="relative aspect-4/5 overflow-hidden rounded-xl sm:aspect-16/10">
+          <Image
+            alt="L'accueil de Better-List : une œuvre à la une, puis les séries en cours et leur épisode"
+            className="object-cover object-[22%_0%] sm:object-top"
+            fill
+            priority
+            sizes="(min-width: 1216px) 1200px, 100vw"
+            src="/screenshots/accueil.jpg"
+          />
         </div>
       </div>
     </section>

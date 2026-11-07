@@ -78,7 +78,7 @@ export function ProfileTimeline({
             de la carte pour des lignes à moitié vides. L'heure étant désormais sous l'entrée, deux
             entrées de front ne se confondent plus.
           */}
-          <ol className="grid gap-x-6 sm:grid-cols-2">
+          <ol className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
             {day.events.map((event) => (
               <TimelineRow event={event} key={event.id} />
             ))}
