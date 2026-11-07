@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import * as z from "zod";
 import { MediaCharacters } from "@/app/(app)/media/[id]/_components/media-characters";
 import { MediaDetailSkeleton } from "@/app/(app)/media/[id]/_components/media-detail-skeleton";
+import { MediaFranchise } from "@/app/(app)/media/[id]/_components/media-franchise";
 import { MediaHero } from "@/app/(app)/media/[id]/_components/media-hero";
 import {
   MediaInLists,
@@ -19,6 +20,7 @@ import {
 } from "@/app/(app)/media/[id]/_components/media-tabs";
 import { MediaTags } from "@/app/(app)/media/[id]/_components/media-tags";
 import {
+  hasFranchise,
   sampleRecommendations,
   visibleRelations,
   visibleTags,
@@ -40,6 +42,7 @@ import {
   mediaTitle,
 } from "@/features/media/lib/media-format";
 import type { MediaDetail } from "@/features/media/schemas/media.schema";
+import { getFranchise } from "@/features/media/server/franchise.queries";
 import { getMediaDetailFromMirror } from "@/features/media/server/media.mirror";
 import {
   getMediaById,
@@ -248,6 +251,7 @@ async function MediaDetailContent({
     // l'aperçu ne peut pas être nul. C'est ce qui assure qu'il reste au moins un onglet, y compris
     // sur une fiche entièrement servie par le miroir.
     "apercu" as const,
+    hasFranchise(media, includeAdult) ? ("ordre" as const) : null,
     hasCharacters ? ("personnages" as const) : null,
     hasStaff ? ("equipe" as const) : null,
     hasRelated ? ("oeuvres" as const) : null,
@@ -361,6 +365,17 @@ async function MediaTabPanel({
           <MediaInLists includeAdult={includeAdult} mediaId={media.id} />
         </Suspense>
       </div>
+    );
+  }
+
+  if (active === "ordre") {
+    const franchise = await getFranchise(media, { includeAdult });
+    return (
+      <MediaFranchise
+        franchise={franchise}
+        titleLanguage={titleLanguage}
+        type={media.type}
+      />
     );
   }
 

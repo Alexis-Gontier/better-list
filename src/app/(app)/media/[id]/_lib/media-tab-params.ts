@@ -23,6 +23,7 @@ import {
  */
 export const MEDIA_TABS = [
   "apercu",
+  "ordre",
   "personnages",
   "equipe",
   "oeuvres",
@@ -37,6 +38,7 @@ export type MediaTab = (typeof MEDIA_TABS)[number];
  */
 export const MEDIA_TAB_LABELS: Record<MediaTab, string> = {
   apercu: "Aperçu",
+  ordre: "Ordre",
   personnages: "Personnages",
   equipe: "Équipe",
   oeuvres: "Œuvres liées",
