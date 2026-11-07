@@ -263,7 +263,7 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   requête de fiche, donc sans requête AniList de plus et absents quand la fiche vient du miroir.
   Les deux lectures en base ont chacune leur frontière `<Suspense>` (D29).
 - **D71** — La landing suit les landings SaaS (Linear, Raycast, Vercel) et révise D61 pour elle
-  seule : barre à trois ancres, hero centré (annonce, titre, deux actions) et la capture de
+  seule : barre à trois ancres *(quatre, collante : D72)*, hero centré (annonce, titre, deux actions) et la capture de
   l'accueil en grand, recadrée en 4:5 en 390 plutôt que réduite. Suivent le bandeau de douze
   tendances, six tuiles dont chacune montre **le vrai composant de l'app** (le journal du profil,
   les cartes « En cours », l'étagère, `TierRows`, la répartition par statut, les interrupteurs de
@@ -275,3 +275,19 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   d'aucun membre. Le mouvement est en CSS lié au défilement (`reveal`, `settle`), sans JavaScript,
   et s'efface sous `prefers-reduced-motion`. Maquette :
   `refonte.fig`, page « Refonte — Landing · SaaS » (D59).
+- **D72** — La barre et le pied de la landing suivent la grille du contenu (`max-w-6xl`). La barre
+  est collante, transparente sur le hero puis floutée avec son filet dans les premiers 6rem de
+  défilement (`stuck`, CSS lié au défilement, gardé sous `prefers-reduced-motion` parce que ce n'est
+  pas un mouvement), et porte quatre ancres, *Tier lists* en plus, qui glissent jusqu'à leur section : le
+  `scroll-behavior: smooth` ne vaut que tant que la barre est montée (Next 16 ne le neutralise plus
+  pendant une navigation) et s'efface sous `prefers-reduced-motion`. En 390 elle ne garde que la
+  connexion : c'est le pied qui sert de navigation, avec la marque, les ancres, l'accès, la ligne
+  d'attribution AniList (ses CGU) et le nom en filigrane, rogné. Pas de menu mobile : il faudrait un
+  composant client pour le refermer au clic d'une ancre.
+  Les six tuiles mettent le texte en haut (étiquette et icône, titre, phrase) et le fragment
+  dessous, dans une scène plus sombre qui prend la hauteur restante : le vide d'une tuile devient
+  le cadre de son fragment. La tier list passe en `row` (texte à gauche dès `lg`) pour remplir sa
+  tuile large. En 390, la scène va jusqu'aux bords : encadrée, elle tronquait les statistiques.
+  La FAQ reste en `<details>` natifs, mais exclusifs (`name` commun : une question ouverte à la
+  fois) et animés en CSS (`disclosure` : `::details-content` et `interpolate-size`) ; sans ces
+  propriétés ou sous `prefers-reduced-motion`, elle s'ouvre d'un coup.

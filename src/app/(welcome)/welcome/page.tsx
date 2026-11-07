@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import {
@@ -8,6 +7,7 @@ import {
 } from "@/app/(welcome)/welcome/_components/landing-covers";
 import { LandingFaq } from "@/app/(welcome)/welcome/_components/landing-faq";
 import { LandingFeatures } from "@/app/(welcome)/welcome/_components/landing-features";
+import { LandingFooter } from "@/app/(welcome)/welcome/_components/landing-footer";
 import { LandingHero } from "@/app/(welcome)/welcome/_components/landing-hero";
 import {
   LandingJoin,
@@ -17,7 +17,6 @@ import { LandingNav } from "@/app/(welcome)/welcome/_components/landing-nav";
 import { LandingSearch } from "@/app/(welcome)/welcome/_components/landing-search";
 import { LandingSteps } from "@/app/(welcome)/welcome/_components/landing-steps";
 import { routes } from "@/config/routes";
-import { site } from "@/config/site";
 import { ENABLED_PROVIDERS_LABEL } from "@/lib/auth/providers";
 
 export const metadata: Metadata = {
@@ -66,26 +65,7 @@ export default function WelcomePage() {
         </div>
       </main>
 
-      {/* Les jaquettes viennent d'AniList, et ses CGU demandent qu'on le dise là où on les montre. */}
-      <footer className="flex flex-wrap items-center justify-between gap-4 px-4 py-7 text-muted-foreground text-sm sm:px-8">
-        <span>{site.name} · un carnet privé d'animes et de mangas · 2026</span>
-        <span className="flex gap-6">
-          <Link
-            className="transition-colors hover:text-foreground"
-            href={routes.auth.login}
-          >
-            Se connecter
-          </Link>
-          <a
-            className="transition-colors hover:text-foreground"
-            href={site.attribution.url}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Données et images : {site.attribution.name}
-          </a>
-        </span>
-      </footer>
+      <LandingFooter providersLabel={ENABLED_PROVIDERS_LABEL} />
     </div>
   );
 }

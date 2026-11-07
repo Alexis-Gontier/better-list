@@ -19,7 +19,10 @@ const QUESTIONS = [
   ],
 ] as const;
 
-/** La FAQ en `<details>` natifs : un accordéon sans JavaScript, la première question ouverte. */
+/**
+ * La FAQ en `<details>` natifs : un accordéon sans JavaScript, la première question ouverte. Le
+ * `name` commun n'en laisse qu'une ouverte, et `disclosure` les fait glisser.
+ */
 export function LandingFaq() {
   return (
     <section
@@ -35,15 +38,19 @@ export function LandingFaq() {
       </h2>
       <div className="w-full">
         {QUESTIONS.map(([question, answer], index) => (
-          <details className="group border-b" key={question} open={index === 0}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium [&::-webkit-details-marker]:hidden">
+          <details
+            className="disclosure group border-b"
+            key={question}
+            name="questions"
+            open={index === 0}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium text-foreground/80 transition-colors hover:text-foreground group-open:text-foreground [&::-webkit-details-marker]:hidden">
               {question}
-              <PlusIcon
-                aria-hidden="true"
-                className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45 motion-reduce:transition-none"
-              />
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border text-muted-foreground transition-[rotate,background-color,color] duration-300 group-open:rotate-45 group-open:bg-foreground group-open:text-background motion-reduce:transition-none">
+                <PlusIcon aria-hidden="true" className="size-3.5" />
+              </span>
             </summary>
-            <p className="max-w-[68ch] text-pretty pb-5 text-muted-foreground">
+            <p className="max-w-[68ch] translate-y-1 text-pretty pb-5 text-muted-foreground transition-transform duration-300 group-open:translate-y-0 motion-reduce:transition-none">
               {answer}
             </p>
           </details>
