@@ -306,3 +306,10 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   les nôtres durent un an. Le dernier fournisseur ne se délie pas. Les sessions ne quittent pas le
   serveur avec leur jeton : on révoque par `id`. Une session révoquée reste lisible jusqu'à cinq
   minutes sur son appareil (`cookieCache`).
+- **D75** — Chacun télécharge ses données depuis `/settings` : un JSON (`/api/account/export`,
+  `getAccountExport`) avec le compte, les préférences, le suivi et son journal, les favoris, les
+  listes et leurs œuvres, et la collection. Chaque œuvre est nommée par son id AniList et ses
+  titres, pour qu'on puisse la retrouver ailleurs. Rien de secret n'y figure : ni jeton de session
+  ou d'OAuth, ni adresse de webhook, ni jeton de partage, ni email d'un emprunteur. Le fichier
+  porte un champ `version` pour un futur import. C'est un lien `<a download>` vers un route
+  handler, et non une action : un téléchargement n'a pas besoin de JavaScript.

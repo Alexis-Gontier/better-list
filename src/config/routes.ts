@@ -121,6 +121,8 @@ export const routes = {
   api: {
     /** Les épisodes sortis que je n'ai pas vus, pour la cloche de l'en-tête (`features/tracking/`). */
     notifications: "/api/notifications",
+    /** Mes données en JSON, téléchargées depuis `/settings` (D75). */
+    accountExport: "/api/account/export",
     /** Mes listes vues depuis une œuvre, pour la fenêtre d'une vignette (`features/lists/`). */
     listMembership: (mediaId: number) =>
       `/api/lists/membership?mediaId=${mediaId}`,

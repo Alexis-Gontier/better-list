@@ -112,7 +112,7 @@ Tous les chemins viennent de [`src/config/routes.ts`](../src/config/routes.ts).
 | `/u/[username]` | Profil : listes, favoris, statistiques, calendrier d'activité, journal, chacun selon les réglages du membre (D64) | livré |
 | `/calendar` | Planning de diffusion, retard épisode par épisode | livré |
 | `/collection` · `/collection/[mediaId]` | L'étagère, les tomes manquants | livré, une seule édition par série |
-| `/settings` | Compte et fournisseurs à lier ou délier, appareils connectés (D74), langue des titres, 18+, confidentialité (D64), webhook Discord, suppression du compte (D60) | livré |
+| `/settings` | Compte et fournisseurs à lier ou délier, appareils connectés (D74), export JSON (D75), langue des titres, 18+, confidentialité (D64), webhook Discord, suppression du compte (D60) | livré |
 | `/login` · `/waitlist` | Connexion GitHub, Discord ou Google, pastille « Dernière » (D56) ; liste d'attente. `/signup` redirige vers `/login` | livré |
 | `/admin/users` | Demandes, membres, bannis : approuver, refuser, bannir, nommer (D57) | livré, réservé aux administrateurs |
 

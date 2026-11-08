@@ -1,3 +1,4 @@
+import { DownloadIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -16,8 +17,10 @@ import {
 } from "@/app/(app)/settings/_components/settings-section";
 import { getActiveSessions } from "@/app/(app)/settings/_lib/active-sessions";
 import { PageHeading } from "@/components/shared/page-heading";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { routes } from "@/config/routes";
 import { getDiscordWebhookStatus } from "@/features/notifications/server/discord.queries";
 import { getPreferences } from "@/features/preferences/server/preferences.queries";
 import { getSession } from "@/lib/auth/session";
@@ -31,7 +34,7 @@ export const metadata: Metadata = {
 /**
  * Les préférences du compte (docs/conception.md §4.6).
  *
- * Six rubriques, chacune sur la grille à deux colonnes de `SettingsSection` (D73). L'échelle de
+ * Sept rubriques, chacune sur la grille à deux colonnes de `SettingsSection` (D73). L'échelle de
  * notation n'est pas un réglage — cinq étoiles pour tout le monde —, la langue de l'interface non
  * plus : l'application est en français uniquement. Le thème et la déconnexion vivent déjà dans l'en-tête et le menu du compte ; les redire ici
  * donnerait deux endroits pour le même geste.
@@ -93,6 +96,24 @@ export default function SettingsPage() {
       <Suspense fallback={<NotificationsSectionSkeleton />}>
         <NotificationsSection />
       </Suspense>
+
+      <Separator />
+
+      <SettingsSection
+        description="Votre suivi et son journal, vos listes, votre collection et vos favoris, dans un fichier JSON."
+        title="Vos données"
+      >
+        {/*
+          Un lien et non un bouton : c'est un téléchargement, que le navigateur sait faire seul.
+          Statique, il s'affiche sans attendre la session — la route vérifie au clic.
+        */}
+        <Button asChild className="w-fit" variant="outline">
+          <a download href={routes.api.accountExport}>
+            <DownloadIcon data-icon="inline-start" />
+            Télécharger mes données
+          </a>
+        </Button>
+      </SettingsSection>
 
       <Separator />
 
