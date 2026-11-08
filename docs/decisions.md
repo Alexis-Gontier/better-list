@@ -298,3 +298,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   l'en-tête repasse au-dessus du contenu, comme avant. La suppression du compte a un intitulé rouge
   (`tone="danger"`) et son bouton est dans un cadre `destructive` : posée comme les autres
   rubriques, elle se lisait comme un réglage de plus.
+- **D74** — `/settings` gère les fournisseurs et les appareils. On **lie** un fournisseur configuré
+  par `authClient.linkSocial` (aller-retour OAuth, `allowDifferentEmails` : l'OAuth prouve qu'on
+  tient l'autre compte, et les adresses diffèrent souvent d'un fournisseur à l'autre). On **délie**
+  et on **déconnecte un appareil** par des actions Prisma scopées au compte (`account.actions.ts`),
+  pas par `auth.api` : `unlinkAccount` et `listSessions` exigent une session de moins d'un jour, et
+  les nôtres durent un an. Le dernier fournisseur ne se délie pas. Les sessions ne quittent pas le
+  serveur avec leur jeton : on révoque par `id`. Une session révoquée reste lisible jusqu'à cinq
+  minutes sur son appareil (`cookieCache`).

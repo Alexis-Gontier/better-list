@@ -5,6 +5,7 @@ import {
   AccountSection,
   AccountSectionSkeleton,
 } from "@/app/(app)/settings/_components/account-section";
+import { ActiveSessions } from "@/app/(app)/settings/_components/active-sessions";
 import { DeleteAccount } from "@/app/(app)/settings/_components/delete-account";
 import { DiscordSettings } from "@/app/(app)/settings/_components/discord-settings";
 import { DisplaySettings } from "@/app/(app)/settings/_components/display-settings";
@@ -13,6 +14,7 @@ import {
   SettingsSection,
   SettingsSectionSkeleton,
 } from "@/app/(app)/settings/_components/settings-section";
+import { getActiveSessions } from "@/app/(app)/settings/_lib/active-sessions";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 /**
  * Les préférences du compte (docs/conception.md §4.6).
  *
- * Cinq rubriques, chacune sur la grille à deux colonnes de `SettingsSection` (D73). L'échelle de
+ * Six rubriques, chacune sur la grille à deux colonnes de `SettingsSection` (D73). L'échelle de
  * notation n'est pas un réglage — cinq étoiles pour tout le monde —, la langue de l'interface non
  * plus : l'application est en français uniquement. Le thème et la déconnexion vivent déjà dans l'en-tête et le menu du compte ; les redire ici
  * donnerait deux endroits pour le même geste.
@@ -78,6 +80,12 @@ export default function SettingsPage() {
 
       <Suspense fallback={<PrivacySectionSkeleton />}>
         <PrivacySection />
+      </Suspense>
+
+      <Separator />
+
+      <Suspense fallback={<SessionsSectionSkeleton />}>
+        <SessionsSection />
       </Suspense>
 
       <Separator />
@@ -180,6 +188,31 @@ function SettingRowSkeleton({ control }: { control: string }) {
         <Skeleton className={control} />
       </div>
     </div>
+  );
+}
+
+/** Les appareils connectés (D74) : la session courante sert à marquer « cet appareil ». */
+async function SessionsSection() {
+  const session = await getSession();
+  if (!session) return null;
+  const sessions = await getActiveSessions(session.user.id, session.session.id);
+
+  return (
+    <SettingsSection
+      description="Une connexion dure un an. Coupez d'ici un appareil perdu ou prêté."
+      title="Appareils connectés"
+    >
+      <ActiveSessions sessions={sessions} />
+    </SettingsSection>
+  );
+}
+
+/** Deux lignes du cadre (65 px chacune), le cas le plus courant : un ordinateur et un téléphone. */
+function SessionsSectionSkeleton() {
+  return (
+    <SettingsSectionSkeleton titleClassName="w-48">
+      <Skeleton className="h-[130px] w-full rounded-lg" />
+    </SettingsSectionSkeleton>
   );
 }
 
