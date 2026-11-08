@@ -1,4 +1,7 @@
-import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
+import {
+  SettingsSection,
+  SettingsSectionSkeleton,
+} from "@/app/(app)/settings/_components/settings-section";
 import { getLinkedProviders } from "@/app/(app)/settings/_lib/linked-providers";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -98,12 +101,7 @@ export async function AccountSection() {
 /** Les proportions de ce qui arrive : le disque, le nom, et les trois lignes sous lui. */
 export function AccountSectionSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      {/* `text-lg` pour l'intitulé de section (28 px), `text-sm` pour l'aide et les trois lignes (20). */}
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-7 w-24" />
-        <Skeleton className="h-5 w-72 max-w-full" />
-      </div>
+    <SettingsSectionSkeleton titleClassName="w-24">
       {/*
         **Quatre lignes et non trois** : le nom, l'identifiant, l'adresse, et la mention du
         fournisseur. Elles se serrent en `gap-0.5` comme dans le bloc rendu — à trois lignes
@@ -118,6 +116,6 @@ export function AccountSectionSkeleton() {
           <Skeleton className="mt-1 h-4 w-36" />
         </div>
       </div>
-    </div>
+    </SettingsSectionSkeleton>
   );
 }

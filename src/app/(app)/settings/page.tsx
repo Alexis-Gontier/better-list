@@ -9,7 +9,10 @@ import { DeleteAccount } from "@/app/(app)/settings/_components/delete-account";
 import { DiscordSettings } from "@/app/(app)/settings/_components/discord-settings";
 import { DisplaySettings } from "@/app/(app)/settings/_components/display-settings";
 import { PrivacySettings } from "@/app/(app)/settings/_components/privacy-settings";
-import { SettingsSection } from "@/app/(app)/settings/_components/settings-section";
+import {
+  SettingsSection,
+  SettingsSectionSkeleton,
+} from "@/app/(app)/settings/_components/settings-section";
 import { PageHeading } from "@/components/shared/page-heading";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,10 +29,9 @@ export const metadata: Metadata = {
 /**
  * Les préférences du compte (docs/conception.md §4.6).
  *
- * **Deux réglages, et c'est tout ce qu'il y a à régler.** L'échelle de notation n'en est plus un —
- * les notes sont sur cinq étoiles pour tout le monde — et la langue de l'interface non plus :
- * l'application est en français uniquement. Un sélecteur à un seul choix ne serait pas un choix.
- * Le thème et la déconnexion vivent déjà dans l'en-tête et le menu du compte ; les redire ici
+ * Cinq rubriques, chacune sur la grille à deux colonnes de `SettingsSection` (D73). L'échelle de
+ * notation n'est pas un réglage — cinq étoiles pour tout le monde —, la langue de l'interface non
+ * plus : l'application est en français uniquement. Le thème et la déconnexion vivent déjà dans l'en-tête et le menu du compte ; les redire ici
  * donnerait deux endroits pour le même geste.
  *
  * **La page ne fait aucun `await`.** Le titre et le trait sont statiques et doivent s'afficher
@@ -44,12 +46,11 @@ export default function SettingsPage() {
       s'arrête à mi-chemin quand les six autres vont au bout se lit comme un écran inachevé, et la
       cohérence de la coquille pèse plus que le trajet de l'œil jusqu'à l'interrupteur.
 
-      Ce que ça coûte est réel et assumé : un contrôle posé à droite est loin du libellé qu'il
-      commande. C'est ce qui rend `SettingRow` responsable de garder la paire lisible — d'où
-      l'écart généreux entre les deux réglages, qui empêche de rattacher un contrôle à la mauvaise
-      ligne.
+      Sur cette largeur, un contrôle posé tout à droite partait loin de son libellé : la grille de
+      `SettingsSection` range les réglages dans les deux tiers droits, l'intitulé à gauche (D73).
+      `gap-8` : à deux colonnes, une rubrique est un bloc plus haut qu'il faut détacher davantage.
     */
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       {/*
         L'écart est porté par la colonne et non par le trait — la règle de `/search`, `/library` et
         de `/lists` : une marge posée sur un séparateur lui ferait dicter l'espacement de ses deux
@@ -57,7 +58,7 @@ export default function SettingsPage() {
       */}
       <div className="flex flex-col gap-4">
         <PageHeading
-          description="Ce que l'application affiche, et sous quel nom. Rien ici n'est partagé avec les autres membres."
+          description="Votre compte, ce que l'application affiche, ce que les autres membres voient de vous."
           title="Paramètres"
         />
         <Separator />
@@ -146,39 +147,37 @@ async function PrivacySection() {
 }
 
 /**
- * Titre et description, puis la structure de `PrivacySettings` : le profil visible, le bloc indenté
- * de ses quatre sections sous son intitulé, le 18+ et la note finale.
+ * La structure de `PrivacySettings` : le profil visible, le bloc indenté de ses quatre sections
+ * sous son intitulé, le 18+ et la note finale.
  */
 function PrivacySectionSkeleton() {
-  const row = (key: string) => (
-    <div
-      className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
-      key={key}
-    >
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-5 w-40" />
-        <Skeleton className="h-5 w-72 max-w-full" />
-      </div>
-      <div className="shrink-0">
-        <Skeleton className="h-5 w-9" />
-      </div>
-    </div>
-  );
-
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-5 w-96 max-w-full" />
-      </div>
+    <SettingsSectionSkeleton titleClassName="w-40">
       <div className="flex flex-col gap-6">
-        {row("profil")}
+        <SettingRowSkeleton control="h-5 w-9" />
         <div className="flex flex-col gap-5 border-l pl-4">
           <Skeleton className="h-5 w-44" />
-          {["journal", "stats", "calendrier", "favoris"].map(row)}
+          {["journal", "stats", "calendrier", "favoris"].map((key) => (
+            <SettingRowSkeleton control="h-5 w-9" key={key} />
+          ))}
         </div>
-        {row("adulte")}
+        <SettingRowSkeleton control="h-5 w-9" />
         <Skeleton className="h-5 w-3/4" />
+      </div>
+    </SettingsSectionSkeleton>
+  );
+}
+
+/** Une ligne de réglage : le libellé, l'aide, et le contrôle avec sa forme réelle. */
+function SettingRowSkeleton({ control }: { control: string }) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-5 w-64 max-w-full" />
+      </div>
+      <div className="shrink-0">
+        <Skeleton className={control} />
       </div>
     </div>
   );
@@ -191,70 +190,30 @@ async function DeleteAccountSection() {
 
   return (
     <SettingsSection
-      description="Votre suivi, votre journal, vos listes, votre collection et vos favoris partent avec lui. On ne peut pas revenir en arrière."
+      description="Quitter le cercle. On ne peut pas revenir en arrière."
       title="Supprimer mon compte"
+      tone="danger"
     >
       <DeleteAccount username={session.user.username} />
     </SettingsSection>
   );
 }
 
-/** Titre de section (28 px), une description sur deux lignes, le bouton (36). */
+/** Le cadre rouge : sa phrase sur une ligne et le bouton (36), plus le remplissage de 16. */
 function DeleteAccountSectionSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-7 w-56" />
-        <Skeleton className="h-10 w-full max-w-xl" />
-      </div>
-      <Skeleton className="h-9 w-48" />
-    </div>
+    <SettingsSectionSkeleton titleClassName="w-56">
+      <Skeleton className="h-17.5 w-full rounded-lg" />
+    </SettingsSectionSkeleton>
   );
 }
 
+/** Le statut du webhook, ou le champ et son bouton. */
 function NotificationsSectionSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-7 w-52" />
-        <Skeleton className="h-5 w-96 max-w-full" />
-      </div>
+    <SettingsSectionSkeleton titleClassName="w-52">
       <Skeleton className="h-9 w-full" />
-    </div>
-  );
-}
-
-/**
- * Deux lignes de réglage aux proportions de celles qui arrivent : le libellé, l'aide, le contrôle.
- *
- * Les interlignes sont ceux du rendu et non des valeurs rondes : `text-lg` pour l'intitulé de
- * section (28 px), `text-sm` pour tout le reste (20). À `h-4` partout, la section annonçait douze
- * pixels de moins qu'elle n'en prend.
- */
-function DisplaySectionSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-7 w-28" />
-        <Skeleton className="h-5 w-80 max-w-full" />
-      </div>
-      <div className="flex flex-col gap-6">
-        {SKELETON_ROWS.map(({ key, control }) => (
-          <div
-            className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8"
-            key={key}
-          >
-            <div className="flex flex-col gap-1">
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="h-5 w-64 max-w-full" />
-            </div>
-            <div className="shrink-0">
-              <Skeleton className={control} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    </SettingsSectionSkeleton>
   );
 }
 
@@ -263,7 +222,13 @@ function DisplaySectionSkeleton() {
  * titres, un interrupteur pour le 18+. Le second faisait la largeur du premier, ce qui annonçait un
  * bouton de cent soixante pixels là où il en arrive trente-six.
  */
-const SKELETON_ROWS = [
-  { key: "langue", control: "h-8 w-40" },
-  { key: "adulte", control: "h-5 w-9" },
-];
+function DisplaySectionSkeleton() {
+  return (
+    <SettingsSectionSkeleton titleClassName="w-28">
+      <div className="flex flex-col gap-6">
+        <SettingRowSkeleton control="h-8 w-40" />
+        <SettingRowSkeleton control="h-5 w-9" />
+      </div>
+    </SettingsSectionSkeleton>
+  );
+}

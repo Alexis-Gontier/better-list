@@ -291,3 +291,10 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   La FAQ reste en `<details>` natifs, mais exclusifs (`name` commun : une question ouverte à la
   fois) et animés en CSS (`disclosure` : `::details-content` et `interpolate-size`) ; sans ces
   propriétés ou sous `prefers-reduced-motion`, elle s'ouvre d'un coup.
+- **D73** — `/settings` range chaque rubrique sur deux colonnes à partir de `lg` : l'intitulé et sa
+  phrase sur le tiers gauche, les réglages sur les deux tiers droits (`SettingsSection`, que les
+  squelettes partagent par `SettingsSectionSkeleton`). La page garde la largeur de la coquille
+  (`max-w-6xl`), mais un contrôle n'est plus à mille pixels de son libellé. En dessous de `lg`,
+  l'en-tête repasse au-dessus du contenu, comme avant. La suppression du compte a un intitulé rouge
+  (`tone="danger"`) et son bouton est dans un cadre `destructive` : posée comme les autres
+  rubriques, elle se lisait comme un réglage de plus.
