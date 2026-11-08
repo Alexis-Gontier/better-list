@@ -120,6 +120,13 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: ["github", "discord", "google"],
+      /**
+       * Lier depuis `/settings` (D74) se fait **connecté** : l'OAuth prouve qu'on tient l'autre
+       * compte, l'adresse n'a rien à prouver de plus. Sans ce drapeau, un Discord sous une autre
+       * adresse que le GitHub serait refusé, et c'est le cas courant. L'adresse du compte ne change
+       * pas (`updateUserInfoOnLink` reste éteint).
+       */
+      allowDifferentEmails: true,
     },
   },
 

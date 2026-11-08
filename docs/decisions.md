@@ -291,3 +291,25 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   La FAQ reste en `<details>` natifs, mais exclusifs (`name` commun : une question ouverte à la
   fois) et animés en CSS (`disclosure` : `::details-content` et `interpolate-size`) ; sans ces
   propriétés ou sous `prefers-reduced-motion`, elle s'ouvre d'un coup.
+- **D73** — `/settings` range chaque rubrique sur deux colonnes à partir de `lg` : l'intitulé et sa
+  phrase sur le tiers gauche, les réglages sur les deux tiers droits (`SettingsSection`, que les
+  squelettes partagent par `SettingsSectionSkeleton`). La page garde la largeur de la coquille
+  (`max-w-6xl`), mais un contrôle n'est plus à mille pixels de son libellé. En dessous de `lg`,
+  l'en-tête repasse au-dessus du contenu, comme avant. La suppression du compte a un intitulé rouge
+  (`tone="danger"`) et son bouton est dans un cadre `destructive` : posée comme les autres
+  rubriques, elle se lisait comme un réglage de plus.
+- **D74** — `/settings` gère les fournisseurs et les appareils. On **lie** un fournisseur configuré
+  par `authClient.linkSocial` (aller-retour OAuth, `allowDifferentEmails` : l'OAuth prouve qu'on
+  tient l'autre compte, et les adresses diffèrent souvent d'un fournisseur à l'autre). On **délie**
+  et on **déconnecte un appareil** par des actions Prisma scopées au compte (`account.actions.ts`),
+  pas par `auth.api` : `unlinkAccount` et `listSessions` exigent une session de moins d'un jour, et
+  les nôtres durent un an. Le dernier fournisseur ne se délie pas. Les sessions ne quittent pas le
+  serveur avec leur jeton : on révoque par `id`. Une session révoquée reste lisible jusqu'à cinq
+  minutes sur son appareil (`cookieCache`).
+- **D75** — Chacun télécharge ses données depuis `/settings` : un JSON (`/api/account/export`,
+  `getAccountExport`) avec le compte, les préférences, le suivi et son journal, les favoris, les
+  listes et leurs œuvres, et la collection. Chaque œuvre est nommée par son id AniList et ses
+  titres, pour qu'on puisse la retrouver ailleurs. Rien de secret n'y figure : ni jeton de session
+  ou d'OAuth, ni adresse de webhook, ni jeton de partage, ni email d'un emprunteur. Le fichier
+  porte un champ `version` pour un futur import. C'est un lien `<a download>` vers un route
+  handler, et non une action : un téléchargement n'a pas besoin de JavaScript.

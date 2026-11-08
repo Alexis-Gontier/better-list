@@ -45,11 +45,21 @@ export function DeleteAccount({ username }: { username: string }) {
 
   return (
     <AlertDialog onOpenChange={() => setConfirmation("")}>
-      <AlertDialogTrigger asChild>
-        <Button className="w-fit" variant="destructive">
-          Supprimer mon compte
-        </Button>
-      </AlertDialogTrigger>
+      {/*
+        Le cadre rouge isole le seul geste sans retour de l'écran (D73) : posé comme les autres
+        rubriques, il se lisait comme un réglage de plus.
+      */}
+      <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <p className="text-pretty text-sm">
+          Votre suivi, votre journal, vos listes, votre collection et vos
+          favoris partent avec lui.
+        </p>
+        <AlertDialogTrigger asChild>
+          <Button className="w-fit shrink-0" variant="destructive">
+            Supprimer mon compte
+          </Button>
+        </AlertDialogTrigger>
+      </div>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Supprimer votre compte ?</AlertDialogTitle>
