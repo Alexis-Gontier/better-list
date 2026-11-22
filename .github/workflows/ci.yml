@@ -35,7 +35,7 @@ jobs:
     # Rien ici n'est un secret : aucune connexion n'est ouverte, aucune session n'est signée.
     # Les longueurs ne sont là que pour satisfaire les `min(32)` de BETTER_AUTH_SECRET et
     # CRON_SECRET. À remplacer par une branche Neon éphémère le jour où la CI devra requêter.
-    env:
+    env: &ci-env
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       BETTER_AUTH_SECRET: ci-placeholder-not-a-real-secret-000000
@@ -100,17 +100,8 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
-    env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=disable
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-      BETTER_AUTH_SECRET: ci-placeholder-not-a-real-secret-000000
-      CRON_SECRET: ci-placeholder-not-a-real-secret-111111
-      GITHUB_CLIENT_ID: ci-placeholder
-      GITHUB_CLIENT_SECRET: ci-placeholder
-      DISCORD_CLIENT_ID: ci-placeholder
-      DISCORD_CLIENT_SECRET: ci-placeholder
-      GOOGLE_CLIENT_ID: ci-placeholder
-      GOOGLE_CLIENT_SECRET: ci-placeholder
+    # Mêmes variables que `quality` : l'ancre `&ci-env` évite que les deux copies divergent.
+    env: *ci-env
 
     steps:
       - uses: actions/checkout@v7
