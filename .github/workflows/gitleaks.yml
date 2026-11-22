@@ -1,7 +1,9 @@
 name: Gitleaks
 
+# Le push est limité à main : sur une branche, le run `pull_request` couvre déjà les mêmes commits.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:
