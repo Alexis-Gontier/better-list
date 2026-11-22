@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 
 import { env } from "@/config/env";
@@ -46,6 +47,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
+        {/* Script et mesures passent par `/_vercel/…`, même origine : la CSP (D77) n'a rien à ouvrir. */}
+        <SpeedInsights />
       </body>
     </html>
   );

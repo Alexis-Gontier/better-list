@@ -109,6 +109,9 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   à l'entier inférieur : ils empêchent une régression sans exiger de rattrapage.
 - **D80** — Le code est sous licence MIT ([LICENSE](../LICENSE)) depuis que le dépôt est public.
   Les données AniList n'en relèvent pas : elles restent sous les conditions d'AniList.
+- **D81** — Vercel Speed Insights mesure les Web Vitals réels (gratuit sur Hobby, 10 000 événements
+  par mois). `<SpeedInsights />` vit dans le layout racine ; script et mesures passent par
+  `/_vercel/speed-insights/`, même origine, donc la CSP (D77) reste inchangée.
 
 ## Interface
 
