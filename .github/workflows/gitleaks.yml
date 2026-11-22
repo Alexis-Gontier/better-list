@@ -1,0 +1,29 @@
+name: Gitleaks
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+# `pull-requests: write` permet à l'action de commenter la ligne fautive d'une PR.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    name: Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Tout l'historique : l'action scanne les commits du push ou de la PR, pas seulement le dernier.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Pas de GITLEAKS_LICENSE : elle n'est exigée que pour un dépôt d'organisation.
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

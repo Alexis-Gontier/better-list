@@ -86,6 +86,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
 - **D32** — Une facette continue s'arrête par paliers (dizaines pour la note, années pour les
   dates) : chaque combinaison de filtres est une clé de cache, donc une requête AniList.
 
+- **D76** — Sécurité du dépôt : secret scanning et push protection de GitHub actifs (gratuits sur
+  un dépôt public), CodeQL en *default setup*, et `gitleaks-action` à chaque push et chaque PR. Un
+  faux positif se déclare par son empreinte dans `.gitleaksignore`, avec sa raison, jamais en
+  élargissant la règle.
+
 ## Interface
 
 - **D33** — La jaquette est la seule chose colorée de l'écran. L'accent n'a que quatre emplois : le
