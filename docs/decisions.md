@@ -90,6 +90,14 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   un dépôt public), CodeQL en *default setup*, et `gitleaks-action` à chaque push et chaque PR. Un
   faux positif se déclare par son empreinte dans `.gitleaksignore`, avec sa raison, jamais en
   élargissant la règle.
+- **D77** — En-têtes de sécurité sur toutes les routes (`next.config.ts`) : HSTS avec `preload`,
+  `nosniff`, `Referrer-Policy`, `Permissions-Policy`, et une CSP **statique, sans nonce**, envoyée
+  d'abord en `Report-Only`. Un nonce rend chaque rendu dynamique, ce que `cacheComponents` (PPR)
+  exclut ; d'où `'unsafe-inline'` pour les scripts et les styles. Chaque hôte répond à un usage
+  vu dans le code : jaquettes `s4.anilist.co`, avatars GitHub, Discord et Google. Le navigateur
+  ne parle qu'à nos route handlers (`connect-src 'self'`), et les bandes-annonces ne sont pas
+  intégrées (`frame-src 'none'`). Zod passe en `jitless` côté client
+  (`src/instrumentation-client.ts`), car sa sonde `new Function` serait signalée comme violation.
 
 ## Interface
 
