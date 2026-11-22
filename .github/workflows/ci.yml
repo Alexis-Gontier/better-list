@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # `pull-requests: write` : le rapport de couverture se poste en commentaire de PR.
+    permissions:
+      contents: read
+      pull-requests: write
+
     # `pnpm install` déclenche le postinstall `prisma generate`, qui charge prisma.config.ts et
     # y résout `env("DATABASE_URL")` immédiatement. Sans cette variable, l'installation échoue et
     # la CI meurt avant le premier contrôle — ce qu'elle a fait en silence pendant trois merges.
@@ -68,8 +73,13 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Tests
-        run: pnpm test
+      - name: Tests et couverture
+        run: pnpm test:coverage
+
+      # `always()` : le rapport sort aussi quand un test ou un seuil échoue (`reportOnFailure`).
+      - name: Rapport de couverture
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
 
       - name: Knip (code et dépendances morts)
         run: pnpm knip

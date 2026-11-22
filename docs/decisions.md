@@ -103,6 +103,10 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   dans les jetons de `globals.css`, jamais dans un composant shadcn (D35) : `--muted-foreground`
   et `--destructive` foncés en clair, `--primary` (l'iris) un peu foncé et `--destructive` éclairci
   en sombre, tous à 4,5:1 au moins. Une zone qui défile prend `tabIndex={0}` et un nom.
+- **D79** — Couverture mesurée par `@vitest/coverage-v8` sur ce que l'environnement `node` teste
+  (`_lib/`, `src/lib/`, `features/*/server/`), sans service externe : le rapport se poste en
+  commentaire de PR (`vitest-coverage-report-action`). Les seuils valent le niveau mesuré, arrondi
+  à l'entier inférieur : ils empêchent une régression sans exiger de rattrapage.
 
 ## Interface
 

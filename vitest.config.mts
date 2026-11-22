@@ -39,6 +39,29 @@ export default defineConfig({
     globals: false,
 
     /*
+     * Couverture (`pnpm test:coverage`) : seulement ce que l'environnement `node` sait tester,
+     * helpers de route, `lib/` et couche serveur. Les composants en seraient exclus de toute façon,
+     * et les compter ne ferait que noyer le chiffre.
+     *
+     * Les seuils valent le niveau mesuré, arrondi à l'entier inférieur : ils bloquent une
+     * régression sans exiger de rattrapage. À remonter quand la couverture monte.
+     */
+    coverage: {
+      provider: "v8",
+      include: [
+        "src/**/_lib/**/*.ts",
+        "src/lib/**/*.ts",
+        "src/features/**/server/**/*.ts",
+      ],
+      exclude: ["**/*.test.ts"],
+      // `json-summary` et `json` : ce que lit vitest-coverage-report-action en CI.
+      reporter: ["text-summary", "json-summary", "json"],
+      reportOnFailure: true,
+      // Mesuré le 22 novembre 2026 : 30,5 / 25,12 / 33,89 / 31,32 %.
+      thresholds: { statements: 30, branches: 25, functions: 33, lines: 31 },
+    },
+
+    /*
      * `src/config/env.ts` **valide à l'import**, et c'est tout son intérêt : un secret manquant
      * casse au démarrage et non sur une requête. Mais le moindre module qui importe `env` entraîne
      * donc toute la validation dans le graphe du test — c'est arrivé le 7 septembre 2026, quand la
