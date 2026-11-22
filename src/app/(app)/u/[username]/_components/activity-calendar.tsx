@@ -121,7 +121,13 @@ export function ActivityCalendar({
         */
         weekStart={1}
       >
-        <ContributionGraphCalendar className="text-muted-foreground">
+        {/* En 390 l'année déborde : la zone défile, donc le clavier doit pouvoir y entrer. */}
+        <ContributionGraphCalendar
+          aria-label="Activité de l'année"
+          className="text-muted-foreground"
+          role="region"
+          tabIndex={0}
+        >
           {({ activity, dayIndex, weekIndex }) => {
             /*
               Le compte **puis** la date, dans cet ordre : on survole une case parce qu'on veut
