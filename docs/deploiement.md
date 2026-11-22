@@ -48,6 +48,8 @@ migration `admin_plugin`, avec `DATABASE_URL` pointée sur la production :
 
 ## CI
 
-`.github/workflows/ci.yml`, sur chaque PR et sur `main` : lint → typecheck → tests → knip → build
-(avec `SKIP_ENV_VALIDATION=1`). En parallèle, un job E2E sur une base Postgres jetable lance
-`playwright test --grep-invert @anilist`.
+`.github/workflows/ci.yml`, sur chaque PR et sur `main` : lint → typecheck → tests avec couverture
+(seuils et commentaire de PR, D79) → knip → build, avec des variables factices mais valides. En
+parallèle, un job E2E sur une base Postgres jetable lance `playwright test --grep-invert @anilist`.
+`.github/workflows/gitleaks.yml` cherche des secrets à chaque PR (D76) ; CodeQL tourne en *default
+setup*, réglé côté GitHub.
