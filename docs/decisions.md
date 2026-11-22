@@ -107,6 +107,8 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   (`_lib/`, `src/lib/`, `features/*/server/`), sans service externe : le rapport se poste en
   commentaire de PR (`vitest-coverage-report-action`). Les seuils valent le niveau mesuré, arrondi
   à l'entier inférieur : ils empêchent une régression sans exiger de rattrapage.
+- **D80** — Le code est sous licence MIT ([LICENSE](../LICENSE)) depuis que le dépôt est public.
+  Les données AniList n'en relèvent pas : elles restent sous les conditions d'AniList.
 
 ## Interface
 

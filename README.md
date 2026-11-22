@@ -47,8 +47,10 @@ Il faut une base PostgreSQL (une branche [Neon](https://neon.tech) gratuite fait
 **OAuth App GitHub** — *Settings → Developer settings → OAuth Apps* — dont l'URL de callback est
 `http://localhost:3000/api/auth/callback/github`.
 
-Un compte fraîchement inscrit arrive **en liste d'attente** : l'approbation se fait à la main dans
-`pnpm db:studio`, il n'y a pas d'interface d'administration.
+Un compte fraîchement inscrit arrive **en liste d'attente**. Un administrateur l'approuve ou le
+refuse depuis `/admin/users`, onglet « En attente » ; les onglets « Membres » et « Bannis » gèrent la
+suite. Le premier administrateur se nomme une fois, en ligne de commande :
+`pnpm tsx scripts/set-admin.ts <username>`. Les suivants se nomment depuis l'écran.
 
 ## Scripts
 
@@ -82,7 +84,12 @@ y ajoute le `build`, sur chaque push de `main` et chaque pull request.
 
 ## Contribuer
 
-Dépôt privé à un seul contributeur. Le travail part d'une branche thématique (`feat/…`, `fix/…`,
+Dépôt public, à un seul contributeur. Le travail part d'une branche thématique (`feat/…`, `fix/…`,
 `chore/…`, `docs/…`), passe par une pull request GitHub vers `main` et y est fusionné une fois la CI
 verte. Commits au format `type(portée): message en français`. `main` est protégée contre le
 force-push et la suppression.
+
+## Licence
+
+[MIT](LICENSE). Les données des œuvres viennent d'[AniList](https://anilist.co) et restent soumises à
+ses conditions d'utilisation.
