@@ -98,6 +98,11 @@ l'historique git (`git show e122516:docs/`). Les numéros continuent après **D4
   ne parle qu'à nos route handlers (`connect-src 'self'`), et les bandes-annonces ne sont pas
   intégrées (`frame-src 'none'`). Zod passe en `jitless` côté client
   (`src/instrumentation-client.ts`), car sa sonde `new Function` serait signalée comme violation.
+- **D78** — Accessibilité vérifiée par axe (`e2e/a11y.spec.ts`, WCAG 2.1 A et AA) sur chaque écran
+  principal, en clair **et** en sombre, en 1440 et en 390. Un contraste trop faible se corrige
+  dans les jetons de `globals.css`, jamais dans un composant shadcn (D35) : `--muted-foreground`
+  et `--destructive` foncés en clair, `--primary` (l'iris) un peu foncé et `--destructive` éclairci
+  en sombre, tous à 4,5:1 au moins. Une zone qui défile prend `tabIndex={0}` et un nom.
 
 ## Interface
 

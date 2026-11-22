@@ -46,7 +46,9 @@ export function LikeButton({
     },
   });
 
-  const label = state.liked ? "Ne plus aimer cette liste" : "Aimer cette liste";
+  // Le compteur affiché doit figurer dans le nom accessible (WCAG 2.5.3, « label in name »). Pas
+  // entre parenthèses : les lecteurs d'écran et axe traitent ce qui y est comme accessoire.
+  const label = `${state.liked ? "Ne plus aimer cette liste" : "Aimer cette liste"}, ${state.count} j'aime`;
 
   return (
     <Button

@@ -14,7 +14,12 @@ export async function LandingCovers() {
   if (covers.length < SHOWN) return null;
 
   return (
-    <ul className="-mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-12">
+    <ul
+      aria-label="Tendances AniList"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: en 390 la rangée défile, et une zone défilante doit s'atteindre au clavier (WCAG 2.1.1, règle axe scrollable-region-focusable).
+      tabIndex={0}
+      className="-mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-12"
+    >
       {covers.slice(0, SHOWN).map((cover) => (
         <li
           className="relative aspect-2/3 w-20 shrink-0 snap-start overflow-hidden rounded-md bg-muted ring-1 ring-border ring-inset sm:w-auto"
